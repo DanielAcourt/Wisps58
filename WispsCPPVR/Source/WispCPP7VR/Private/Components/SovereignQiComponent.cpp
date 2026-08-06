@@ -152,7 +152,9 @@ void USovereignQiComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 			ElementalResonance.Empty();
 			for (auto& Elem : (*ResObj)->Values)
 			{
-				ElementalResonance.Add(FName(*Elem.Key), (float)Elem.Value->AsNumber());
+				// Explicitly convert Elem.Key to FString for Unreal 5.8 compatibility
+				FString KeyStr = FString(Elem.Key);
+				ElementalResonance.Add(FName(*KeyStr), (float)Elem.Value->AsNumber());
 			}
 		}
 	}
