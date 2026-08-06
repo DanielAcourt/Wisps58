@@ -313,5 +313,14 @@
     "Node": "DevOps",
     "Why": "Penalize premature egg laying or parental death during gestation by regressing the offspring into a lesser beast.",
     "What": "Implement biological regression resolving early eggs to Wyvern/Pygmy Wyvern classifications with restricted stats and no legendary actions."
+  },
+  {
+    "ID": "B-042",
+    "Task": "Sovereign Nested UI: State Ingestion Caching & Throttling",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Prevent massive CPU spikes and memory leaks when running simulations at Realtime (frame-rate) update frequencies.",
+    "What": "USovereignSaveableEntityComponent implements GFrameCounter-based caching and configurable time-throttling on GetCategoryStateJson to completely eliminate redundant JSON serialization on Tick."
   }
 ]

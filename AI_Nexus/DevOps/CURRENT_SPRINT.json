@@ -171,6 +171,15 @@
     "What": "Integrate GestationProgress incrementing within USovereignBioComponent's metabolism update loop, capping at 100.0f and transitioning EggFertilityState."
   },
   {
+    "ID": "B-043",
+    "Task": "FJsonObject::Values UE 5.8.1 Compatibility Audit",
+    "Complexity": "3",
+    "Status": "In Progress",
+    "Node": "DevOps",
+    "Why": "Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values.",
+    "What": "Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file."
+  },
+  {
     "ID": "B-039",
     "Task": "C++ Bio: Enhanced Gestation & Prestige Condensation",
     "Complexity": "5",

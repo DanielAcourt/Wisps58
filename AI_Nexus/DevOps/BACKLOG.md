@@ -42,6 +42,7 @@ This backlog tracks long-term product tasks using Fibonacci scoring. To optimize
 | AD-005b | Spatial Sense: Unreal Agent Manifestation | 8 | Todo | DevOps | Create a 3D representation of the Iron Knight agent inside the levels. | Blueprint actor capable of requesting handshakes and rendering dynamic UI status. |
 | AD-005c | Spatial Sense: Paradox Visualizer (AFI) | 5 | Todo | Research | Reconcile local state discrepancy reports to drive visual particles. | Drive material parameters and Niagara particles based on live `ParadoxDensity` ($\Xi$). |
 | B-041 | C++ Bio: Diminished Draconic Beast Fallback | 8 | Todo | DevOps | Penalize premature egg laying or parental death during gestation by regressing the offspring into a lesser beast. | Implement biological regression resolving early eggs to Wyvern/Pygmy Wyvern classifications with restricted stats and no legendary actions. |
+| B-042 | Sovereign Nested UI: State Ingestion Caching & Throttling | 5 | Todo | DevOps | Prevent massive CPU spikes and memory leaks when running simulations at Realtime (frame-rate) update frequencies. | USovereignSaveableEntityComponent implements GFrameCounter-based caching and configurable time-throttling on GetCategoryStateJson to completely eliminate redundant JSON serialization on Tick. |
 
 ---
 

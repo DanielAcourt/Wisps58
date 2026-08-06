@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-06-28
+// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.10. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-06
 
 #pragma once
 
@@ -80,6 +80,14 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Sovereign|UI")
     FString GetCategoryStateJson(FString CategoryName);
 
+    /** Configurable rate throttle for UI state updates (default: 0.05 seconds for 20Hz refresh rate) */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|UI")
+    float UIUpdateThrottleInterval = 0.05f;
+
+    /** Forces invalidation of the state ingestion cache (useful when an event or mutation occurs) */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|UI")
+    void InvalidateStateCache();
+
 
     /** --- 4. REALITY & TRUTH --- */
 
@@ -135,4 +143,10 @@ protected:
 private:
     /** Helper to serialize a JSON object to string for BP consumption */
     FString SerializeJsonToString(TSharedPtr<FJsonObject> JsonObj);
+
+    /** Invalidation helper for caching */
+    uint64 LastCachedFrame = 0;
+    double LastCachedTime = -1.0;
+    TSharedPtr<FJsonObject> CachedFullState;
+    TMap<FString, FString> CachedCategoryStrings;
 };
