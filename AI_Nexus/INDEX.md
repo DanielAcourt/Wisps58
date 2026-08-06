@@ -77,6 +77,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Offline reference mapping standard Unreal Engine toolsets for dynamic RAG ingestion.
 *   **SWOT Analysis: Claude/Cursor vs. Iron Knight:** `AI_Nexus/Research/SWOT_ClaudeCursor_vs_IronKnight.md`
     *   Strategic and technical trade-offs between commercial cloud toolsets and offline local safety-gated architectures.
+*   **Hybrid Sovereign Architecture Spec:** `AI_Nexus/Research/Hybrid_Sovereign_Architecture_Spec.md`
+    *   Architectural blueprint for dynamic local task complexity thresholding and secure Jules API offloading.
 
 ---
 
