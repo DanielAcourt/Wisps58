@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7. Licensed under GPLv3 (See LICENSE). Last Updated: 2025-06-17
+// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
 # Implementation Guide: Iron Knight Upgrade & Local Testing
 
 ## 🎯 1. Goal

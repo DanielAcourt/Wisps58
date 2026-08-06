@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.9. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-04
+// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
 # Sovereign Framework: PRODUCT BACKLOG
 
 This backlog tracks long-term product tasks using Fibonacci scoring. To optimize context loading during active cycles, all currently active/prioritized tickets have been moved to `CURRENT_SPRINT.md`.
