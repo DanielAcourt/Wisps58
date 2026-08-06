@@ -1,0 +1,16 @@
+{
+    "authority": {
+        "PERSONA_REGISTRY": {
+            "Lead": {"p": 10, "zone": "ALL"},
+            "Iron_Knight": {"p": 5, "zone": "STAGING"},
+            "Yaz_Student": {"p": 3, "zone": "SANDBOX"}
+        },
+        "TOOL_MIN_PRECEDENCE": {
+            "delete_file": 10,
+            "write_file": 8,
+            "read_file": 3,
+            "list_files": 3,
+            "get_system_telemetry": 5
+        }
+    }
+}

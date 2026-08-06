@@ -1,0 +1,74 @@
+{
+    "identity": "Iron Officer",
+    "version": "36.4.8",
+    "initialization_message": "Archivist Persona \u0398 online. Thoughts scrambled; ready to structure them.",
+    "user_preference": {
+        "name": "Dan",
+        "theme": "dark"
+    },
+    "hardware": {
+        "host": "GTX 5090",
+        "os": "Windows 10.0.26200.8457",
+        "gpu": {
+            "expected_id": "5090",
+            "verification_tool": "nvidia-smi"
+        }
+    },
+    "ollama": {
+        "host": "127.0.0.1",
+        "port": 11434,
+        "install_path": "C:\\Users\\Danie\\AppData\\Local\\Programs\\Ollama",
+        "model_path": "C:\\Users\\Danie\\.ollama\\models",
+        "target_model": "llama3.1:latest",
+        "fallback_models": ["llama3:70b", "llama3:8b", "qwen3-coder:30b"],
+        "process_names": ["ollama.exe", "ollama app.exe", "Ollama.app.exe"],
+        "env_overrides": {
+            "OLLAMA_MODELS": "C:\\Users\\Danie\\.ollama\\models"
+        }
+    },
+    "rag_settings": {
+        "enabled": true,
+        "enabled_on_startup": true,
+        "rag_context_weight": 0.5,
+        "max_chunks": 3,
+        "similarity_threshold": 0.05,
+        "chunk_size_words": 250,
+        "index_dirs": [
+            "AI_Nexus",
+            "Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons"
+        ],
+        "ignored_dirs": [
+            "protocols",
+            "devops",
+            "admin",
+            "bridge.py"
+        ]
+    },
+    "bridge": {
+        "host": "0.0.0.0",
+        "port": 8000,
+        "persistent_handshake": true,
+        "roleplay_zones": [
+            "Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons"
+        ],
+        "read_zones": [
+            ".",
+            "Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons"
+        ],
+        "write_zones": [
+            "Sovereign_Intelligence/IronOfficer/Environment",
+            "AI_Nexus",
+            "Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons"
+        ],
+        "persona_zones": {
+            "Iron_Knight": [
+                "Sovereign_Intelligence/IronKnight_Memory",
+                "IronKnight/",
+                "Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons"
+            ],
+            "Unreal_Simulation": [
+                "Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons"
+            ]
+        }
+    }
+}
