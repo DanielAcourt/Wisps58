@@ -81,11 +81,24 @@ class SovereignRAG:
         indexed_files_count = 0
 
         for d in directories:
-            # Resolve directory absolute path relative to repo_root
-            abs_dir = os.path.abspath(os.path.join(self.repo_root, d))
+            # Resolve directory absolute path relative to repo_root or absolute directly
+            if os.path.isabs(d):
+                abs_dir = os.path.abspath(d)
+            else:
+                abs_dir = os.path.abspath(os.path.join(self.repo_root, d))
+
             if not os.path.exists(abs_dir):
-                logger.warning(f"RAG: Index directory does not exist: {d}")
-                continue
+                # Auto-create relative missing directories inside the project to clear uninitialized warning noise
+                if not os.path.isabs(d):
+                    try:
+                        os.makedirs(abs_dir, exist_ok=True)
+                        logger.info(f"RAG: Automatically created missing index directory: {d}")
+                    except Exception as e:
+                        logger.warning(f"RAG: Failed to auto-create index directory {d}: {e}")
+                        continue
+                else:
+                    logger.warning(f"RAG: Index directory does not exist: {d}")
+                    continue
 
             for root, _, filenames in os.walk(abs_dir):
                 # Skip .git, cache, and build directories
