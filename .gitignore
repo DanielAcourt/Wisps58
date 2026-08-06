@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.bak
+
+# Active DND gameplay campaigns, chat session logs, and personal memories to prevent git bloat
+Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons/Campaigns/
+Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons/Sessions/
+AI_Nexus/Memories/ChatHistory/Chat_SIM_*
