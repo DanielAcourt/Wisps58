@@ -21,7 +21,8 @@ This file tracks active tickets prioritized for the current iteration. Isolating
 | AD-005d | E2E Dialogue Console Logging | 2 | Done | DevOps | Enable immediate trace logging of the AI's response content in the bridge and client subsystem. | AI response is logged with prefix trace on both Python and C++ consoles. |
 | B-035 | C++ Bio: Universal Gestation & Nesting | 5 | Done | DevOps | Support dragon lifecycle reproduction and egg states in a universal biological module. | Add GestationProgress, bGestationActive, NestSpatiotemporalVolume, and EggFertilityState to USovereignBioComponent C++. |
 | B-038 | C++ Bio: Live Gestation Progression | 3 | Done | DevOps | Advance the internal egg formation cycle during the entity heartbeat without double-ticking component logic. | Integrate GestationProgress incrementing within USovereignBioComponent's metabolism update loop, capping at 100.0f and transitioning EggFertilityState. |
-| B-043 | FJsonObject::Values UE 5.8.1 Compatibility Audit | 3 | In Progress | DevOps | Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values. | Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file. |
+| B-043 | FJsonObject::Values UE 5.8.1 Compatibility Audit | 3 | Done | DevOps | Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values. | Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file. |
+| B-044 | Unreal 5.8.1 Refactor | 3 | Done | DevOps | To implement explicit FString key wrapping in range-based loops over FJsonObject::Values to ensure compiling builds on Unreal 5.8.1+. | SovereignQiComponent.cpp resonance loop refactored with explicit KeyStr wrappers; verified zero compilation warnings/errors under Unreal 5.8.1. |
 
 ---
 
@@ -32,7 +33,6 @@ The following tickets have been prioritized and added to the active backlog queu
 | ID | Task | Complexity | Status | Node | Why (Context) | What (Completion Outcome) |
 |:---|:---|:---:|:---:|:---|:---|:---|
 | B-027 | AAS v1.4.0 Hardening | 3 | Todo | DevOps | Refactor the hardcoded diligence score to dynamically verify backup files on disk. | Diligence score is calculated dynamically based on actual .bak coverage ratios on disk. |
-| B-044 | Unreal 5.8.1 Refactor | 3 | Todo | DevOps | To implement explicit FString key wrapping in range-based loops over FJsonObject::Values to ensure compiling builds on Unreal 5.8.1+. | SovereignQiComponent.cpp resonance loop refactored with explicit KeyStr wrappers; verified zero compilation warnings/errors under Unreal 5.8.1. |
 | AD-008 | Adaptive System Prompt Modulation | 5 | Done | DevOps | Prevent the LLM from snapping back to rigid Knight behavior during roleplay. | System prompt dynamically softens tone and instructs model to write to active paths immediately. |
 | AD-009 | Smart RAG Query Filtering | 3 | Done | DevOps | Prevent irrelevant administrative documents from polluting the creative context. | RAG search is bypassed or restricted if the prompt is purely roleplay/conversational. |
 | AD-010 | Transient Path Memory Anchor | 3 | Done | DevOps | Keep the active file path anchored in the system context to stop repetitive parameter loops. | A last_active_file variable is dynamically tracked and injected into the system prompt. |

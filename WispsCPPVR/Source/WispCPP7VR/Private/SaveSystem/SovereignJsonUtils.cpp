@@ -92,7 +92,9 @@ TMap<FString, FString> USovereignJsonUtils::JsonObjectToMap(TSharedPtr<FJsonObje
         for (auto& Entry : JsonObject->Values)
         {
             // Convert any JSON field back into our "Sovereign" string map
-            OutMap.Add(Entry.Key, Entry.Value->AsString());
+            // Explicitly convert Entry.Key to FString for Unreal 5.8 compatibility
+            FString KeyStr = FString(Entry.Key);
+            OutMap.Add(KeyStr, Entry.Value->AsString());
         }
     }
 
