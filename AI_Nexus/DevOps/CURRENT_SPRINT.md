@@ -32,6 +32,7 @@ The following tickets have been prioritized and added to the active backlog queu
 | ID | Task | Complexity | Status | Node | Why (Context) | What (Completion Outcome) |
 |:---|:---|:---:|:---:|:---|:---|:---|
 | B-027 | AAS v1.4.0 Hardening | 3 | Todo | DevOps | Refactor the hardcoded diligence score to dynamically verify backup files on disk. | Diligence score is calculated dynamically based on actual .bak coverage ratios on disk. |
+| B-044 | Unreal 5.8.1 Refactor | 3 | Todo | DevOps | To implement explicit FString key wrapping in range-based loops over FJsonObject::Values to ensure compiling builds on Unreal 5.8.1+. | SovereignQiComponent.cpp resonance loop refactored with explicit KeyStr wrappers; verified zero compilation warnings/errors under Unreal 5.8.1. |
 | AD-008 | Adaptive System Prompt Modulation | 5 | Done | DevOps | Prevent the LLM from snapping back to rigid Knight behavior during roleplay. | System prompt dynamically softens tone and instructs model to write to active paths immediately. |
 | AD-009 | Smart RAG Query Filtering | 3 | Done | DevOps | Prevent irrelevant administrative documents from polluting the creative context. | RAG search is bypassed or restricted if the prompt is purely roleplay/conversational. |
 | AD-010 | Transient Path Memory Anchor | 3 | Done | DevOps | Keep the active file path anchored in the system context to stop repetitive parameter loops. | A last_active_file variable is dynamically tracked and injected into the system prompt. |

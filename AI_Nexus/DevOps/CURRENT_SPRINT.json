@@ -90,6 +90,15 @@
     "What": "Diligence score is calculated dynamically based on actual .bak coverage ratios on disk."
   },
   {
+    "ID": "B-044",
+    "Task": "Unreal 5.8.1 Refactor",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "To implement explicit FString key wrapping in range-based loops over FJsonObject::Values to ensure compiling builds on Unreal 5.8.1+.",
+    "What": "SovereignQiComponent.cpp resonance loop refactored with explicit KeyStr wrappers; verified zero compilation warnings/errors under Unreal 5.8.1."
+  },
+  {
     "ID": "AD-008",
     "Task": "Adaptive System Prompt Modulation",
     "Complexity": "5",
