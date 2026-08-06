@@ -75,6 +75,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Integration specification detailing offline loopback schema discovery and execution plans.
 *   **UE 5.8.1 MCP Local Training Map:** `AI_Nexus/Research/UE5.8_MCP_Tools_Reference.md`
     *   Offline reference mapping standard Unreal Engine toolsets for dynamic RAG ingestion.
+*   **SWOT Analysis: Claude/Cursor vs. Iron Knight:** `AI_Nexus/Research/SWOT_ClaudeCursor_vs_IronKnight.md`
+    *   Strategic and technical trade-offs between commercial cloud toolsets and offline local safety-gated architectures.
 
 ---
 
