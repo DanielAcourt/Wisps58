@@ -71,6 +71,10 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Technical audit of range-based loop iteration over FJsonObject::Values.
 *   **Lesson Learned: FJsonObject Refactoring:** `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
     *   Standardized explicit conversion pattern to resolve FSharedString compilation errors in UE 5.8+.
+*   **UE 5.8.1 MCP & Local Iron Knight Synergy:** `AI_Nexus/Research/UE5.8_MCP_IronKnight_Synergy.md`
+    *   Integration specification detailing offline loopback schema discovery and execution plans.
+*   **UE 5.8.1 MCP Local Training Map:** `AI_Nexus/Research/UE5.8_MCP_Tools_Reference.md`
+    *   Offline reference mapping standard Unreal Engine toolsets for dynamic RAG ingestion.
 
 ---
 

@@ -232,5 +232,14 @@
     "Node": "DevOps/Research",
     "Why": "Support arbitrary absolute directory indexing outside the project root and automatically eliminate uninitialized relative path warnings.",
     "What": "Update rag.py to handle absolute path configurations for index_dirs and auto-create missing relative directories dynamically."
+  },
+  {
+    "ID": "AD-015",
+    "Task": "5.8.1 MCP Research & Iron Knight Synergy",
+    "Complexity": "3",
+    "Status": "In Progress",
+    "Node": "Research/DevOps",
+    "Why": "Define how our offline local Python bridge/RAG engine can act as a local MCP client to drive the editor directly, keeping all intelligence local and free from commercial cloud-token dependencies.",
+    "What": "Finalize offline loopback integration specification detailing schema discovery, JSON-RPC handling, and RAG contextual grounding."
   }
 ]

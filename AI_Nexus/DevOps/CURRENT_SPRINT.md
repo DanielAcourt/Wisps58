@@ -26,6 +26,7 @@ This file tracks active tickets prioritized for the current iteration. Isolating
 | B-043 | FJsonObject::Values UE 5.8.1 Compatibility Audit | 3 | In Progress | DevOps | Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values. | Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file. |
 | B-043 | FJsonObject::Values UE 5.8.1 Compatibility Audit | 3 | Done | DevOps | Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values. | Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file. |
 | B-044 | Unreal 5.8.1 Refactor | 3 | Done | DevOps | To implement explicit FString key wrapping in range-based loops over FJsonObject::Values to ensure compiling builds on Unreal 5.8.1+. | SovereignQiComponent.cpp resonance loop refactored with explicit KeyStr wrappers; verified zero compilation warnings/errors under Unreal 5.8.1. |
+| AD-015 | 5.8.1 MCP Research & Iron Knight Synergy | 3 | In Progress | Research/DevOps | Define how our offline local Python bridge/RAG engine can act as a local MCP client to drive the editor directly, keeping all intelligence local and free from commercial cloud-token dependencies. | Finalize offline loopback integration specification detailing schema discovery, JSON-RPC handling, and RAG contextual grounding. |
 
 ---
 
