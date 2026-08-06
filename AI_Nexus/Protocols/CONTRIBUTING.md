@@ -212,7 +212,7 @@ This agent intentionally does NOT have access to:
 
 Follow these steps to configure the SaveSystem for development:
 
-1. **Update Unreal Engine** to the latest version (UE5.0.3 or higher)
+1. **Update Unreal Engine** to the latest version (UE 5.8.1 or higher)
 2. **Clone the repository** with all submodules:
    ```bash
    git clone --recurse-submodules <repo_url>

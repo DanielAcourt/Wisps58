@@ -67,6 +67,10 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Definitive terminology for the Sovereign ecosystem.
 *   **Metaphorical Principles:** `AI_Nexus/Research/Metaphors/Principles.md`
     *   Translation of Lead's spatial metaphors into operational rules.
+*   **UE 5.8 Compatibility Analysis:** `AI_Nexus/Research/UE5.8_Compatibility_Analysis_Report.md`
+    *   Technical audit of range-based loop iteration over FJsonObject::Values.
+*   **Lesson Learned: FJsonObject Refactoring:** `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
+    *   Standardized explicit conversion pattern to resolve FSharedString compilation errors in UE 5.8+.
 
 ---
 

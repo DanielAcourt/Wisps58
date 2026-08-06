@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-06-28
+// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.10. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-06
 
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignBrokerInterface.h"
@@ -14,6 +14,15 @@
 USovereignSaveableEntityComponent::USovereignSaveableEntityComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+	UIUpdateThrottleInterval = 0.05f;
+}
+
+void USovereignSaveableEntityComponent::InvalidateStateCache()
+{
+	LastCachedFrame = 0;
+	LastCachedTime = -1.0;
+	CachedFullState.Reset();
+	CachedCategoryStrings.Empty();
 }
 
 void USovereignSaveableEntityComponent::OnRegister()
@@ -123,7 +132,8 @@ void USovereignSaveableEntityComponent::RegisterBroker(TScriptInterface<ISoverei
 		RegisteredBrokers.Add(Broker);
 		UE_LOG(LogTemp, Log, TEXT("Sovereign: Registered Module [%s] to Soul Hub."), *Broker.GetObject()->GetName());
 
-		// Notify listeners that the architecture has changed
+		// Notify listeners that the architecture has changed and invalidate state cache
+		InvalidateStateCache();
 		OnStateChanged.Broadcast(this);
 	}
 }
@@ -133,6 +143,7 @@ void USovereignSaveableEntityComponent::UnregisterBroker(TScriptInterface<ISover
 	if (RegisteredBrokers.Contains(Broker))
 	{
 		RegisteredBrokers.Remove(Broker);
+		InvalidateStateCache();
 		OnStateChanged.Broadcast(this);
 	}
 }
@@ -253,6 +264,7 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 		}
 	}
 
+	InvalidateStateCache();
 	OnStateChanged.Broadcast(this);
 }
 
@@ -280,15 +292,49 @@ void USovereignSaveableEntityComponent::ApplyMetaTags(TMap<FString, FString> Loa
 
 FString USovereignSaveableEntityComponent::GetCategoryStateJson(FString CategoryName)
 {
-	TSharedPtr<FJsonObject> FullState = CaptureFullEntityState();
-	const TSharedPtr<FJsonObject>* CategoryObj;
-
-	if (FullState->TryGetObjectField(CategoryName, CategoryObj))
+	uint64 CurrentFrame = GFrameCounter;
+	double CurrentTime = -1.0;
+	if (UWorld* World = GetWorld())
 	{
-		return SerializeJsonToString(*CategoryObj);
+		CurrentTime = World->GetTimeSeconds();
 	}
 
-	return TEXT("{}");
+	bool bShouldRebuild = false;
+	if (!CachedFullState.IsValid())
+	{
+		bShouldRebuild = true;
+	}
+	else if (CurrentFrame != LastCachedFrame)
+	{
+		// New frame: check if the configured throttle interval has elapsed
+		if (CurrentTime - LastCachedTime >= (double)UIUpdateThrottleInterval)
+		{
+			bShouldRebuild = true;
+		}
+	}
+
+	if (bShouldRebuild)
+	{
+		CachedFullState = CaptureFullEntityState();
+		LastCachedFrame = CurrentFrame;
+		LastCachedTime = CurrentTime;
+		CachedCategoryStrings.Empty();
+	}
+
+	if (FString* CachedStrPtr = CachedCategoryStrings.Find(CategoryName))
+	{
+		return *CachedStrPtr;
+	}
+
+	const TSharedPtr<FJsonObject>* CategoryObj;
+	FString ResultString = TEXT("{}");
+	if (CachedFullState->TryGetObjectField(CategoryName, CategoryObj))
+	{
+		ResultString = SerializeJsonToString(*CategoryObj);
+	}
+
+	CachedCategoryStrings.Add(CategoryName, ResultString);
+	return ResultString;
 }
 
 void USovereignSaveableEntityComponent::AddUnknownTag(FString Key, FString Value)
@@ -312,6 +358,7 @@ void USovereignSaveableEntityComponent::AddUnknownTag(FString Key, FString Value
 		}
 	}
 
+	InvalidateStateCache();
 	OnStateChanged.Broadcast(this);
 }
 

@@ -52,7 +52,6 @@ To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are
 - All new features should be accompanied by automation tests in the `WispCPP7VRTests` module.
 - Gate testing dependencies using `Target.Configuration != UnrealTargetConfiguration.Shipping`.
 
-## ⚠️ UE 5.7 Automation API Changes
-`FAutomationEditorCommonUtils::CreateNewWorld()` and `DisposeWorld()` are **deprecated/removed** in UE 5.7.
-All automation tests must use explicit world context management.
-See `AI_Nexus/Memories/Lesson_Learned_UE5.7_Automation_API.md` for technical implementation details.
+## ⚠️ UE 5.8 & 5.7 Engine API Upgrades
+- **UE 5.7 Automation API Changes**: `FAutomationEditorCommonUtils::CreateNewWorld()` and `DisposeWorld()` are **deprecated/removed** starting in UE 5.7 and remain removed in UE 5.8+. All automation tests must use explicit world context management. See `AI_Nexus/Memories/Lesson_Learned_UE5.7_Automation_API.md` for technical implementation details.
+- **UE 5.8 FJsonObject Refactoring**: Starting in UE 5.8, `FJsonObject::Values` evaluates keys to `FJsonObject::FStringType` (representing `UE::FSharedString` under the hood) instead of `FString`. Range-based loops iterating over `Values` must explicitly convert keys (e.g. `FString KeyStr = FString(Elem.Key);`) before passing them to comparisons, constructors, or function parameters expecting `FString` or raw string pointers. See `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md` for technical implementation details.

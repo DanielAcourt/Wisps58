@@ -18,6 +18,8 @@
 3.  **PSTA Transition (Priority: HIGH)**
     *   [x] Finalize VSS mathematical formalization in Nexus.
     *   [x] Prepare for Phase III: Lidar Intelligence.
+4.  **UE 5.8.1 Compatibility Audit (Priority: HIGH)**
+    *   [ ] In Progress: Audit `FJsonObject::Values` key refactoring and compile lessons learned.
 
 ---
 
@@ -27,6 +29,7 @@
 ---
 
 ### 📝 Task Tracking (Sovereign Board)
+*   [ ] B-043: FJsonObject::Values UE 5.8.1 Compatibility Audit (In Progress)
 *   [x] Execute 07 Protocol (Handshake Verified)
 *   [x] Ingest PSTA Core (Knowledge Drop Complete)
 *   [x] Implement B-001: Actor Synchronization (Digital Twin Bridge)
