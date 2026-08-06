@@ -21,6 +21,7 @@ This file tracks active tickets prioritized for the current iteration. Isolating
 | AD-005d | E2E Dialogue Console Logging | 2 | Done | DevOps | Enable immediate trace logging of the AI's response content in the bridge and client subsystem. | AI response is logged with prefix trace on both Python and C++ consoles. |
 | B-035 | C++ Bio: Universal Gestation & Nesting | 5 | Done | DevOps | Support dragon lifecycle reproduction and egg states in a universal biological module. | Add GestationProgress, bGestationActive, NestSpatiotemporalVolume, and EggFertilityState to USovereignBioComponent C++. |
 | B-038 | C++ Bio: Live Gestation Progression | 3 | Done | DevOps | Advance the internal egg formation cycle during the entity heartbeat without double-ticking component logic. | Integrate GestationProgress incrementing within USovereignBioComponent's metabolism update loop, capping at 100.0f and transitioning EggFertilityState. |
+| B-043 | FJsonObject::Values UE 5.8.1 Compatibility Audit | 3 | In Progress | DevOps | Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values. | Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file. |
 
 ---
 
