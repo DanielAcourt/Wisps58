@@ -21,6 +21,8 @@ This file tracks active tickets prioritized for the current iteration. Isolating
 | AD-005d | E2E Dialogue Console Logging | 2 | Done | DevOps | Enable immediate trace logging of the AI's response content in the bridge and client subsystem. | AI response is logged with prefix trace on both Python and C++ consoles. |
 | B-035 | C++ Bio: Universal Gestation & Nesting | 5 | Done | DevOps | Support dragon lifecycle reproduction and egg states in a universal biological module. | Add GestationProgress, bGestationActive, NestSpatiotemporalVolume, and EggFertilityState to USovereignBioComponent C++. |
 | B-038 | C++ Bio: Live Gestation Progression | 3 | Done | DevOps | Advance the internal egg formation cycle during the entity heartbeat without double-ticking component logic. | Integrate GestationProgress incrementing within USovereignBioComponent's metabolism update loop, capping at 100.0f and transitioning EggFertilityState. |
+| AD-013 | Python 3.14 Asyncio Event Loop Alignment | 2 | In Progress | DevOps | Prevent unittest failures and RuntimeErrors in Python 3.12/3.14 where asyncio.get_event_loop() no longer implicitly creates loop. | Refactor test_unrestricted_roleplay_zone_bypass and test_anti_hallucination_guardrails in test_rag_and_psta.py to use asyncio.run(). |
+| AD-014 | Sovereign RAG Configurable Absolute Path Alignment | 3 | In Progress | DevOps | Support arbitrary absolute directory indexing outside the project root and automatically eliminate uninitialized relative path warnings. | Update rag.py to handle absolute path configurations for index_dirs and auto-create missing relative directories dynamically. |
 
 ---
 

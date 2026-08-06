@@ -249,12 +249,12 @@ class TestSovereignRAGAndPSTA(unittest.TestCase):
         # Protected node should be blocked without active handshake
         import bridge
         bridge.HANDSHAKE_ACTIVE = False
-        loop = asyncio.get_event_loop()
-        protected_result = loop.run_until_complete(bridge_governor.arbitrate(protected_payload))
+        import asyncio
+        protected_result = asyncio.run(bridge_governor.arbitrate(protected_payload))
         self.assertEqual(protected_result["status"], "409_CONFLICT_GATE")
 
         # Roleplay zone should bypass AAS and return 200_OK immediately
-        roleplay_result = loop.run_until_complete(bridge_governor.arbitrate(roleplay_payload))
+        roleplay_result = asyncio.run(bridge_governor.arbitrate(roleplay_payload))
         self.assertEqual(roleplay_result["status"], "200_OK")
         self.assertEqual(roleplay_result["action"], "PROCEED_TO_EXECUTION_ROLEPLAY_BYPASS")
 
@@ -358,8 +358,8 @@ class TestSovereignRAGAndPSTA(unittest.TestCase):
         messages = [{"role": "user", "content": "Please rewrite the INDEX file."}]
         tools = [{"type": "function", "function": {"name": "write_file"}}]
 
-        loop = asyncio.get_event_loop()
-        chat_res = loop.run_until_complete(process_chat_request("llama3.1:latest", messages, tools, persona="Unreal_Simulation"))
+        import asyncio
+        chat_res = asyncio.run(process_chat_request("llama3.1:latest", messages, tools, persona="Unreal_Simulation"))
 
         # Verify that the final response is indeed the corrected one (response_3)
         self.assertIn("BLOCKED", chat_res["result"]["message"]["content"])
