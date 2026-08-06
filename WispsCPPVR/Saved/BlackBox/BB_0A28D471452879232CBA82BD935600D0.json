@@ -1,0 +1,109 @@
+{
+	"Logs": [
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "ElementComponent.Elem.Fire",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "ElementComponent.Elem.Earth",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "ElementComponent.Elem.Wind",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "ElementComponent.Elem.Water",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "ElementComponent.Elem.SlowRes",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.STR",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.DEX",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.CON",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.INT",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.WIS",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.CHA",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.LCK",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.AC",
+			"Value": 10
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.R_PHY",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.R_MAG",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "AttributeComponent.R_MEN",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "QiComponent.Qi.Current",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "QiComponent.Qi.Max",
+			"Value": 100
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "QiComponent.Qi.Purity",
+			"Value": 0.10000000149011612
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "QiComponent.Qi.Total",
+			"Value": 0
+		},
+		{
+			"Timestamp": "2026.06.06-15.45.22",
+			"Key": "QiComponent.Qi.Alignment",
+			"Value": 0
+		}
+	]
+}

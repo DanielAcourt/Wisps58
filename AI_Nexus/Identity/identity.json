@@ -1,0 +1,53 @@
+{
+  "SchemaInfo": {
+    "Name": "Sovereign Entity Identity Schema",
+    "Version": "1.3.1",
+    "Level": 2,
+    "AAS_GlobalAuthority": "AAS Protocol Engine v1.3.0",
+    "Description": "The Single Source of Truth for entity state persistence. This schema defines the structural contract for the USovereignSaveableEntityComponent (The Soul)."
+  },
+  "DataContract": {
+    "GUID": "Unique FGuid string (Primary Identity)",
+    "ParentID": "FGuid of the host/owner (Identity Lineage)",
+    "Class": "Soft Class Path to the Blueprint Vessel",
+    "Transform": "Position|Rotation|Scale (FVector|FRotator|FVector)",
+    "AccessZones": {
+      "Root": "Lead (P:10)",
+      "Staging": "Tactician (P:9)",
+      "Innovation": "Researcher (P:7)",
+      "Sandbox": "Yaz_Student (P:3)"
+    },
+    "PersonaZones": "Config-driven memory folders per persona (SSoT: bridge config.json)",
+    "MetaTags": {
+      "Structure": "TMap<FString, FString>",
+      "Namespaces": {
+        "QiComponent.*": "Consolidated energy and vitality data (Legacy)",
+        "AttributeComponent.*": "Core physical and mental attributes (Legacy)",
+        "MetaNarrative.*": "Lore, roleplay, and benchmarking context (New)",
+        "SovereignQi.Qi.*": "Modern energy/state attributes (Current)",
+        "SovereignAttribute.*": "Modern physical/mental attributes (Current)",
+        "PPC.State.*": "Persistent Possession Controller flags",
+        "Terminal.*": "Interactive terminal state flags",
+        "AAS.Precedence": "Current agent precedence level",
+        "AAS.Persona": "Identifying persona for audit logs",
+        "AAS.Memory.Log.*": "Append-only deterministic logs (Observations, Thoughts, Decisions, Transitions)",
+        "AAS.Memory.Cache.*": "Reflections and derived insights (Immutable cache)"
+      }
+    }
+  },
+  "ArchetypeReference": {
+    "PlayerWisp": {
+      "Class": "/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C",
+      "EssentialTags": ["QiComponent.Qi.Current", "AttributeComponent.STR"]
+    },
+    "VesselCharacter": {
+      "Class": "/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C",
+      "EssentialTags": ["SovereignQi.Qi.Current", "SovereignAttribute.HP"]
+      },
+      "ArchivistTheta": {
+        "Persona": "Archivist_Theta",
+        "Base_Precedence": 5,
+        "EssentialTags": ["MetaNarrative.Structure", "AAS.Persona"]
+    }
+  }
+}

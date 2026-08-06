@@ -1,0 +1,317 @@
+[
+  {
+    "ID": "B-003",
+    "Task": "Lidar Intelligence (Matrix Museum Summoning)",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Realize the 12-year vision of summoning historical artifacts into a spatial office.",
+    "What": "Runtime ingestion and mesh reconstruction of high-fidelity Lidar datasets."
+  },
+  {
+    "ID": "B-004",
+    "Task": "\"Corpse Possession\" State Persistence",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Allow the Wisp to possess and reactivate dead or inactive vessels.",
+    "What": "Possession lifecycle correctly restores state and controls for previously \"dead\" actors."
+  },
+  {
+    "ID": "B-005",
+    "Task": "Qi/Maturity Evolution Milestones",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Track the gamified \"Reflection\" state of entities over long timeframes.",
+    "What": "Milestone system that triggers visual/logical evolution based on persisted Qi/Time."
+  },
+  {
+    "ID": "B-006",
+    "Task": "VR Interaction Polish (Possession Lifecycle)",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Protocols",
+    "Why": "Ensure the core \"Possession\" mechanic is comfortable and intuitive for VR.",
+    "What": "Zero-hitch possession transitions with localized haptic and visual feedback."
+  },
+  {
+    "ID": "B-007",
+    "Task": "Performance Baseline (1000+ Entities)",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Stress-test the USovereignSaveableEntityComponent for massive swarm scenarios.",
+    "What": "Stable 60fps in VR while tracking and saving 1000+ active Sovereign entities."
+  },
+  {
+    "ID": "B-008",
+    "Task": "PSTA C++: N-Bit Topology Matrix",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Harden the T-pillar against single-sensor hardware glitches.",
+    "What": "FPSTACluster implemented to evaluate health based on N sensors with agreement masks."
+  },
+  {
+    "ID": "B-009",
+    "Task": "PSTA C++: Exponential Trust Recovery",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Prevent \"Decision Flapping\" when a sensor returns to nominal range.",
+    "What": "Hysteresis logic that slowly regains trust (Phi) using an exponential recovery curve."
+  },
+  {
+    "ID": "B-010",
+    "Task": "PSTA C++: Risk Velocity (Vi) Detection",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Detect failure before it happens by tracking the speed of health decay.",
+    "What": "High-frequency derivative check (dVSS/dt) that triggers Caution on rapid descent."
+  },
+  {
+    "ID": "B-011",
+    "Task": "PSTA C++: Symmetrical Guard (Severance)",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Provide an autonomous \"Hard-Kill\" if AI intent violates physical reality.",
+    "What": "Kernel-level check that triggers hardware severance when Intent/Truth delta is breached."
+  },
+  {
+    "ID": "B-012",
+    "Task": "Pi Kernel: Headless Safety Node",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Deploy the PSTA safety kernel on external Raspberry Pi hardware.",
+    "What": "C++ PSTA implementation running headlessly on Pi 4 with physical relay control."
+  },
+  {
+    "ID": "B-013",
+    "Task": "Data Bridge: Pi-Unreal Telemetry Link",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Mirror real-world hardware truth in the Unreal reflection.",
+    "What": "UDP/TCP listener subsystem in Unreal ingesting JSON telemetry from the Pi."
+  },
+  {
+    "ID": "B-014",
+    "Task": "Simulation: \"Fish Tank\" Visual Mapping",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Provide a high-fidelity visual representation of Pi-linked key species.",
+    "What": "Dynamic materials and animations in Unreal that reflect live Pi sensor data."
+  },
+  {
+    "ID": "B-015",
+    "Task": "Replay: Time-Dilation scrubbing",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Enable forensic analysis of Black Box logs at various speeds.",
+    "What": "Standardized replay interface for scrubbing through historical PSTA sessions."
+  },
+  {
+    "ID": "R-001",
+    "Task": "PSTA Math: Exponential Trust Hysteresis",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Define the mathematical bounds for trust recovery across all pillars.",
+    "What": "Formalized Phi(t) equations for recovery and failure snapping."
+  },
+  {
+    "ID": "R-002",
+    "Task": "PSTA Math: Disagreement & Conflict Penalties",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Penalize VSS when human intent (A) and machine truth (T) diverge.",
+    "What": "Mathematical definition of the Disagreement Penalty based on A/T vectors."
+  },
+  {
+    "ID": "R-003",
+    "Task": "PSTA Math: Residual Transparency Logging",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Ensure the \"Why\" of every safety decision is auditable.",
+    "What": "Protocol for logging the specific dimension residuals that caused a VSS collapse."
+  },
+  {
+    "ID": "R-004",
+    "Task": "PSTA Math: Multi-Node Consensus (N > 2)",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Extend safety logic to clusters with more than two redundant sensors.",
+    "What": "Generalization of the Operational Cluster Mean formula for N-bit agreement."
+  },
+  {
+    "ID": "R-005",
+    "Task": "PSTA Math: Weighted Epistemic Uncertainty",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Adjust caution thresholds based on how much the system \"doesn't know.\"",
+    "What": "Uncertainty Weight (Uw) formula that shifts safety bounds based on unknown tags."
+  },
+  {
+    "ID": "R-007",
+    "Task": "PSTA Math: Common-Mode Failure Signatures",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Identify when multiple sensors fail for the same underlying reason.",
+    "What": "Pattern recognition logic for detecting correlated cluster failures."
+  },
+  {
+    "ID": "R-008",
+    "Task": "PSTA Math: Kernel-Level Severance Params",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Determine the physical bounds for autonomous AI severance.",
+    "What": "Calculated thresholds for the Symmetrical Guard based on hardware limits."
+  },
+  {
+    "ID": "L-001",
+    "Task": "Legal: Deterministic Safety & Heritage Compliance",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "Admin",
+    "Why": "Ensure the framework meets international safety and heritage standards.",
+    "What": "Whitepaper/Audit document proving the Sovereign Framework's compliance."
+  },
+  {
+    "ID": "AD-005",
+    "Task": "Iron Officer: Spatial Reflection (UE)",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "Admin/DevOps",
+    "Why": "Mirror the Iron Officer persona inside the Unreal simulation.",
+    "What": "High-fidelity 3D agent manifestation responding to live PSTA telemetry."
+  },
+  {
+    "ID": "B-018",
+    "Task": "Lidar: .DLB Ingestion Pipeline",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Stream Lidar data from Museum APIs into the Diagnostic Broker.",
+    "What": "Automated manifestation ingestion mapping \"Unknown\" tags to high-fidelity mesh assets."
+  },
+  {
+    "ID": "B-021",
+    "Task": "Tool: `scope_validation`",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Enable agents to verify external path availability without risking operational stalls.",
+    "What": "Proactive path testing tool with Temporal Dependency Mapping (TDM) and TOS reporting."
+  },
+  {
+    "ID": "B-022",
+    "Task": "Tool: `introspection_schema`",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Provide agents with verifiable structural blueprints of system subsystems.",
+    "What": "Schema retrieval tool with Degradation Forecasting and Failure Mode Simulation (DFS)."
+  },
+  {
+    "ID": "B-023",
+    "Task": "Tool: `cross_protocol_analyzer`",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Facilitate semantic translation between disparate system outputs and standards.",
+    "What": "Semantic mapping engine with Constraint-Optimized Transformation (COTE) matrix."
+  },
+  {
+    "ID": "B-024",
+    "Task": "CFL: Temporal Paradox Mitigation",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Address Ticket #934-Temporal. Prevent logic violations of linear time in the SDK.",
+    "What": "Implement a 'Causality Dampener' component handling temporal gradient differentials."
+  },
+  {
+    "ID": "B-025",
+    "Task": "CFL: Adaptive Field Interpolator",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Address Ticket #102-Dynamic. Handle 'Unknown' abilities on runtime via interpolation.",
+    "What": "Unreal component that reconciles incompatible data streams into emergent VFX/Physics."
+  },
+  {
+    "ID": "B-026",
+    "Task": "AI-to-Unreal Mailbox Polling",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Implement proactive AI chat capabilities using the Mailbox Polling pattern.",
+    "What": "Integration of /v1/unreal/mailbox HTTP loop in USovereignBridgeSubsystem and push_chat tool."
+  },
+  {
+    "ID": "B-027",
+    "Task": "AAS v1.4.0 Hardening",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Refactor the hardcoded diligence score to dynamically verify backup files on disk.",
+    "What": "Diligence score calculates actual .bak coverage ratios dynamically."
+  },
+  {
+    "ID": "B-028",
+    "Task": "C++ Sensor Consensus Integration",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Migrate FSovereignSensorPair and EvaluateBiSymmetry logic into UDiagnosticBroker C++.",
+    "What": "Complete sensor consensus state-space machine evaluating anomalies vs coherent hazards."
+  },
+  {
+    "ID": "AD-005a",
+    "Task": "Spatial Sense: Save State Ingestion",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research/DevOps",
+    "Why": "Ingest the serialized component save packet during `/v1/unreal/chat` calls.",
+    "What": "Map serialized JSON save payloads to the LLM's system context prompt framing."
+  },
+  {
+    "ID": "AD-005b",
+    "Task": "Spatial Sense: Unreal Agent Manifestation",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Create a 3D representation of the Iron Knight agent inside the levels.",
+    "What": "Blueprint actor capable of requesting handshakes and rendering dynamic UI status."
+  },
+  {
+    "ID": "AD-005c",
+    "Task": "Spatial Sense: Paradox Visualizer (AFI)",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Reconcile local state discrepancy reports to drive visual particles.",
+    "What": "Drive material parameters and Niagara particles based on live `ParadoxDensity` ($\\Xi$)."
+  },
+  {
+    "ID": "B-041",
+    "Task": "C++ Bio: Diminished Draconic Beast Fallback",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Penalize premature egg laying or parental death during gestation by regressing the offspring into a lesser beast.",
+    "What": "Implement biological regression resolving early eggs to Wyvern/Pygmy Wyvern classifications with restricted stats and no legendary actions."
+  }
+]
