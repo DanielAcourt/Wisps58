@@ -123,3 +123,68 @@ bool FSovereignBrokerIntegrationTest::RunTest(const FString& Parameters)
     TempActor->Destroy();
     return true;
 }
+
+// ============================================================================
+// SOVEREIGN STATE CACHING & THROTTLING TEST - B-042 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignStateCachingThrottlingTest,
+    "Sovereign.Soul.StateCachingThrottling",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignStateCachingThrottlingTest::RunTest(const FString& Parameters)
+{
+    // 1. Create Soul Component directly
+    USovereignSaveableEntityComponent* Soul = NewObject<USovereignSaveableEntityComponent>();
+    if (!Soul)
+    {
+        AddError(TEXT("Failed to create USovereignSaveableEntityComponent for testing"));
+        return false;
+    }
+
+    // Initialize brokers to populate state
+    Soul->DiagnosticBroker = NewObject<UDiagnosticBroker>(Soul);
+    Soul->RegisterBroker(Soul->DiagnosticBroker);
+
+    // Set a baseline truth value
+    Soul->DiagnosticBroker->SetTruthValue(TEXT("temp_c"), TEXT("20.0"));
+
+    // Set a known throttle interval
+    Soul->UIUpdateThrottleInterval = 0.05f;
+
+    // 2. First query: should capture the state and cache it
+    FString InitialState = Soul->GetCategoryStateJson(TEXT("Sovereign.Truth"));
+    TestTrue(TEXT("Initial state is not empty"), !InitialState.IsEmpty());
+    TestTrue(TEXT("Initial state has truth value"), InitialState.Contains(TEXT("20.0")));
+
+    // 3. Mutate the state directly in the broker (bypassing Soul-level mutators)
+    Soul->DiagnosticBroker->SetTruthValue(TEXT("temp_c"), TEXT("30.0"));
+
+    // 4. Query again in the same frame/time-window
+    // Since we are in the same frame and time has not advanced, it MUST return the cached value (20.0) instead of the new value (30.0).
+    FString CachedState = Soul->GetCategoryStateJson(TEXT("Sovereign.Truth"));
+    TestEqual(TEXT("Same-frame query returns cached state"), CachedState, InitialState);
+    TestTrue(TEXT("Cached state still has old value"), CachedState.Contains(TEXT("20.0")));
+    TestFalse(TEXT("Cached state does not have new value"), CachedState.Contains(TEXT("30.0")));
+
+    // 5. Trigger explicit invalidation
+    Soul->InvalidateStateCache();
+
+    // 6. Query again: should return the updated state (30.0)
+    FString InvalidatedState = Soul->GetCategoryStateJson(TEXT("Sovereign.Truth"));
+    TestNotEqual(TEXT("Invalidated query returns fresh state"), InvalidatedState, InitialState);
+    TestTrue(TEXT("Invalidated state has new value"), InvalidatedState.Contains(TEXT("30.0")));
+
+    // 7. Verify implicit invalidation on Soul-level mutators (e.g. AddUnknownTag)
+    Soul->AddUnknownTag(TEXT("ParadoxTag"), TEXT("Confused"));
+
+    // Changing value in broker again
+    Soul->DiagnosticBroker->SetTruthValue(TEXT("temp_c"), TEXT("40.0"));
+
+    // Since AddUnknownTag calls InvalidateStateCache(), the query MUST return the updated state (40.0)
+    FString MutatedState = Soul->GetCategoryStateJson(TEXT("Sovereign.Truth"));
+    TestTrue(TEXT("Mutation query returns fresh state"), MutatedState.Contains(TEXT("40.0")));
+
+    return true;
+}
