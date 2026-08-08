@@ -1,5 +1,5 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-06-28
-# Sovereign Framework: WispCPP7VR (v36.4.7-Knight-AAS)
+// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
+# Sovereign Framework: WispCPP7VR (v37.0.0-Knight-AAS)
 
 ## 🌌 Overview
 The **Sovereign Framework** (WispCPP7VR) is a high-performance, modular C++ architecture for Unreal Engine designed for immersive VR experiences. It provides a robust foundation for entity possession, data-driven simulations, and real-time environmental telemetry. The framework blends rigorous technical standards with a spiritual, meditative theme centered around "Wisps," "Souls," and "Possession."
@@ -25,8 +25,8 @@ The bridge exposes specialized REST endpoints for real-time simulation synchroni
 The project adheres to a strict **Single Source of Truth (SSoT)** hierarchy, managed within the `AI_Nexus/` directory to ensure alignment between high-level intent and low-level implementation. Refer to the [AI Nexus Master Index](AI_Nexus/INDEX.md) for a complete file map.
 
 *   **Level 0:** [Timeline & Evolution](AI_Nexus/Timeline/MD.md). Tracks the project's historical context and long-term vision.
-*   **Level 1:** [The Rulebook](AI_Nexus/Protocols/Agent_Workflow.md). Standard operating procedures, multi-agent coordination protocols, and architectural constraints.
-*   **Level 2:** [Identity & Internal Logic](AI_Nexus/Identity/IDENTITY.json). Defines the "Current Truth" for every actor in the world via the `USovereignSaveableEntityComponent` (The Soul).
+*   **Level 1:** [The Rulebook](AI_Nexus/Protocols/AGENTS.md). Standard operating procedures, multi-agent coordination protocols, and architectural constraints.
+*   **Level 2:** [Identity & Internal Logic](AI_Nexus/Identity/identity.json). Defines the "Current Truth" for every actor in the world via the `USovereignSaveableEntityComponent` (The Soul).
 
 ---
 
