@@ -61,3 +61,10 @@ To facilitate long-term training and documentation, specific personas are grante
 The system recognizes that creative synthesis (Roleplay/Lore) requires a suspension of certain physical truth requirements.
 - **Rule:** If the `META_NARRATIVE` tag is active or lore-specific keywords are detected, the **Symmetrical Guard** (Hallucination Detection) allows for descriptive internal state and speculative narrative without requiring immediate sensor validation.
 - **Goal:** To provide structure for creative emergence while maintaining hard computational boundaries for system-critical tasks.
+
+### 10. STEAM LIVE-GENERATED AI COMPLIANCE GUARD (AAS v1.4.0)
+To ensure absolute compliance with Steam's distribution policies for Live-Generated AI content (AD-005), the AAS enforces the **Steam Safety Guardrail**:
+- **Prohibition of Adult Only Sexual Content (AOSC):** Live-generation of Adult Only Sexual Content is strictly prohibited under any circumstance.
+- **Deterministic Scribe Censorship (Lexicon Filter):** Pre-generation and post-generation message buffers are subjected to native regex-based safety checks. Any violation immediately triggers a block.
+- **Administrative Symmetrical Severance:** If a dialogue stream bypasses Layer 1 via linguistic masking and is evaluated as out-of-bounds, the **Administrative (A)** pillar health ($D_A$) is forced to `0.0`.
+- **Outcome:** Per the PSTA Bottleneck Law, a $D_A$ of `0.0` collapses the global Vessel Safety Status (VSS) to `0.0`, triggering an immediate **Symmetrical Severance** event. The active possession cycle is severed, forcing the actor into an in-game "Containment Stasis" until the violation state is cleared.
