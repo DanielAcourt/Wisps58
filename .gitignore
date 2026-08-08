@@ -1,41 +1,65 @@
-# Prerequisites
+# Prerequisites & C++ Compiler Artifacts
 *.d
-
-# Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
-
-# Precompiled Headers
 *.gch
 *.pch
-
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
 *.mod
 *.smod
-
-# Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
-
-# Executables
 *.exe
 *.out
 *.app
 
-# Python
+# Python & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
 *.bak
+.env
+.venv/
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==========================================
+# Unreal Engine Specific Ignored Directories
+# ==========================================
+WispsCPPVR/Binaries/
+WispsCPPVR/Intermediate/
+WispsCPPVR/Saved/
+WispsCPPVR/DerivedDataCache/
+WispsCPPVR/Build/
+WispsCPPVR/.vs/
+WispsCPPVR/*.sln
+WispsCPPVR/*.VC.db
+WispsCPPVR/*.opensdf
+WispsCPPVR/*.sdf
+WispsCPPVR/*.suo
+WispsCPPVR/*.filters
+WispsCPPVR/*.user
+WispsCPPVR/*.vbx
+WispsCPPVR/*.pfx
+WispsCPPVR/Plugins/*/Binaries/
+WispsCPPVR/Plugins/*/Intermediate/
+
+# Web Caching, Telemetry, and Crash Logs
+WispsCPPVR/Saved/Logs/
+WispsCPPVR/Saved/Crashes/
+WispsCPPVR/Saved/Config/CrashReportClient/
+WispsCPPVR/Saved/Config/WindowsEditor/
+WispsCPPVR/Saved/Webcache/
+WispsCPPVR/Saved/ShaderDebugInfo/
+WispsCPPVR/Saved/Autosaves/
 
 # Active DND gameplay campaigns, chat session logs, and personal memories to prevent git bloat
 Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons/Campaigns/

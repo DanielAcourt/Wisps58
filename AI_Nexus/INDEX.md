@@ -71,6 +71,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Technical audit of range-based loop iteration over FJsonObject::Values.
 *   **Lesson Learned: FJsonObject Refactoring:** `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
     *   Standardized explicit conversion pattern to resolve FSharedString compilation errors in UE 5.8+.
+*   **External Dependencies & Repository Hygiene SOP:** `AI_Nexus/Research/UE5.8_External_Dependencies_SOP.md`
+    *   Standard operating procedure for externalizing Uassets via Option C (JSON metadata sync) and configuring engine-level plugins.
 
 ---
 
