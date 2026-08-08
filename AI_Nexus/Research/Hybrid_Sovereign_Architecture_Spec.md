@@ -170,4 +170,62 @@ $$\text{Complexity Score } (C_{total}) = C_{files} + C_{depth} + C_{lore}$$
 - Execute a full end-to-end flow: offload a complex C++ test compilation to Jules, return the patch, apply it locally, run `run_automation_tests` via loopback Unreal MCP, and report the final outcome.
 
 ---
-// "Two minds, one SSoT: Local sovereignty, cloud-powered reasoning." [The Researcher] 2026-08-05
+
+## 🛡️ 6. The Manual Cloud Gate & Session Circuit Breaker (Tactical Hardening)
+
+To resolve the **Loop Engineering Vulnerability** (where automated local retry-loops can rapidly drain our 15-session Cloud API quota with Jules), the Tactician mandates a physical, manual circuit breaker within the `SovereignMCPClient` bridge.
+
+```
+       [ Local Task Ingestion ]
+                  |
+                  v
+       (Complexity >= 5.0?)
+                  |
+         +--------+--------+
+         |                 |
+      [ YES ]           [ NO ] ===> Run Locally (RTX 5090 Loop, 100% Free)
+         |
+         v
+  +-------------------------------------------------------------+
+  |              THE MANUAL CLOUD GATE (CLOUD LOCK)             |
+  |  - State: bCloudLockActive = TRUE (Default)                 |
+  |  - Operation: BLOCKED (Raises Local 409_CLOUD_LOCKED)       |
+  +------------------------------+------------------------------+
+                                 |
+                                 | Daniel Inputs: `/authorize_offload <Task_ID>`
+                                 v
+  +-------------------------------------------------------------+
+  |               SINGLE-USE TRANSACTION TOKEN                  |
+  |  - Generates unique, ephemeral OffloadToken                 |
+  |  - State: bCloudLockActive = FALSE (Single Session)         |
+  +------------------------------+------------------------------+
+                                 |
+                                 v
+                    [ Dispatch API Call to Jules ]
+                                 |
+                                 +===> [ Transaction Completes or Times Out ]
+                                 |
+                                 v
+  +-------------------------------------------------------------+
+  |                IMMEDIATE AUTO-RELOCK TRIGGER                |
+  |  - OffloadToken is permanently destroyed                     |
+  |  - State: bCloudLockActive = TRUE (State Restored)          |
+  +-------------------------------------------------------------+
+```
+
+### A. Protocol Specifications
+1. **Default Locked State (`bCloudLockActive = True`):**
+   By default, the Python bridge's `SecureAPITunnel` is in a physically severed state. Any automated request to offload code or context to Jules is immediately intercepted locally. The bridge returns a local `409_CLOUD_LOCKED` message and halts the transaction. No packets are sent, preserving your sessions and token quotas.
+2. **Daniel's Express Authorization Command:**
+   An offload is only allowed if you enter an explicit terminal command:
+   ```bash
+   /authorize_offload <Task_ID>
+   ```
+   This generates a unique, cryptographically random `OffloadToken` bound strictly to that specific `<Task_ID>`.
+3. **The Ephemeral Window:**
+   The bridge temporarily disables the lock *only* for the payload carrying the matching `OffloadToken`. The moment the Jules API gateway receives the payload, executes the reasoning turn, and returns the response, the bridge **immediately destroys the token and reactivates the lock**.
+4. **Autonomous Loop Defense:**
+   If a local compilation, test, or generation fails after receiving Jules' response, the local agent is **blocked from re-querying Jules**. Any retry loop must execute entirely locally on your RTX 5090, or raise another local `409_CLOUD_LOCKED` gate awaiting your manual review. This guarantees that **accidental recursive loops can never leak your cloud sessions**.
+
+---
+// "Dynamic intelligence must be governed by absolute, hardware-locked gates." [The Tactician] 2026-08-05
