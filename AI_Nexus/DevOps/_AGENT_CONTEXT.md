@@ -29,6 +29,8 @@
 ---
 
 ### 📝 Task Tracking (Sovereign Board)
+*   [ ] B-045: Unreal 5.8.1 MCP Server Plugin Integration & Gitignore Security (In Progress)
+*   [ ] B-046: Web Caching & Repository Bloat Elimination Audit (In Progress)
 *   [ ] B-043: FJsonObject::Values UE 5.8.1 Compatibility Audit (In Progress)
 *   [x] Execute 07 Protocol (Handshake Verified)
 *   [x] Ingest PSTA Core (Knowledge Drop Complete)

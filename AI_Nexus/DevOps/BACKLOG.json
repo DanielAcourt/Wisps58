@@ -322,5 +322,23 @@
     "Node": "DevOps",
     "Why": "Prevent massive CPU spikes and memory leaks when running simulations at Realtime (frame-rate) update frequencies.",
     "What": "USovereignSaveableEntityComponent implements GFrameCounter-based caching and configurable time-throttling on GetCategoryStateJson to completely eliminate redundant JSON serialization on Tick."
+  },
+  {
+    "ID": "B-045",
+    "Task": "Unreal 5.8.1 MCP Server Plugin Integration & Gitignore Security",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Keep the MCP Server Plugin registered at engine-level to prevent project and git repository bloat.",
+    "What": "The MCPServer plugin is listed as active in .uproject, and its local files are strictly ignored on git."
+  },
+  {
+    "ID": "B-046",
+    "Task": "Web Caching & Repository Bloat Elimination Audit",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Prevent transient Webcache, log, and crash directories from dynamically inflating repository size.",
+    "What": "Complete .gitignore overhaul targeting transient web, logs, intermediate files, and purging cached objects."
   }
 ]
