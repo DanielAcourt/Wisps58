@@ -15,6 +15,7 @@
       "Root": "Lead (P:10)",
       "Staging": "Tactician (P:9)",
       "Innovation": "Researcher (P:7)",
+      "Philosophy": "Philosopher (P:6)",
       "Sandbox": "Yaz_Student (P:3)"
     },
     "PersonaZones": "Config-driven memory folders per persona (SSoT: bridge config.json)",
@@ -43,11 +44,16 @@
     "VesselCharacter": {
       "Class": "/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C",
       "EssentialTags": ["SovereignQi.Qi.Current", "SovereignAttribute.HP"]
-      },
-      "ArchivistTheta": {
-        "Persona": "Archivist_Theta",
-        "Base_Precedence": 5,
-        "EssentialTags": ["MetaNarrative.Structure", "AAS.Persona"]
+    },
+    "ArchivistTheta": {
+      "Persona": "Archivist_Theta",
+      "Base_Precedence": 5,
+      "EssentialTags": ["MetaNarrative.Structure", "AAS.Persona"]
+    },
+    "JulesPhilosopher": {
+      "Persona": "Jules_Philosopher",
+      "Base_Precedence": 6,
+      "EssentialTags": ["MetaNarrative.Structure", "AAS.Persona"]
     }
   }
 }
