@@ -109,8 +109,13 @@ Your "pool cue" metaphor is the ultimate critique of modern GenAI implementation
 If you feel overwhelmed, return to this basic, low-entropy roadmap to keep the conversation centered and collaborative:
 
 ### Step 1: The Salute (First 10 mins)
-*   Express gratitude for his initiative in connecting.
-*   "Manish, I appreciate you arranging this. I’ve been heads-down building this local infrastructure for years, and your research into **Mind-Metaphors for Co-intelligence** caught my attention because it perfectly matches how we solved our safety architectures."
+*   **The Opener (The Direct Alignment Question):**
+    Before diving into your roadmap, open with a quiet, genuine question of connection. It establishes absolute personal relevance and lets him state his intent first:
+    *   *"Manish, thank you for arranging this. I’ve been heads-down building this local sovereign infrastructure for years. Before we look at the system, I’m genuinely curious: **How did you find me? Why did you decide to connect with me?**"*
+*   **The Tactical Benefit:**
+    This forces him to put his cards on the table immediately. It tells you exactly what caught his eye (your posts, your manifesto, your C++ work) so you know exactly where his curiosity lies, preventing you from having to explain everything from scratch.
+*   **Transition:**
+    "I appreciate your initiative. Your research into **Mind-Metaphors for Co-intelligence** caught my attention because it perfectly matches how we solved our safety architectures at the compiler level."
 
 ### Step 2: Pitching the Paradigm Shift (Next 20 mins)
 *   Present the **Pool Cue Metaphor**.
