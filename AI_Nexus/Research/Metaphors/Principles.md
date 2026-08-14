@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
 # Metaphor-to-Principle Mapping
 
 This document formalizes the Lead's spatial metaphors into actionable engineering and leadership principles.
@@ -33,3 +34,8 @@ This document formalizes the Lead's spatial metaphors into actionable engineerin
 *   **Metaphor:** A roof (The Mission) held up by four distinct pillars: Psychological, Social, Technical, and Administrative.
 *   **Principle:** **Provable Trust.** Mission safety is not a "feeling" or a single sensor reading; it is a mathematical consequence of the stability of all four pillars.
 *   **Technical Application:** Implementation of the PSTA Dimension Health ($D_i$) and the Bottleneck Law within the logic gates of the framework. If one pillar crumbles ($D_i = 0$), the mission is aborted.
+
+## 🎱 7. The Pool Cue Metaphor
+*   **Metaphor:** If you make a high-precision pool cue and use it to beat people over the head rather than playing the game, is it the fault of the tool or the user?
+*   **Principle:** **Symmetrical System Grounding vs. Prompt Hype.** Large Language Models are high-precision, low-entropy cognitive instruments. Beating people over the head with the tool corresponds to expecting raw, ungrounded models to act as self-navigating Oracles (leading to hallucinations and failure loops). Playing the game means anchoring the tool in the hands of the operator within a structured, deterministic system.
+*   **Technical Application:** Implementing the **Symmetrical Guard** and the **Command SOP** (AAS Protocols). The AI is restricted from asserting physical status without executing direct measurement tools first, forcing the model to calculate angles rather than hallucinating outcomes.
