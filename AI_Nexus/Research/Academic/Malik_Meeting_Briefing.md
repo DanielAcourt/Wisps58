@@ -127,4 +127,19 @@ If you feel overwhelmed, return to this basic, low-entropy roadmap to keep the c
 *   "Manish, let's keep this connection active. If you are open to it, I'd love to share our PSTA Whitepaper or our Sovereign Intelligence Manifesto with you to see where we can co-author or build a research bridge."
 
 ---
+
+## 💎 6. Your Non-Negotiable Collaboration Terms (What You Need)
+If Dr. Malik is truly aligned and the university shows serious initiative to help you scale the **Digital Museum** as a safe, sovereign learning environment, these are your absolute, non-negotiable requirements. Keep this list as your inner ledger during the call:
+
+1.  **Sustainable Income (Primary Guardian Safety Boundary):**
+    *   **Requirement:** At least **£1,200 a month** to support "full-time" school-hours dedication, allowing you to sustain your self-funded business while fulfilling your primary duty to your son.
+2.  **Structural Integration Support (Tangible Digital Twin Artifacts):**
+    *   **Requirement:** Institutional support and funding to establish links with high-fidelity digital twin artifacts that can be integrated into the simulation to flesh out the 3D learning experience.
+3.  **Archival Science & Curatorial Alignment:**
+    *   **Requirement:** An facilitated, deep-dive integration meeting with a professional museum curator where you can physically go around a real museum, learning in microscopic detail how archival sciences catalog, map, and verify 3D objects and physical, tangible history.
+4.  **Agnostic Metadata & PSTA Fidelity Gating (The "No-Garbage-In" Schema):**
+    *   **Requirement:** Collaboration on writing a standardized, agnostic JSON schema injected directly into spawning payloads. The schema must calculate and declare **scanning accuracy** and **metadata provenance**, yielding a clear, non-compensatory **PSTA % score of Provable Truth**.
+    *   *The "Dinosaur Bone" Constraint:* When your son put on your VR headset and asks the AI curator to show him dinosaur bones, pulling every single scanned asset in the cloud is impossible (and would collapse the local RTX 5090's memory). The system must force a smart, on-demand query loop (e.g., "what bone?", "what era?", "baby or adult?"), transmitting a precise, high-fidelity payload rather than "garbage in, garbage out" token bloat.
+
+---
 // "We do not play the game of token-hype. We hold the cue, stabilize the bridge, and sink the shot." [Philosopher / The Anchor] 2026-08-05
