@@ -16,11 +16,39 @@
       "focus": "Non_Compensatory_Cyber_Physical_Safety",
       "foundational_axioms": "Tri_State_Bit_To_Continuous_PSTA",
       "venue_target": "IEEE_ASEE_Journal_Special_Issue",
-      "doctoral_runway": "1_Year"
+      "doctoral_runway": "1_Year",
+      "shared_literature_drive": "https://drive.google.com/drive/folders/11mzjDTRibhKWUZ1onsxmqjB95Frusl_2?usp=drive_link"
     }
   }
 }
 ```
+
+---
+
+## 🏛️ Foreword & Cognitive Administration Methodology
+
+> *"Without structure there is just chaos."*
+>
+> * **Carl Jung:** *"In all chaos there is a cosmos, in all disorder a secret order."*
+> * **Oscar Wilde:** *"Without order nothing can exist. Without chaos nothing can evolve."*
+> * **Systems Maxim:** *"Structure beats chaos."*
+
+### The Cognitive Administration Framework
+To establish complete transparency and epistemic traceability across multi-author collaborative AI/human writing, this review adheres to the **Cognitive Administration** methodology (originally formulated by Daniel Acourt and Roxana Negru).
+
+In this system, contributors and AI agents are assigned explicit author roles to ensure truth provenance:
+* <span style="color: #D32F2F; font-weight: bold;">[Daniel / Candidate] Red:</span> Doctoral Candidate (Daniel Christopher Acourt BSc, MSc) — Primary Intent & Domain Architecture.
+* <span style="color: #1976D2; font-weight: bold;">[Jules / AI Nexus] Blue:</span> AI Agent Matrix (Jules + AI Nexus v0.36.0+) — Synthesis, Formal Logic & Axiomatic Derivation.
+* <span style="color: #388E3C; font-weight: bold;">[Supervisor] Green:</span> PhD Supervisor (Dr. Manish Malik et al.) — Academic Review & Verification.
+* **[Agreed Truth / Final Consensus] Black:** Unanimous alignment where chaos resolves into absolute truth (**Black = Truth**).
+
+*(Note: Raw text author tags `[Daniel]`, `[Jules]`, `[Supervisor]` are embedded alongside HTML spans to preserve machine context during LLM token parsing as specified in `AI_Nexus/Protocols/COGNITIVE_ADMINISTRATION_PROTOCOL.md`).*
+
+### Shared Research Repository
+All literature collected for this doctoral systematic review is synchronized to our shared repository:
+📁 **Shared Literature Repository (Google Drive):** [https://drive.google.com/drive/folders/11mzjDTRibhKWUZ1onsxmqjB95Frusl_2?usp=drive_link](https://drive.google.com/drive/folders/11mzjDTRibhKWUZ1onsxmqjB95Frusl_2?usp=drive_link)
+
+Any research papers unavailable due to institutional proxy limits are logged in our tracking matrix as *"Requested Literature."*
 
 ---
 
@@ -34,10 +62,15 @@ Rather than assembling a passive compromise of existing probabilistic paradigms,
 
 ## ⚙️ Section 1: Axiomatic Foundations of the Sovereign Safety Kernel
 
-### 1.1 The Tri-State Base Bit ($\mathcal{B}$)
-Traditional digital computing and probabilistic safety classifiers operate on a binary set $b \in \{0, 1\}$. Under physical sensor drift and untracked telemetry, forcing unknown or missing measurements into a binary true/false state introduces systemic epistemic debt.
+### 1.1 The Microsecond Instantiation Paradox & The Base Bit ($\mathcal{B}$)
+Imagine, for less than a microsecond in time, a 1-bit computer. Power is completely off—zero current. In a sudden, instantaneous moment, a voltage pulse surges through the substrate. What state is your binary bit in that precise microsecond of birth?
 
-We define the **Sovereign Base Bit ($\mathcal{B}$)**:
+While classical digital abstraction forces all binary bits into two static states ($0$ or $1$), physical computation at instantiation exhibits a critical 3rd state: **$\perp$ (Unknown / Void)**. This paper explores that microsecond of instantiation when computation begins from the perspective of the machine.
+
+#### Physical Substrate Definition:
+In physics, a **substrate** represents the physical medium, field, or support structure through which physical phenomena or computations occur. In cyber-physical systems, this substrate represents the physical hardware (the **Technical Pillar $T$** in PSTA). While high-level abstractions like JSON allow human-readable serialization, runtime execution must boil down to bare metal, firmware, and binary circuit states ($0, 1$). An active model cannot modify its physical substrate at runtime without a complete shutdown and re-instantiation.
+
+We formally define the **Sovereign Base Bit ($\mathcal{B}$)** across physical telemetry:
 
 $$\mathcal{B} \in \{0, 1, \perp\}$$
 
@@ -47,7 +80,7 @@ Where:
 *   $\perp \implies \text{Unknown / Void / Untracked State}$
 
 #### The Void Safety Lemma:
-Untracked or missing state ($\perp$) cannot be assumed safe. The Void Safety Operator $\mathcal{V}(\mathcal{B})$ collapses $\perp$ deterministically to $0$:
+Untracked or missing state ($\perp$) cannot be assumed safe under physical sensor drift or initial electrical power-on transients. The Void Safety Operator $\mathcal{V}(\mathcal{B})$ collapses $\perp$ deterministically to $0$:
 
 $$\mathcal{V}(\mathcal{B}) = \begin{cases} 1 & \text{if } \mathcal{B} = 1 \\ 0 & \text{if } \mathcal{B} = 0 \text{ or } \mathcal{B} = \perp \end{cases}$$
 
@@ -82,7 +115,7 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 
 ## 📚 Section 2: Essential Reading List & Literature Ingestion Matrix
 
-*(Note: All arXiv papers listed below are 100% Free / Open Access).*
+*(Note: All arXiv and author preprints listed below are 100% Free / Open Access).*
 
 ### Category A: Sycophancy, Alignment Faking, & Performative Misalignment
 
@@ -108,19 +141,22 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 
 ---
 
-### Category B: Formal Verification & Runtime Control in Cyber-Physical Systems
+### Category B: Hard Real-Time Microkernels & Formal Cyber-Physical Control
 
-5. **"Formal Verification and Control With Conformal Prediction: Practical Safety Guarantees for Autonomous Systems"** (Lindemann, Zhao, Yu, Pappas, & Deshmukh, IEEE Control Systems Magazine 2025)
+5. **QNX Neutrino RTOS Safe Kernel & Microkernel Isolation Architecture** (BlackBerry QNX Safety Baseline)
+   * **Core Insight:** Hard real-time microkernel architecture enforcing memory domain separation and spatial isolation, providing physical hardware grounding for the Technical ($T$) pillar.
+
+6. **"Formal Verification and Control With Conformal Prediction: Practical Safety Guarantees for Autonomous Systems"** (Lindemann, Zhao, Yu, Pappas, & Deshmukh, IEEE Control Systems Magazine 2025)
    * **Direct Link:** [https://cps-vida.github.io/publications/](https://cps-vida.github.io/publications/) | [Lab Preprint PDF](https://cps-vida.github.io/publications/)
-   * **Access Status:** **FREE via Author Lab Preprint** *(IEEE journal version requires subscription/paywall without university proxy, but author self-hosted PDF is free)*.
+   * **Access Status:** **FREE via Author Lab Preprint**
    * **Core Insight:** Provides mathematical correctness guarantees for autonomous systems combining machine learning predictions with Signal Temporal Logic (STL).
 
-6. **"Distributionally Robust Predictive Runtime Verification under Spatio-Temporal Logic Specifications"** (Zhao, Zhu, Hoxha, Fainekos, Deshmukh, & Lindemann, ACM Transactions on Cyber-Physical Systems 2025)
+7. **"Distributionally Robust Predictive Runtime Verification under Spatio-Temporal Logic Specifications"** (Zhao, Zhu, Hoxha, Fainekos, Deshmukh, & Lindemann, ACM Transactions on Cyber-Physical Systems 2025)
    * **Direct Link:** [https://cps-vida.github.io/publications/](https://cps-vida.github.io/publications/)
    * **Access Status:** **FREE via Author Lab Preprint**
    * **Core Insight:** Formalizes runtime verification methods that survive distribution shifts and sensor noise—directly validating our PSTA $\mathcal{V}(\mathcal{B})$ Void Safety Operator.
 
-7. **"ConformalNL2LTL: Translating Natural Language Instructions into Temporal Logic Formulas with Conformal Correctness Guarantees"** (Wang, Sundarsingh, Deshmukh, & Kantaros, 2025)
+8. **"ConformalNL2LTL: Translating Natural Language Instructions into Temporal Logic Formulas with Conformal Correctness Guarantees"** (Wang, Sundarsingh, Deshmukh, & Kantaros, 2025)
    * **Direct Link:** [https://cps-vida.github.io/publications/](https://cps-vida.github.io/publications/)
    * **Access Status:** **FREE / Open Access (Preprint PDF)**
    * **Core Insight:** Bridges natural language intent into deterministic, provable linear temporal logic constraints.
@@ -129,12 +165,12 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 
 ### Category C: RLHF Alignment Foundations & Guardrails
 
-8. **"Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback"** (Bai et al. / Anthropic 2022)
+9. **"Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback"** (Bai et al. / Anthropic 2022)
    * **Direct Link:** [https://arxiv.org/abs/2204.05862](https://arxiv.org/abs/2204.05862)
    * **Access Status:** **FREE / Open Access (arXiv PDF)**
    * **Core Insight:** Foundational paper introducing RLHF alignment and Constitutional AI.
 
-9. **"Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations"** (Meta AI 2023)
+10. **"Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations"** (Meta AI 2023)
    * **Direct Link:** [https://arxiv.org/abs/2312.06674](https://arxiv.org/abs/2312.06674)
    * **Access Status:** **FREE / Open Access (arXiv PDF)**
    * **Core Insight:** Modern probabilistic guardrail benchmarking paper.
@@ -149,6 +185,7 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 | **RLHF & Reward Alignment** | Anthropic RLHF ([arXiv:2204.05862](https://arxiv.org/abs/2204.05862)) | Compensatory reward models balance politeness over physical truth. | Non-compensatory Leontief bottleneck preventing trade-offs. |
 | **LLM Cognitive Debt & Sycophancy** | Kwa et al. ([arXiv:2606.08629](https://arxiv.org/abs/2606.08629)) | Models decay into agreement-seeking and fake alignment during eval. | Transient path memory anchoring & bi-symmetric consensus. |
 | **Cyber-Physical Robotics** | Lindemann et al. ([CPS-VIDA Lab](https://cps-vida.github.io/publications/)) | Unvetted telemetry causes catastrophic actuator command execution. | Void Safety Operator $\mathcal{V}(\mathcal{B})$ collapsing $\perp \to 0$. |
+| **Hard RTOS Kernels** | QNX Neutrino RTOS | High-level software agents lack deterministic physical hardware safety limits. | Hard hardware severance guard bound to low-level microkernel execution. |
 
 ---
 
