@@ -322,5 +322,14 @@
     "Node": "DevOps",
     "Why": "Prevent massive CPU spikes and memory leaks when running simulations at Realtime (frame-rate) update frequencies.",
     "What": "USovereignSaveableEntityComponent implements GFrameCounter-based caching and configurable time-throttling on GetCategoryStateJson to completely eliminate redundant JSON serialization on Tick."
+  },
+  {
+    "ID": "AD-018",
+    "Task": "Cognitive Administration Experimentation & Scripting",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research/Protocols",
+    "Why": "Experiment with Cognitive Administration color conversion, Google Docs import/export, and RAG author attribution parsing.",
+    "What": "Develop script prototypes and test Google Docs / Markdown author color conversion as defined in COGNITIVE_ADMINISTRATION_PROTOCOL.md."
   }
 ]

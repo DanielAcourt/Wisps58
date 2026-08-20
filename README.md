@@ -12,6 +12,14 @@ The `Sovereign_Intelligence/` folder is the administrative and cognitive engine 
 *   **`IronOfficer/bridge.py` (The Bridge):** A local high-performance FastAPI server. It acts as the gatekeeper for system telemetry, AAS (Agency Arbitration Schema) protocol validation, and PSTA (Provable Trust) evaluation.
 *   **`IronOfficer/vessel.py` (The HMI):** A lightweight console chat medium allowing you to communicate directly with the local AI model (using Ollama and Llama3.1) and issue `/report` commands.
 
+### 🏛️ Sovereign Alignment Core
+To ensure absolute epistemic grounding and prevent systemic hallucinations, the bridge enforces two fundamental architectural pillars:
+
+| Principle / Guard | Academic & Systems Lexicon | Operational Manifestation |
+| :--- | :--- | :--- |
+| **The Soul & The Vessel** | *Ontological Decoupling / State Survivability* | We decouple the **Cognitive State (The Soul)** from the **Physical Instance (The Vessel)**. The AI's identity and data contracts survive even if the physical render or hardware node collapses. |
+| **The Symmetrical Guard** | *Epistemic Grounding / Symmetrical Co-inference* | We prevent hallucinations by forcing a **Symmetrical Guard**. The AI cannot make claims about its environment without executing a physical measurement tool first. It grounds 'thinking' in 'doing.' |
+
 ### 🔌 Iron Knight Simulation API
 The bridge exposes specialized REST endpoints for real-time simulation synchronization:
 *   `POST /v1/unreal/checkin`: Performs a 07 Protocol check-in handshake to verify connectivity and initialize the global authority boost.
