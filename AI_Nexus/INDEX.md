@@ -109,6 +109,7 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   **Sovereign Framework Book:** `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
             *   Master monograph and publication blueprint detailing the 12-year research synthesis across the 9-Tier Universal Stack.
     *   **Ingested Literature Directory:** `AI_Nexus/Research/Academic/Literature/`
+        *   `The_Axiom_of_Control_Foundations_of_Sovereignty_The_Sovereign_Controller_Curriculum.md` (Dirk Simon, 2026)
         *   `Co_inference_and_Collaboration_Empowering_Higher_Education_Staff_and_Students.md` (Dr. Manish Malik, 2025)
         *   `Teamwork_Co_Regulation_and_Socially_Shared_Regulation_Skills_within_Engineering_Education_Studies_A_GenAI_Assisted_Scoping_Review.md` (Dr. Manish Malik & Dr. Julie-Ann Sime, 2025)
         *   `Llama_Guard_LLM_based_Input_Output_Safeguard_for_Human_AI_Conversations.md` (Hakan Inan et al. / Meta AI, 2023)
