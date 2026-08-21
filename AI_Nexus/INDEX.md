@@ -109,6 +109,7 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   **Sovereign Framework Book:** `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
             *   Master monograph and publication blueprint detailing the 12-year research synthesis across the 9-Tier Universal Stack.
     *   **Ingested Literature Directory:** `AI_Nexus/Research/Academic/Literature/`
+        *   `Sycophancy_as_a_Multilingual_Alignment_Failure.md` (Arya Shah et al., 2026)
         *   `Right_to_History_A_Sovereignty_Kernel_for_Verifiable_AI_Agent_Execution.md` (Jing Zhang, 2026)
         *   `Emergent_Misalignment_Can_Be_Induced_by_Sycophancy_and_Reversed_via_Alignment_Gating.md` (Sicheng Wang et al., 2026)
         *   `The_Alignment_Floor_How_Persona_Customization_Breaks_Safety_in_Weakly_Aligned_LLMs.md` (Xing Zhang et al., 2026)
