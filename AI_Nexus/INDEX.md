@@ -109,6 +109,7 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   **Sovereign Framework Book:** `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
             *   Master monograph and publication blueprint detailing the 12-year research synthesis across the 9-Tier Universal Stack.
     *   **Ingested Literature Directory:** `AI_Nexus/Research/Academic/Literature/`
+        *   `Distributionally_Robust_Predictive_Runtime_Verification_under_Spatio_Temporal_Logic.md` (Yiqi Zhao et al., 2025)
         *   `A_Systematic_Literature_Review_on_Model_driven_Engineering_for_Cyber_Physical_Systems.md` (Mustafa Abshir Mohamed et al., 2020)
         *   `The_Unfireable_Safety_Kernel_Execution_Time_AI_Alignment_for_AI_Agents.md` (Seth Dobrin & Łukasz Chmiel, 2026)
         *   `Multi_Paradigm_Modeling_for_Cyber_Physical_Systems_A_Systematic_Mapping_Review.md` (Ankica Barišić et al., 2021)
