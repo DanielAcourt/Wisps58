@@ -117,9 +117,11 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 
 *(Note: Ingested paper markdown files are stored in `AI_Nexus/Research/Academic/Literature/`).*
 
-### Historical & Mathematical Baseline Anchor (1960)
+### Historical & Mathematical Baseline Anchors (1960 & 1989)
 * 📁 **R. E. Kalman (1960):** [`A New Approach to Linear Filtering and Prediction Problems`](../Literature/A_New_Approach_to_Linear_Filtering_and_Prediction_Problems.md)
   > <span style="color: #D32F2F; font-weight: bold;">[Daniel / Candidate Baseline Synthesis]:</span> *"Kalman (1960) derived optimal state estimation under continuous Gaussian noise using least-squares averaging. PSTA extends Kalman's state-space formulation to zero-trust cyber-physical systems by replacing compensatory least-squares with the non-compensatory Leontief step-function guard ($\theta_i$) and handling unvetted states ($\perp$) deterministically."*
+* 📁 **John Rushby (1989):** [`Kernelized Safety Architectures`](../Literature/Kernelized_Safety_Architectures.md)
+  > <span style="color: #D32F2F; font-weight: bold;">[Daniel / Candidate Kernelized Safety Synthesis]:</span> *"Rushby (1989) proved that true safety cannot be achieved by trusting high-level software to behave ('positive properties'), but must be enforced at the bare-metal separation kernel level by making unsafe states physically unrepresentable ('negative second-order properties $\forall \alpha \in \text{op}^*: P(\alpha)$'). PSTA applies Rushby's separation kernel model to AI agency via our C++ safety kernel and Agency Arbitration Schema (AAS)."*
 
 ### Ingested Literature Nodes
 * 📁 **Dr. Manish Malik (2025):** [`Co-inference and Collaboration: Empowering Higher Education Staff and Students Through a GenAI Literacy Development Framework Based on Mind-Metaphors`](../Literature/Co_inference_and_Collaboration_Empowering_Higher_Education_Staff_and_Students.md)
