@@ -119,6 +119,7 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 
 ### Ingested Literature Nodes
 * 📁 **Dr. Manish Malik (2025):** [`Co-inference and Collaboration: Empowering Higher Education Staff and Students Through a GenAI Literacy Development Framework Based on Mind-Metaphors`](../Literature/Co_inference_and_Collaboration_Empowering_Higher_Education_Staff_and_Students.md)
+* 📁 **Dr. Manish Malik & Dr. Julie-Ann Sime (2025):** [`Teamwork, Co-Regulation, and Socially Shared Regulation Skills within Engineering Education Studies: A GenAI-Assisted Scoping Review`](../Literature/Teamwork_Co_Regulation_and_Socially_Shared_Regulation_Skills_within_Engineering_Education_Studies_A_GenAI_Assisted_Scoping_Review.md)
 
 ### Category A: Sycophancy, Alignment Faking, & Performative Misalignment
 
