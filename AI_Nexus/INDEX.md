@@ -106,6 +106,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   `AI_Nexus/Research/Academic/Thesis/From_Computational_Instantiation_To_Provable_Truth/`
         *   **PhD Literature Review:** `AI_Nexus/Research/Academic/Thesis/Lit_Review.md`
             *   Doctoral systematic scoping review of non-compensatory PSTA safety and axiomatic derivations for Dr. Manish Malik.
+        *   **PhD Literature Review v2:** `AI_Nexus/Research/Academic/Thesis/PHDLitReview2.md`
+            *   Alternative concise doctoral systematic scoping review node created per candidate specifications.
         *   **Sovereign Framework Book:** `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
             *   Master monograph and publication blueprint detailing the 12-year research synthesis across the 9-Tier Universal Stack.
     *   **Ingested Literature Directory:** `AI_Nexus/Research/Academic/Literature/`
