@@ -115,7 +115,10 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 
 ## 📚 Section 2: Essential Reading List & Literature Ingestion Matrix
 
-*(Note: All arXiv and author preprints listed below are 100% Free / Open Access).*
+*(Note: Ingested paper markdown files are stored in `AI_Nexus/Research/Academic/Literature/`).*
+
+### Ingested Literature Nodes
+* 📁 **Dr. Manish Malik (2025):** [`Co-inference and Collaboration: Empowering Higher Education Staff and Students Through a GenAI Literacy Development Framework Based on Mind-Metaphors`](../Literature/Co_inference_and_Collaboration_Empowering_Higher_Education_Staff_and_Students.md)
 
 ### Category A: Sycophancy, Alignment Faking, & Performative Misalignment
 
