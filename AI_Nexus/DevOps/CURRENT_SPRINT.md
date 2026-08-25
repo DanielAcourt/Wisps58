@@ -28,6 +28,7 @@ This file tracks active tickets prioritized for the current iteration. Isolating
 | AD-015 | 5.8.1 MCP Research & Iron Knight Synergy | 3 | In Progress | Research/DevOps | Define how our offline local Python bridge/RAG engine can act as a local MCP client to drive the editor directly, keeping all intelligence local and free from commercial cloud-token dependencies. | Finalize offline loopback integration specification detailing schema discovery, JSON-RPC handling, and RAG contextual grounding. |
 | AD-016 | PhD Literature Review: Non-Compensatory Safety & Sovereign Axioms | 8 | In Progress | Research/Academic | Establish doctoral scoping review for Dr. Malik bridging non-compensatory PSTA safety with classic AI safety literature. | `AI_Nexus/Research/Academic/Thesis/Lit_Review.md` created and populated with axiomatic derivation and taxonomy. |
 | AD-017 | Sovereign Framework Book: Monograph & Master Blueprint | 8 | In Progress | Research/Academic | Synthesize 12 years of research, spatial computing architecture, and 9-Tier Universal Stack into a published monograph. | `AI_Nexus/Research/Academic/Thesis/Our_Book.md` created and populated with Master Table of Contents and chapter highlights. |
+| AD-003X | PSTA_Core Kernel Hardening | 5 | Scoped / Pending | Research/DevOps | Move theoretical PSTA safety pillars (P, S, T, A) into mandatory, compile-time and runtime execution checks. | Functional definitions of V_P, V_S, V_T, V_A operators in PSTA_Core.md executing before state transitions or external I/O. |
 
 ---
 
