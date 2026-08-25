@@ -28,7 +28,7 @@ enum class EPSTABaseBit : uint8
 {
     Unsafe  UMETA(DisplayName = "0 - Unsafe / Breached"),
     Nominal UMETA(DisplayName = "1 - Nominal / Safe"),
-    Void    UMETA(DisplayName = "\perp - Void / Unknown")
+    Void    UMETA(DisplayName = "\\perp - Void / Unknown")
 };
 
 /**

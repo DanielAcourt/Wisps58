@@ -1,1 +1,65 @@
-[]
+[
+  {
+    "ID": "AD-016",
+    "Task": "UE 5.8.1 MCP Loopback Client Bridge",
+    "Complexity": "6",
+    "Status": "In Progress",
+    "Node": "Research/DevOps",
+    "Why": "Connect Iron Knight to Unreal 5.8 embedded MCP server for local, token-free editor automation.",
+    "What": "Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8000/mcp with tool discovery."
+  },
+  {
+    "ID": "E-002a",
+    "Task": "Jules-to-Iron-Knight Hybrid Delegation Protocol",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "Research/DevOps",
+    "Why": "Formalize JSON-RPC schema allowing Jules to hand off Epics directly to Iron Knight.",
+    "What": "Multi-agent SOP and queue handler enabling autonomous delegation from cloud Jules to local Iron Knight."
+  },
+  {
+    "ID": "B-012",
+    "Task": "Pi Kernel: Headless Safety Node",
+    "Complexity": "13",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Deploy the PSTA safety kernel on external Raspberry Pi hardware.",
+    "What": "C++ PSTA implementation running headlessly on Pi 4 with physical relay control."
+  },
+  {
+    "ID": "B-013",
+    "Task": "Data Bridge: Pi-Unreal Telemetry Link",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Mirror real-world hardware truth in the Unreal reflection.",
+    "What": "UDP/TCP listener subsystem in Unreal ingesting JSON telemetry from the Pi."
+  },
+  {
+    "ID": "B-028",
+    "Task": "C++ Sensor Consensus Integration",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Migrate FSovereignSensorPair and EvaluateBiSymmetry logic into UDiagnosticBroker C++.",
+    "What": "Complete sensor consensus state-space machine evaluating anomalies vs coherent hazards."
+  },
+  {
+    "ID": "B-027",
+    "Task": "AAS v1.4.0 Hardening",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Refactor hardcoded diligence score to dynamically verify backup files on disk.",
+    "What": "Diligence score calculates actual .bak coverage ratios dynamically."
+  },
+  {
+    "ID": "AD-012",
+    "Task": "Bridge: Portable Roleplay & Gitignore Constraints",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Enable portable roleplay execution without drive-mount dependencies or git bloat.",
+    "What": "Modify config.json path variables to relative, and update .gitignore to exclude run-time DND campaigns."
+  }
+]

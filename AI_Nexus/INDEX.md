@@ -54,6 +54,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Hardening standards and verification SOPs for the Soul/Vessel bridge.
 *   **Quick Reference:** `AI_Nexus/Protocols/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
     *   Immediate actions for critical system failures.
+*   **Start Of Sprint Protocol:** `AI_Nexus/Protocols/START_OF_SPRINT_PROTOCOL.md`
+        *   Standardized 5-step workflow for grooming, start date anchoring, Tri-Part Goal Convergence, and backlog ticket ingestion.
 *   **End Of Sprint Protocol:** `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md`
         *   Standardized 5-step workflow for archiving completed sprints and resetting active sprint backlogs to blank slates.
 *   **07 Local Hosting Protocol:** `AI_Nexus/Protocols/07_LOCAL_HOSTING_PROTOCOL.md`
