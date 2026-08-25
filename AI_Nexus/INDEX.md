@@ -14,7 +14,9 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Tracks the project's historical context, long-term vision, and roadmap.
 *   **Updates:** `AI_Nexus/Timeline/Updates.md`
     *   Changelog for major developmental milestones.
-*   **Sprint Reviews:** `AI_Nexus/Timeline/SprintReviews/SR14062026.md`
+*   **Sprint Reviews:**
+    *   `AI_Nexus/Timeline/SprintReviews/SR_20260825.md` (PSTA Core Kernel Hardening & UE 5.8.1 Refactor - 97 Points Delivered)
+    *   `AI_Nexus/Timeline/SprintReviews/SR14062026.md` (Iron Officer Bridge & Soul Mediator Refactor - 101 Points Delivered)
     *   Historical logs and retrospects of development sprints.
 *   **Mission Reports:** `AI_Nexus/Timeline/Mission_Reports/`
     *   The "Black Box" historical record of all Lead/Agent review sessions. Includes:
@@ -52,6 +54,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Hardening standards and verification SOPs for the Soul/Vessel bridge.
 *   **Quick Reference:** `AI_Nexus/Protocols/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
     *   Immediate actions for critical system failures.
+*   **End Of Sprint Protocol:** `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md`
+        *   Standardized 5-step workflow for archiving completed sprints and resetting active sprint backlogs to blank slates.
 *   **07 Local Hosting Protocol:** `AI_Nexus/Protocols/07_LOCAL_HOSTING_PROTOCOL.md`
     *   Standard procedures for starting local servers and bridging pipelines.
 *   **CFL Protocol:** `AI_Nexus/Protocols/CFL_Protocol.md`
