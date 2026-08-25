@@ -189,6 +189,15 @@
     "What": "Whitepaper/Audit document proving the Sovereign Framework's compliance."
   },
   {
+    "ID": "AD-003X",
+    "Task": "PSTA Core Kernel Hardening & Math Formalization",
+    "Complexity": "8",
+    "Status": "Done",
+    "Node": "Research/Thesis",
+    "Why": "Formalize Validation Gates (V_P, V_S, V_T, V_A), Tri-State Base Bits, Leontief Step Guards, and LLM Alignment Velocity for PhD thesis literature review baseline.",
+    "What": "PSTA_Core.md updated with exact validation equations and Lit_Review.md created with Kalman vs PSTA comparison matrix."
+  },
+  {
     "ID": "AD-005",
     "Task": "Iron Officer: Spatial Reflection (UE)",
     "Complexity": "13",

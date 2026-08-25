@@ -102,6 +102,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
 ### **Academic & Theoretical Writing**
 *   **Directory:** `AI_Nexus/Research/Academic/`
     *   High-level white papers, research summaries, and essays for external review.
+    *   **Thesis Literature Review & Baseline Analysis:** `AI_Nexus/Research/Academic/Thesis/Lit_Review.md`
+        *   Doctoral thesis literature review baseline comparing Kalman (1960) linear estimation against PSTA zero-trust non-compensatory step guards and LLM alignment velocity.
     *   **PSTA White Paper:** `AI_Nexus/Research/Academic/PSTA_Whitepaper.md`
         *   Provable Trust framework and epistemic risk models.
     *   **Publishing Strategy & Math Audit:** `AI_Nexus/Research/Academic/Publishing_Strategy_and_Math_Audit.md`

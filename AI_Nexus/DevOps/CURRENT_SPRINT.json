@@ -9,6 +9,15 @@
     "What": "Local RAG or context window management for 12 years of project data."
   },
   {
+    "ID": "AD-003X",
+    "Task": "PSTA Core Kernel Hardening & Math Formalization",
+    "Complexity": "8",
+    "Status": "Done",
+    "Node": "Research/Thesis",
+    "Why": "Formalize Validation Gates (V_P, V_S, V_T, V_A), Tri-State Base Bits, Leontief Step Guards, and LLM Alignment Velocity for PhD thesis literature review baseline.",
+    "What": "PSTA_Core.md updated with exact validation equations and Lit_Review.md created with Kalman vs PSTA comparison matrix."
+  },
+  {
     "ID": "B-016",
     "Task": "Soul: Diagnostic Broker (Truth)",
     "Complexity": "5",
