@@ -228,7 +228,7 @@
     "ID": "AD-013",
     "Task": "Python 3.14 Asyncio Event Loop Alignment",
     "Complexity": "2",
-    "Status": "In Progress",
+    "Status": "Done",
     "Node": "DevOps",
     "Why": "Prevent unittest failures and RuntimeErrors in Python 3.12/3.14 where asyncio.get_event_loop() no longer implicitly creates loop.",
     "What": "Refactor test_unrestricted_roleplay_zone_bypass and test_anti_hallucination_guardrails in test_rag_and_psta.py to use asyncio.run()."
@@ -237,7 +237,7 @@
     "ID": "AD-014",
     "Task": "Sovereign RAG Configurable Absolute Path Alignment",
     "Complexity": "3",
-    "Status": "In Progress",
+    "Status": "Done",
     "Node": "DevOps/Research",
     "Why": "Support arbitrary absolute directory indexing outside the project root and automatically eliminate uninitialized relative path warnings.",
     "What": "Update rag.py to handle absolute path configurations for index_dirs and auto-create missing relative directories dynamically."
@@ -246,7 +246,7 @@
     "ID": "AD-015",
     "Task": "5.8.1 MCP Research & Iron Knight Synergy",
     "Complexity": "3",
-    "Status": "In Progress",
+    "Status": "Done",
     "Node": "Research/DevOps",
     "Why": "Define how our offline local Python bridge/RAG engine can act as a local MCP client to drive the editor directly, keeping all intelligence local and free from commercial cloud-token dependencies.",
     "What": "Finalize offline loopback integration specification detailing schema discovery, JSON-RPC handling, and RAG contextual grounding."
