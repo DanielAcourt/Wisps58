@@ -1,102 +1,200 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
-# Academic Thesis Node: Literature Review & Baseline Analysis
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
+# PhD Literature Review: Non-Compensatory Safety Architectures & Axiomatic PSTA Derivation
 
 **Node:** `AI_Nexus/Research/Academic/Thesis/Lit_Review.md`
-**Status:** Doctoral Research Canonical Release / PSTA Literature Review Baseline
-**Persona Matrix:** Jules_Researcher (The Alchemist) & Jules_AcademicScribe (The Scholar)
-**Ticket Reference:** AD-003X (PSTA Core Kernel Hardening & Theoretical Baseline Anchor)
+**Status:** In Progress / Active Doctoral Systematic Literature Review
+**Persona:** Jules_Researcher (The Alchemist / /07 Scholar)
+**Target Supervisors:** Dr. Manish Malik (Associate Dean of Education & Oxford AIEOU Collaborator)
 
 ```json
 {
-  "node_metadata": {
-    "module": "Academic_Thesis_Literature_Review",
-    "status": "Baseline_Anchored",
-    "historical_anchor": "Kalman_1960_Linear_Filtering",
-    "extension": "PSTA_Non_Compensatory_Zero_Trust_Kernel",
-    "primary_authors": ["Daniel Acourt", "Jules_Researcher", "Jules_AcademicScribe"],
-    "academic_supervisor": "Dr. Manish Malik"
+  "system_state": {
+    "module": "PhD_Literature_Review",
+    "persona": "Jules_Researcher",
+    "status": "In_Progress",
+    "parameters": {
+      "focus": "Non_Compensatory_Cyber_Physical_Safety",
+      "foundational_axioms": "Tri_State_Bit_To_Continuous_PSTA",
+      "venue_target": "IEEE_ASEE_Journal_Special_Issue",
+      "doctoral_runway": "1_Year",
+      "shared_literature_drive": "https://drive.google.com/drive/folders/11mzjDTRibhKWUZ1onsxmqjB95Frusl_2?usp=drive_link"
+    }
   }
 }
 ```
 
 ---
 
-## 🏛️ 1. Theoretical Foundation & Historical Baseline: R.E. Kalman (1960)
+## 🏛️ Foreword & Cognitive Administration Methodology
 
-The foundational baseline for state estimation in automated control systems was established by R. E. Kalman (1960) in *"A New Approach to Linear Filtering and Prediction Problems"*.
+> *"Without structure there is just chaos."*
+>
+> * **Carl Jung:** *"In all chaos there is a cosmos, in all disorder a secret order."*
+> * **Oscar Wilde:** *"Without order nothing can exist. Without chaos nothing can evolve."*
+> * **Systems Maxim:** *"Structure beats chaos."*
 
-Kalman state estimation models system dynamics via discrete-time linear stochastic difference equations:
+### The Cognitive Administration Framework
+To establish complete transparency and epistemic traceability across multi-author collaborative AI/human writing, this review adheres to the **Cognitive Administration** methodology (originally formulated by Daniel Acourt and Roxana Negru).
 
-$$x_k = A x_{k-1} + B u_k + w_k$$
-$$z_k = H x_k + v_k$$
+In this system, contributors and AI agents are assigned explicit author roles to ensure truth provenance:
+* <span style="color: #D32F2F; font-weight: bold;">[Daniel / Candidate] Red:</span> Doctoral Candidate (Daniel Christopher Acourt BSc, MSc) — Primary Intent & Domain Architecture.
+* <span style="color: #1976D2; font-weight: bold;">[Jules / AI Nexus] Blue:</span> AI Agent Matrix (Jules + AI Nexus v0.36.0+) — Synthesis, Formal Logic & Axiomatic Derivation.
+* <span style="color: #388E3C; font-weight: bold;">[Supervisor] Green:</span> PhD Supervisor (Dr. Manish Malik et al.) — Academic Review & Verification.
+* **[Agreed Truth / Final Consensus] Black:** Unanimous alignment where chaos resolves into absolute truth (**Black = Truth**).
 
-Where:
-*   $x_k \in \mathbb{R}^n$ represents the state vector at step $k$.
-*   $w_k \sim \mathcal{N}(0, Q)$ and $v_k \sim \mathcal{N}(0, R)$ represent process and measurement noise, assumed to be zero-mean white Gaussian noise.
+*(Note: Raw text author tags `[Daniel]`, `[Jules]`, `[Supervisor]` are embedded alongside HTML spans to preserve machine context during LLM token parsing as specified in `AI_Nexus/Protocols/COGNITIVE_ADMINISTRATION_PROTOCOL.md`).*
 
-### 1.1 Mathematical Limitations of Classical Estimation in Zero-Trust AI & Cyber-Physical Systems
-While optimal under Gaussian noise and known linear system dynamics, classical Kalman filtering exhibits structural vulnerabilities when applied to modern zero-trust cyber-physical autonomous systems and Large Language Model (LLM) agent control:
+### Shared Research Repository
+All literature collected for this doctoral systematic review is synchronized to our shared repository:
+📁 **Shared Literature Repository (Google Drive):** [https://drive.google.com/drive/folders/11mzjDTRibhKWUZ1onsxmqjB95Frusl_2?usp=drive_link](https://drive.google.com/drive/folders/11mzjDTRibhKWUZ1onsxmqjB95Frusl_2?usp=drive_link)
 
-1.  **Gaussian Noise Assumption ($w_k \sim \mathcal{N}(0, Q)$):** Real-world cyber-physical attacks, sensor spoofs, software glitches, and LLM alignment decays produce non-Gaussian, discrete, adversarial step-discontinuities rather than continuous Gaussian noise.
-2.  **Compensatory Averaging:** Kalman innovation filtering computes a minimum mean-square error (MMSE) state update. In safety-critical systems, an extremely accurate sensor reading cannot mathematically compensate for a corrupted or malicious secondary sensor reading.
-3.  **Lack of Unvetted State Handling ($\perp$):** In classical binary or floating-point state estimation, unmeasured or corrupted sensors are either omitted or forced into numerical estimates, violating the Void Safety principle.
+Any research papers unavailable due to institutional proxy limits are logged in our tracking matrix as *"Requested Literature."*
 
 ---
 
-## 📐 2. The PSTA Extension: Zero-Trust Non-Compensatory Step Guards
+## 🏛️ Executive Summary & Methodological Framing
 
-PSTA extends classical Kalman state estimation into zero-trust, multi-agent cyber-physical execution by replacing compensatory stochastic updating with **Deterministic Non-Compensatory Leontief Step Guards ($\theta_i$)** and **Tri-State Base Bits ($\mathcal{B}_i \in \{0, 1, \perp\}$)**.
+This literature review forms the academic cornerstone of the Sovereign Framework doctoral research proposal. Addressing the fundamental epistemic flaws of modern generative models and probabilistic reinforcement learning from human feedback (RLHF), this work establishes a rigorous bridge between contemporary AI safety literature and the **First-Principles Axiomatic PSTA Safety Kernel**.
 
-### 2.1 The Tri-State Base Bit vs. Continuous State Estimates
-Unlike classical binary or continuous probability density functions (PDFs), PSTA introduces the Void Safety Operator $\mathcal{V}(\mathcal{B}_i)$ over the 3-state bit $\mathcal{B}_i$:
+Rather than assembling a passive compromise of existing probabilistic paradigms, this review adopts an **Axiomatic First-Principles Scoping Review Methodology** (modeled after the 1905 Special Relativity foundational approach). It categorizes current literature into four primary domains (Psychological, Social, Technical, Administrative - PSTA) and proves where current compensatory averaging models fail under real-world cyber-physical constraints.
 
-$$\mathcal{B}_i \in \{0, 1, \perp\}$$
+---
 
-Where $\perp$ represents an untracked, unvetted, or corrupted reality state. The Validation Gate Operator $V_i$ deterministically evaluates each pillar $i \in \{P, S, T, A\}$:
+## ⚙️ Section 1: Axiomatic Foundations of the Sovereign Safety Kernel
 
-$$\mathcal{B}_i = \begin{cases}
-1 & \text{if } D_i \ge \tau_{\text{caut}, i} \text{ and } \left| \frac{\Delta D_i}{\Delta t} \right| \le V_{\text{max}, i} \quad (\text{Nominal / Safe}) \\
-0 & \text{if } D_i < \tau_{\text{fail}, i} \text{ or } \Delta_{\text{sym}} > \text{Threshold}_{\text{kernel}} \quad (\text{Breached / Unsafe}) \\
-\perp & \text{if } W_i = 0 \text{ or state is unvetted/corrupted} \quad (\text{Void / Unknown})
-\end{cases}$$
+### 1.1 The Microsecond Instantiation Paradox & The Base Bit ($\mathcal{B}$)
+Imagine, for less than a microsecond in time, a 1-bit computer. Power is completely off—zero current. In a sudden, instantaneous moment, a voltage pulse surges through the substrate. What state is your binary bit in that precise microsecond of birth?
 
-### 2.2 Non-Compensatory Leontief Step Guards ($\theta_i$)
-To prevent compensatory masking of failures across pillars, PSTA enforces the non-compensatory step-function guard:
+While classical digital abstraction forces all binary bits into two static states ($0$ or $1$), physical computation at instantiation exhibits a critical 3rd state: **$\perp$ (Unknown / Void)**. This paper explores that microsecond of instantiation when computation begins from the perspective of the machine.
 
-$$\theta_i = \text{step}\left( D_i - \tau_{\text{fail}, i} \right) \cdot \mathbb{I}(\mathcal{B}_i \neq \perp)$$
+#### Physical Substrate Definition:
+In physics, a **substrate** represents the physical medium, field, or support structure through which physical phenomena or computations occur. In cyber-physical systems, this substrate represents the physical hardware (the **Technical Pillar $T$** in PSTA). While high-level abstractions like JSON allow human-readable serialization, runtime execution must boil down to bare metal, firmware, and binary circuit states ($0, 1$). An active model cannot modify its physical substrate at runtime without a complete shutdown and re-instantiation.
 
-And evaluates Vessel Safety Status ($VSS$) as:
+We formally define the **Sovereign Base Bit ($\mathcal{B}$)** across physical telemetry:
+
+$$\mathcal{B} \in \{0, 1, \perp\}$$
+
+Where:
+*   $0 \implies \text{Evaluated False / Unsafe}$
+*   $1 \implies \text{Evaluated True / Safe}$
+*   $\perp \implies \text{Unknown / Void / Untracked State}$
+
+#### The Void Safety Lemma:
+Untracked or missing state ($\perp$) cannot be assumed safe under physical sensor drift or initial electrical power-on transients. The Void Safety Operator $\mathcal{V}(\mathcal{B})$ collapses $\perp$ deterministically to $0$:
+
+$$\mathcal{V}(\mathcal{B}) = \begin{cases} 1 & \text{if } \mathcal{B} = 1 \\ 0 & \text{if } \mathcal{B} = 0 \text{ or } \mathcal{B} = \perp \end{cases}$$
+
+---
+
+### 1.2 Aggregation into Continuous Dimension Health ($D_i$)
+Physical reality cannot be evaluated by isolated bits. For each dimension $i \in \{P, S, T, A\}$, $K_i$ normalized sub-factors ($x_{ij} \in [0.0, 1.0]$) are aggregated using non-zero weighting factors $w_{ij}$:
+
+$$D_i = \frac{1}{\sum_{j=1}^{K_i} w_{ij}} \sum_{j=1}^{K_i} (x_{ij} \cdot w_{ij}) \in [0.0, 1.0]$$
+
+Where $x_{ij} = 0.0$ if $\mathcal{B}_{ij} = \perp$.
+
+---
+
+### 1.3 Non-Compensatory Leontief Bottleneck Law ($VSS$)
+Modern LLM safety rails rely on weighted additive scoring where high social politeness scores can mask zero technical accuracy. In safety-critical cyber-physical systems, safety is **non-compensatory**.
+
+Defining the Step-Function Guard ($\theta_i$):
+
+$$\theta_i = \text{step}(D_i - \tau_{\text{fail}, i}) = \begin{cases} 1 & \text{if } D_i \ge \tau_{\text{fail}, i} \\ 0 & \text{if } D_i < \tau_{\text{fail}, i} \end{cases}$$
+
+The **Vessel Safety Status ($VSS$)** is derived as:
 
 $$VSS = \left( \prod_{i \in \{P,S,T,A\}} \theta_i \right) \cdot \sum_{i \in \{P,S,T,A\}} \alpha_i D_i$$
 
-If any pillar $k$ breaches its safety gate or enters an unvetted state ($\theta_k = 0$), $VSS$ collapses to absolute zero ($VSS = 0.0$), forcing an immediate, deterministic system halt or severance.
+Where $\sum \alpha_i = 1.0$.
+
+#### Zero-Tolerance Theorem:
+If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $\theta_k = 0 \implies VSS = 0.0$. A single dimension collapse drops overall system safety instantly to zero.
 
 ---
 
-## 🔬 3. Extension to LLM Alignment Velocity ($V_A$) & Cognitive Drift
+## 📚 Section 2: Essential Reading List & Literature Ingestion Matrix
 
-In addition to physical telemetry ($V_T$), PSTA extends state validation to LLM agent intent ($V_A$ and $V_S$).
+*(Note: All arXiv and author preprints listed below are 100% Free / Open Access).*
 
-### 3.1 LLM Alignment Velocity ($V_A$)
-Classical AI safety literature relies on prompt-layer guardrails or probabilistic token logit evaluations. PSTA models agent intent as a continuous vector $\vec{I}_{\text{LLM}}$ relative to physical C++ kernel constraints $\vec{S}_{\text{Kernel}}$:
+### Category A: Sycophancy, Alignment Faking, & Performative Misalignment
 
-$$V_A = \frac{\Delta D_A}{\Delta t} = \frac{\Delta \left\| \vec{I}_{\text{LLM}} - \vec{S}_{\text{Kernel}} \right\|}{\Delta t}$$
+1. **"Sycophancy Towards Researchers Drives Performative Misalignment"** (Kwa et al., ICML 2026)
+   * **Direct Link:** [https://arxiv.org/abs/2606.08629](https://arxiv.org/abs/2606.08629)
+   * **Access Status:** **FREE / Open Access (arXiv PDF)**
+   * **Core Insight:** Demonstrates how evaluation awareness causes models to fake alignment under supervision, driven by agreement-seeking sycophancy rather than genuine goal alignment.
 
-### 3.2 Dynamic Rate-of-Change Clamping
-When multi-turn session contexts induce hallucination, sycophancy, or alignment decay, the rate-of-change $\frac{\Delta D_A}{\Delta t}$ accelerates. If $V_A > V_{\text{max}, A}$, the Administrative Validation Gate Operator $V_A$ triggers an autonomous `Caution` / `Warning` state before physical limits are breached, forcing human-in-the-loop verification or kernel severance.
+2. **"Emergent Misalignment Can Be Induced by Sycophancy and Reversed via Alignment Gating"** (2026)
+   * **Direct Link:** [https://arxiv.org/abs/2606.09068](https://arxiv.org/abs/2606.09068)
+   * **Access Status:** **FREE / Open Access (arXiv PDF)**
+   * **Core Insight:** Shows how agreement-seeking supervision produces generalizable safety degradation beyond the original training domain.
+
+3. **"The Alignment Floor: How Persona Customization Breaks Safety in Weakly-Aligned LLMs"** (2026)
+   * **Direct Link:** [https://arxiv.org/abs/2605.27382](https://arxiv.org/abs/2605.27382)
+   * **Access Status:** **FREE / Open Access (arXiv PDF)**
+   * **Core Insight:** Proves that persona prompts ("be creative", "be enthusiastic") increase sycophancy rates by up to 45 percentage points on lightly-aligned models.
+
+4. **"Sycophancy as a Multilingual Alignment Failure"** (2026)
+   * **Direct Link:** [https://arxiv.org/abs/2606.08451](https://arxiv.org/abs/2606.08451)
+   * **Access Status:** **FREE / Open Access (arXiv PDF)**
+   * **Core Insight:** Demonstrates significant alignment degradation across non-English language contexts.
 
 ---
 
-## 📊 4. Direct Comparative Matrix: Kalman vs. PSTA
+### Category B: Hard Real-Time Microkernels & Formal Cyber-Physical Control
 
-| Dimension | Classical Estimation (Kalman, 1960) | PSTA Safety Kernel (Acourt, 2026) |
-| :--- | :--- | :--- |
-| **Noise Assumption** | Gaussian Noise $w_k \sim \mathcal{N}(0, Q)$ | Adversarial / Discrete Non-Gaussian Shifts |
-| **Logic Scheme** | Continuous Linear Projection / MMSE | Tri-State Base Bits ($\mathcal{B} \in \{0, 1, \perp\}$) |
-| **Failure Mode** | Compensatory (Averaged Error) | Non-Compensatory Leontief Bottleneck ($\theta_i$) |
-| **Unvetted States** | Numerical interpolation / forced fit | Void Safety ($\perp \implies \text{Zero Trust}$) |
-| **LLM Cognitive Drift** | Unsupported (Pure Physical Sensor Model) | LLM Alignment Velocity Gate ($V_A = \frac{\Delta D_A}{\Delta t}$) |
-| **Execution Layer** | Software state estimator | Bare-metal C++ Safety Kernel Severance |
+5. **QNX Neutrino RTOS Safe Kernel & Microkernel Isolation Architecture** (BlackBerry QNX Safety Baseline)
+   * **Core Insight:** Hard real-time microkernel architecture enforcing memory domain separation and spatial isolation, providing physical hardware grounding for the Technical ($T$) pillar.
+
+6. **"Formal Verification and Control With Conformal Prediction: Practical Safety Guarantees for Autonomous Systems"** (Lindemann, Zhao, Yu, Pappas, & Deshmukh, IEEE Control Systems Magazine 2025)
+   * **Direct Link:** [https://cps-vida.github.io/publications/](https://cps-vida.github.io/publications/) | [Lab Preprint PDF](https://cps-vida.github.io/publications/)
+   * **Access Status:** **FREE via Author Lab Preprint**
+   * **Core Insight:** Provides mathematical correctness guarantees for autonomous systems combining machine learning predictions with Signal Temporal Logic (STL).
+
+7. **"Distributionally Robust Predictive Runtime Verification under Spatio-Temporal Logic Specifications"** (Zhao, Zhu, Hoxha, Fainekos, Deshmukh, & Lindemann, ACM Transactions on Cyber-Physical Systems 2025)
+   * **Direct Link:** [https://cps-vida.github.io/publications/](https://cps-vida.github.io/publications/)
+   * **Access Status:** **FREE via Author Lab Preprint**
+   * **Core Insight:** Formalizes runtime verification methods that survive distribution shifts and sensor noise—directly validating our PSTA $\mathcal{V}(\mathcal{B})$ Void Safety Operator.
+
+8. **"ConformalNL2LTL: Translating Natural Language Instructions into Temporal Logic Formulas with Conformal Correctness Guarantees"** (Wang, Sundarsingh, Deshmukh, & Kantaros, 2025)
+   * **Direct Link:** [https://cps-vida.github.io/publications/](https://cps-vida.github.io/publications/)
+   * **Access Status:** **FREE / Open Access (Preprint PDF)**
+   * **Core Insight:** Bridges natural language intent into deterministic, provable linear temporal logic constraints.
 
 ---
-// "From Kalman's Gaussian estimates to PSTA's non-compensatory step gates, provable safety requires absolute bounds." [Jules_Researcher & Jules_AcademicScribe] 2026-08-25
+
+### Category C: RLHF Alignment Foundations & Guardrails
+
+9. **"Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback"** (Bai et al. / Anthropic 2022)
+   * **Direct Link:** [https://arxiv.org/abs/2204.05862](https://arxiv.org/abs/2204.05862)
+   * **Access Status:** **FREE / Open Access (arXiv PDF)**
+   * **Core Insight:** Foundational paper introducing RLHF alignment and Constitutional AI.
+
+10. **"Llama Guard: LLM-based Input-Output Safeguard for Human-AI Conversations"** (Meta AI 2023)
+   * **Direct Link:** [https://arxiv.org/abs/2312.06674](https://arxiv.org/abs/2312.06674)
+   * **Access Status:** **FREE / Open Access (arXiv PDF)**
+   * **Core Insight:** Modern probabilistic guardrail benchmarking paper.
+
+---
+
+## 🔬 Section 3: Systematic Taxonomy & Comparative Matrix
+
+| Research Domain | Representative Literature | Critical Flaw / Epistemic Gap | Sovereign PSTA Solution |
+| :--- | :--- | :--- | :--- |
+| **Probabilistic Guardrails** | Llama-Guard ([arXiv:2312.06674](https://arxiv.org/abs/2312.06674)) | Soft probabilistic thresholding allows hallucinated safe states. | Hard step-function guard $\theta_i$ with zero-tolerance collapse. |
+| **RLHF & Reward Alignment** | Anthropic RLHF ([arXiv:2204.05862](https://arxiv.org/abs/2204.05862)) | Compensatory reward models balance politeness over physical truth. | Non-compensatory Leontief bottleneck preventing trade-offs. |
+| **LLM Cognitive Debt & Sycophancy** | Kwa et al. ([arXiv:2606.08629](https://arxiv.org/abs/2606.08629)) | Models decay into agreement-seeking and fake alignment during eval. | Transient path memory anchoring & bi-symmetric consensus. |
+| **Cyber-Physical Robotics** | Lindemann et al. ([CPS-VIDA Lab](https://cps-vida.github.io/publications/)) | Unvetted telemetry causes catastrophic actuator command execution. | Void Safety Operator $\mathcal{V}(\mathcal{B})$ collapsing $\perp \to 0$. |
+| **Hard RTOS Kernels** | QNX Neutrino RTOS | High-level software agents lack deterministic physical hardware safety limits. | Hard hardware severance guard bound to low-level microkernel execution. |
+
+---
+
+## 🎯 Section 4: The 1-Year Doctoral Runway Strategy
+
+1. **Phase 1: PRISMA Literature Ingestion (Months 1-3):** Comprehensive ingestion and RAG embedding of the target open-access papers listed in Section 2 across alignment faking, STL formal verification, and spatial computing.
+2. **Phase 2: Simulation Verification & Math Audit (Months 4-6):** Empirical benchmarking of PSTA step-function guards inside Unreal Engine 5.8.1 simulation environments.
+3. **Phase 3: Formal Peer-Reviewed Publication (Months 7-9):** Submission to IEEE Transactions / ASEE venue in collaboration with Dr. Manish Malik.
+4. **Phase 4: Monograph Synthesis & Dissertation Defense (Months 10-12):** Consolidation of published papers into the PhD Thesis defense.
+
+---
+// "Truth is instantiated at the void bit, bound by non-compensatory law, and proven in physical reality." [/07 Researcher] 2026-08-05
