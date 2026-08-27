@@ -60,6 +60,10 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   Standardized 5-step workflow for archiving completed sprints and resetting active sprint backlogs to blank slates.
 *   **07 Local Hosting Protocol:** `AI_Nexus/Protocols/07_LOCAL_HOSTING_PROTOCOL.md`
     *   Standard procedures for starting local servers and bridging pipelines.
+*   **UE 5.8.1 MCP Bridge User Guide:** `AI_Nexus/Docs/10_UE5.8_MCP_Bridge_User_Guide.md`
+    *   Operations guide for the UE 5.8.1 MCP loopback client bridge, port layout, AAS safety gating, and Python client API.
+*   **UE 5.8.1 Python MCP Tools Guide:** `AI_Nexus/Docs/11_UE5.8_Python_MCP_Tools_Operations_Guide.md`
+    *   Operations guide for Python scripting, spawning actor tag automation, PowerShell Invoke-RestMethod REST API commands, and extending editor tools.
 *   **CFL Protocol:** `AI_Nexus/Protocols/CFL_Protocol.md`
     *   Constraint-Free Logic schema and validation.
 *   **Reality Anchor:** `AI_Nexus/Protocols/REALITY_ANCHOR.md`
