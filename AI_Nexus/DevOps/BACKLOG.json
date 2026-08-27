@@ -331,14 +331,5 @@
     "Node": "DevOps",
     "Why": "Prevent massive CPU spikes and memory leaks when running simulations at Realtime (frame-rate) update frequencies.",
     "What": "USovereignSaveableEntityComponent implements GFrameCounter-based caching and configurable time-throttling on GetCategoryStateJson to completely eliminate redundant JSON serialization on Tick."
-  },
-  {
-    "ID": "AD-017",
-    "Task": "UE 5.8.1 Python MCP Tool Registration & Scripting Directory",
-    "Complexity": "5",
-    "Status": "Todo",
-    "Node": "Research/DevOps",
-    "Why": "Create `/Content/Python/` scripting directory and register a live sample tool script exposing editor automation methods to `SovereignMCPClient`.",
-    "What": "`/WispsCPPVR/Content/Python/` created with `init_unreal.py` and `sovereign_mcp_tools.py` registering live editor tools accessible via `GET /v1/mcp/tools`."
   }
 ]
