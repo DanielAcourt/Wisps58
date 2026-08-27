@@ -54,6 +54,9 @@ protected:
 
     /** Internal cache for PSTA health values to track deltas. */
     TMap<EPSTADimension, float> LastDimensionHealth;
+    TMap<EPSTADimension, float> LastDimensionVelocities;
+    TMap<EPSTADimension, EPSTABaseBit> LastDimensionBaseBits;
+    double LastSnapshotTimeSeconds = -1.0;
     float LastVSS = -1.0f;
 
     // Persistent maps to avoid heap churn in RecordTruthSnapshot

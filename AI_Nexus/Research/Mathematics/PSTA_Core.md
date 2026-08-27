@@ -50,16 +50,34 @@ To account for the speed of failure and "Slow-Drift" anomalies, the system utili
 1. The **Tactical Reading** is logged for every sensor to maintain the high-fidelity Black Box "movie."
 2. The **Baseline Conflict** is logged as a discrete event to provide "Provable Reason" for system state changes (e.g., shifting to Caution because the "Calm Sea" baseline is no longer valid).
 
-### 2.4 Vessel Safety Status (VSS)
+### 2.4 Validation Gate Operators ($V_P, V_S, V_T, V_A$) & Tri-State Base Bits
+To harden the PSTA runtime against unvetted states, sensor corruption, or anomalous velocity spikes, each pillar ($i \in \{P, S, T, A\}$) is guarded by a deterministic Validation Gate Operator $V_i$. The validation gate outputs a **Tri-State Base Bit** $\mathcal{B}_i \in \{0, 1, \perp\}$:
+
+$$\mathcal{B}_i = \begin{cases}
+1 & \text{if } D_i \ge \tau_{\text{caut}, i} \text{ and } \left| \frac{\Delta D_i}{\Delta t} \right| \le V_{\text{max}, i} \quad (\text{Nominal / Safe}) \\
+0 & \text{if } D_i < \tau_{\text{fail}, i} \text{ or } \Delta_{\text{sym}} > \text{Threshold}_{\text{kernel}} \quad (\text{Breached / Unsafe}) \\
+\perp & \text{if } W_i = 0 \text{ or state is unvetted/corrupted} \quad (\text{Void / Unknown})
+\end{cases}$$
+
+Where:
+*   $\perp$ (Void/Unknown) enforces **Void Safety**: Untracked or corrupted reality cannot evaluate to binary $1$ or $0$.
+*   $V_{\text{max}, i}$ is the maximum permissible rate of health decay per unit time ($\left|\frac{\Delta D_i}{\Delta t}\right|$).
+
+### 2.5 Non-Compensatory Leontief Step Guards ($\theta_i$) & Vessel Safety Status (VSS)
 The VSS is the final holistic metric that determines if the mission is "Safe." It transitions the system from simple "Provable Safety" (PSS) to a "Non-Compensatory" Unified Safety Logic.
 
-**The Unified Safety Formula (VSS):**
-To ensure that critical failure in any single dimension cannot be "hidden" by success in others, we apply a hard step-function product:
+To prevent high health scores in one dimension from mathematically masking a critical collapse in another, each pillar is mapped to a **Non-Compensatory Leontief Step Guard** ($\theta_i$):
 
-$$VSS = \left( \prod_{i \in \{P,S,T,A\}} \text{step}(D_i - \tau_{fail, i}) \right) \cdot \sum_{i=1}^{n} \alpha_i D_i$$
+$$\theta_i = \text{step}\left( D_i - \tau_{\text{fail}, i} \right) \cdot \mathbb{I}(\mathcal{B}_i \neq \perp)$$
 
-*   **The Kill Switch:** The product term acts as a binary gate. If any $D_i$ falls below its dimension-specific failure threshold $\tau_{fail, i}$, the entire VSS collapses to **0.0**, proving mission failure.
-*   **Non-Compensatory Logic:** Social (S) or Psychological (P) health cannot "average out" a Technical (T) failure.
+Where $\mathbb{I}(\mathcal{B}_i \neq \perp)$ is an indicator function that returns $0$ if the pillar is in an unvetted void state ($\perp$).
+
+**The Hardened Unified Safety Formula (VSS):**
+
+$$VSS = \left( \prod_{i \in \{P,S,T,A\}} \theta_i \right) \cdot \sum_{i \in \{P,S,T,A\}} \alpha_i D_i$$
+
+*   **The Non-Compensatory Kill Switch:** The product term $\prod \theta_i$ acts as a non-negotiable step gate. If any single pillar fails ($\theta_i = 0$), $VSS$ immediately collapses to **0.0**, irrespective of the scalar weighted sum.
+*   **Leontief Production Bound:** Mission safety is strictly bounded by the minimum surviving pillar (the bottleneck). Social (S) or Psychological (P) health cannot "average out" a Technical (T) or Administrative (A) failure.
 
 ---
 
@@ -148,6 +166,13 @@ If the system's **Administrative Intent** (the AI's "opinion" or command) diverg
 
 ### 5.3 Asymmetric Failure Awareness
 If the **Administrative (A)** pillar (Human Intent) and **Technical (T)** pillar (Sensor Truth) disagree beyond a conflict threshold, a **Conflict Penalty** is applied to the final VSS, signaling a breakdown in mission integrity. This ensures that social or psychological health cannot "average out" a fundamental alignment failure.
+
+### 5.4 LLM Alignment Velocity ($V_A$) & Cognitive Drift
+Risk Velocity extends beyond physical hardware telemetry ($V_T$) to the cognitive substrate of LLM agents ($V_A$ and $V_S$).
+
+*   **LLM Cognitive Alignment Velocity ($V_A$):** Measures the rate at which agent intent ($\vec{I}_{\text{LLM}}$) drifts relative to physical safety bounds ($\vec{S}_{\text{Kernel}}$) over multi-turn prompts or extended session contexts:
+    $$V_A = \frac{\Delta D_A}{\Delta t} = \frac{\Delta \left\| \vec{I}_{\text{LLM}} - \vec{S}_{\text{Kernel}} \right\|}{\Delta t}$$
+*   **Alignment Decay Gating:** If $V_A > V_{\text{max}, A}$, the Administrative Validation Gate Operator $V_A$ triggers a `Caution` / `Warning` state before an absolute safety breach occurs. This prevents an ungrounded LLM from executing tools or dispatching commands when its alignment velocity exhibits chaotic drift or sycophantic decay.
 
 ---
 
