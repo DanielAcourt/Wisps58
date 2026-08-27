@@ -20,6 +20,18 @@ enum class EPSTADimension : uint8
 };
 
 /**
+ * @enum EPSTABaseBit
+ * @brief The Tri-State Base Bit (\mathcal{B}_i) representing Unsafe, Nominal, or Void state.
+ */
+UENUM(BlueprintType)
+enum class EPSTABaseBit : uint8
+{
+    Unsafe  UMETA(DisplayName = "0 - Unsafe / Breached"),
+    Nominal UMETA(DisplayName = "1 - Nominal / Safe"),
+    Void    UMETA(DisplayName = "\\perp - Void / Unknown")
+};
+
+/**
  * @struct FPSTATagMapping
  * @brief Maps a Meta-Tag to a dimension and defines its mathematical impact.
  */
@@ -81,6 +93,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PSTA|Thresholds")
     TMap<EPSTADimension, float> DimensionFailureThresholds;
 
+    /** Dimension-specific caution thresholds (tau_caut,i). Requires health >= tau_caut to evaluate Nominal. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PSTA|Thresholds")
+    TMap<EPSTADimension, float> DimensionCautionThresholds;
+
+    /** Dimension-specific maximum risk velocity (V_max,i). Clamps health rate of decay per unit time. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PSTA|Velocity")
+    TMap<EPSTADimension, float> DimensionMaxVelocities;
+
+    /** Symmetrical Guard Kernel Threshold (Threshold_kernel) for E-stop severance triggering. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PSTA|Severance", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+    float KernelSymmetryThreshold = 0.8f;
+
     /** The legacy threshold for the Bottleneck Law (Deprecating in favor of VSS). */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "PSTA|Thresholds", meta = (ClampMin = "0.0", ClampMax = "1.0"))
     float CriticalInstabilityThreshold = 0.3f;
@@ -92,6 +116,12 @@ public:
 
     /** Returns the mapping for a specific tag, or nullptr if not found. (O(1) lookup) */
     const FPSTATagMapping* GetMappingForTag(const FString& TagKey) const;
+
+    /** Evaluates the Tri-State Base Bit (\mathcal{B}_i \in \{0, 1, \perp\}) for a given dimension state. */
+    EPSTABaseBit EvaluateBaseBit(EPSTADimension Dimension, float Di, float RiskVelocity, float SymmetryDelta = 0.0f, bool bIsVetted = true) const;
+
+    /** Evaluates the Non-Compensatory Leontief Step Guard (\theta_i) for a given dimension state. */
+    float EvaluateLeontiefGuard(EPSTADimension Dimension, float Di, EPSTABaseBit BaseBit) const;
 
 #if WITH_EDITOR
     virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

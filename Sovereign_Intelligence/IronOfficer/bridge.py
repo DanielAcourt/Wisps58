@@ -29,6 +29,7 @@ logger = logging.getLogger("AAS.SovereignBridge")
 app = FastAPI(title="Sovereign Iron Officer Bridge")
 
 from rag import SovereignRAG
+from mcp_client import SovereignMCPClient
 
 # --- Configuration ---
 VERSION = "36.4.7-Knight-AAS"
@@ -60,6 +61,7 @@ RAG_INDEX_DIRS = ["AI_Nexus"]
 RAG_IGNORED_DIRS = ["protocols", "devops", "admin", "bridge.py"]
 
 rag_engine = SovereignRAG(REPO_ROOT, chunk_size_words=RAG_CHUNK_SIZE_WORDS)
+mcp_client = SovereignMCPClient(mcp_url="http://127.0.0.1:8000/mcp")
 
 # --- AAS/PSTA Constants ---
 PERSONA_PRECEDENCE = {
@@ -108,7 +110,7 @@ TOOL_MIN_PRECEDENCE = {
 def load_config():
     global OLLAMA_HOST, TARGET_MODEL, BRIDGE_PORT, USER_NAME, READ_ZONES, WRITE_ZONES, ROLEPLAY_ZONES, PERSONA_ZONES, REMOTE_HISTORY_ENABLED, HISTORY_DIR
     global RAG_ENABLED, RAG_ENABLED_ON_STARTUP, RAG_CONTEXT_WEIGHT, RAG_MAX_CHUNKS, RAG_SIM_THRESHOLD, RAG_CHUNK_SIZE_WORDS, RAG_INDEX_DIRS, RAG_IGNORED_DIRS
-    global PERSISTENT_HANDSHAKE
+    global PERSISTENT_HANDSHAKE, mcp_client
     if os.path.exists(CONFIG_PATH):
         try:
             with open(CONFIG_PATH, "r") as f:
@@ -116,10 +118,14 @@ def load_config():
                 ollama_cfg = cfg.get("ollama", {})
                 bridge_cfg = cfg.get("bridge", {})
                 pref_cfg = cfg.get("user_preference", {})
+                mcp_cfg = cfg.get("mcp", {})
 
                 OLLAMA_HOST = f"http://{ollama_cfg.get('host', '127.0.0.1')}:{ollama_cfg.get('port', 11434)}"
                 TARGET_MODEL = ollama_cfg.get("target_model", "llama3.1:latest")
                 BRIDGE_PORT = bridge_cfg.get("port", 8000)
+                mcp_url = mcp_cfg.get("url", "http://127.0.0.1:8001/mcp")
+                if 'mcp_client' in globals():
+                    mcp_client.mcp_url = mcp_url
 
                 READ_ZONES = [os.path.abspath(os.path.join(REPO_ROOT, p)) for p in bridge_cfg.get("read_zones", [])]
                 WRITE_ZONES = [os.path.abspath(os.path.join(REPO_ROOT, p)) for p in bridge_cfg.get("write_zones", [])]
@@ -279,6 +285,11 @@ class UnrealChatRequest(BaseModel):
 class PushChatPayload(BaseModel):
     actor_name: str
     message: str
+
+class MCPCallRequest(BaseModel):
+    tool_name: str
+    tool_args: Dict[str, Any] = Field(default_factory=dict)
+    persona: str = "Iron_Knight"
 
 # --- AAS Bridge Logic ---
 
@@ -959,6 +970,57 @@ async def aas_execute(request: ToolRequest):
     """Directly executes a tool with AAS arbitration."""
     result = await execute_tool(request.command, request.arguments, persona=request.persona)
     return result
+
+# --- Dedicated UE 5.8.1 MCP Loopback Client Endpoints ---
+
+@app.post("/v1/mcp/initialize")
+async def mcp_initialize():
+    """Initializes session with Unreal Engine 5.8 embedded MCP Server over loopback."""
+    result = mcp_client.initialize()
+    return {"status": "200_OK", "result": result}
+
+@app.get("/v1/mcp/tools")
+async def mcp_list_tools():
+    """Discovers active tools in Unreal Engine 5.8, caches schemas, and triggers RAG indexing."""
+    tools = mcp_client.list_tools()
+    if RAG_ENABLED and tools:
+        try:
+            rag_engine.build_index(RAG_INDEX_DIRS)
+        except Exception as exc:
+            logger.error(f"Failed to refresh RAG index on MCP tool discovery: {exc}")
+    return {"status": "200_OK", "count": len(tools), "tools": tools}
+
+@app.post("/v1/mcp/call")
+async def mcp_call_tool(request: MCPCallRequest):
+    """
+    Dispatches a tool call to Unreal Engine 5.8 embedded MCP server.
+    Gated by AAS Bridge Governor and Handshake Boost.
+    """
+    global HANDSHAKE_ACTIVE
+    payload = AgentCommandPayload(
+        persona=request.persona,
+        command=request.tool_name,
+        target_node=f"UNREAL_MCP/{request.tool_name}"
+    )
+
+    arbitration = await bridge_governor.arbitrate(payload)
+    if arbitration["status"] != "200_OK":
+        return arbitration
+
+    vss_score = bridge_governor.calculate_psta_viability(payload)
+
+    try:
+        result = mcp_client.call_tool(
+            tool_name=request.tool_name,
+            tool_args=request.tool_args,
+            vss_score=vss_score,
+            handshake_active=HANDSHAKE_ACTIVE
+        )
+        return {"status": "200_OK", "result": result}
+    except PermissionError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Unreal MCP execution error: {str(exc)}")
 
 # --- Unreal 07 Protocol Endpoints ---
 # // [J] Initialized the 07 Simulation Bridge to bridge the gap between Local Hardware and the Virtual Simulation. 2025-06-18

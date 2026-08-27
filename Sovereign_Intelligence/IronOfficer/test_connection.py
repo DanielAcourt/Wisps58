@@ -8,8 +8,19 @@ between the Vessel, Bridge, and Ollama.
 
 import requests
 import json
+import os
 
-BRIDGE_URL = "http://127.0.0.1:8000"
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
+BRIDGE_PORT = 8050
+if os.path.exists(CONFIG_PATH):
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            cfg = json.load(f)
+            BRIDGE_PORT = cfg.get("bridge", {}).get("port", 8050)
+    except Exception:
+        pass
+
+BRIDGE_URL = f"http://127.0.0.1:{BRIDGE_PORT}"
 
 def test_bridge_health():
     """Checks if the FastAPI bridge is active and reporting identity correctly."""

@@ -1,84 +1,48 @@
 [
   {
-    "ID": "AD-003",
-    "Task": "Iron Officer: Session & Local Memory",
-    "Complexity": "8",
-    "Status": "Done",
-    "Node": "Admin/Research",
-    "Why": "Enable the local AI to ingest the AI_Nexus research directly.",
-    "What": "Local RAG or context window management for 12 years of project data."
-  },
-  {
-    "ID": "B-016",
-    "Task": "Soul: Diagnostic Broker (Truth)",
-    "Complexity": "5",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Implement the raw scientific/historical data layer for Lidar/Museum ingestion.",
-    "What": "UDiagnosticBroker capturing and restoring vetted metadata and raw telemetry."
-  },
-  {
-    "ID": "B-017",
-    "Task": "Soul: Cultivation Broker (Magic)",
-    "Complexity": "5",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Implement the gamified progression layer (Qi/Maturity) as a decoupled module.",
-    "What": "UCultivationBroker managing optional simulation logic without breaking SSoT."
-  },
-  {
-    "ID": "E-001a",
-    "Task": "Epic: Soul \u2013 Dynamic Broker Instantiation",
-    "Complexity": "8",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Automatically instantiate and register UDiagnosticBroker and UCultivationBroker on BeginPlay.",
-    "What": "Dynamic lifecycle complete with safe NewObject creation."
-  },
-  {
-    "ID": "E-001b",
-    "Task": "Epic: Soul \u2013 Domain Namespace Isolation",
-    "Complexity": "5",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Ensure strict separation of \"Sovereign.Truth\" and \"Sovereign.Magic\" save keys.",
-    "What": "Decoupled namespace serialization verified under distinct JSON category keys."
-  },
-  {
-    "ID": "E-001c",
-    "Task": "Epic: Soul \u2013 VSS & Paradox Coupling",
-    "Complexity": "8",
-    "Status": "Done",
+    "ID": "AD-016",
+    "Task": "UE 5.8.1 MCP Loopback Client Bridge",
+    "Complexity": "6",
+    "Status": "Completed",
     "Node": "Research/DevOps",
-    "Why": "Bind Paradox Density and System Confidence to Diagnostic Broker vetting indicators.",
-    "What": "Paradox scaling mapped to truth validation and unvetted telemetry."
+    "Why": "Connect Iron Knight to Unreal 5.8 embedded MCP server for local, token-free editor automation.",
+    "What": "Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8000/mcp with tool discovery."
   },
   {
-    "ID": "B-026",
-    "Task": "AI-to-Unreal Mailbox Polling",
+    "ID": "E-002a",
+    "Task": "Jules-to-Iron-Knight Hybrid Delegation Protocol",
     "Complexity": "8",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Implement proactive AI chat capabilities using the Mailbox Polling pattern.",
-    "What": "Integration of /v1/unreal/mailbox HTTP loop in USovereignBridgeSubsystem and push_chat tool."
-  },
-  {
-    "ID": "AD-005a",
-    "Task": "Spatial Sense: Save State Ingestion",
-    "Complexity": "5",
-    "Status": "Done",
+    "Status": "Todo",
     "Node": "Research/DevOps",
-    "Why": "Map serialized JSON save payloads to the LLM's system context prompt framing.",
-    "What": "Serialized component save packet (Identity, Bio, Qi, etc.) is injected during /v1/unreal/chat calls."
+    "Why": "Formalize JSON-RPC schema allowing Jules to hand off Epics directly to Iron Knight.",
+    "What": "Multi-agent SOP and queue handler enabling autonomous delegation from cloud Jules to local Iron Knight."
   },
   {
-    "ID": "AD-005d",
-    "Task": "E2E Dialogue Console Logging",
-    "Complexity": "2",
-    "Status": "Done",
+    "ID": "B-012",
+    "Task": "Pi Kernel: Headless Safety Node",
+    "Complexity": "13",
+    "Status": "Todo",
     "Node": "DevOps",
-    "Why": "Enable immediate trace logging of the AI's response content in the bridge and client subsystem.",
-    "What": "AI response is logged with prefix trace on both Python and C++ consoles."
+    "Why": "Deploy the PSTA safety kernel on external Raspberry Pi hardware.",
+    "What": "C++ PSTA implementation running headlessly on Pi 4 with physical relay control."
+  },
+  {
+    "ID": "B-013",
+    "Task": "Data Bridge: Pi-Unreal Telemetry Link",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Mirror real-world hardware truth in the Unreal reflection.",
+    "What": "UDP/TCP listener subsystem in Unreal ingesting JSON telemetry from the Pi."
+  },
+  {
+    "ID": "B-028",
+    "Task": "C++ Sensor Consensus Integration",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Migrate FSovereignSensorPair and EvaluateBiSymmetry logic into UDiagnosticBroker C++.",
+    "What": "Complete sensor consensus state-space machine evaluating anomalies vs coherent hazards."
   },
   {
     "ID": "B-027",
@@ -86,80 +50,8 @@
     "Complexity": "3",
     "Status": "Todo",
     "Node": "DevOps",
-    "Why": "Refactor the hardcoded diligence score to dynamically verify backup files on disk.",
-    "What": "Diligence score is calculated dynamically based on actual .bak coverage ratios on disk."
-  },
-  {
-    "ID": "B-044",
-    "Task": "Unreal 5.8.1 Refactor",
-    "Complexity": "3",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "To implement explicit FString key wrapping in range-based loops over FJsonObject::Values to ensure compiling builds on Unreal 5.8.1+.",
-    "What": "SovereignQiComponent.cpp resonance loop refactored with explicit KeyStr wrappers; verified zero compilation warnings/errors under Unreal 5.8.1."
-  },
-  {
-    "ID": "AD-008",
-    "Task": "Adaptive System Prompt Modulation",
-    "Complexity": "5",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Prevent the LLM from snapping back to rigid Knight behavior during roleplay.",
-    "What": "System prompt dynamically softens tone and instructs model to write to active paths immediately."
-  },
-  {
-    "ID": "AD-009",
-    "Task": "Smart RAG Query Filtering",
-    "Complexity": "3",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Prevent irrelevant administrative documents from polluting the creative context.",
-    "What": "RAG search is bypassed or restricted if the prompt is purely roleplay/conversational."
-  },
-  {
-    "ID": "AD-010",
-    "Task": "Transient Path Memory Anchor",
-    "Complexity": "3",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Keep the active file path anchored in the system context to stop repetitive parameter loops.",
-    "What": "A last_active_file variable is dynamically tracked and injected into the system prompt."
-  },
-  {
-    "ID": "AD-011",
-    "Task": "Windows Cross-Drive Endpoint Hardening",
-    "Complexity": "2",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Resolve Windows ValueError crash when calculating relative paths in generate_persona across multiple drive mounts.",
-    "What": "try-except fallback implemented to return absolute path on cross-drive relative failure."
-  },
-  {
-    "ID": "B-035",
-    "Task": "C++ Bio: Universal Gestation & Nesting",
-    "Complexity": "5",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Support dragon lifecycle reproduction and egg states in a universal biological module.",
-    "What": "Add GestationProgress, bGestationActive, NestSpatiotemporalVolume, and EggFertilityState to USovereignBioComponent C++."
-  },
-  {
-    "ID": "B-036",
-    "Task": "C++ Qi: Universal Domains & Runes",
-    "Complexity": "5",
-    "Status": "Todo",
-    "Node": "DevOps",
-    "Why": "Support male territory ownership and rune stone node hierarchies in a universal qi module.",
-    "What": "Add DomainTier, DomainResonanceRadius, and DomainNetworkSaturation properties to USovereignQiComponent C++."
-  },
-  {
-    "ID": "B-037",
-    "Task": "SSoT: Unseen Weave Lore Grounding",
-    "Complexity": "3",
-    "Status": "Todo",
-    "Node": "Research",
-    "Why": "Bake the foundational homebrew rules and dragon subclass metrics into the local RAG database.",
-    "What": "Write Unseen_Weave_Lore.md containing dragon classifications, gestation duration tables, and rune grades."
+    "Why": "Refactor hardcoded diligence score to dynamically verify backup files on disk.",
+    "What": "Diligence score calculates actual .bak coverage ratios dynamically."
   },
   {
     "ID": "AD-012",
@@ -167,77 +59,14 @@
     "Complexity": "3",
     "Status": "Todo",
     "Node": "DevOps",
-    "Why": "Enable portable out-of-the-box roleplay execution without drive-mount dependencies or git bloat.",
-    "What": "Modify config.json path variables to relative, and update .gitignore to exclude run-time DND campaigns/sessions."
+    "Why": "Enable portable roleplay execution without drive-mount dependencies or git bloat.",
+    "What": "Modify config.json path variables to relative, and update .gitignore to exclude run-time DND campaigns."
   },
   {
-    "ID": "B-038",
-    "Task": "C++ Bio: Live Gestation Progression",
-    "Complexity": "3",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Advance the internal egg formation cycle during the entity heartbeat without double-ticking component logic.",
-    "What": "Integrate GestationProgress incrementing within USovereignBioComponent's metabolism update loop, capping at 100.0f and transitioning EggFertilityState."
-  },
-  {
-    "ID": "B-043",
-    "Task": "FJsonObject::Values UE 5.8.1 Compatibility Audit",
-    "Complexity": "3",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "Refactor of FJsonObject in UE 5.8+ uses UE::FSharedString for keys, breaking implicit conversions in range-based for loops over Values.",
-    "What": "Comprehensive audit of all FJsonObject::Values range-based loops completed, verified, and recorded in a new Lesson Learned file."
-  },
-  {
-    "ID": "B-039",
-    "Task": "C++ Bio: Enhanced Gestation & Prestige Condensation",
+    "ID": "AD-017",
+    "Task": "UE 5.8.1 Python MCP Tool Registration & Scripting Directory",
     "Complexity": "5",
-    "Status": "In Progress",
-    "Node": "DevOps",
-    "Why": "Implement the Unseen Weave prestige mechanic where female dragons condense eggs to gain attribute boosts.",
-    "What": "Add EnhancedGestationTier and PrestigeCondensationCount properties to USovereignBioComponent, with methods to shrink Nest volume and multiply duration."
-  },
-  {
-    "ID": "B-040",
-    "Task": "C++ Bio: Progenitor Attribute Imbuement",
-    "Complexity": "5",
-    "Status": "Todo",
-    "Node": "DevOps",
-    "Why": "Allow wyrmlings to inherit superior attributes based on Mother and Father stats stored in the Save Entity.",
-    "What": "Implement attribute copying from parents to egg metadata, granting +1/+2 Ability score modifiers upon hatching."
-  },
-  {
-    "ID": "B-042",
-    "Task": "C++ Bio: Data-Driven Draconic Spawning & Initialization",
-    "Complexity": "5",
-    "Status": "Todo",
-    "Node": "DevOps",
-    "Why": "Enable individual draconic species traits and gestation attributes to be initialized dynamically from Species Data templates.",
-    "What": "Implement InitializeFromSpeciesTemplate in USovereignBioComponent to parse USovereignSpeciesData traits, map DragonType, and override GestationRate with Gestation.BaseRate dynamic attribute."
-  },
-  {
-    "ID": "AD-013",
-    "Task": "Python 3.14 Asyncio Event Loop Alignment",
-    "Complexity": "2",
-    "Status": "In Progress",
-    "Node": "DevOps",
-    "Why": "Prevent unittest failures and RuntimeErrors in Python 3.12/3.14 where asyncio.get_event_loop() no longer implicitly creates loop.",
-    "What": "Refactor test_unrestricted_roleplay_zone_bypass and test_anti_hallucination_guardrails in test_rag_and_psta.py to use asyncio.run()."
-  },
-  {
-    "ID": "AD-014",
-    "Task": "Sovereign RAG Configurable Absolute Path Alignment",
-    "Complexity": "3",
-    "Status": "In Progress",
-    "Node": "DevOps/Research",
-    "Why": "Support arbitrary absolute directory indexing outside the project root and automatically eliminate uninitialized relative path warnings.",
-    "What": "Update rag.py to handle absolute path configurations for index_dirs and auto-create missing relative directories dynamically."
-  },
-  {
-    "ID": "AD-015",
-    "Task": "5.8.1 MCP Research & Iron Knight Synergy",
-    "Complexity": "3",
-    "Status": "In Progress",
+    "Status": "Completed",
     "Node": "Research/DevOps",
     "Why": "Define how our offline local Python bridge/RAG engine can act as a local MCP client to drive the editor directly, keeping all intelligence local and free from commercial cloud-token dependencies.",
     "What": "Finalize offline loopback integration specification detailing schema discovery, JSON-RPC handling, and RAG contextual grounding."

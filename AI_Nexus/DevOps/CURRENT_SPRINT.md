@@ -1,10 +1,14 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
 # Sovereign Framework: CURRENT SPRINT BACKLOG
 
-This file tracks active tickets prioritized for the current iteration. Isolating these tasks optimizes real-time AI context loading and focuses active development.
+**Sprint ID:** `SR_20260922`
+**Start Date:** `25/08/2026`
+**Target End Date:** `22/09/2026` (4-Week Solo Baseline)
+**Planned Capacity:** 46 / 49 Fibonacci Points
 
-> 💡 **Developer Note (Sprint Status):**
-> **All active sprint tasks have been completed and verified!** The dynamic broker lifecycle (B-016, B-017), dynamic soul hub mediator orchestration (E-001a, E-001b, E-001c), and the AI-to-Unreal Mailbox Polling pattern (B-026) are fully operational and verified through C++ automated tests and play-in-editor sessions.
+> 🎯 **Core Sprint Goal:**
+> **"PSTA Hardware Reality & Hybrid Agent Synergy (Iron Knight + Jules + UE 5.8 MCP Loopback)"**
+> Deploy headless Pi hardware safety nodes, bridge physical sensor telemetry into Unreal, and formalize the Jules-to-Iron-Knight local MCP orchestration protocol under Agency Arbitration Schema (AAS) governance.
 
 ## 🏃‍♂️ Active Sprint Tickets
 
@@ -62,5 +66,5 @@ These tickets represent the "DND Implementation" phase, baking the core logic of
 ---
 
 ## 🏛️ Strategic Alignment
-- **Combined Sprint Backlog Load:** **49 Points** (All Completed)
-- **Sprint Goal:** Stabilize the decoupled Sovereign Soul Broker interface, establish dynamic broker instantiation, and enforce strict Truth/Magic domain separation. (100% Achieved)
+- **Active Iteration Load:** **46 Points** (In Progress)
+- **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260825.md` (97 Points Delivered)
