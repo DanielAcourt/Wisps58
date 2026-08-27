@@ -5,20 +5,21 @@ Exposes utility methods for spawning actors and automatically assigning Actor Ta
 """
 import unreal
 
-def spawn_actor_with_tags(class_path: str, location: list = None, rotation: list = None, actor_tags: str = "", gameplay_tags: str = "") -> unreal.Actor:
+def spawn_actor_with_tags(class_path: str = "/Script/Engine.StaticMeshActor", location: list = None, rotation: list = None, actor_tags: str = "", gameplay_tags: str = "", mesh_path: str = "/Engine/BasicShapes/Cube.Cube") -> unreal.Actor:
     """
-    Spawns an actor in the active Editor world and assigns specified Actor Tags and Gameplay Tags.
+    Spawns an actor in the active Editor world, assigns specified Actor Tags and Gameplay Tags,
+    and sets a visible Static Mesh so the actor renders in the 3D viewport.
 
     :param class_path: Asset path or class path (e.g., '/Script/Engine.StaticMeshActor')
     :param location: Spawn location vector [X, Y, Z]
     :param rotation: Spawn rotation rotator [Pitch, Yaw, Roll]
     :param actor_tags: Comma-separated string of Actor tags (e.g., "TagA,TagB") or list
     :param gameplay_tags: Comma-separated string of Gameplay tags (e.g., "Sovereign.Entity,Wisp.Core")
+    :param mesh_path: Static mesh asset path to assign (default: '/Engine/BasicShapes/Cube.Cube')
     :return: Spawned Actor instance or None
     """
     if not class_path:
-        unreal.log_error("SovereignMCP: No class path specified for spawn_actor_with_tags")
-        return None
+        class_path = "/Script/Engine.StaticMeshActor"
 
     actor_class = unreal.load_class(None, class_path)
 
@@ -27,7 +28,7 @@ def spawn_actor_with_tags(class_path: str, location: list = None, rotation: list
         return None
 
     # Convert location vector and rotator safely
-    loc_vec = unreal.Vector(location[0], location[1], location[2]) if location and len(location) >= 3 else unreal.Vector(0.0, 0.0, 0.0)
+    loc_vec = unreal.Vector(location[0], location[1], location[2]) if location and len(location) >= 3 else unreal.Vector(0.0, 0.0, 200.0)
     rot_val = unreal.Rotator(rotation[0], rotation[1], rotation[2]) if rotation and len(rotation) >= 3 else unreal.Rotator(0.0, 0.0, 0.0)
 
     # Spawn actor in current editor world
@@ -35,6 +36,19 @@ def spawn_actor_with_tags(class_path: str, location: list = None, rotation: list
     if not spawned_actor:
         unreal.log_error(f"SovereignMCP: Failed to spawn actor of class '{class_path}'")
         return None
+
+    # Assign Static Mesh asset if spawning StaticMeshActor or actor with static mesh component
+    if mesh_path:
+        mesh_asset = unreal.load_asset(mesh_path)
+        if mesh_asset:
+            if hasattr(spawned_actor, "static_mesh_component") and spawned_actor.static_mesh_component:
+                spawned_actor.static_mesh_component.set_static_mesh(mesh_asset)
+                unreal.log(f"SovereignMCP: Assigned StaticMesh '{mesh_path}' to static_mesh_component")
+            else:
+                sm_comps = spawned_actor.get_components_by_class(unreal.StaticMeshComponent)
+                if sm_comps:
+                    sm_comps[0].set_static_mesh(mesh_asset)
+                    unreal.log(f"SovereignMCP: Assigned StaticMesh '{mesh_path}' to StaticMeshComponent")
 
     # Process Actor Tags
     tag_list = [t.strip() for t in actor_tags.split(",") if t.strip()] if isinstance(actor_tags, str) else actor_tags if isinstance(actor_tags, list) else []
@@ -56,6 +70,13 @@ def spawn_actor_with_tags(class_path: str, location: list = None, rotation: list
                         comp.add_gameplay_tag(unreal.Name(g_tag))
         unreal.log(f"SovereignMCP: Processed Gameplay Tags {g_tag_list} for '{spawned_actor.get_name()}'")
 
+    # Select the spawned actor in World Outliner so it highlights immediately
+    try:
+        unreal.EditorLevelLibrary.set_selected_level_actors([spawned_actor])
+    except Exception:
+        pass
+
+    unreal.log(f"SovereignMCP: Successfully spawned '{spawned_actor.get_name()}' at {loc_vec} with tags {tag_list}")
     return spawned_actor
 
 class SovereignEditorToolLibrary:
