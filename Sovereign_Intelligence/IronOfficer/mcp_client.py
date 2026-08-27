@@ -85,14 +85,18 @@ class SovereignMCPClient:
 
         return tools
 
-    def call_tool(self, tool_name: str, tool_args: Dict[str, Any], vss_score: float = 1.0) -> Dict[str, Any]:
+    def call_tool(self, tool_name: str, tool_args: Dict[str, Any], vss_score: float = 1.0, handshake_active: bool = False) -> Dict[str, Any]:
         """
         Executes a registered Unreal MCP tool gated by AAS VSS safety thresholds.
 
         - Observation / Query Tools: Requires VSS >= 0.4
         - Mutation Tools (Spawn, Transform, Modify): Requires VSS >= 0.7
         - Destructive / Critical Tools (Delete, Force Halt): Requires VSS >= 1.0
+
+        Handshake Active applies a +0.5 boost to the effective VSS score (clamped to 1.0 max).
         """
+        effective_vss = min(1.0, vss_score + 0.5) if handshake_active else vss_score
+
         # AAS Risk Classification
         required_vss = 0.4
         is_mutation = any(kw in tool_name.lower() for kw in ["spawn", "transform", "set", "modify", "override"])
@@ -103,12 +107,12 @@ class SovereignMCPClient:
         elif is_mutation:
             required_vss = 0.7
 
-        if vss_score < required_vss:
-            error_msg = f"409 CONFLICT GATE: Tool '{tool_name}' requires VSS >= {required_vss:.2f}, but current VSS is {vss_score:.2f}."
+        if effective_vss < required_vss:
+            error_msg = f"409 CONFLICT GATE: Tool '{tool_name}' requires VSS >= {required_vss:.2f}, but current VSS is {effective_vss:.2f} (raw: {vss_score:.2f}, handshake_active: {handshake_active})."
             logger.critical(error_msg)
             raise PermissionError(error_msg)
 
-        logger.info(f"Dispatching MCP tool call '{tool_name}' (VSS {vss_score:.2f} >= required {required_vss:.2f})...")
+        logger.info(f"Dispatching MCP tool call '{tool_name}' (Effective VSS {effective_vss:.2f} >= required {required_vss:.2f}, Handshake Boost: {handshake_active})...")
         return self.send_jsonrpc("tools/call", {
             "name": tool_name,
             "arguments": tool_args
