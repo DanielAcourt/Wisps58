@@ -9,6 +9,15 @@
     "What": "Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8000/mcp with tool discovery."
   },
   {
+    "ID": "AD-017",
+    "Task": "UE 5.8.1 Python MCP Tool Registration & Scripting Directory",
+    "Complexity": "5",
+    "Status": "Completed",
+    "Node": "Research/DevOps",
+    "Why": "Create `/Content/Python/` scripting directory and register a live sample tool script exposing editor automation methods to `SovereignMCPClient`.",
+    "What": "`/WispsCPPVR/Content/Python/` created with `init_unreal.py` and `sovereign_mcp_tools.py` registering live editor tools accessible via `GET /v1/mcp/tools`."
+  },
+  {
     "ID": "E-002a",
     "Task": "Jules-to-Iron-Knight Hybrid Delegation Protocol",
     "Complexity": "8",
@@ -63,39 +72,48 @@
     "What": "Modify config.json path variables to relative, and update .gitignore to exclude run-time DND campaigns."
   },
   {
-    "ID": "AD-017",
-    "Task": "UE 5.8.1 Python MCP Tool Registration & Scripting Directory",
+    "ID": "B-039",
+    "Task": "C++ Bio: Enhanced Gestation & Prestige Condensation",
     "Complexity": "5",
-    "Status": "Completed",
-    "Node": "Research/DevOps",
-    "Why": "Define how our offline local Python bridge/RAG engine can act as a local MCP client to drive the editor directly, keeping all intelligence local and free from commercial cloud-token dependencies.",
-    "What": "Finalize offline loopback integration specification detailing schema discovery, JSON-RPC handling, and RAG contextual grounding."
-  },
-  {
-    "ID": "AD-016",
-    "Task": "PhD Literature Review: Non-Compensatory Safety & Sovereign Axioms",
-    "Complexity": "8",
     "Status": "In Progress",
-    "Node": "Research/Academic",
-    "Why": "Establish doctoral scoping review for Dr. Malik bridging non-compensatory PSTA safety with classic AI safety literature.",
-    "What": "AI_Nexus/Research/Academic/Thesis/Lit_Review.md created and populated with axiomatic derivation and taxonomy."
+    "Node": "DevOps",
+    "Why": "Implement the Unseen Weave prestige mechanic where female dragons condense eggs to gain attribute boosts.",
+    "What": "Add EnhancedGestationTier and PrestigeCondensationCount properties to USovereignBioComponent, with methods to shrink Nest volume and multiply duration."
   },
   {
-    "ID": "AD-017",
-    "Task": "Sovereign Framework Book: Monograph & Master Blueprint",
-    "Complexity": "8",
-    "Status": "In Progress",
-    "Node": "Research/Academic",
-    "Why": "Synthesize 12 years of research, spatial computing architecture, and 9-Tier Universal Stack into a published monograph.",
-    "What": "AI_Nexus/Research/Academic/Thesis/Our_Book.md created and populated with Master Table of Contents and chapter highlights."
-  },
-  {
-    "ID": "AD-003X",
-    "Task": "PSTA_Core Kernel Hardening",
+    "ID": "B-040",
+    "Task": "C++ Bio: Progenitor Attribute Imbuement",
     "Complexity": "5",
-    "Status": "Scoped / Pending",
-    "Node": "Research/DevOps",
-    "Why": "Move theoretical PSTA safety pillars (P, S, T, A) into mandatory, compile-time and runtime execution checks.",
-    "What": "Functional definitions of V_P, V_S, V_T, V_A operators in PSTA_Core.md executing before state transitions or external I/O."
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Allow wyrmlings to inherit superior attributes based on Mother and Father stats stored in the Save Entity.",
+    "What": "Implement attribute copying from parents to egg metadata, granting +1/+2 Ability score modifiers upon hatching."
+  },
+  {
+    "ID": "B-042",
+    "Task": "C++ Bio: Data-Driven Draconic Spawning & Initialization",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Enable individual draconic species traits and gestation attributes to be initialized dynamically from Species Data templates.",
+    "What": "Implement InitializeFromSpeciesTemplate in USovereignBioComponent to parse USovereignSpeciesData traits, map DragonType, and override GestationRate with Gestation.BaseRate dynamic attribute."
+  },
+  {
+    "ID": "B-036",
+    "Task": "C++ Qi: Universal Domains & Runes",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Support male territory ownership and rune stone node hierarchies in a universal qi module.",
+    "What": "Add DomainTier, DomainResonanceRadius, and DomainNetworkSaturation properties to USovereignQiComponent C++."
+  },
+  {
+    "ID": "B-037",
+    "Task": "SSoT: Unseen Weave Lore Grounding",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Bake the foundational homebrew rules and dragon subclass metrics into the local RAG database.",
+    "What": "Write Unseen_Weave_Lore.md containing dragon classifications, gestation duration tables, and rune grades."
   }
 ]
