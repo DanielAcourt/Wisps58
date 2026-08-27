@@ -1,5 +1,5 @@
 "ID","Task","Complexity","Status","Node","Why","What"
-"AD-016","UE 5.8.1 MCP Loopback Client Bridge","6","In Progress","Research/DevOps","Connect Iron Knight to Unreal 5.8 embedded MCP server for local, token-free editor automation.","Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8000/mcp with tool discovery."
+"AD-016","UE 5.8.1 MCP Loopback Client Bridge","6","Completed","Research/DevOps","Connect Iron Knight to Unreal 5.8 embedded MCP server for local, token-free editor automation.","Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8001/mcp with tool discovery."
 "E-002a","Jules-to-Iron-Knight Hybrid Delegation Protocol","8","Todo","Research/DevOps","Formalize JSON-RPC schema allowing Jules to hand off Epics directly to Iron Knight.","Multi-agent SOP and queue handler enabling autonomous delegation from cloud Jules to local Iron Knight."
 "B-012","Pi Kernel: Headless Safety Node","13","Todo","DevOps","Deploy the PSTA safety kernel on external Raspberry Pi hardware.","C++ PSTA implementation running headlessly on Pi 4 with physical relay control."
 "B-013","Data Bridge: Pi-Unreal Telemetry Link","8","Todo","DevOps","Mirror real-world hardware truth in the Unreal reflection.","UDP/TCP listener subsystem in Unreal ingesting JSON telemetry from the Pi."

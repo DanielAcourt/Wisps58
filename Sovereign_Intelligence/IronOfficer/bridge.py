@@ -110,7 +110,7 @@ TOOL_MIN_PRECEDENCE = {
 def load_config():
     global OLLAMA_HOST, TARGET_MODEL, BRIDGE_PORT, USER_NAME, READ_ZONES, WRITE_ZONES, ROLEPLAY_ZONES, PERSONA_ZONES, REMOTE_HISTORY_ENABLED, HISTORY_DIR
     global RAG_ENABLED, RAG_ENABLED_ON_STARTUP, RAG_CONTEXT_WEIGHT, RAG_MAX_CHUNKS, RAG_SIM_THRESHOLD, RAG_CHUNK_SIZE_WORDS, RAG_INDEX_DIRS, RAG_IGNORED_DIRS
-    global PERSISTENT_HANDSHAKE
+    global PERSISTENT_HANDSHAKE, mcp_client
     if os.path.exists(CONFIG_PATH):
         try:
             with open(CONFIG_PATH, "r") as f:
@@ -118,10 +118,14 @@ def load_config():
                 ollama_cfg = cfg.get("ollama", {})
                 bridge_cfg = cfg.get("bridge", {})
                 pref_cfg = cfg.get("user_preference", {})
+                mcp_cfg = cfg.get("mcp", {})
 
                 OLLAMA_HOST = f"http://{ollama_cfg.get('host', '127.0.0.1')}:{ollama_cfg.get('port', 11434)}"
                 TARGET_MODEL = ollama_cfg.get("target_model", "llama3.1:latest")
                 BRIDGE_PORT = bridge_cfg.get("port", 8000)
+                mcp_url = mcp_cfg.get("url", "http://127.0.0.1:8001/mcp")
+                if 'mcp_client' in globals():
+                    mcp_client.mcp_url = mcp_url
 
                 READ_ZONES = [os.path.abspath(os.path.join(REPO_ROOT, p)) for p in bridge_cfg.get("read_zones", [])]
                 WRITE_ZONES = [os.path.abspath(os.path.join(REPO_ROOT, p)) for p in bridge_cfg.get("write_zones", [])]
