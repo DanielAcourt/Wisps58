@@ -88,5 +88,14 @@
     "Node": "Research/Academic",
     "Why": "Synthesize 12 years of research, spatial computing architecture, and 9-Tier Universal Stack into a published monograph.",
     "What": "AI_Nexus/Research/Academic/Thesis/Our_Book.md created and populated with Master Table of Contents and chapter highlights."
+  },
+  {
+    "ID": "AD-003X",
+    "Task": "PSTA_Core Kernel Hardening",
+    "Complexity": "5",
+    "Status": "Scoped / Pending",
+    "Node": "Research/DevOps",
+    "Why": "Move theoretical PSTA safety pillars (P, S, T, A) into mandatory, compile-time and runtime execution checks.",
+    "What": "Functional definitions of V_P, V_S, V_T, V_A operators in PSTA_Core.md executing before state transitions or external I/O."
   }
 ]
