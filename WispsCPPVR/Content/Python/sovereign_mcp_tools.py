@@ -5,54 +5,61 @@ Exposes utility methods for spawning actors and automatically assigning Actor Ta
 """
 import unreal
 
-@unreal.uclass()
-class SovereignEditorToolLibrary(unreal.BlueprintFunctionLibrary):
+def spawn_actor_with_tags(class_path: str, location: list = None, rotation: list = None, actor_tags: str = "", gameplay_tags: str = "") -> unreal.Actor:
+    """
+    Spawns an actor in the active Editor world and assigns specified Actor Tags and Gameplay Tags.
 
-    @unreal.ufunction(static=True, meta=dict(Category="Sovereign|MCP"))
-    def spawn_actor_with_tags(class_path: str, location: unreal.Vector, rotation: unreal.Rotator, actor_tags: list[str], gameplay_tags: list[str] = None) -> unreal.Actor:
-        """
-        Spawns an actor in the active Editor world and assigns specified Actor Tags and Gameplay Tags.
+    :param class_path: Asset path or class path (e.g., '/Script/Engine.StaticMeshActor')
+    :param location: Spawn location vector [X, Y, Z]
+    :param rotation: Spawn rotation rotator [Pitch, Yaw, Roll]
+    :param actor_tags: Comma-separated string of Actor tags (e.g., "TagA,TagB") or list
+    :param gameplay_tags: Comma-separated string of Gameplay tags (e.g., "Sovereign.Entity,Wisp.Core")
+    :return: Spawned Actor instance or None
+    """
+    if not class_path:
+        unreal.log_error("SovereignMCP: No class path specified for spawn_actor_with_tags")
+        return None
 
-        :param class_path: Class path or asset path (e.g., '/Script/Engine.StaticMeshActor' or '/Game/Blueprint/MyActor.MyActor_C')
-        :param location: Spawn location vector [X, Y, Z]
-        :param rotation: Spawn rotation rotator [Pitch, Yaw, Roll]
-        :param actor_tags: List of FName string tags to add to Actor.tags
-        :param gameplay_tags: List of gameplay tag strings to register or set on Sovereign components
-        :return: Spawned Actor instance or None
-        """
-        actor_class = unreal.EditorPlatformLibrary.load_class(None, class_path) if hasattr(unreal, 'EditorPlatformLibrary') else unreal.load_class(None, class_path)
-        if not actor_class:
-            actor_class = unreal.load_class(None, class_path)
+    actor_class = unreal.load_class(None, class_path)
 
-        if not actor_class:
-            unreal.log_error(f"SovereignMCP: Failed to load class at path '{class_path}'")
-            return None
+    if not actor_class:
+        unreal.log_error(f"SovereignMCP: Failed to load class at path '{class_path}'")
+        return None
 
-        # Spawn actor in current editor world
-        spawned_actor = unreal.EditorLevelLibrary.spawn_actor_from_class(actor_class, location, rotation)
-        if not spawned_actor:
-            unreal.log_error(f"SovereignMCP: Failed to spawn actor of class '{class_path}'")
-            return None
+    # Convert location vector and rotator safely
+    loc_vec = unreal.Vector(location[0], location[1], location[2]) if location and len(location) >= 3 else unreal.Vector(0.0, 0.0, 0.0)
+    rot_val = unreal.Rotator(rotation[0], rotation[1], rotation[2]) if rotation and len(rotation) >= 3 else unreal.Rotator(0.0, 0.0, 0.0)
 
-        # Assign FName Actor Tags
-        if actor_tags:
-            for tag_str in actor_tags:
-                tag_name = unreal.Name(tag_str)
-                if tag_name not in spawned_actor.tags:
-                    spawned_actor.tags.append(tag_name)
-            unreal.log(f"SovereignMCP: Assigned Actor Tags {actor_tags} to '{spawned_actor.get_name()}'")
+    # Spawn actor in current editor world
+    spawned_actor = unreal.EditorLevelLibrary.spawn_actor_from_class(actor_class, loc_vec, rot_val)
+    if not spawned_actor:
+        unreal.log_error(f"SovereignMCP: Failed to spawn actor of class '{class_path}'")
+        return None
 
-        # Assign Gameplay Tags if Sovereign Saveable / Gameplay Tag component exists
-        if gameplay_tags:
-            components = spawned_actor.get_components_by_class(unreal.ActorComponent)
-            for comp in components:
-                if "Sovereign" in comp.get_class().get_name() or hasattr(comp, "add_gameplay_tag"):
-                    for g_tag in gameplay_tags:
-                        if hasattr(comp, "add_gameplay_tag"):
-                            comp.add_gameplay_tag(unreal.Name(g_tag))
-            unreal.log(f"SovereignMCP: Processed Gameplay Tags {gameplay_tags} for '{spawned_actor.get_name()}'")
+    # Process Actor Tags
+    tag_list = [t.strip() for t in actor_tags.split(",") if t.strip()] if isinstance(actor_tags, str) else actor_tags if isinstance(actor_tags, list) else []
+    if tag_list:
+        for tag_str in tag_list:
+            tag_name = unreal.Name(tag_str)
+            if tag_name not in spawned_actor.tags:
+                spawned_actor.tags.append(tag_name)
+        unreal.log(f"SovereignMCP: Assigned Actor Tags {tag_list} to '{spawned_actor.get_name()}'")
 
-        return spawned_actor
+    # Process Gameplay Tags if Sovereign Saveable / Gameplay Tag component exists
+    g_tag_list = [t.strip() for t in gameplay_tags.split(",") if t.strip()] if isinstance(gameplay_tags, str) else gameplay_tags if isinstance(gameplay_tags, list) else []
+    if g_tag_list:
+        components = spawned_actor.get_components_by_class(unreal.ActorComponent)
+        for comp in components:
+            if "Sovereign" in comp.get_class().get_name() or hasattr(comp, "add_gameplay_tag"):
+                for g_tag in g_tag_list:
+                    if hasattr(comp, "add_gameplay_tag"):
+                        comp.add_gameplay_tag(unreal.Name(g_tag))
+        unreal.log(f"SovereignMCP: Processed Gameplay Tags {g_tag_list} for '{spawned_actor.get_name()}'")
+
+    return spawned_actor
+
+class SovereignEditorToolLibrary:
+    spawn_actor_with_tags = staticmethod(spawn_actor_with_tags)
 
 def register_sovereign_tools():
     """
