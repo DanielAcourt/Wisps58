@@ -122,8 +122,8 @@ def load_config():
 
                 OLLAMA_HOST = f"http://{ollama_cfg.get('host', '127.0.0.1')}:{ollama_cfg.get('port', 11434)}"
                 TARGET_MODEL = ollama_cfg.get("target_model", "llama3.1:latest")
-                BRIDGE_PORT = bridge_cfg.get("port", 8050)
-                mcp_url = mcp_cfg.get("url", "http://127.0.0.1:8000/mcp")
+                BRIDGE_PORT = bridge_cfg.get("port", 8000)
+                mcp_url = mcp_cfg.get("url", "http://127.0.0.1:8001/mcp")
                 if 'mcp_client' in globals():
                     mcp_client.mcp_url = mcp_url
 
