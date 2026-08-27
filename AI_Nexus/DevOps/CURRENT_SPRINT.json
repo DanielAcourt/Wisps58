@@ -6,7 +6,7 @@
     "Status": "Completed",
     "Node": "Research/DevOps",
     "Why": "Connect Iron Knight to Unreal 5.8 embedded MCP server for local, token-free editor automation.",
-    "What": "Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8001/mcp with tool discovery."
+    "What": "Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8000/mcp with tool discovery."
   },
   {
     "ID": "E-002a",
