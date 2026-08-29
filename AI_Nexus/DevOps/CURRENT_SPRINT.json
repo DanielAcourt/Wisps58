@@ -115,5 +115,41 @@
     "Node": "Research",
     "Why": "Bake the foundational homebrew rules and dragon subclass metrics into the local RAG database.",
     "What": "Write Unseen_Weave_Lore.md containing dragon classifications, gestation duration tables, and rune grades."
+  },
+  {
+    "ID": "B-043",
+    "Task": "C++ Entity Module Registration & Attribute Sync Hardening",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Ensure living creature blueprints like BP_Antelope and BP_Humanoid automatically register USovereignAttributeComponent to USovereignSaveableEntityComponent on BeginPlay.",
+    "What": "Living creature entities reliably serialize their full D&D attribute block (STR, DEX, CON, INT, WIS, CHA) into the world manifest."
+  },
+  {
+    "ID": "B-044",
+    "Task": "C++ Possession Target State & Vessel Registration",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Track active possession state bidirectionally by adding PossessedTargetActor and PossessingEntity fields to USovereignSaveableEntityComponent.",
+    "What": "Serialized Identity JSON block contains PossessedTargetActorName when possessed, restoring 3D playspace narrative coherence."
+  },
+  {
+    "ID": "AD-019",
+    "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem.",
+    "What": "Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%."
+  },
+  {
+    "ID": "AD-020",
+    "Task": "Simulation Reality Anchor & C++ Mutation Disambiguation",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "Research/DevOps",
+    "Why": "Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution.",
+    "What": "LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes."
   }
 ]
