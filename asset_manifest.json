@@ -5,22 +5,31 @@
   "local_vault_root": "WispsCPPVR/Content/ArtVault",
   "asset_packages": [
     {
-      "package_id": "env_prototypes_v1",
-      "name": "Environment Prototypes Package",
+      "package_id": "art_vault_meshes",
+      "name": "Art Vault Static & Skeletal Meshes",
       "version": "1.0.0",
-      "source_path": "Environment_Prototypes",
-      "target_destination": "WispsCPPVR/Content/Assets/External/Environment",
+      "source_path": "Meshes",
+      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Meshes",
       "enabled": true,
-      "description": "High-fidelity environment meshes and textures kept outside Git source control."
+      "description": "3D meshes stored in local ArtVault/Meshes."
     },
     {
-      "package_id": "character_models_v1",
-      "name": "Character Models & Animations Package",
+      "package_id": "art_vault_textures",
+      "name": "Art Vault High-Res Textures",
       "version": "1.0.0",
-      "source_path": "Characters",
-      "target_destination": "WispsCPPVR/Content/Assets/External/Characters",
+      "source_path": "Textures",
+      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Textures",
       "enabled": true,
-      "description": "3D character models, rigs, and external animation sequences."
+      "description": "Texture maps stored in local ArtVault/Textures."
+    },
+    {
+      "package_id": "art_vault_materials",
+      "name": "Art Vault Materials & Shader Instances",
+      "version": "1.0.0",
+      "source_path": "Materials",
+      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Materials",
+      "enabled": true,
+      "description": "Materials and shaders stored in local ArtVault/Materials."
     }
   ]
 }
