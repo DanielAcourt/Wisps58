@@ -18,6 +18,15 @@
     "What": "`/WispsCPPVR/Content/Python/` created with `init_unreal.py` and `sovereign_mcp_tools.py` registering live editor tools accessible via `GET /v1/mcp/tools`."
   },
   {
+    "ID": "B-043",
+    "Task": "Fix Duplicate Entity Subobject & Serialization",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "ASovereignBaseInteractable creates a second USovereignSaveableEntityComponent subobject (SovereignSoul), causing duplicate registrations and double entries in JSON save files.",
+    "What": "Standardize subobject naming to SaveDataComponent in ASovereignBaseInteractable, preventing dual component creation and double entity serialization."
+  },
+  {
     "ID": "E-002a",
     "Task": "Jules-to-Iron-Knight Hybrid Delegation Protocol",
     "Complexity": "8",
