@@ -140,6 +140,10 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   Formal NASA-STD-8719.13C software safety specification, Axiomatic PSTA derivation, and Loss-of-Signal Local Sovereignty telemetry loss scenario.
     *   **NASA / IEEE LaTeX Source (`.tex`):** `AI_Nexus/Research/Academic/Deterministic_Non_Compensatory_Safety_Kernels_NASA_IEEE.tex`
         *   Overleaf-ready, IEEEtran double-column native LaTeX template file for direct PDF compilation and journal submission.
+    *   **Sensor Trust Recovery & Sovereign Hysteresis:** `AI_Nexus/Research/Academic/Sensor_Trust_Recovery_and_Sovereign_Hysteresis.md`
+        *   Research exploration detailing sliding-window cryptographic packet handshakes ($W_{\text{rec}}$), vessel capability envelopes (the Fish Tank model), and non-compensatory hysteresis curves ($\mathcal{H}(t)$) for trust recovery over time.
+    *   **The Byzantine Sensor Dilemma (BSD):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.md`
+        *   Foundational research paper establishing the "Bee Ate a Wire" Axiom, refuting single-sensor self-recovery, and formalizing $K \ge 2$ multi-observer consensus and differential matrix ($C_{ij}$) truth verification.
     *   **PSTA White Paper:** `AI_Nexus/Research/Academic/PSTA_Whitepaper.md`
         *   Provable Trust framework and epistemic risk models.
     *   **Publishing Strategy & Math Audit:** `AI_Nexus/Research/Academic/Publishing_Strategy_and_Math_Audit.md`
