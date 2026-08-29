@@ -65,19 +65,28 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
 
     if (!Registry || !SaveSuitcase) return;
 
+    TSet<AActor*> ProcessedActors;
+
     // Iterate through the Registry (Active Actors in the Garden)
     for (auto& Elem : Registry->GetActiveRegistry())
     {
         // Get the physical actor from the Weak Pointer
         if (AActor* TargetActor = Elem.Value.Get())
         {
+            if (ProcessedActors.Contains(TargetActor))
+            {
+                continue; // Skip if this physical actor instance was already serialized
+            }
+
             // Find the 'Passport' (Component) containing the Sovereign data
             if (auto* SaveComp = TargetActor->FindComponentByClass<USovereignSaveableEntityComponent>())
             {
+                ProcessedActors.Add(TargetActor);
+
                 FEntitySaveData Data;
 
-                // 1. IDENTITY: Who am I?
-                Data.MyGUID = Elem.Key;
+                // 1. IDENTITY: Who am I? (Use the Component's canonical EntityID)
+                Data.MyGUID = SaveComp->EntityID.IsValid() ? SaveComp->EntityID : Elem.Key;
 
                 // 2. LINEAGE: Who is my parent? (The Genetic Link)
                 // Access lineage data from Bio component
