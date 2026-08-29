@@ -38,8 +38,7 @@ ASovereignBaseInteractable::ASovereignBaseInteractable()
     PhysicalVessel->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 
     // 4. Soul Layer
-    // We create it here so it is always available
-    SaveDataComponent = CreateDefaultSubobject<USovereignSaveableEntityComponent>(TEXT("SovereignSoul"));
+    // Inherited from ASovereignBaseEntity (SaveDataComponent). No duplicate subobject needed.
 }
 
 bool ASovereignBaseInteractable::CanInteract_Implementation(AActor* Interactor)

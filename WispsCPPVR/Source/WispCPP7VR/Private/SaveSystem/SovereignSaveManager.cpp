@@ -262,9 +262,37 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 if (Obj->HasField(TEXT("MetaTags")))
                 {
                     Data.UnknownMetaTags = Obj->GetObjectField(TEXT("MetaTags"));
+
+                    // Deduplication & Priority GUID Resolution:
+                    // If MetaTags contains Identity.GUID, resolve Data.MyGUID to the primary Identity GUID
+                    const TSharedPtr<FJsonObject>* IdentityObjPtr;
+                    if (Data.UnknownMetaTags->TryGetObjectField(TEXT("Identity"), IdentityObjPtr) && IdentityObjPtr->IsValid())
+                    {
+                        FString InnerGuidStr;
+                        if ((*IdentityObjPtr)->TryGetStringField(TEXT("GUID"), InnerGuidStr))
+                        {
+                            FGuid InnerGuid;
+                            if (FGuid::Parse(InnerGuidStr, InnerGuid) && InnerGuid.IsValid())
+                            {
+                                Data.MyGUID = InnerGuid;
+                            }
+                        }
+                    }
                 }
 
-                NewSuitcase->SavedActors.Add(Data);
+                // Check if an entry for this primary GUID is already present to prevent duplicates when reading legacy save files
+                bool bAlreadyExists = NewSuitcase->SavedActors.ContainsByPredicate([&](const FEntitySaveData& Existing) {
+                    return Existing.MyGUID == Data.MyGUID;
+                });
+
+                if (!bAlreadyExists)
+                {
+                    NewSuitcase->SavedActors.Add(Data);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("SaveSystem: Skipped duplicate save entry for GUID [%s]"), *Data.MyGUID.ToString());
+                }
             }
         }
     }
