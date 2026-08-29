@@ -158,7 +158,34 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 	IdentityObj->SetStringField(TEXT("BirthTimestamp"), BirthTimestamp.ToString());
 	IdentityObj->SetBoolField(TEXT("bIsBeingPossessed"), bIsBeingPossessed);
 	IdentityObj->SetNumberField(TEXT("ParadoxDensity"), ParadoxDensity);
+	if (AActor* Owner = GetOwner())
+	{
+		IdentityObj->SetStringField(TEXT("ActorName"), Owner->GetName());
+		IdentityObj->SetStringField(TEXT("Class"), Owner->GetClass()->GetName());
+	}
 	RootObj->SetObjectField(TEXT("Identity"), IdentityObj);
+
+	// 1.5. SPATIAL TRANSFORM CATEGORY
+	if (AActor* Owner = GetOwner())
+	{
+		TSharedPtr<FJsonObject> SpatialObj = MakeShareable(new FJsonObject());
+		FVector Loc = Owner->GetActorLocation();
+		FRotator Rot = Owner->GetActorRotation();
+
+		TSharedPtr<FJsonObject> LocObj = MakeShareable(new FJsonObject());
+		LocObj->SetNumberField(TEXT("X"), Loc.X);
+		LocObj->SetNumberField(TEXT("Y"), Loc.Y);
+		LocObj->SetNumberField(TEXT("Z"), Loc.Z);
+		SpatialObj->SetObjectField(TEXT("Location"), LocObj);
+
+		TSharedPtr<FJsonObject> RotObj = MakeShareable(new FJsonObject());
+		RotObj->SetNumberField(TEXT("Pitch"), Rot.Pitch);
+		RotObj->SetNumberField(TEXT("Yaw"), Rot.Yaw);
+		RotObj->SetNumberField(TEXT("Roll"), Rot.Roll);
+		SpatialObj->SetObjectField(TEXT("Rotation"), RotObj);
+
+		RootObj->SetObjectField(TEXT("SpatialTransform"), SpatialObj);
+	}
 
 	// 2. UNKNOWN TAGS CATEGORY
 	if (UnknownMetaTags.Num() > 0)
