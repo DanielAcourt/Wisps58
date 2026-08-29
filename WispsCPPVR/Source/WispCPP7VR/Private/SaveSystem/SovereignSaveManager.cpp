@@ -65,19 +65,28 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
 
     if (!Registry || !SaveSuitcase) return;
 
+    TSet<AActor*> ProcessedActors;
+
     // Iterate through the Registry (Active Actors in the Garden)
     for (auto& Elem : Registry->GetActiveRegistry())
     {
         // Get the physical actor from the Weak Pointer
         if (AActor* TargetActor = Elem.Value.Get())
         {
+            if (ProcessedActors.Contains(TargetActor))
+            {
+                continue; // Skip if this physical actor instance was already serialized
+            }
+
             // Find the 'Passport' (Component) containing the Sovereign data
             if (auto* SaveComp = TargetActor->FindComponentByClass<USovereignSaveableEntityComponent>())
             {
+                ProcessedActors.Add(TargetActor);
+
                 FEntitySaveData Data;
 
-                // 1. IDENTITY: Who am I?
-                Data.MyGUID = Elem.Key;
+                // 1. IDENTITY: Who am I? (Use the Component's canonical EntityID)
+                Data.MyGUID = SaveComp->EntityID.IsValid() ? SaveComp->EntityID : Elem.Key;
 
                 // 2. LINEAGE: Who is my parent? (The Genetic Link)
                 // Access lineage data from Bio component
@@ -262,9 +271,37 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 if (Obj->HasField(TEXT("MetaTags")))
                 {
                     Data.UnknownMetaTags = Obj->GetObjectField(TEXT("MetaTags"));
+
+                    // Deduplication & Priority GUID Resolution:
+                    // If MetaTags contains Identity.GUID, resolve Data.MyGUID to the primary Identity GUID
+                    const TSharedPtr<FJsonObject>* IdentityObjPtr;
+                    if (Data.UnknownMetaTags->TryGetObjectField(TEXT("Identity"), IdentityObjPtr) && IdentityObjPtr->IsValid())
+                    {
+                        FString InnerGuidStr;
+                        if ((*IdentityObjPtr)->TryGetStringField(TEXT("GUID"), InnerGuidStr))
+                        {
+                            FGuid InnerGuid;
+                            if (FGuid::Parse(InnerGuidStr, InnerGuid) && InnerGuid.IsValid())
+                            {
+                                Data.MyGUID = InnerGuid;
+                            }
+                        }
+                    }
                 }
 
-                NewSuitcase->SavedActors.Add(Data);
+                // Check if an entry for this primary GUID is already present to prevent duplicates when reading legacy save files
+                bool bAlreadyExists = NewSuitcase->SavedActors.ContainsByPredicate([&](const FEntitySaveData& Existing) {
+                    return Existing.MyGUID == Data.MyGUID;
+                });
+
+                if (!bAlreadyExists)
+                {
+                    NewSuitcase->SavedActors.Add(Data);
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Warning, TEXT("SaveSystem: Skipped duplicate save entry for GUID [%s]"), *Data.MyGUID.ToString());
+                }
             }
         }
     }
