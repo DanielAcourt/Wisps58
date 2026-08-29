@@ -136,6 +136,10 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   `Llama_Guard_LLM_based_Input_Output_Safeguard_for_Human_AI_Conversations.md` (Hakan Inan et al. / Meta AI, 2023)
         *   `A_New_Approach_to_Linear_Filtering_and_Prediction_Problems.md` (R. E. Kalman, 1960)
         *   `Kernelized_Safety_Architectures.md` (John Rushby, 1989)
+    *   **NASA / IEEE White Paper:** `AI_Nexus/Research/Academic/Deterministic_Non_Compensatory_Safety_Kernels_NASA_IEEE.md`
+        *   Formal NASA-STD-8719.13C software safety specification, Axiomatic PSTA derivation, and Loss-of-Signal Local Sovereignty telemetry loss scenario.
+    *   **NASA / IEEE LaTeX Source (`.tex`):** `AI_Nexus/Research/Academic/Deterministic_Non_Compensatory_Safety_Kernels_NASA_IEEE.tex`
+        *   Overleaf-ready, IEEEtran double-column native LaTeX template file for direct PDF compilation and journal submission.
     *   **PSTA White Paper:** `AI_Nexus/Research/Academic/PSTA_Whitepaper.md`
         *   Provable Trust framework and epistemic risk models.
     *   **Publishing Strategy & Math Audit:** `AI_Nexus/Research/Academic/Publishing_Strategy_and_Math_Audit.md`
