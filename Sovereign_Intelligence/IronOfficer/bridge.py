@@ -183,41 +183,72 @@ unreal_mailbox: Dict[str, List[str]] = {}
 # Cached active simulation states keyed by normalized actor name
 active_simulation_states: Dict[str, Dict[str, Any]] = {}
 
-def format_save_state(state: Dict[str, Any]) -> str:
-    """Formats raw JSON save state into a clean, hierarchical YAML-like structure."""
-    if not state:
-        return "No active simulation state registered."
+def format_single_entity_state(state: Dict[str, Any], indent: str = "") -> List[str]:
+    """Formats a single entity's serialized state dictionary into YAML-like text lines."""
     lines = []
 
     # 1. Identity
     identity = state.get("Identity", {})
     if identity:
-        lines.append("Entity Identity:")
+        lines.append(f"{indent}Identity:")
         for k, v in identity.items():
-            lines.append(f"  - {k}: {v}")
+            lines.append(f"{indent}  - {k}: {v}")
 
-    # 2. Modular components
+    # 2. Spatial Transform (Location & Rotation) - AD-005a
+    spatial = state.get("SpatialTransform", {})
+    if spatial:
+        lines.append(f"{indent}SpatialTransform:")
+        loc = spatial.get("Location", {})
+        if loc:
+            lines.append(f"{indent}  - Location: (X={loc.get('X', 0.0):.2f}, Y={loc.get('Y', 0.0):.2f}, Z={loc.get('Z', 0.0):.2f})")
+        rot = spatial.get("Rotation", {})
+        if rot:
+            lines.append(f"{indent}  - Rotation: (Pitch={rot.get('Pitch', 0.0):.2f}, Yaw={rot.get('Yaw', 0.0):.2f}, Roll={rot.get('Roll', 0.0):.2f})")
+
+    # 3. Modular components
     for cat in ["Bio", "Qi", "Elements", "Attributes", "Sovereign.Truth", "Sovereign.Magic"]:
         cat_data = state.get(cat, {})
         if cat_data:
-            lines.append(f"{cat} Component State:")
+            lines.append(f"{indent}{cat} Component State:")
             for k, v in cat_data.items():
-                lines.append(f"  - {k}: {v}")
+                lines.append(f"{indent}  - {k}: {v}")
 
-    # 3. Flat owner keys (any key not in registered namespaces/categories)
-    known_categories = {"Identity", "UnknownTags", "Bio", "Qi", "Elements", "Attributes", "Sovereign.Truth", "Sovereign.Magic"}
+    # 4. Flat owner keys (any key not in registered namespaces/categories)
+    known_categories = {"Identity", "SpatialTransform", "UnknownTags", "Bio", "Qi", "Elements", "Attributes", "Sovereign.Truth", "Sovereign.Magic"}
     owner_keys = [k for k in state if k not in known_categories]
     if owner_keys:
-        lines.append("Simulation Environment & Surroundings:")
+        lines.append(f"{indent}Simulation Environment & Surroundings:")
         for k in owner_keys:
-            lines.append(f"  - {k}: {state[k]}")
+            lines.append(f"{indent}  - {k}: {state[k]}")
 
-    # 4. UnknownTags / Paradox
+    # 5. UnknownTags / Paradox
     unknown = state.get("UnknownTags", {})
     if unknown:
-        lines.append("Simulation Paradox & Meta-Tags:")
+        lines.append(f"{indent}Simulation Paradox & Meta-Tags:")
         for k, v in unknown.items():
-            lines.append(f"  - {k}: {v}")
+            lines.append(f"{indent}  - {k}: {v}")
+
+    return lines
+
+def format_save_state(state: Dict[str, Any], world_manifest: Optional[Dict[str, Any]] = None) -> str:
+    """Formats raw JSON save state or multi-entity world_manifest into structured prompt text."""
+    if not state and not world_manifest:
+        return "No active simulation state registered."
+
+    lines = []
+
+    # If a complete world_manifest is provided, format all registered world entities
+    if world_manifest and isinstance(world_manifest, dict) and len(world_manifest) > 0:
+        lines.append(f"REGISTERED WORLD MANIFEST ({len(world_manifest)} Active Entities in Unreal Scene):")
+        for actor_name, entity_state in world_manifest.items():
+            lines.append(f"\n  [ENTITY: {actor_name}]")
+            if isinstance(entity_state, dict):
+                lines.extend(format_single_entity_state(entity_state, indent="    "))
+            else:
+                lines.append(f"    - State: {entity_state}")
+    elif state and isinstance(state, dict):
+        # Single calling entity fallback
+        lines.extend(format_single_entity_state(state))
 
     return "\n".join(lines)
 
@@ -281,6 +312,7 @@ class UnrealChatRequest(BaseModel):
     history: List[ChatMessage] = Field(default_factory=list)
     enable_remote_history: bool = False
     save_state: Optional[Dict[str, Any]] = None
+    world_manifest: Optional[Dict[str, Any]] = None
 
 class PushChatPayload(BaseModel):
     actor_name: str
@@ -1247,13 +1279,18 @@ async def unreal_chat(request: UnrealChatRequest):
 
     logger.info(f"07 SIM CHAT: {sim_persona} -> {raw_message}")
 
-    # Ingest and cache the active save state if provided
+    # Ingest and cache the active save state / world manifest if provided
     if request.save_state:
         active_simulation_states[clean_actor_name] = request.save_state
         logger.info(f"07 SIM CHAT: Ingested and cached active save state for {clean_actor_name}")
 
-    # Resolve active simulation state from request or in-memory cache
+    if request.world_manifest:
+        active_simulation_states["WORLD_MANIFEST"] = request.world_manifest
+        logger.info(f"07 SIM CHAT: Ingested and cached active world manifest ({len(request.world_manifest)} entities)")
+
+    # Resolve active simulation state and world manifest from request or in-memory cache
     state_data = request.save_state or active_simulation_states.get(clean_actor_name)
+    world_manifest_data = request.world_manifest or active_simulation_states.get("WORLD_MANIFEST")
 
     # Map to Iron Knight's chat logic
     current_model = get_best_available_model()
@@ -1315,9 +1352,9 @@ async def unreal_chat(request: UnrealChatRequest):
     if last_active_file:
         system_prompt += f"\n\n    [ACTIVE SIMULATION PATH ANCHOR]\n    The last active file in play is currently: `{last_active_file}`. You should target this path for any subsequent read, write, or patch operations requested by the simulation."
 
-    if state_data:
-        formatted_state = format_save_state(state_data)
-        system_prompt += f"\n\n    [ACTIVE SIMULATION WORLD STATE / PLAYSPACE LORE]\n    The following is the active, serialized simulation state for the calling entity ({sim_persona}). You are encouraged to weave these world details and surroundings into your dialogue creatively:\n\n{formatted_state}"
+    if state_data or world_manifest_data:
+        formatted_state = format_save_state(state_data, world_manifest=world_manifest_data)
+        system_prompt += f"\n\n    [ACTIVE SIMULATION WORLD STATE / PLAYSPACE LORE]\n    The following is the active, serialized simulation state and spatial world manifest from Unreal Engine 5.8. Use these live spatial coordinates and component attributes (Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, etc.) as your SSoT for world entities:\n\n{formatted_state}"
 
     # Retrieve matching SSoT RAG context chunks for grounding
     context_block = ""
