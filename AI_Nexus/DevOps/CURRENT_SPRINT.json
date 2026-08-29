@@ -18,6 +18,33 @@
     "What": "`/WispsCPPVR/Content/Python/` created with `init_unreal.py` and `sovereign_mcp_tools.py` registering live editor tools accessible via `GET /v1/mcp/tools`."
   },
   {
+    "ID": "AD-005a",
+    "Task": "Spatial Sense: Save State Ingestion",
+    "Complexity": "5",
+    "Status": "Completed",
+    "Node": "Research/DevOps",
+    "Why": "Ingest the serialized component save packet and spatial transforms during `/v1/unreal/chat` calls.",
+    "What": "Multi-entity world manifest and 3D spatial transforms (Location, Rotation) serialized into system prompt context for `/v1/unreal/chat`."
+  },
+  {
+    "ID": "AD-005b",
+    "Task": "Spatial Sense: Unreal Agent Manifestation",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Create a 3D representation of the Iron Knight agent inside the levels.",
+    "What": "Blueprint actor capable of requesting handshakes and rendering dynamic UI status."
+  },
+  {
+    "ID": "AD-005c",
+    "Task": "Spatial Sense: Paradox Visualizer (AFI)",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Reconcile local state discrepancy reports to drive visual particles.",
+    "What": "Drive material parameters and Niagara particles based on live `ParadoxDensity` ($\Xi$)."
+  },
+  {
     "ID": "E-002a",
     "Task": "Jules-to-Iron-Knight Hybrid Delegation Protocol",
     "Complexity": "8",
