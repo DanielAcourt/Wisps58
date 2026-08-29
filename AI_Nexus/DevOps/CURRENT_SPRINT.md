@@ -34,6 +34,7 @@
 | B-044 | C++ Possession Target State & Vessel Registration | 5 | Todo | DevOps | Track active possession state bidirectionally by adding PossessedTargetActor and PossessingEntity fields to USovereignSaveableEntityComponent. | Serialized Identity JSON block contains PossessedTargetActorName when possessed, restoring 3D playspace narrative coherence. |
 | AD-019 | Adaptive Mailbox Polling & Bridge Traffic Throttling | 3 | Todo | DevOps | Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem. | Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%. |
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |
+| AD-021 | Local Art Asset Manifest & Gitignore Strategy | 3 | In Progress | DevOps | Establish local art asset management solution using asset_manifest.json, Python sync script, and .gitignore rules for binary art assets. | `.gitignore` rules for art assets, `asset_manifest.json`, `sync_art_assets.py` script, Python MCP integration, and documentation in `AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md`. |
 
 ---
 

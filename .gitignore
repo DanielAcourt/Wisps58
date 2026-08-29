@@ -41,3 +41,10 @@ __pycache__/
 Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons/Campaigns/
 Sovereign_Intelligence/IronOfficer/RolePlay/DungeonsAndDragons/Sessions/
 AI_Nexus/Memories/ChatHistory/Chat_SIM_*
+
+# External Art Assets, Maps, and Local Asset Vault directories (Managed via asset_manifest.json)
+WispsCPPVR/Content/Assets/External/
+WispsCPPVR/Content/ArtVault/
+WispsCPPVR/Content/LevelPrototyping/External/
+*.uasset.bak
+*.umap.bak

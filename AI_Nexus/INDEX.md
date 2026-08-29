@@ -64,6 +64,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Operations guide for the UE 5.8.1 MCP loopback client bridge, port layout, AAS safety gating, and Python client API.
 *   **UE 5.8.1 Python MCP Tools Guide:** `AI_Nexus/Docs/11_UE5.8_Python_MCP_Tools_Operations_Guide.md`
     *   Operations guide for Python scripting, spawning actor tag automation, PowerShell Invoke-RestMethod REST API commands, and extending editor tools.
+*   **Local Art Asset Manifest Guide:** `AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md`
+    *   Standard Operating Procedure and user guide for local art asset management, asset_manifest.json, and sync script execution.
 *   **CFL Protocol:** `AI_Nexus/Protocols/CFL_Protocol.md`
     *   Constraint-Free Logic schema and validation.
 *   **Reality Anchor:** `AI_Nexus/Protocols/REALITY_ANCHOR.md`

@@ -42,7 +42,7 @@
     "Status": "Todo",
     "Node": "Research",
     "Why": "Reconcile local state discrepancy reports to drive visual particles.",
-    "What": "Drive material parameters and Niagara particles based on live `ParadoxDensity` ($\Xi$)."
+    "What": "Drive material parameters and Niagara particles based on live ParadoxDensity."
   },
   {
     "ID": "E-002a",
@@ -178,5 +178,14 @@
     "Node": "Research/DevOps",
     "Why": "Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution.",
     "What": "LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes."
+  },
+  {
+    "ID": "AD-021",
+    "Task": "Local Art Asset Manifest & Gitignore Strategy",
+    "Complexity": "3",
+    "Status": "In Progress",
+    "Node": "DevOps",
+    "Why": "Establish local art asset management solution using asset_manifest.json, Python sync script, and .gitignore rules for binary art assets.",
+    "What": ".gitignore rules for art assets, asset_manifest.json, sync_art_assets.py script, Python MCP integration, and documentation in AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md."
   }
 ]
