@@ -68,9 +68,10 @@ WispsCPPVR/Content/LevelPrototyping/External/
 
 ## 🛠️ Usage & Operations Guide
 
-### 1. Synchronizing Local Art Assets (Standalone CLI)
-Run the Python synchronizer script from the command line:
+### 1. Synchronizing Local Art Assets (One-Click Batch Script or CLI)
+Simply double-click `sync_art_assets.bat` in the repository root directory!
 
+Or run via command line:
 ```bash
 # Standard copy mode using default manifest and vault root
 python WispsCPPVR/Content/Python/sync_art_assets.py
