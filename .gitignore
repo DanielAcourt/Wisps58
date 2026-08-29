@@ -48,3 +48,34 @@ WispsCPPVR/Content/ArtVault/
 WispsCPPVR/Content/LevelPrototyping/External/
 *.uasset.bak
 *.umap.bak
+
+# Visual Studio & C++ IDE Transient Files
+.vs/
+*.vsidx
+*.VC.db
+*.VC.db-wal
+*.VC.db-shm
+*.VC.opendb
+v17/
+v18/
+.vsconfig
+
+# Unreal Engine Generated & Intermediate Folders
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+WispsCPPVR/Binaries/
+WispsCPPVR/DerivedDataCache/
+WispsCPPVR/Intermediate/
+WispsCPPVR/Saved/
+WispsCPPVR/Build/
+WispsCPPVR/.vs/
+WispsCPPVR/v17/
+WispsCPPVR/v18/
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.sln.iml
