@@ -43,7 +43,17 @@ def sync_package(vault_root, package, copy_mode=True):
         print(f"[SKIP] Package '{name}' ({package_id}) is disabled in manifest.")
         return True
 
-    source_path = Path(vault_root) / source_rel
+    # Resolve source path flexible lookup
+    candidate_vault_src = Path(vault_root) / source_rel
+    candidate_direct_src = Path(source_rel)
+
+    if candidate_vault_src.exists():
+        source_path = candidate_vault_src
+    elif candidate_direct_src.exists():
+        source_path = candidate_direct_src
+    else:
+        source_path = candidate_vault_src
+
     target_path = Path(target_rel)
 
     print(f"\n[SYNC] Processing Package: {name}")
@@ -54,6 +64,12 @@ def sync_package(vault_root, package, copy_mode=True):
         print(f"[WARNING] Local vault source path does not exist: {source_path}")
         print("          Please place asset files into the vault directory or update asset_manifest.json.")
         return False
+
+    # Prevent copying folder onto itself
+    if source_path.resolve() == target_path.resolve():
+        print(f"[NOTICE] Package source and target are the identical directory ({source_path.resolve()}).")
+        print("         Assets are already in place in the target directory.")
+        return True
 
     os.makedirs(target_path, exist_ok=True)
 
