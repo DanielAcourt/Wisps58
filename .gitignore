@@ -74,7 +74,11 @@ WispsCPPVR/Build/
 WispsCPPVR/.vs/
 WispsCPPVR/v17/
 WispsCPPVR/v18/
+*.sln
 *.sln.docstates
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
 *.suo
 *.user
 *.userosscache
