@@ -75,6 +75,7 @@ WispsCPPVR/.vs/
 WispsCPPVR/v17/
 WispsCPPVR/v18/
 *.sln
+*.slnx
 *.sln.docstates
 *.vcxproj
 *.vcxproj.filters
