@@ -333,15 +333,6 @@
     "What": "USovereignSaveableEntityComponent implements GFrameCounter-based caching and configurable time-throttling on GetCategoryStateJson to completely eliminate redundant JSON serialization on Tick."
   },
   {
-    "ID": "B-043",
-    "Task": "Fix Duplicate Entity Subobject & Serialization",
-    "Complexity": "3",
-    "Status": "Done",
-    "Node": "DevOps",
-    "Why": "ASovereignBaseInteractable creates a second USovereignSaveableEntityComponent subobject (SovereignSoul), causing duplicate registrations and double entries in JSON save files.",
-    "What": "Standardize subobject naming to SaveDataComponent in ASovereignBaseInteractable, preventing dual component creation and double entity serialization."
-  },
-  {
     "ID": "AD-018",
     "Task": "Cognitive Administration Experimentation & Scripting",
     "Complexity": "5",
