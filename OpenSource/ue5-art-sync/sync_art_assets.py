@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 """
 sovereign-art-sync: Local Art Asset Synchronizer & Auto-Discovery Engine for Unreal Engine 5
-Copyright (c) 2026 Daniel Acourt. Version 1.0.0. Licensed under the MIT License.
+Copyright (c) 2026 Daniel Acourt. Version 1.0.1. Licensed under the MIT License.
 
 Parses asset_manifest.json to synchronize external art assets from a local asset vault
 into the Unreal Engine Content directory (e.g. Content/Assets/External/).
 Automatically detects .uproject names and auto-discovers new subdirectories inside local_vault_root.
+
+CRITICAL ARCHITECTURAL SAFETY RULE:
+Level files (.umap) and World Partition external actor/object metadata (__ExternalActors__, __ExternalObjects__)
+MUST NEVER be synced by this tool. Level files and World Partition metadata belong strictly in project Git tracking
+under Content/ (e.g. Content/Maps/ or Content/Levels/) to prevent Unreal Engine from generating duplicate actor GUIDs
+and level package collisions on launch.
 """
 
 import os
@@ -14,6 +20,27 @@ import json
 import shutil
 import argparse
 from pathlib import Path
+
+# Directories and file extensions that MUST NOT be synced from local vault to Content/Assets/
+IGNORED_DIR_NAMES = {
+    "__externalactors__",
+    "__externalobjects__",
+    ".git",
+    ".vs",
+    "intermediate",
+    "saved",
+    "binaries",
+    "deriveddatacache",
+    "build"
+}
+
+IGNORED_FILE_EXTENSIONS = {
+    ".umap",         # Unreal Level maps (must stay in Git under Content/Maps/ or Content/Levels/)
+    ".umap.bak",     # Level backups
+    ".uasset.bak",   # Asset backups
+    ".tmp",          # Temporary files
+    ".log"           # Log files
+}
 
 
 def detect_uproject(root_dir="."):
@@ -66,6 +93,7 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
     """
     Scans local_vault_root for unregistered subdirectories and automatically
     adds them to asset_manifest.json to eliminate manual JSON editing.
+    Excludes special system folders like Levels, __ExternalActors__, __ExternalObjects__.
     """
     vault_path = Path(vault_root)
     if not vault_path.is_absolute():
@@ -80,8 +108,15 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
     for item in vault_path.iterdir():
         if item.is_dir():
             folder_name = item.name
-            if folder_name not in existing_sources and not folder_name.startswith("."):
-                package_id = f"art_vault_{folder_name.lower().replace(' ', '_')}"
+            folder_lower = folder_name.lower()
+
+            # Skip ignored directories (e.g., __ExternalActors__, Levels if placed in vault accidentally)
+            if folder_lower in IGNORED_DIR_NAMES or folder_name.startswith("."):
+                print(f"[AUTO-DISCOVERY] Skipping restricted folder '{folder_name}'.")
+                continue
+
+            if folder_name not in existing_sources:
+                package_id = f"art_vault_{folder_lower.replace(' ', '_')}"
                 target_dest = f"Content/Assets/External/ArtVault/{folder_name}"
 
                 new_pkg = {
@@ -107,6 +142,24 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
             print(f"[ERROR] Failed to save auto-discovered packages to manifest: {e}")
 
     return discovered_any
+
+
+def is_file_ignored(file_path):
+    """
+    Returns True if file or any parent folder in file_path should be excluded from sync.
+    """
+    path_obj = Path(file_path)
+
+    # Check extension
+    if path_obj.suffix.lower() in IGNORED_FILE_EXTENSIONS:
+        return True
+
+    # Check directory parts
+    for part in path_obj.parts:
+        if part.lower() in IGNORED_DIR_NAMES:
+            return True
+
+    return False
 
 
 def sync_package(vault_root, package, project_root, copy_mode=True):
@@ -159,14 +212,25 @@ def sync_package(vault_root, package, project_root, copy_mode=True):
     os.makedirs(target_path, exist_ok=True)
 
     synced_count = 0
+    skipped_count = 0
+
     if source_path.is_dir():
         for root, dirs, files in os.walk(source_path):
+            # Prune ignored directory names in-place so os.walk doesn't traverse them
+            dirs[:] = [d for d in dirs if d.lower() not in IGNORED_DIR_NAMES and not d.startswith(".")]
+
             rel_dir = Path(root).relative_to(source_path)
             dest_dir = target_path / rel_dir
-            os.makedirs(dest_dir, exist_ok=True)
 
             for file_name in files:
                 src_file = Path(root) / file_name
+
+                # Check safety rule filters
+                if is_file_ignored(src_file):
+                    skipped_count += 1
+                    continue
+
+                os.makedirs(dest_dir, exist_ok=True)
                 dest_file = dest_dir / file_name
 
                 # Copy if missing or modified time differs
@@ -179,7 +243,7 @@ def sync_package(vault_root, package, project_root, copy_mode=True):
                         os.symlink(src_file.resolve(), dest_file)
                     synced_count += 1
 
-    print(f"[SUCCESS] Package '{name}' synced ({synced_count} files updated).")
+    print(f"[SUCCESS] Package '{name}' synced ({synced_count} files updated, {skipped_count} ignored/level files skipped).")
     return True
 
 
@@ -208,7 +272,7 @@ def run_sync(manifest_path="asset_manifest.json", vault_override=None, copy_mode
 
     packages = manifest.get("asset_packages", [])
 
-    print(f"=== Sovereign Art Sync (sovereign-art-sync) ===")
+    print(f"=== Sovereign Art Sync (sovereign-art-sync v1.0.1) ===")
     print(f"Project Detected: {project_name} ({project_root})")
     print(f"Manifest Version: {manifest.get('manifest_version', '1.0.0')}")
     print(f"Vault Root: {vault_path}")
