@@ -30,6 +30,15 @@
       "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Materials",
       "enabled": true,
       "description": "Materials and shaders stored in local ArtVault/Materials."
+    },
+    {
+      "package_id": "art_vault_levels",
+      "name": "Art Vault Levels",
+      "version": "1.0.0",
+      "source_path": "Levels",
+      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Levels",
+      "enabled": true,
+      "description": "Auto-discovered package from local vault folder Levels."
     }
   ]
 }
