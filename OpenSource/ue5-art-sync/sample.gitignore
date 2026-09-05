@@ -1,0 +1,30 @@
+# Recommended .gitignore for Unreal Engine 5 Projects with Local Art Vault Strategy
+
+# Local Asset Vault & External Art Targets (Ignored to prevent binary bloat)
+Content/ArtVault/
+Content/Assets/External/
+Content/LevelPrototyping/External/
+*.uasset.bak
+*.umap.bak
+
+# Unreal Engine Generated & Intermediate Folders
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+
+# Visual Studio & C++ IDE Transient Files
+.vs/
+*.vsidx
+*.VC.db*
+v17/
+v18/
+.vsconfig
+*.sln
+*.slnx
+*.vcxproj*
+
+# Python Local Cache
+__pycache__/
+*.pyc

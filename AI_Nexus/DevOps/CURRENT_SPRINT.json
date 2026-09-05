@@ -201,10 +201,19 @@
     "ID": "AD-023",
     "Task": "Community: Standalone Open-Source Tool Packaging",
     "Complexity": "3",
-    "Status": "Todo",
+    "Status": "Completed",
     "Node": "DevOps",
     "Why": "Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository.",
-    "What": "Independent, MIT/GPL-licensed GitHub repository published for community adoption."
+    "What": "Independent, MIT-licensed standalone package created in OpenSource/ue5-art-sync/ with dynamic project detection, user guide, and batch launcher."
+  },
+  {
+    "ID": "AD-023b",
+    "Task": "Community: sovereign-art-sync Automated Unit Tests",
+    "Complexity": "2",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Create standalone Python unit test suite (tests/test_sync.py) inside OpenSource/ue5-art-sync/ to test mock project initialization, dynamic .uproject discovery, and sync operations.",
+    "What": "Python test script in OpenSource/ue5-art-sync/tests/ running automated unit tests for mock vault sync."
   },
   {
     "ID": "AD-024",
