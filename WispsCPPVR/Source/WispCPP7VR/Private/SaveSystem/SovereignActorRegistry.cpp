@@ -15,6 +15,22 @@ void UActorRegistry::RegisterActor(FGuid ID, AActor* Actor)
             return;
         }
 
+        // Clean up any old ID this exact actor was previously registered under
+        FGuid OldID;
+        for (const auto& Pair : TrackedActors)
+        {
+            if (Pair.Value.Get() == Actor && Pair.Key != ID)
+            {
+                OldID = Pair.Key;
+                break;
+            }
+        }
+        if (OldID.IsValid())
+        {
+            TrackedActors.Remove(OldID);
+            UE_LOG(LogTemp, Log, TEXT("Registry: Re-assigned %s from old ID [%s] to new ID [%s]"), *Actor->GetName(), *OldID.ToString(), *ID.ToString());
+        }
+
         TrackedActors.Add(ID, Actor);
         UE_LOG(LogTemp, Log, TEXT("Registry: Tracking %s [%s]"), *Actor->GetName(), *ID.ToString());
     }

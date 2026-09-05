@@ -18,6 +18,33 @@
     "What": "`/WispsCPPVR/Content/Python/` created with `init_unreal.py` and `sovereign_mcp_tools.py` registering live editor tools accessible via `GET /v1/mcp/tools`."
   },
   {
+    "ID": "AD-005a",
+    "Task": "Spatial Sense: Save State Ingestion",
+    "Complexity": "5",
+    "Status": "Completed",
+    "Node": "Research/DevOps",
+    "Why": "Ingest the serialized component save packet and spatial transforms during `/v1/unreal/chat` calls.",
+    "What": "Multi-entity world manifest and 3D spatial transforms (Location, Rotation) serialized into system prompt context for `/v1/unreal/chat`."
+  },
+  {
+    "ID": "AD-005b",
+    "Task": "Spatial Sense: Unreal Agent Manifestation",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Create a 3D representation of the Iron Knight agent inside the levels.",
+    "What": "Blueprint actor capable of requesting handshakes and rendering dynamic UI status."
+  },
+  {
+    "ID": "AD-005c",
+    "Task": "Spatial Sense: Paradox Visualizer (AFI)",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Reconcile local state discrepancy reports to drive visual particles.",
+    "What": "Drive material parameters and Niagara particles based on live ParadoxDensity."
+  },
+  {
     "ID": "E-002a",
     "Task": "Jules-to-Iron-Knight Hybrid Delegation Protocol",
     "Complexity": "8",
@@ -115,5 +142,86 @@
     "Node": "Research",
     "Why": "Bake the foundational homebrew rules and dragon subclass metrics into the local RAG database.",
     "What": "Write Unseen_Weave_Lore.md containing dragon classifications, gestation duration tables, and rune grades."
+  },
+  {
+    "ID": "B-043",
+    "Task": "C++ Entity Module Registration & Attribute Sync Hardening",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Ensure living creature blueprints like BP_Antelope and BP_Humanoid automatically register USovereignAttributeComponent to USovereignSaveableEntityComponent on BeginPlay.",
+    "What": "Living creature entities reliably serialize their full D&D attribute block (STR, DEX, CON, INT, WIS, CHA) into the world manifest."
+  },
+  {
+    "ID": "B-044",
+    "Task": "C++ Possession Target State & Vessel Registration",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Track active possession state bidirectionally by adding PossessedTargetActor and PossessingEntity fields to USovereignSaveableEntityComponent.",
+    "What": "Serialized Identity JSON block contains PossessedTargetActorName when possessed, restoring 3D playspace narrative coherence."
+  },
+  {
+    "ID": "AD-019",
+    "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem.",
+    "What": "Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%."
+  },
+  {
+    "ID": "AD-020",
+    "Task": "Simulation Reality Anchor & C++ Mutation Disambiguation",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "Research/DevOps",
+    "Why": "Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution.",
+    "What": "LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes."
+  },
+  {
+    "ID": "AD-021",
+    "Task": "Local Art Asset Manifest & Gitignore Strategy",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Establish local art asset management solution using asset_manifest.json, Python sync script, and .gitignore rules for binary art assets.",
+    "What": ".gitignore rules for art assets, asset_manifest.json, sync_art_assets.py script, Python MCP integration, and documentation in AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md."
+  },
+  {
+    "ID": "AD-022",
+    "Task": "Community: Educational Stream & YouTube Video Production",
+    "Complexity": "3",
+    "Status": "Todo",
+    "Node": "Research",
+    "Why": "Script and produce an educational video ('Stop Paying for Git LFS: Unreal Engine Zero-Bloat Art Staging Workflow') explaining the local asset manifest solution.",
+    "What": "Published educational video and stream walkthrough on YouTube and memeseco community channels."
+  },
+  {
+    "ID": "AD-023",
+    "Task": "Community: Standalone Open-Source Tool Packaging",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository.",
+    "What": "Independent, MIT-licensed standalone package created in OpenSource/ue5-art-sync/ with dynamic project detection, user guide, and batch launcher."
+  },
+  {
+    "ID": "AD-023b",
+    "Task": "Community: sovereign-art-sync Automated Unit Tests",
+    "Complexity": "2",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Create standalone Python unit test suite (tests/test_sync.py) inside OpenSource/ue5-art-sync/ to test mock project initialization, dynamic .uproject discovery, and sync operations.",
+    "What": "Python test script in OpenSource/ue5-art-sync/tests/ running automated unit tests for mock vault sync."
+  },
+  {
+    "ID": "AD-024",
+    "Task": "Community: Fab Marketplace Plugin & Utility Widget Packaging",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab.",
+    "What": "Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button."
   }
 ]

@@ -79,8 +79,22 @@ def spawn_actor_with_tags(class_path: str = "/Script/Engine.StaticMeshActor", lo
     unreal.log(f"SovereignMCP: Successfully spawned '{spawned_actor.get_name()}' at {loc_vec} with tags {tag_list}")
     return spawned_actor
 
+def sync_local_art_assets(manifest_path: str = "asset_manifest.json") -> str:
+    """
+    Triggers local art asset synchronization from asset_manifest.json.
+    """
+    try:
+        import sync_art_assets
+        res = sync_art_assets.run_sync(manifest_path=manifest_path)
+        unreal.log(f"SovereignMCP: Art Asset Sync Complete: {res}")
+        return str(res)
+    except Exception as e:
+        unreal.log_error(f"SovereignMCP: Art Asset Sync Failed: {e}")
+        return f"Error: {e}"
+
 class SovereignEditorToolLibrary:
     spawn_actor_with_tags = staticmethod(spawn_actor_with_tags)
+    sync_local_art_assets = staticmethod(sync_local_art_assets)
 
 def register_sovereign_tools():
     """
