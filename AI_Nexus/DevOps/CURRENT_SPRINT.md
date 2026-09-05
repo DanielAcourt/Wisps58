@@ -4,7 +4,7 @@
 **Sprint ID:** `SR_20260922`
 **Start Date:** `25/08/2026`
 **Target End Date:** `22/09/2026` (4-Week Solo Baseline)
-**Planned Capacity:** 74 Points (Expanded Scope)
+**Planned Capacity:** 85 Points (Expanded Community Scope)
 
 > 🎯 **Core Sprint Goal:**
 > **"PSTA Hardware Reality & Hybrid Agent Synergy (Iron Knight + Jules + UE 5.8 MCP Loopback)"**
@@ -34,6 +34,10 @@
 | B-044 | C++ Possession Target State & Vessel Registration | 5 | Todo | DevOps | Track active possession state bidirectionally by adding PossessedTargetActor and PossessingEntity fields to USovereignSaveableEntityComponent. | Serialized Identity JSON block contains PossessedTargetActorName when possessed, restoring 3D playspace narrative coherence. |
 | AD-019 | Adaptive Mailbox Polling & Bridge Traffic Throttling | 3 | Todo | DevOps | Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem. | Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%. |
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |
+| AD-021 | Local Art Asset Manifest & Gitignore Strategy | 3 | Completed | DevOps | Establish local art asset management solution using asset_manifest.json, Python sync script, and .gitignore rules for binary art assets. | `.gitignore` rules for art assets, `asset_manifest.json`, `sync_art_assets.py` script, Python MCP integration, and documentation in `AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md`. |
+| AD-022 | Community: Educational Stream & YouTube Video Production | 3 | Todo | Research | Script and produce an educational video ("Stop Paying for Git LFS: Unreal Engine Zero-Bloat Art Staging Workflow") explaining the local asset manifest solution. | Published educational video and stream walkthrough on YouTube and memeseco community channels. |
+| AD-023 | Community: Standalone Open-Source Tool Packaging | 3 | Todo | DevOps | Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository. | Independent, MIT/GPL-licensed GitHub repository published for community adoption. |
+| AD-024 | Community: Fab Marketplace Plugin & Utility Widget Packaging | 5 | Todo | DevOps | Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab. | Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button. |
 
 ---
 
