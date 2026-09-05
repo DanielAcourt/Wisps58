@@ -11,7 +11,7 @@
       "source_path": "Meshes",
       "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Meshes",
       "enabled": true,
-      "description": "3D meshes stored in local ArtVault/Meshes."
+      "description": "3D static and skeletal meshes stored in local ArtVault/Meshes."
     },
     {
       "package_id": "art_vault_textures",
@@ -20,7 +20,7 @@
       "source_path": "Textures",
       "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Textures",
       "enabled": true,
-      "description": "Texture maps stored in local ArtVault/Textures."
+      "description": "High-resolution texture maps stored in local ArtVault/Textures."
     },
     {
       "package_id": "art_vault_materials",
@@ -29,16 +29,7 @@
       "source_path": "Materials",
       "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Materials",
       "enabled": true,
-      "description": "Materials and shaders stored in local ArtVault/Materials."
-    },
-    {
-      "package_id": "art_vault_levels",
-      "name": "Art Vault Levels",
-      "version": "1.0.0",
-      "source_path": "Levels",
-      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Levels",
-      "enabled": true,
-      "description": "Auto-discovered package from local vault folder Levels."
+      "description": "Materials and shader instances stored in local ArtVault/Materials."
     }
   ]
 }
