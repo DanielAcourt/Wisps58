@@ -60,20 +60,17 @@ v17/
 v18/
 .vsconfig
 
-# Unreal Engine Generated & Intermediate Folders
-Binaries/
-DerivedDataCache/
-Intermediate/
-Saved/
-Build/
-WispsCPPVR/Binaries/
-WispsCPPVR/DerivedDataCache/
-WispsCPPVR/Intermediate/
-WispsCPPVR/Saved/
-WispsCPPVR/Build/
-WispsCPPVR/.vs/
-WispsCPPVR/v17/
-WispsCPPVR/v18/
+# Unreal Engine Generated & Intermediate Folders (Wildcard match for root and nested directories)
+[Bb]inaries/
+[Dd]erived[Dd]ata[Cc]ache/
+[Ii]ntermediate/
+[Ss]aved/
+[Bb]uild/
+**/Saved/
+**/Intermediate/
+**/Binaries/
+**/DerivedDataCache/
+**/Build/
 *.sln
 *.slnx
 *.sln.docstates
