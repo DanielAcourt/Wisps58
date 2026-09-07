@@ -7,8 +7,8 @@
 **Planned Capacity:** 85 Points (Expanded Community Scope)
 
 > 🎯 **Core Sprint Goal:**
-> **"PSTA Hardware Reality & Hybrid Agent Synergy (Iron Knight + Jules + UE 5.8 MCP Loopback)"**
-> Deploy headless Pi hardware safety nodes, bridge physical sensor telemetry into Unreal, and formalize the Jules-to-Iron-Knight local MCP orchestration protocol under Agency Arbitration Schema (AAS) governance.
+> **"PSTA Hardware Reality, Hybrid Agent Synergy & Zero-Bloat Bidirectional Art Automation (Iron Knight + Jules + UE 5.8 MCP + sovereign-art-sync)"**
+> Deploy headless Pi hardware safety nodes, bridge physical sensor telemetry into Unreal, formalize the Jules-to-Iron-Knight local MCP orchestration protocol under Agency Arbitration Schema (AAS) governance, and release hardened `sovereign-art-sync` bidirectional open-source local art asset automation.
 
 ## 🏃‍♂️ Active Sprint Tickets
 
