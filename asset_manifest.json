@@ -1,15 +1,15 @@
 {
   "manifest_version": "1.0.0",
-  "project_name": "WispsCPPVR",
+  "project_name": "auto",
   "description": "Local Art Asset Manifest mapping external binary asset packages to local Unreal Engine Content directories.",
-  "local_vault_root": "WispsCPPVR/Content/ArtVault",
+  "local_vault_root": "Content/ArtVault",
   "asset_packages": [
     {
       "package_id": "art_vault_meshes",
       "name": "Art Vault Static & Skeletal Meshes",
       "version": "1.0.0",
       "source_path": "Meshes",
-      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Meshes",
+      "target_destination": "Content/Assets/External/ArtVault/Meshes",
       "enabled": true,
       "description": "3D static and skeletal meshes stored in local ArtVault/Meshes."
     },
@@ -18,7 +18,7 @@
       "name": "Art Vault High-Res Textures",
       "version": "1.0.0",
       "source_path": "Textures",
-      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Textures",
+      "target_destination": "Content/Assets/External/ArtVault/Textures",
       "enabled": true,
       "description": "High-resolution texture maps stored in local ArtVault/Textures."
     },
@@ -27,7 +27,7 @@
       "name": "Art Vault Materials & Shader Instances",
       "version": "1.0.0",
       "source_path": "Materials",
-      "target_destination": "WispsCPPVR/Content/Assets/External/ArtVault/Materials",
+      "target_destination": "Content/Assets/External/ArtVault/Materials",
       "enabled": true,
       "description": "Materials and shader instances stored in local ArtVault/Materials."
     }

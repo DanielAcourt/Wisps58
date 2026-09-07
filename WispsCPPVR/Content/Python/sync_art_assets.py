@@ -4,7 +4,7 @@ Sovereign Framework: Local Art Asset Synchronizer & Auto-Discovery Engine
 Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3.
 
 Parses asset_manifest.json to synchronize external art assets from a local asset vault
-into the Unreal Engine Content directory (e.g. WispsCPPVR/Content/Assets/External/).
+into the Unreal Engine Content directory (e.g. Content/Assets/External/).
 Automatically discovers new subdirectories inside local_vault_root and updates asset_manifest.json.
 
 CRITICAL ARCHITECTURAL SAFETY RULE:
@@ -56,7 +56,7 @@ def detect_uproject(root_dir="."):
         project_file = uproject_files[0]
         return project_file.stem, root_path
 
-    # Search one subfolder level (e.g., if tool placed in repo root containing WispsCPPVR/WispsCPPVR.uproject)
+    # Search one subfolder level
     for child in root_path.iterdir():
         if child.is_dir():
             child_uprojects = list(child.glob("*.uproject"))
@@ -70,36 +70,23 @@ def detect_uproject(root_dir="."):
         return parent_uprojects[0].stem, parent_path
 
     # Fallback default
-    return "WispsCPPVR", root_path
+    return "UnrealProject", root_path
 
 
 def resolve_project_path(path_str, project_root):
-    """Resolves path_str flexibly against CWD and project_root."""
+    """Resolves path_str flexibly against CWD and project_root without duplicating paths."""
     p = Path(path_str)
     if p.is_absolute():
         return p
 
-    # Check direct path relative to CWD
-    if p.exists():
-        return p.resolve()
+    proj_path = Path(project_root).resolve()
 
-    proj_path = Path(project_root)
-    # Check if relative to project_root
-    candidate1 = proj_path / p
-    if candidate1.exists():
-        return candidate1.resolve()
+    # If path starts with project folder name (e.g. "WispsCPPVR/Content/...") strip prefix if project_root is already that folder
+    if p.parts and p.parts[0] == proj_path.name:
+        p = Path(*p.parts[1:])
 
-    # Check if relative to project_root parent (when path_str includes project folder name)
-    candidate2 = proj_path.parent / p
-    if candidate2.exists():
-        return candidate2.resolve()
-
-    # If path_str starts with project folder name (e.g. "WispsCPPVR/...")
-    proj_folder = proj_path.name
-    if p.parts and p.parts[0] == proj_folder:
-        return (proj_path.parent / p).resolve()
-
-    return (proj_path / p).resolve()
+    candidate = (proj_path / p).resolve()
+    return candidate
 
 
 def load_manifest(manifest_path="asset_manifest.json"):
@@ -144,8 +131,7 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
 
             if folder_name not in existing_sources:
                 package_id = f"art_vault_{folder_lower.replace(' ', '_')}"
-                proj_name = Path(project_root).name
-                target_dest = f"{proj_name}/Content/Assets/External/ArtVault/{folder_name}"
+                target_dest = f"Content/Assets/External/ArtVault/{folder_name}"
 
                 new_pkg = {
                     "package_id": package_id,
@@ -170,6 +156,20 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
             print(f"[ERROR] Failed to save auto-discovered packages to manifest: {e}")
 
     return discovered_any
+
+
+def ensure_suggested_vault_folders(vault_path, packages):
+    """Auto-creates suggested vault package folders if they do not exist."""
+    for pkg in packages:
+        source_rel = pkg.get("source_path", "")
+        if source_rel:
+            pkg_src = vault_path / source_rel
+            if not pkg_src.exists():
+                try:
+                    os.makedirs(pkg_src, exist_ok=True)
+                    print(f"[INIT] Auto-created suggested vault directory: {pkg_src}")
+                except Exception as e:
+                    print(f"[WARNING] Could not create suggested folder '{pkg_src}': {e}")
 
 
 def is_file_ignored(file_path):
@@ -276,16 +276,23 @@ def run_sync(manifest_path="asset_manifest.json", vault_override=None, copy_mode
     if not manifest:
         return {"status": "error", "message": "Failed to load manifest."}
 
-    vault_root = vault_override or manifest.get("local_vault_root", "WispsCPPVR/Content/ArtVault")
+    # Dynamic project name update in manifest if set to auto
+    if manifest.get("project_name") == "auto":
+        manifest["project_name"] = project_name
+
+    vault_root = vault_override or manifest.get("local_vault_root", "Content/ArtVault")
     vault_path = resolve_project_path(vault_root, project_root)
 
     # Ensure vault root directory exists as a local placeholder
     os.makedirs(vault_path, exist_ok=True)
 
+    packages = manifest.get("asset_packages", [])
+
+    # Auto-create suggested package folders inside local vault
+    ensure_suggested_vault_folders(vault_path, packages)
+
     # Perform auto-discovery of new subdirectories
     auto_discover_packages(manifest_path, manifest, vault_root, project_root)
-
-    packages = manifest.get("asset_packages", [])
 
     print(f"=== Sovereign Framework Local Art Asset Sync ===")
     print(f"Project Detected: {project_name} ({project_root})")

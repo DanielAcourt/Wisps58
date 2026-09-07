@@ -73,6 +73,22 @@ def detect_uproject(root_dir="."):
     return "UnrealProject", root_path
 
 
+def resolve_project_path(path_str, project_root):
+    """Resolves path_str flexibly against CWD and project_root without duplicating paths."""
+    p = Path(path_str)
+    if p.is_absolute():
+        return p
+
+    proj_path = Path(project_root).resolve()
+
+    # If path starts with project folder name strip prefix if project_root is already that folder
+    if p.parts and p.parts[0] == proj_path.name:
+        p = Path(*p.parts[1:])
+
+    candidate = (proj_path / p).resolve()
+    return candidate
+
+
 def load_manifest(manifest_path="asset_manifest.json"):
     """Loads and validates the asset manifest file."""
     manifest_file = Path(manifest_path)
@@ -95,9 +111,7 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
     adds them to asset_manifest.json to eliminate manual JSON editing.
     Excludes special system folders like Levels, __ExternalActors__, __ExternalObjects__.
     """
-    vault_path = Path(vault_root)
-    if not vault_path.is_absolute():
-        vault_path = Path(project_root) / vault_path
+    vault_path = resolve_project_path(vault_root, project_root)
 
     if not vault_path.exists() or not vault_path.is_dir():
         return False
@@ -144,6 +158,20 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
     return discovered_any
 
 
+def ensure_suggested_vault_folders(vault_path, packages):
+    """Auto-creates suggested vault package folders if they do not exist."""
+    for pkg in packages:
+        source_rel = pkg.get("source_path", "")
+        if source_rel:
+            pkg_src = vault_path / source_rel
+            if not pkg_src.exists():
+                try:
+                    os.makedirs(pkg_src, exist_ok=True)
+                    print(f"[INIT] Auto-created suggested vault directory: {pkg_src}")
+                except Exception as e:
+                    print(f"[WARNING] Could not create suggested folder '{pkg_src}': {e}")
+
+
 def is_file_ignored(file_path):
     """
     Returns True if file or any parent folder in file_path should be excluded from sync.
@@ -175,13 +203,8 @@ def sync_package(vault_root, package, project_root, copy_mode=True):
         return True
 
     # Resolve source path flexible lookup
-    candidate_vault_src = Path(vault_root) / source_rel
-    if not candidate_vault_src.is_absolute():
-        candidate_vault_src = Path(project_root) / candidate_vault_src
-
-    candidate_direct_src = Path(source_rel)
-    if not candidate_direct_src.is_absolute():
-        candidate_direct_src = Path(project_root) / candidate_direct_src
+    candidate_vault_src = resolve_project_path(Path(vault_root) / source_rel, project_root)
+    candidate_direct_src = resolve_project_path(source_rel, project_root)
 
     if candidate_vault_src.exists():
         source_path = candidate_vault_src
@@ -190,9 +213,7 @@ def sync_package(vault_root, package, project_root, copy_mode=True):
     else:
         source_path = candidate_vault_src
 
-    target_path = Path(target_rel)
-    if not target_path.is_absolute():
-        target_path = Path(project_root) / target_path
+    target_path = resolve_project_path(target_rel, project_root)
 
     print(f"\n[SYNC] Processing Package: {name}")
     print(f"       Source: {source_path}")
@@ -260,17 +281,18 @@ def run_sync(manifest_path="asset_manifest.json", vault_override=None, copy_mode
         manifest["project_name"] = project_name
 
     vault_root = vault_override or manifest.get("local_vault_root", "Content/ArtVault")
-    vault_path = Path(vault_root)
-    if not vault_path.is_absolute():
-        vault_path = Path(project_root) / vault_path
+    vault_path = resolve_project_path(vault_root, project_root)
 
     # Ensure vault root directory exists as a local placeholder
     os.makedirs(vault_path, exist_ok=True)
 
+    packages = manifest.get("asset_packages", [])
+
+    # Auto-create suggested package folders inside local vault
+    ensure_suggested_vault_folders(vault_path, packages)
+
     # Perform auto-discovery of new subdirectories
     auto_discover_packages(manifest_path, manifest, vault_root, project_root)
-
-    packages = manifest.get("asset_packages", [])
 
     print(f"=== Sovereign Art Sync (sovereign-art-sync v1.0.1) ===")
     print(f"Project Detected: {project_name} ({project_root})")
