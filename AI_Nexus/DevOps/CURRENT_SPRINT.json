@@ -200,11 +200,11 @@
   {
     "ID": "AD-023",
     "Task": "Community: Standalone Open-Source Tool Packaging",
-    "Complexity": "3",
-    "Status": "Completed",
+    "Complexity": "5",
+    "Status": "Hardened",
     "Node": "DevOps",
-    "Why": "Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository.",
-    "What": "Independent, MIT-licensed standalone package created in OpenSource/ue5-art-sync/ with dynamic project detection, user guide, and batch launcher."
+    "Why": "Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository with bidirectional sync, project auto-detection, and safety guardrails.",
+    "What": "Independent, MIT-licensed standalone package created in OpenSource/ue5-art-sync/ with dynamic project detection, bidirectional sync engine, user guide, and batch launcher."
   },
   {
     "ID": "AD-023b",

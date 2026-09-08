@@ -7,8 +7,8 @@
 **Planned Capacity:** 85 Points (Expanded Community Scope)
 
 > 🎯 **Core Sprint Goal:**
-> **"PSTA Hardware Reality & Hybrid Agent Synergy (Iron Knight + Jules + UE 5.8 MCP Loopback)"**
-> Deploy headless Pi hardware safety nodes, bridge physical sensor telemetry into Unreal, and formalize the Jules-to-Iron-Knight local MCP orchestration protocol under Agency Arbitration Schema (AAS) governance.
+> **"PSTA Hardware Reality, Hybrid Agent Synergy & Zero-Bloat Bidirectional Art Automation (Iron Knight + Jules + UE 5.8 MCP + sovereign-art-sync)"**
+> Deploy headless Pi hardware safety nodes, bridge physical sensor telemetry into Unreal, formalize the Jules-to-Iron-Knight local MCP orchestration protocol under Agency Arbitration Schema (AAS) governance, and release hardened `sovereign-art-sync` bidirectional open-source local art asset automation.
 
 ## 🏃‍♂️ Active Sprint Tickets
 
@@ -36,7 +36,7 @@
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |
 | AD-021 | Local Art Asset Manifest & Gitignore Strategy | 3 | Completed | DevOps | Establish local art asset management solution using asset_manifest.json, Python sync script, and .gitignore rules for binary art assets. | `.gitignore` rules for art assets, `asset_manifest.json`, `sync_art_assets.py` script, Python MCP integration, and documentation in `AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md`. |
 | AD-022 | Community: Educational Stream & YouTube Video Production | 3 | Todo | Research | Script and produce an educational video ("Stop Paying for Git LFS: Unreal Engine Zero-Bloat Art Staging Workflow") explaining the local asset manifest solution. | Published educational video and stream walkthrough on YouTube and memeseco community channels. |
-| AD-023 | Community: Standalone Open-Source Tool Packaging | 3 | Completed | DevOps | Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository. | Independent, MIT-licensed standalone package created in `OpenSource/ue5-art-sync/` with dynamic project detection, user guide, and batch launcher. |
+| AD-023 | Community: Standalone Open-Source Tool Packaging | 5 | Hardened | DevOps | Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository with bidirectional sync, project auto-detection, and safety guardrails. | Independent, MIT-licensed standalone package created in `OpenSource/ue5-art-sync/` with dynamic project detection, bidirectional sync engine, user guide, and batch launcher. |
 | AD-023b | Community: sovereign-art-sync Automated Unit Tests | 2 | Todo | DevOps | Create standalone Python unit test suite (`tests/test_sync.py`) inside `OpenSource/ue5-art-sync/` to test mock project initialization, dynamic `.uproject` discovery, and sync operations. | Python test script in `OpenSource/ue5-art-sync/tests/` running automated unit tests for mock vault sync. |
 | AD-024 | Community: Fab Marketplace Plugin & Utility Widget Packaging | 5 | Todo | DevOps | Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab. | Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button. |
 

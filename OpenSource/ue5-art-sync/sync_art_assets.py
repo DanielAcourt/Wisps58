@@ -3,8 +3,8 @@
 sovereign-art-sync: Local Art Asset Synchronizer & Auto-Discovery Engine for Unreal Engine 5
 Copyright (c) 2026 Daniel Acourt. Version 1.0.1. Licensed under the MIT License.
 
-Parses asset_manifest.json to synchronize external art assets from a local asset vault
-into the Unreal Engine Content directory (e.g. Content/Assets/External/).
+Parses asset_manifest.json to synchronize external art assets bidirectionally between local asset vault
+and Unreal Engine Content directories (e.g. Content/Assets/External/).
 Automatically detects .uproject names and auto-discovers new subdirectories inside local_vault_root.
 
 CRITICAL ARCHITECTURAL SAFETY RULE:
@@ -21,7 +21,7 @@ import shutil
 import argparse
 from pathlib import Path
 
-# Directories and file extensions that MUST NOT be synced from local vault to Content/Assets/
+# Directories and file extensions that MUST NOT be synced
 IGNORED_DIR_NAMES = {
     "__externalactors__",
     "__externalobjects__",
@@ -73,6 +73,22 @@ def detect_uproject(root_dir="."):
     return "UnrealProject", root_path
 
 
+def resolve_project_path(path_str, project_root):
+    """Resolves path_str flexibly against CWD and project_root without duplicating paths."""
+    p = Path(path_str)
+    if p.is_absolute():
+        return p
+
+    proj_path = Path(project_root).resolve()
+
+    # Strip duplicate project folder prefix if present
+    if p.parts and p.parts[0] == proj_path.name:
+        p = Path(*p.parts[1:])
+
+    candidate = (proj_path / p).resolve()
+    return candidate
+
+
 def load_manifest(manifest_path="asset_manifest.json"):
     """Loads and validates the asset manifest file."""
     manifest_file = Path(manifest_path)
@@ -95,9 +111,7 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
     adds them to asset_manifest.json to eliminate manual JSON editing.
     Excludes special system folders like Levels, __ExternalActors__, __ExternalObjects__.
     """
-    vault_path = Path(vault_root)
-    if not vault_path.is_absolute():
-        vault_path = Path(project_root) / vault_path
+    vault_path = resolve_project_path(vault_root, project_root)
 
     if not vault_path.exists() or not vault_path.is_dir():
         return False
@@ -110,7 +124,7 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
             folder_name = item.name
             folder_lower = folder_name.lower()
 
-            # Skip ignored directories (e.g., __ExternalActors__, Levels if placed in vault accidentally)
+            # Skip ignored directories
             if folder_lower in IGNORED_DIR_NAMES or folder_name.startswith("."):
                 print(f"[AUTO-DISCOVERY] Skipping restricted folder '{folder_name}'.")
                 continue
@@ -144,6 +158,20 @@ def auto_discover_packages(manifest_path, manifest_data, vault_root, project_roo
     return discovered_any
 
 
+def ensure_suggested_vault_folders(vault_path, packages):
+    """Auto-creates suggested vault package folders if they do not exist."""
+    for pkg in packages:
+        source_rel = pkg.get("source_path", "")
+        if source_rel:
+            pkg_src = vault_path / source_rel
+            if not pkg_src.exists():
+                try:
+                    os.makedirs(pkg_src, exist_ok=True)
+                    print(f"[INIT] Auto-created suggested vault directory: {pkg_src}")
+                except Exception as e:
+                    print(f"[WARNING] Could not create suggested folder '{pkg_src}': {e}")
+
+
 def is_file_ignored(file_path):
     """
     Returns True if file or any parent folder in file_path should be excluded from sync.
@@ -162,8 +190,73 @@ def is_file_ignored(file_path):
     return False
 
 
+def sync_directory_pair(source_dir, target_dir, copy_mode=True):
+    """
+    Synchronizes files bidirectionally between source_dir and target_dir based on timestamps.
+    Copies newer or missing files from source -> target AND target -> source (auto-vault backup).
+    """
+    os.makedirs(source_dir, exist_ok=True)
+    os.makedirs(target_dir, exist_ok=True)
+
+    synced_forward = 0
+    synced_reverse = 0
+    skipped_count = 0
+
+    # 1. Forward Sync: Source (Vault) -> Target (Content/Assets/External)
+    if source_dir.is_dir():
+        for root, dirs, files in os.walk(source_dir):
+            dirs[:] = [d for d in dirs if d.lower() not in IGNORED_DIR_NAMES and not d.startswith(".")]
+            rel_dir = Path(root).relative_to(source_dir)
+            dest_dir = target_dir / rel_dir
+
+            for file_name in files:
+                src_file = Path(root) / file_name
+                if is_file_ignored(src_file):
+                    skipped_count += 1
+                    continue
+
+                os.makedirs(dest_dir, exist_ok=True)
+                dest_file = dest_dir / file_name
+
+                if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
+                    if copy_mode:
+                        shutil.copy2(src_file, dest_file)
+                    else:
+                        if dest_file.exists():
+                            dest_file.unlink()
+                        os.symlink(src_file.resolve(), dest_file)
+                    synced_forward += 1
+
+    # 2. Reverse Sync: Target (Content/Assets/External) -> Source (Vault)
+    if target_dir.is_dir():
+        for root, dirs, files in os.walk(target_dir):
+            dirs[:] = [d for d in dirs if d.lower() not in IGNORED_DIR_NAMES and not d.startswith(".")]
+            rel_dir = Path(root).relative_to(target_dir)
+            dest_dir = source_dir / rel_dir
+
+            for file_name in files:
+                src_file = Path(root) / file_name
+                if is_file_ignored(src_file):
+                    skipped_count += 1
+                    continue
+
+                os.makedirs(dest_dir, exist_ok=True)
+                dest_file = dest_dir / file_name
+
+                if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
+                    if copy_mode:
+                        shutil.copy2(src_file, dest_file)
+                    else:
+                        if dest_file.exists():
+                            dest_file.unlink()
+                        os.symlink(src_file.resolve(), dest_file)
+                    synced_reverse += 1
+
+    return synced_forward, synced_reverse, skipped_count
+
+
 def sync_package(vault_root, package, project_root, copy_mode=True):
-    """Syncs an individual asset package from local vault to target destination."""
+    """Syncs an individual asset package bidirectionally between vault and target destination."""
     package_id = package.get("package_id", "unknown")
     name = package.get("name", package_id)
     source_rel = package.get("source_path", "")
@@ -174,103 +267,62 @@ def sync_package(vault_root, package, project_root, copy_mode=True):
         print(f"[SKIP] Package '{name}' ({package_id}) is disabled in manifest.")
         return True
 
-    # Resolve source path flexible lookup
-    candidate_vault_src = Path(vault_root) / source_rel
-    if not candidate_vault_src.is_absolute():
-        candidate_vault_src = Path(project_root) / candidate_vault_src
+    candidate_vault_src = resolve_project_path(Path(vault_root) / source_rel, project_root)
+    candidate_direct_src = resolve_project_path(source_rel, project_root)
 
-    candidate_direct_src = Path(source_rel)
-    if not candidate_direct_src.is_absolute():
-        candidate_direct_src = Path(project_root) / candidate_direct_src
-
-    if candidate_vault_src.exists():
+    if candidate_vault_src.exists() or not candidate_direct_src.exists():
         source_path = candidate_vault_src
-    elif candidate_direct_src.exists():
-        source_path = candidate_direct_src
     else:
-        source_path = candidate_vault_src
+        source_path = candidate_direct_src
 
-    target_path = Path(target_rel)
-    if not target_path.is_absolute():
-        target_path = Path(project_root) / target_path
+    target_path = resolve_project_path(target_rel, project_root)
 
     print(f"\n[SYNC] Processing Package: {name}")
-    print(f"       Source: {source_path}")
-    print(f"       Target: {target_path}")
+    print(f"       Vault Source : {source_path}")
+    print(f"       Engine Target: {target_path}")
 
-    if not source_path.exists():
-        print(f"[WARNING] Local vault source path does not exist: {source_path}")
-        print("          Please place asset files into the vault directory or update asset_manifest.json.")
-        return False
-
-    # Prevent copying folder onto itself
     if source_path.resolve() == target_path.resolve():
         print(f"[NOTICE] Package source and target are identical directory ({source_path.resolve()}).")
-        print("         Assets are already in place in target directory.")
         return True
 
-    os.makedirs(target_path, exist_ok=True)
+    forward, reverse, skipped = sync_directory_pair(source_path, target_path, copy_mode=copy_mode)
 
-    synced_count = 0
-    skipped_count = 0
+    status_msg = f"[SUCCESS] Package '{name}' synced ("
+    details = []
+    if forward > 0:
+        details.append(f"{forward} copied to engine")
+    if reverse > 0:
+        details.append(f"{reverse} backed up to vault")
+    if forward == 0 and reverse == 0:
+        details.append("0 files updated, up to date")
+    if skipped > 0:
+        details.append(f"{skipped} restricted files skipped")
 
-    if source_path.is_dir():
-        for root, dirs, files in os.walk(source_path):
-            # Prune ignored directory names in-place so os.walk doesn't traverse them
-            dirs[:] = [d for d in dirs if d.lower() not in IGNORED_DIR_NAMES and not d.startswith(".")]
-
-            rel_dir = Path(root).relative_to(source_path)
-            dest_dir = target_path / rel_dir
-
-            for file_name in files:
-                src_file = Path(root) / file_name
-
-                # Check safety rule filters
-                if is_file_ignored(src_file):
-                    skipped_count += 1
-                    continue
-
-                os.makedirs(dest_dir, exist_ok=True)
-                dest_file = dest_dir / file_name
-
-                # Copy if missing or modified time differs
-                if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
-                    if copy_mode:
-                        shutil.copy2(src_file, dest_file)
-                    else:
-                        if dest_file.exists():
-                            dest_file.unlink()
-                        os.symlink(src_file.resolve(), dest_file)
-                    synced_count += 1
-
-    print(f"[SUCCESS] Package '{name}' synced ({synced_count} files updated, {skipped_count} ignored/level files skipped).")
+    status_msg += ", ".join(details) + ")."
+    print(status_msg)
     return True
 
 
 def run_sync(manifest_path="asset_manifest.json", vault_override=None, copy_mode=True):
-    """Executes the full asset synchronization process."""
+    """Executes the full bidirectional asset synchronization process."""
     project_name, project_root = detect_uproject()
 
     manifest = load_manifest(manifest_path)
     if not manifest:
         return {"status": "error", "message": "Failed to load manifest."}
 
-    # Dynamic project name update in manifest if set to auto
     if manifest.get("project_name") == "auto":
         manifest["project_name"] = project_name
 
     vault_root = vault_override or manifest.get("local_vault_root", "Content/ArtVault")
-    vault_path = Path(vault_root)
-    if not vault_path.is_absolute():
-        vault_path = Path(project_root) / vault_path
+    vault_path = resolve_project_path(vault_root, project_root)
 
-    # Ensure vault root directory exists as a local placeholder
     os.makedirs(vault_path, exist_ok=True)
 
-    # Perform auto-discovery of new subdirectories
-    auto_discover_packages(manifest_path, manifest, vault_root, project_root)
-
     packages = manifest.get("asset_packages", [])
+
+    ensure_suggested_vault_folders(vault_path, packages)
+    auto_discover_packages(manifest_path, manifest, vault_root, project_root)
 
     print(f"=== Sovereign Art Sync (sovereign-art-sync v1.0.1) ===")
     print(f"Project Detected: {project_name} ({project_root})")
@@ -295,7 +347,7 @@ def run_sync(manifest_path="asset_manifest.json", vault_override=None, copy_mode
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="sovereign-art-sync: Synchronize local art assets into Unreal Engine Content directory.")
+    parser = argparse.ArgumentParser(description="sovereign-art-sync: Synchronize local art assets bidirectionally into Unreal Engine Content directory.")
     parser.add_argument("--manifest", default="asset_manifest.json", help="Path to asset_manifest.json")
     parser.add_argument("--vault", default=None, help="Override local asset vault root folder")
     parser.add_argument("--symlink", action="store_true", help="Use symlinks instead of copying files")
