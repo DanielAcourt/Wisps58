@@ -154,6 +154,17 @@ class TestSovereignArtSync(unittest.TestCase):
 
     def test_bidirectional_sync_symlink_mode(self):
         """Verify symlink creation in symlink mode."""
+        # Check if environment permits symlink creation
+        dummy_src = Path(self.test_dir) / "dummy_src.txt"
+        dummy_link = Path(self.test_dir) / "dummy_link.txt"
+        dummy_src.write_text("test", encoding="utf-8")
+        try:
+            os.symlink(dummy_src, dummy_link)
+            if dummy_link.exists():
+                dummy_link.unlink()
+        except OSError:
+            self.skipTest("Symlinks require Administrator privileges or enabling Windows Developer Mode.")
+
         mesh_vault_dir = self.vault_dir / "Meshes"
         mesh_engine_dir = self.target_dir / "Meshes"
         mesh_vault_dir.mkdir(parents=True, exist_ok=True)

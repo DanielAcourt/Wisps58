@@ -223,11 +223,16 @@ def sync_directory_pair(source_dir, target_dir, copy_mode=True):
                 if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
                     if copy_mode:
                         shutil.copy2(src_file, dest_file)
+                        synced_forward += 1
                     else:
-                        if dest_file.exists():
-                            dest_file.unlink()
-                        os.symlink(src_file.resolve(), dest_file)
-                    synced_forward += 1
+                        try:
+                            if dest_file.exists():
+                                dest_file.unlink()
+                            os.symlink(src_file.resolve(), dest_file)
+                            synced_forward += 1
+                        except OSError as e:
+                            print(f"[ERROR] Could not create symlink '{dest_file}': {e}")
+                            print("        Note: On Windows, creating symlinks requires Administrator privileges or enabling Developer Mode.")
 
     # 2. Reverse Sync: Target (Content/Assets/External) -> Source (Vault)
     if target_dir.is_dir():
@@ -248,11 +253,16 @@ def sync_directory_pair(source_dir, target_dir, copy_mode=True):
                 if not dest_file.exists() or src_file.stat().st_mtime > dest_file.stat().st_mtime:
                     if copy_mode:
                         shutil.copy2(src_file, dest_file)
+                        synced_reverse += 1
                     else:
-                        if dest_file.exists():
-                            dest_file.unlink()
-                        os.symlink(src_file.resolve(), dest_file)
-                    synced_reverse += 1
+                        try:
+                            if dest_file.exists():
+                                dest_file.unlink()
+                            os.symlink(src_file.resolve(), dest_file)
+                            synced_reverse += 1
+                        except OSError as e:
+                            print(f"[ERROR] Could not create symlink '{dest_file}': {e}")
+                            print("        Note: On Windows, creating symlinks requires Administrator privileges or enabling Developer Mode.")
 
     return synced_forward, synced_reverse, skipped_count
 
