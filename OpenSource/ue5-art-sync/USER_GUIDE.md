@@ -92,3 +92,19 @@ Here is the exact step-by-step process when adding assets, building levels, and 
 1. **In Git**: Teammates run `git pull`. They receive level layout files (`MainLevel.umap`), C++ logic, and `asset_manifest.json` (which records where the Dragon Egg is placed in the 3D room).
 2. **In Vault**: Teammates place `DragonEgg.uasset` (or its raw `.fbx`) into their local `Content/ArtVault/Meshes/` folder and double-click `sync_art_assets.bat`.
 3. **In UE5**: Open Unreal Engine 5. UE5 opens `MainLevel.umap`, resolves the path `/Game/Assets/External/ArtVault/Meshes/DragonEgg`, and renders the egg perfectly in the level!
+
+---
+
+## 🧪 Automated Testing & Continuous Integration (CI)
+
+To ensure sync logic stability across Python versions and OS environments, run the standalone test suite:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+```
+
+### Test Coverage:
+* **Mock Project Setup**: Simulates temporary project roots and `.uproject` detection.
+* **Manifest Parsing**: Tests JSON loading, error handling, and vault auto-registration.
+* **Safety Rules**: Verifies that `.umap`, World Partition metadata (`__ExternalActors__`, `__ExternalObjects__`), backup `.bak` files, and temporary logs are never synced into Content.
+* **Sync Verification**: Asserts forward (vault -> engine) and reverse (engine -> vault) timestamp copy behavior and symlink support.

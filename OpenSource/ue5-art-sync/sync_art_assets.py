@@ -177,10 +177,12 @@ def is_file_ignored(file_path):
     Returns True if file or any parent folder in file_path should be excluded from sync.
     """
     path_obj = Path(file_path)
+    file_name_lower = path_obj.name.lower()
 
     # Check extension
-    if path_obj.suffix.lower() in IGNORED_FILE_EXTENSIONS:
-        return True
+    for ext in IGNORED_FILE_EXTENSIONS:
+        if file_name_lower.endswith(ext):
+            return True
 
     # Check directory parts
     for part in path_obj.parts:

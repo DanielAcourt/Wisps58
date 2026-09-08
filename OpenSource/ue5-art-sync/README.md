@@ -58,6 +58,25 @@ For complete operational details and team workflows, read [USER_GUIDE.md](USER_G
 
 ---
 
+## 🧪 Running Automated Unit Tests
+
+`sovereign-art-sync` includes a zero-dependency Python unit test suite located in `tests/test_sync.py`.
+
+To execute the automated test suite locally:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+```
+
+The test suite validates:
+* Dynamic `.uproject` file auto-detection.
+* Asset manifest parsing and automatic vault directory registration.
+* Bidirectional (forward and reverse) timestamp-based asset sync.
+* Safety rule guardrails (`.umap`, `.umap.bak`, `__ExternalActors__`, `__ExternalObjects__`, `.uasset.bak`, `.tmp`, `.log` file exclusions).
+* Copy mode and symlink mode operations.
+
+---
+
 ## 📜 License
 
 Licensed under the [MIT License](LICENSE).
