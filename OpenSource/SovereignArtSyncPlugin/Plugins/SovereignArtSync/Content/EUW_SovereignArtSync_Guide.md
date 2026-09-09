@@ -2,26 +2,41 @@
 
 The `SovereignArtSync` plugin provides an in-editor toolbar panel and Editor Utility Widget for 1-click local asset synchronization in Unreal Engine 5.
 
-## Widget Layout & Blueprint Nodes
+---
 
-### 1. "1-Click Sync Assets" Button
-* **On Clicked Event**:
-  * Calls Python Command via `Execute Python Command`:
-    ```python
-    import sovereign_art_sync_plugin
-    result_log = sovereign_art_sync_plugin.execute_1click_sync(manifest_path="asset_manifest.json")
-    ```
-  * Binds `result_log` output string to the UI Multi-Line Editable Text Log Box.
+## ⚡ EXACT COPY-PASTE BLUEPRINT COMMAND STRINGS
 
-### 2. "Dry Run / Auto-Discover Packages" Button
-* **On Clicked Event**:
-  * Calls Python Command via `Execute Python Command`:
-    ```python
-    import sovereign_art_sync_plugin
-    result_log = sovereign_art_sync_plugin.execute_dry_run_autodiscover(manifest_path="asset_manifest.json")
-    ```
-  * Binds `result_log` output string to the UI Log Box.
+In your Editor Utility Widget Blueprint, connect the **On Clicked** event of your button to the **Execute Python Command** node (from `Editor Scripting Utilities`).
 
-### 3. Path Inputs & Overrides
-* **Manifest Path Input Text Box** (Default: `asset_manifest.json`)
-* **Vault Root Path Input Text Box** (Default: `Content/ArtVault`)
+### String Input Pin for "Execute Python Command" Node:
+
+```text
+execute_1click_sync()
+```
+
+*(Copy and paste the line above directly into the **Python Command** string input pin of the **Execute Python Command** node!)*
+
+---
+
+## 🛑 IMPORTANT SYNTAX WARNINGS
+
+1. **DO NOT add the word `python` at the start of the string!**
+   - ❌ WRONG: `python execute_1click_sync()`  *(Causes SyntaxError: invalid syntax)*
+   - ✅ CORRECT: `execute_1click_sync()`
+
+2. **DO NOT add leading spaces, tabs, or blank lines!**
+   - ❌ WRONG:
+     ```text
+
+        execute_1click_sync()
+     ```
+     *(Causes IndentationError: unexpected indent)*
+   - ✅ CORRECT: `execute_1click_sync()`  *(No spaces or newlines before the text!)*
+
+---
+
+## 🎨 Dry Run & Auto-Discover String Pin:
+
+```text
+execute_dry_run_autodiscover()
+```

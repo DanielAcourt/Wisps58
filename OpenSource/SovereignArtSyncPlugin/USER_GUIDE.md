@@ -85,9 +85,10 @@ You can build a custom in-editor UI panel with a **1-Click Sync** button inside 
 1. Select `Btn_SyncAssets` and click **On Clicked** in the Details panel.
 2. In the Event Graph, add the node **Execute Python Command** (from `Editor Scripting Utilities`).
 3. Set **Python Command** string to:
-   ```python
-   import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
+   ```text
+   execute_1click_sync()
    ```
+   *(Note: Do NOT type `python` before `execute_1click_sync()`, and ensure there are no leading spaces or blank lines!)*
 4. Drag off `LogOutput` -> **Set Text** to display output status messages.
 
 ### Step 4: Run the Widget
