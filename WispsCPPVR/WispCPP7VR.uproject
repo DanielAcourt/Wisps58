@@ -48,6 +48,9 @@
 			"Enabled": true
 		}
 	],
+	"AdditionalPluginDirectories": [
+		"Content/Plugins"
+	],
 	"TargetPlatforms": [
 		"Android",
 		"IOS",
