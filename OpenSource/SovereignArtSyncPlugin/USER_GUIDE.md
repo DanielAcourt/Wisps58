@@ -13,12 +13,15 @@ In Unreal Engine 5, binary art assets quickly swell repository sizes to tens or 
 ## 📦 Plugin Installation & Setup
 
 ### 1. Copy Plugin Directory
-Copy the `SovereignArtSync` folder into your Unreal Engine project's `Plugins/` directory:
+
+> ⚠️ **CRITICAL INSTALLATION WARNING:**
+> The plugin folder **MUST** be placed directly inside `[YourProjectRoot]/Plugins/SovereignArtSync/`.
+> **DO NOT** place it inside `Content/Plugins/`! Placement inside `Content/` prevents Unreal Engine from loading `init_unreal.py` on startup.
 
 ```text
-[YourUE5ProjectRoot]/
-├── YourGame.uproject
-├── Plugins/
+[YourUE5ProjectRoot]/          # (e.g. WispsCPPVR/)
+├── YourGame.uproject          # (e.g. WispsCPPVR.uproject)
+├── Plugins/                   # <-- Direct child of Project Root
 │   └── SovereignArtSync/
 │       ├── SovereignArtSync.uplugin
 │       ├── Content/
@@ -99,3 +102,22 @@ You can build a custom in-editor UI panel with a **1-Click Sync** button inside 
 1. **Drop New Assets:** Copy `.uasset` folders (e.g. `Meshes`, `Textures`) into `Content/ArtVault/`.
 2. **1-Click Sync:** Click the **1-Click Sync** button in your Editor Utility Widget or type `execute_1click_sync()` in the Output Log.
 3. **Save in UE5:** Import FBX or edit materials in UE5 and press `Ctrl + S`. Running **1-Click Sync** automatically backs up updated `.uassets` to `Content/ArtVault/`.
+
+---
+
+## ❓ Troubleshooting Common Output Log Errors
+
+### 1. `NameError: name 'sovereign_art_sync_plugin' is not defined`
+* **Cause:** The plugin was placed in `Content/Plugins/` instead of `Plugins/`, or Unreal Engine was not restarted after enabling the Python Script Plugin.
+* **Fix:** Move the plugin to `[YourProjectRoot]/Plugins/SovereignArtSync/` and restart Unreal Engine 5. Verify that the startup message `LogPython: Sovereign Art Sync Plugin initialized.` appears in the log.
+
+### 2. `IndentationError: unexpected indent`
+* **Cause:** Typing multi-line Python with leading spaces or indentation into Unreal's single-line command bar.
+* **Fix:** Type single-line statements separated by semicolons:
+  ```python
+  import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
+  ```
+  Or simply type:
+  ```python
+  execute_1click_sync()
+  ```

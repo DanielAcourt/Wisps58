@@ -33,6 +33,26 @@ IGNORED_FILE_EXTENSIONS = {
 
 def detect_uproject(root_dir="."):
     """Scans for .uproject files to resolve project context."""
+    # 1. Try Unreal Engine Editor API if available
+    try:
+        import unreal
+        proj_file = unreal.Paths.get_project_file_path()
+        if proj_file:
+            proj_path = Path(proj_file).resolve()
+            if proj_path.suffix == ".uproject":
+                return proj_path.stem, proj_path.parent
+
+        proj_dir = unreal.Paths.project_dir()
+        if proj_dir:
+            proj_path = Path(proj_dir).resolve()
+            uprojects = list(proj_path.glob("*.uproject"))
+            if uprojects:
+                return uprojects[0].stem, proj_path
+            return proj_path.name, proj_path
+    except Exception:
+        pass
+
+    # 2. Fallback to filesystem search
     root_path = Path(root_dir).resolve()
 
     uproject_files = list(root_path.glob("*.uproject"))

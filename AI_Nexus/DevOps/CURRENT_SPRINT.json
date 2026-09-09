@@ -219,7 +219,7 @@
     "ID": "AD-024",
     "Task": "Community: Fab Marketplace Plugin & Utility Widget Packaging",
     "Complexity": "5",
-    "Status": "Completed",
+    "Status": "In Progress",
     "Node": "DevOps",
     "Why": "Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab.",
     "What": "Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button."
