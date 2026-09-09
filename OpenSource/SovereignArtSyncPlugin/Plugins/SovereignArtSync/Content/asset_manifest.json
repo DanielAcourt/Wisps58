@@ -1,0 +1,34 @@
+{
+  "manifest_version": "1.0.0",
+  "project_name": "auto",
+  "local_vault_root": "Content/ArtVault",
+  "asset_packages": [
+    {
+      "package_id": "art_vault_meshes",
+      "name": "Art Vault Meshes",
+      "version": "1.0.0",
+      "source_path": "Meshes",
+      "target_destination": "Content/Assets/External/ArtVault/Meshes",
+      "enabled": true,
+      "description": "Static & Skeletal Meshes"
+    },
+    {
+      "package_id": "art_vault_textures",
+      "name": "Art Vault Textures",
+      "version": "1.0.0",
+      "source_path": "Textures",
+      "target_destination": "Content/Assets/External/ArtVault/Textures",
+      "enabled": true,
+      "description": "2D Textures & Normal Maps"
+    },
+    {
+      "package_id": "art_vault_materials",
+      "name": "Art Vault Materials",
+      "version": "1.0.0",
+      "source_path": "Materials",
+      "target_destination": "Content/Assets/External/ArtVault/Materials",
+      "enabled": true,
+      "description": "Master Materials & Material Instances"
+    }
+  ]
+}

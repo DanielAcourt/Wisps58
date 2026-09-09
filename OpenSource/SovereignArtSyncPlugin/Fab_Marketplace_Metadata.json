@@ -1,0 +1,13 @@
+{
+  "product_title": "Sovereign Art Sync: Zero-Bloat Local Asset Synchronizer",
+  "short_description": "Decouple heavy binary .uasset files from Git source control with 1-click in-editor sync and auto-discovery in Unreal Engine 5.",
+  "long_description": "Sovereign Art Sync solves repository bloat in Unreal Engine 5 projects. It decouples heavy binary .uasset files (meshes, high-res textures, materials, audio) from Git source control while preserving level layouts, C++ source code, and Blueprint DNA. Includes an Editor Utility Widget (EUW) for 1-click in-editor synchronization and auto-discovery.",
+  "category": "Code Plugins / Editor",
+  "target_engine_versions": ["5.8", "5.7", "5.6", "5.5"],
+  "supported_target_platforms": ["Win64", "Linux", "Mac"],
+  "supported_build_target_types": ["Editor"],
+  "tags": ["art", "pipeline", "git", "storage", "utility", "tools", "python", "workflow", "editor"],
+  "author": "Daniel Acourt",
+  "version": "1.0.0",
+  "license": "MIT"
+}

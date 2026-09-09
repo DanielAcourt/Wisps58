@@ -210,7 +210,7 @@
     "ID": "AD-023b",
     "Task": "Community: sovereign-art-sync Automated Unit Tests",
     "Complexity": "2",
-    "Status": "In Progress",
+    "Status": "Completed",
     "Node": "DevOps",
     "Why": "Create standalone Python unit test suite (tests/test_sync.py) inside OpenSource/ue5-art-sync/ to test mock project initialization, dynamic .uproject discovery, and sync operations.",
     "What": "Python test script in OpenSource/ue5-art-sync/tests/ running automated unit tests for mock vault sync."
@@ -219,7 +219,7 @@
     "ID": "AD-024",
     "Task": "Community: Fab Marketplace Plugin & Utility Widget Packaging",
     "Complexity": "5",
-    "Status": "Todo",
+    "Status": "Completed",
     "Node": "DevOps",
     "Why": "Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab.",
     "What": "Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button."
