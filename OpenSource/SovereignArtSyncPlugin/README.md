@@ -33,12 +33,22 @@
 
 ## 🛠️ Usage
 
-### In-Editor 1-Click Sync
-Open the Editor Utility Widget (`EUW_SovereignArtSync`) or execute from the Python Console:
+### Option 1: Output Log Console (Cmd Python)
+Type directly into the UE Output Log console (Cmd Python mode):
 ```python
-import sovereign_art_sync_plugin
-sovereign_art_sync_plugin.execute_1click_sync()
+execute_1click_sync()
 ```
+Or as a 1-liner:
+```python
+import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
+```
+
+### Option 2: Editor Utility Widget (EUW)
+Wire a button in your Editor Utility Widget using the **Execute Python Command** node:
+```python
+import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
+```
+Read [USER_GUIDE.md](USER_GUIDE.md) for complete step-by-step EUW setup instructions.
 
 ---
 
