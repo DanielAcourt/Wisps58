@@ -37,11 +37,13 @@ def execute_1click_sync(manifest_path="asset_manifest.json", vault_override=None
         logs.append(f"• {pkg['package']}: {pkg['forward']} copied to engine, {pkg['reverse']} backed up to vault.")
 
     output = "\n".join(logs)
+    # Always print to sys.stdout so 'Execute Python Command Advanced' node captures log output in Blueprint
+    print(output)
     try:
         import unreal
         unreal.log(output)
     except ImportError:
-        print(output)
+        pass
 
     return output
 
@@ -68,11 +70,13 @@ def execute_dry_run_autodiscover(manifest_path="asset_manifest.json", vault_over
         logs.append(f"• {pkg['package']}: {pkg['forward']} pending forward, {pkg['reverse']} pending reverse.")
 
     output = "\n".join(logs)
+    # Always print to sys.stdout so 'Execute Python Command Advanced' node captures log output in Blueprint
+    print(output)
     try:
         import unreal
         unreal.log(output)
     except ImportError:
-        print(output)
+        pass
 
     return output
 
