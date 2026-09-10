@@ -14,7 +14,21 @@ In your Editor Utility Widget Blueprint, connect the **On Clicked** event of you
 execute_1click_sync()
 ```
 
-*(Copy and paste the line above directly into the **Python Command** string input pin of the **Execute Python Command** node!)*
+*(Copy and paste the line above directly into the **Python Command** string input pin of the node!)*
+
+---
+
+## 💡 Standard vs. Advanced Blueprint Nodes Explained
+
+Unreal Engine provides two Python execution Blueprint nodes:
+
+### Option A: Standard `Execute Python Command` Node (Default & Simplest)
+* **Return Value:** Returns a `bool` (`True` if the sync ran successfully, `False` if failed).
+* **Where logs appear:** Writes the complete sync report directly into Unreal Engine's **Output Log** tab under the **`LogPython`** category.
+
+### Option B: `Execute Python Command Advanced` Node (For UI Text Boxes)
+* **Return Value:** Has an additional **`Command Result` / `Log Output`** String pin!
+* **Where logs appear:** Allows you to connect the string output directly into a Blueprint **Set Text** or **Print String** node to display log results inside your Widget UI panel.
 
 ---
 

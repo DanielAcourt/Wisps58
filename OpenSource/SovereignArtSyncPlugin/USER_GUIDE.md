@@ -84,12 +84,12 @@ You can build a custom in-editor UI panel with a **1-Click Sync** button inside 
 ### Step 3: Wire the Blueprint Graph
 1. Select `Btn_SyncAssets` and click **On Clicked** in the Details panel.
 2. In the Event Graph, add the node **Execute Python Command** (from `Editor Scripting Utilities`).
+   * *Note on Node Return Values:* Standard `Execute Python Command` returns a `bool` (success/fail) and logs to Unreal's **Output Log** tab. If you want the log output as a string pin directly in Blueprint to bind to a UI Text Box, use **Execute Python Command Advanced**!
 3. Set **Python Command** string to:
    ```text
    execute_1click_sync()
    ```
    *(Note: Do NOT type `python` before `execute_1click_sync()`, and ensure there are no leading spaces or blank lines!)*
-4. Drag off `LogOutput` -> **Set Text** to display output status messages.
 
 ### Step 4: Run the Widget
 1. Right-click `EUW_SovereignArtSync` in the Content Browser.
