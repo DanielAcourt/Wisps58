@@ -23,25 +23,29 @@ def execute_1click_sync(manifest_path="asset_manifest.json", vault_override=None
     res = engine.run_sync(manifest_path=manifest_path, vault_override=vault_override, copy_mode=True, dry_run=False)
 
     if res.get("status") == "error":
-        return f"[ERROR] {res.get('message')}"
+        output = f"[ERROR] {res.get('message')}"
+    else:
+        logs = [
+            f"=== Sovereign Art Sync (1-Click Sync Complete) ===",
+            f"Project Name   : {res.get('project_name')}",
+            f"Packages Synced: {res.get('total_packages')}",
+            f"Engine Copies  : {res.get('total_forward')} files",
+            f"Vault Backups  : {res.get('total_reverse')} files\n"
+        ]
 
-    logs = [
-        f"=== Sovereign Art Sync (1-Click Sync Complete) ===",
-        f"Project Name   : {res.get('project_name')}",
-        f"Packages Synced: {res.get('total_packages')}",
-        f"Engine Copies  : {res.get('total_forward')} files",
-        f"Vault Backups  : {res.get('total_reverse')} files\n"
-    ]
+        for pkg in res.get("package_results", []):
+            logs.append(f"• {pkg['package']}: {pkg['forward']} copied to engine, {pkg['reverse']} backed up to vault.")
 
-    for pkg in res.get("package_results", []):
-        logs.append(f"• {pkg['package']}: {pkg['forward']} copied to engine, {pkg['reverse']} backed up to vault.")
+        output = "\n".join(logs)
 
-    output = "\n".join(logs)
     # Always print to sys.stdout so 'Execute Python Command Advanced' node captures log output in Blueprint
     print(output)
     try:
         import unreal
-        unreal.log(output)
+        if res.get("status") == "error":
+            unreal.log_error(output)
+        else:
+            unreal.log(output)
     except ImportError:
         pass
 
@@ -56,25 +60,29 @@ def execute_dry_run_autodiscover(manifest_path="asset_manifest.json", vault_over
     res = engine.run_sync(manifest_path=manifest_path, vault_override=vault_override, copy_mode=True, dry_run=True)
 
     if res.get("status") == "error":
-        return f"[ERROR] {res.get('message')}"
+        output = f"[ERROR] {res.get('message')}"
+    else:
+        logs = [
+            f"=== Sovereign Art Sync (Dry-Run & Auto-Discovery) ===",
+            f"Project Name   : {res.get('project_name')}",
+            f"Packages Found : {res.get('total_packages')}",
+            f"Pending Copies : {res.get('total_forward')} files",
+            f"Pending Backups: {res.get('total_reverse')} files\n"
+        ]
 
-    logs = [
-        f"=== Sovereign Art Sync (Dry-Run & Auto-Discovery) ===",
-        f"Project Name   : {res.get('project_name')}",
-        f"Packages Found : {res.get('total_packages')}",
-        f"Pending Copies : {res.get('total_forward')} files",
-        f"Pending Backups: {res.get('total_reverse')} files\n"
-    ]
+        for pkg in res.get("package_results", []):
+            logs.append(f"• {pkg['package']}: {pkg['forward']} pending forward, {pkg['reverse']} pending reverse.")
 
-    for pkg in res.get("package_results", []):
-        logs.append(f"• {pkg['package']}: {pkg['forward']} pending forward, {pkg['reverse']} pending reverse.")
+        output = "\n".join(logs)
 
-    output = "\n".join(logs)
     # Always print to sys.stdout so 'Execute Python Command Advanced' node captures log output in Blueprint
     print(output)
     try:
         import unreal
-        unreal.log(output)
+        if res.get("status") == "error":
+            unreal.log_error(output)
+        else:
+            unreal.log(output)
     except ImportError:
         pass
 
