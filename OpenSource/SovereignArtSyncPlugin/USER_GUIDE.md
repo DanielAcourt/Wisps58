@@ -114,11 +114,11 @@ You can build a custom in-editor UI panel with a **1-Click Sync** button inside 
 
 ### 2. `IndentationError: unexpected indent`
 * **Cause:** Typing multi-line Python with leading spaces or indentation into Unreal's single-line command bar.
-* **Fix:** Type single-line statements separated by semicolons:
-  ```python
-  import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
-  ```
-  Or simply type:
+* **Fix:** Simply type:
   ```python
   execute_1click_sync()
   ```
+
+### 3. Advanced Node Output Returns `None`
+* **Cause:** Typing `import sovereign_art_sync_plugin; ...` inside the Advanced Python node forces Python into statement execution mode, which yields `None`.
+* **Fix:** Leave out the `import` statement and type **only** `execute_1click_sync()`. Because `init_unreal.py` pre-loads the function on startup, typing `execute_1click_sync()` directly evaluates as an expression and returns the full log string to Blueprint!
