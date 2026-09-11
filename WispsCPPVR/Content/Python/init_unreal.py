@@ -12,10 +12,11 @@ sovereign_mcp_tools.register_sovereign_tools()
 
 try:
     import sovereign_art_sync_plugin
-    from sovereign_art_sync_plugin import execute_1click_sync, execute_dry_run_autodiscover, get_last_sync_log
+    from sovereign_art_sync_plugin import execute_1click_sync, execute_artist_friendly_sync, execute_dry_run_autodiscover, get_last_sync_log
 
     builtins.sovereign_art_sync_plugin = sovereign_art_sync_plugin
     builtins.execute_1click_sync = execute_1click_sync
+    builtins.execute_artist_friendly_sync = execute_artist_friendly_sync
     builtins.execute_dry_run_autodiscover = execute_dry_run_autodiscover
     builtins.get_last_sync_log = get_last_sync_log
     unreal.log("🏛️ Sovereign Framework: Art Sync Tools registered into Python builtins context.")
