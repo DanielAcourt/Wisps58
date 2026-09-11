@@ -88,11 +88,31 @@ bool ASovereignIronKnightAgent::PerformAgentPossession(AActor* TargetVessel)
 		SaveDataComponent->AddUnknownTag(TEXT("IsPossessing"), TEXT("True"));
 	}
 
+	// B-044 Bidirectional Possession State Sync: Update target vessel's SaveDataComponent
+	USovereignSaveableEntityComponent* TargetSoul = TargetVessel->FindComponentByClass<USovereignSaveableEntityComponent>();
+	if (TargetSoul)
+	{
+		TargetSoul->bIsBeingPossessed = true;
+		TargetSoul->AddUnknownTag(TEXT("PossessingEntity"), TEXT("SIM_IronKnight"));
+		TargetSoul->AddUnknownTag(TEXT("PossessingAgentType"), TEXT("IronKnight"));
+	}
+
 	return true;
 }
 
 void ASovereignIronKnightAgent::EjectAgentPossession()
 {
+	if (PossessedTargetActor)
+	{
+		USovereignSaveableEntityComponent* TargetSoul = PossessedTargetActor->FindComponentByClass<USovereignSaveableEntityComponent>();
+		if (TargetSoul)
+		{
+			TargetSoul->bIsBeingPossessed = false;
+			TargetSoul->AddUnknownTag(TEXT("PossessingEntity"), TEXT("None"));
+			TargetSoul->AddUnknownTag(TEXT("PossessingAgentType"), TEXT("None"));
+		}
+	}
+
 	PossessedTargetActor = nullptr;
 	PossessedTargetName = TEXT("None");
 	bIsPossessingTarget = false;
