@@ -45,7 +45,9 @@ void ASovereignIronKnightAgent::BeginPlay()
 		if (USovereignBridgeSubsystem* BridgeSubsystem = World->GetSubsystem<USovereignBridgeSubsystem>())
 		{
 			BridgeSubsystem->StartMailboxPolling(TEXT("SIM_IronKnight"));
+			BridgeSubsystem->StartMailboxPolling(GetName());
 			BridgeSubsystem->StartDirectivePolling(TEXT("SIM_IronKnight"));
+			BridgeSubsystem->StartDirectivePolling(GetName());
 		}
 	}
 

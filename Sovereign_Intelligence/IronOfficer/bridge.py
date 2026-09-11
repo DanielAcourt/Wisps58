@@ -186,6 +186,62 @@ unreal_directives_queue: Dict[str, List[Dict[str, Any]]] = {}
 # Cached active simulation states keyed by normalized actor name
 active_simulation_states: Dict[str, Dict[str, Any]] = {}
 
+def resolve_target_aliases(target_name: str) -> List[str]:
+    """
+    [AD-033] Resolves target entity aliases across instance names (e.g. MySovereignIronKnightAgent_C_1),
+    canonical tags (SIM_IronKnight, IronKnight), and active World Manifest entries.
+    """
+    if not target_name:
+        return []
+
+    aliases: Set[str] = set()
+    raw = target_name.strip()
+    clean = raw.replace("SIM_", "")
+
+    aliases.add(raw)
+    aliases.add(clean)
+    aliases.add(f"SIM_{clean}")
+
+    # Canonical Iron Knight mappings
+    if "ironknight" in raw.lower() or "iron_knight" in raw.lower():
+        aliases.update([
+            "IronKnight",
+            "SIM_IronKnight",
+            "MySovereignIronKnightAgent",
+            "MySovereignIronKnightAgent_C_1"
+        ])
+
+    # Dynamic World Manifest resolution
+    world_manifest = active_simulation_states.get("WORLD_MANIFEST")
+    if world_manifest and isinstance(world_manifest, dict):
+        for actor_name, entity_state in world_manifest.items():
+            clean_actor = actor_name.replace("SIM_", "")
+            actor_matches = (
+                clean in actor_name or
+                actor_name in clean or
+                clean.lower() in clean_actor.lower() or
+                clean_actor.lower() in clean.lower()
+            )
+
+            # Check Identity metadata
+            identity_matches = False
+            if isinstance(entity_state, dict):
+                identity = entity_state.get("Identity", {})
+                entity_id = identity.get("EntityID", "")
+                agent_type = identity.get("AgentType", "")
+                if clean.lower() in entity_id.lower() or clean.lower() in agent_type.lower():
+                    identity_matches = True
+                    if entity_id:
+                        aliases.add(entity_id)
+                        aliases.add(entity_id.replace("SIM_", ""))
+
+            if actor_matches or identity_matches:
+                aliases.add(actor_name)
+                aliases.add(clean_actor)
+                aliases.add(f"SIM_{clean_actor}")
+
+    return list(aliases)
+
 def format_single_entity_state(state: Dict[str, Any], indent: str = "") -> List[str]:
     """Formats a single entity's serialized state dictionary into YAML-like text lines."""
     lines = []
@@ -1088,7 +1144,15 @@ async def unreal_checkin(request: UnrealCheckInRequest):
 @app.get("/v1/unreal/mailbox")
 async def get_unreal_mailbox(actor_name: str):
     clean_actor = actor_name.replace("SIM_", "")
-    messages = unreal_mailbox.pop(clean_actor, [])
+    aliases = resolve_target_aliases(actor_name)
+    messages = []
+    for alias in aliases:
+        clean_alias = alias.replace("SIM_", "")
+        if clean_alias in unreal_mailbox:
+            messages.extend(unreal_mailbox.pop(clean_alias, []))
+        if alias in unreal_mailbox:
+            messages.extend(unreal_mailbox.pop(alias, []))
+
     return {
         "actor_name": f"SIM_{clean_actor}",
         "messages": messages,
@@ -1109,8 +1173,8 @@ class DirectivePayload(BaseModel):
 @app.post("/v1/unreal/directive")
 async def unreal_runtime_directive(payload: DirectivePayload):
     """
-    [AD-026 & AD-031] Dedicated Control Plane endpoint for queuing runtime simulation directives.
-    Isolates physical commands from narrative chat mailbox queues.
+    [AD-026, AD-031 & AD-033] Dedicated Control Plane endpoint for queuing runtime simulation directives.
+    Isolates physical commands from narrative chat mailbox queues and normalizes target entity aliases.
     """
     logger.info(f"07 DIRECTIVE: Received action directive '{payload.action_name}' for target '{payload.target_entity}' from '{payload.sender_id}'")
 
@@ -1124,10 +1188,13 @@ async def unreal_runtime_directive(payload: DirectivePayload):
         "timestamp": time.time()
     }
 
-    if clean_target not in unreal_directives_queue:
-        unreal_directives_queue[clean_target] = []
-
-    unreal_directives_queue[clean_target].append(directive_obj)
+    # Resolve target entity aliases and queue directive for all alias keys
+    target_aliases = resolve_target_aliases(payload.target_entity)
+    for alias in target_aliases:
+        clean_alias = alias.replace("SIM_", "")
+        if clean_alias not in unreal_directives_queue:
+            unreal_directives_queue[clean_alias] = []
+        unreal_directives_queue[clean_alias].append(directive_obj)
 
     # Preserve legacy fallback: also push formatted_msg to unreal_mailbox for backwards compatibility
     formatted_msg = f"[DIRECTIVE:{payload.action_name}] sender={payload.sender_id} target={payload.target_entity} params={json.dumps(payload.parameters)}"
@@ -1139,17 +1206,32 @@ async def unreal_runtime_directive(payload: DirectivePayload):
         "target_entity": payload.target_entity,
         "action_name": payload.action_name,
         "parameters": payload.parameters,
-        "directives_pending": len(unreal_directives_queue[clean_target]),
+        "target_aliases": target_aliases,
+        "directives_pending": len(unreal_directives_queue.get(clean_target, [])),
         "fallback_result": fallback_result
     }
 
 @app.get("/v1/unreal/directives/poll")
 async def poll_unreal_directives(actor_name: str):
     """
-    [AD-031] Control Plane Polling: Returns structured JSON array of pending directives for the specified target actor.
+    [AD-031 & AD-033] Control Plane Polling: Returns structured JSON array of pending directives for the specified target actor
+    by polling across all canonical aliases (e.g. MySovereignIronKnightAgent_C_1, SIM_IronKnight, IronKnight).
     """
     clean_actor = actor_name.replace("SIM_", "")
-    directives = unreal_directives_queue.pop(clean_actor, [])
+    aliases = resolve_target_aliases(actor_name)
+    directives = []
+    seen_ids = set()
+
+    for alias in aliases:
+        clean_alias = alias.replace("SIM_", "")
+        pending = unreal_directives_queue.pop(clean_alias, []) + unreal_directives_queue.pop(alias, [])
+        for d in pending:
+            # Deduplicate directives by timestamp and action_name
+            d_key = (d.get("timestamp"), d.get("action_name"), d.get("sender_id"))
+            if d_key not in seen_ids:
+                seen_ids.add(d_key)
+                directives.append(d)
+
     return {
         "actor_name": f"SIM_{clean_actor}",
         "directives": directives,
