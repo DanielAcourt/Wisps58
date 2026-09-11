@@ -38,13 +38,14 @@ void ASovereignIronKnightAgent::BeginPlay()
 	// Trigger initial AAS Handshake
 	RefreshAASHandshake();
 
-	// Start Mailbox Polling for directives addressed to SIM_IronKnight (AD-030)
+	// Start Mailbox Polling for chat messages and Control Plane Directive Polling for physical commands
 	UWorld* World = GetWorld();
 	if (World)
 	{
 		if (USovereignBridgeSubsystem* BridgeSubsystem = World->GetSubsystem<USovereignBridgeSubsystem>())
 		{
 			BridgeSubsystem->StartMailboxPolling(TEXT("SIM_IronKnight"));
+			BridgeSubsystem->StartDirectivePolling(TEXT("SIM_IronKnight"));
 		}
 	}
 
