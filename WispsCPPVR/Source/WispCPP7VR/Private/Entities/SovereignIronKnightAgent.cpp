@@ -37,6 +37,21 @@ void ASovereignIronKnightAgent::BeginPlay()
 
 	// Trigger initial AAS Handshake
 	RefreshAASHandshake();
+
+	// Auto-Possession logic on start
+	if (AutoPossessTargetActor)
+	{
+		PerformAgentPossession(AutoPossessTargetActor);
+	}
+	else if (!AutoPossessTargetTag.IsNone())
+	{
+		TArray<AActor*> TaggedActors;
+		UGameplayStatics::GetAllActorsWithTag(GetWorld(), AutoPossessTargetTag, TaggedActors);
+		if (TaggedActors.Num() > 0 && TaggedActors[0])
+		{
+			PerformAgentPossession(TaggedActors[0]);
+		}
+	}
 }
 
 void ASovereignIronKnightAgent::RefreshAASHandshake()

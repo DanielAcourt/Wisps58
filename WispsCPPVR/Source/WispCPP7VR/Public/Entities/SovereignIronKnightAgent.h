@@ -19,6 +19,7 @@ class USovereignBridgeSubsystem;
  * - bCanBePossessed set to false so Player Wisps cannot override or inhabit the Iron Knight.
  * - Automatically triggers USovereignBridgeSubsystem::ExecuteAASHandshake on BeginPlay.
  * - Exposes AAS Diligence / Score and Possession Target status for Blueprints, UI, and World Manifest.
+ * - Supports Auto-Possession on start via direct actor reference (AutoPossessTargetActor) or Gameplay Tag/Name (AutoPossessTargetTag).
  */
 UCLASS()
 class WISPCPP7VR_API ASovereignIronKnightAgent : public ASovereignBaseEntity
@@ -49,6 +50,14 @@ public:
 	/** Pointer to the target actor currently possessed by Iron Knight */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|IronKnight")
 	TObjectPtr<AActor> PossessedTargetActor;
+
+	/** Optional target actor assigned in level to auto-possess on BeginPlay */
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Sovereign|IronKnight|AutoPossession")
+	TObjectPtr<AActor> AutoPossessTargetActor;
+
+	/** Optional tag or Name assigned to search and auto-possess on BeginPlay if AutoPossessTargetActor is null */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|IronKnight|AutoPossession")
+	FName AutoPossessTargetTag;
 
 	/** Optional 3D Status Widget Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|UI")
