@@ -16,6 +16,14 @@ To ensure deterministic state synchronization and eliminate "Assumption Drift," 
 - **Jules (Visual Cortex / DevOps & Structural Lead):** Focuses on the "Big Picture," DevOps integration, system-wide problem solving, and maintaining the structural integrity of the codebase. Jules ensures the "Vessel" and "Soul" are synchronized across the entire environment.
 - **Claude (IDE Architect / Localized Logic):** Focuses on code-level implementation, specific architectural patterns within the IDE, and individual module logic. Claude works "inside the code" to build out the features defined by the framework.
 
+### 🔄 4-Step Feature Execution Workflow Protocol
+To maintain absolute alignment and prevent assumption drift during experimental or feature development:
+- **Step 0 (Idea Conception & Research):** Formulate the feature or architectural idea (e.g. SWOT analysis, architectural decoupling).
+- **Step 1 (Ticket Definition):** Define the idea as a formal ticket with ID, scope, and initial goals in active sprint/backlog tracking files (`CURRENT_SPRINT.md`, `.csv`, `.json`).
+- **Step 2 (Tactician Refinement & Definition of Done):** Move to the Tactician role to refine acceptance criteria, define C++ structs/JSON contracts/API schemas, and establish explicit Definition of Done (DoD).
+- **Step 3 (Verification & Automated Testing):** Implement code and test manually and via automated test suites (Python unit tests, C++ compilation checks, PIE logs).
+- **Step 4 (Ticket Closure & Submission):** Mark ticket as completed in sprint tracking files, run pre-commit checks, record learnings in memory, and submit the change.
+
 ### ⚔️ Parallel Execution (Conflict Mitigation)
 To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are active:
 1.  **Backlog Ownership:** Only the **Strategist** or **Commander** roles may permanently modify `BACKLOG.md`. Other roles must propose changes via `_AGENT_CONTEXT.md` or a pull request.

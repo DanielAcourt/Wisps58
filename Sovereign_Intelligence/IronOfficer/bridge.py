@@ -177,8 +177,11 @@ HANDSHAKE_ACTIVE = False
 latest_rag_similarity_score = 1.0
 latest_session_char_count = 0
 
-# Map actor_name to list of pending messages queued by the AI
+# Map actor_name to list of pending messages queued by the AI (Narrative Plane)
 unreal_mailbox: Dict[str, List[str]] = {}
+
+# Dedicated Control Plane: Queue of structured runtime directives for Unreal Engine entities
+unreal_directives_queue: Dict[str, List[Dict[str, Any]]] = {}
 
 # Cached active simulation states keyed by normalized actor name
 active_simulation_states: Dict[str, Dict[str, Any]] = {}
@@ -1106,14 +1109,29 @@ class DirectivePayload(BaseModel):
 @app.post("/v1/unreal/directive")
 async def unreal_runtime_directive(payload: DirectivePayload):
     """
-    [AD-026] Dedicated endpoint for sending synchronous runtime simulation directives
-    from the Iron Knight AI to Unreal Engine entities during PIE / Standalone play.
+    [AD-026 & AD-031] Dedicated Control Plane endpoint for queuing runtime simulation directives.
+    Isolates physical commands from narrative chat mailbox queues.
     """
     logger.info(f"07 DIRECTIVE: Received action directive '{payload.action_name}' for target '{payload.target_entity}' from '{payload.sender_id}'")
 
-    # Structure command payload for mailbox polling queue
+    clean_target = payload.target_entity.replace("SIM_", "")
+    directive_obj = {
+        "sender_id": payload.sender_id,
+        "target_entity": payload.target_entity,
+        "action_name": payload.action_name,
+        "parameters": payload.parameters,
+        "authority_token": payload.authority_token,
+        "timestamp": time.time()
+    }
+
+    if clean_target not in unreal_directives_queue:
+        unreal_directives_queue[clean_target] = []
+
+    unreal_directives_queue[clean_target].append(directive_obj)
+
+    # Preserve legacy fallback: also push formatted_msg to unreal_mailbox for backwards compatibility
     formatted_msg = f"[DIRECTIVE:{payload.action_name}] sender={payload.sender_id} target={payload.target_entity} params={json.dumps(payload.parameters)}"
-    result = await tool_push_chat_to_unreal(payload.target_entity, formatted_msg, persona="IronKnight")
+    fallback_result = await tool_push_chat_to_unreal(payload.target_entity, formatted_msg, persona="IronKnight")
 
     return {
         "status": "queued",
@@ -1121,7 +1139,21 @@ async def unreal_runtime_directive(payload: DirectivePayload):
         "target_entity": payload.target_entity,
         "action_name": payload.action_name,
         "parameters": payload.parameters,
-        "push_result": result
+        "directives_pending": len(unreal_directives_queue[clean_target]),
+        "fallback_result": fallback_result
+    }
+
+@app.get("/v1/unreal/directives/poll")
+async def poll_unreal_directives(actor_name: str):
+    """
+    [AD-031] Control Plane Polling: Returns structured JSON array of pending directives for the specified target actor.
+    """
+    clean_actor = actor_name.replace("SIM_", "")
+    directives = unreal_directives_queue.pop(clean_actor, [])
+    return {
+        "actor_name": f"SIM_{clean_actor}",
+        "directives": directives,
+        "count": len(directives)
     }
 
 class UnrealCreateFileRequest(BaseModel):

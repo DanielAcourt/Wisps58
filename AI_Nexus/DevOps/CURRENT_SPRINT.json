@@ -216,6 +216,24 @@
     "What": "BridgeSubsystem->StartMailboxPolling(TEXT(\"SIM_IronKnight\")); added to ASovereignIronKnightAgent::BeginPlay()."
   },
   {
+    "ID": "AD-031",
+    "Task": "Control Plane Decoupling: POST /v1/unreal/directive Dedicated Control Pipe",
+    "Complexity": "5",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Isolate runtime action directives in a dedicated control queue (unreal_directives_queue) separate from chat mailbox, exposing GET /v1/unreal/directives/poll.",
+    "What": "Dedicated directives queue and /v1/unreal/directives/poll endpoint in bridge.py."
+  },
+  {
+    "ID": "AD-032",
+    "Task": "C++ Subsystem Dual-Channel Router (USovereignBridgeSubsystem)",
+    "Complexity": "8",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Add FSovereignDirective struct and StartDirectivePolling loop in USovereignBridgeSubsystem polling /v1/unreal/directives/poll independently from chat.",
+    "What": "C++ dual-channel directive polling and struct parsing in USovereignBridgeSubsystem."
+  },
+  {
     "ID": "AD-019",
     "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
     "Complexity": "3",

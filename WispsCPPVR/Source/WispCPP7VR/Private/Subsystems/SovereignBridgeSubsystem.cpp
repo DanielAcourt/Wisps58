@@ -614,3 +614,109 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
 
     return false;
 }
+
+void USovereignBridgeSubsystem::StartDirectivePolling(const FString& ActorName)
+{
+    if (ActorName.StartsWith(TEXT("SIM_")))
+    {
+        DirectiveActorName = ActorName;
+    }
+    else
+    {
+        DirectiveActorName = FString::Printf(TEXT("SIM_%s"), *ActorName);
+    }
+
+    StopDirectivePolling();
+
+    UWorld* World = GetWorld();
+    if (World)
+    {
+        World->GetTimerManager().SetTimer(
+            DirectiveTimerHandle,
+            this,
+            &USovereignBridgeSubsystem::QueryDirectives,
+            2.0f,
+            true
+        );
+        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Control Plane Directive Polling started for [%s]."), *DirectiveActorName);
+    }
+}
+
+void USovereignBridgeSubsystem::StopDirectivePolling()
+{
+    UWorld* World = GetWorld();
+    if (World)
+    {
+        World->GetTimerManager().ClearTimer(DirectiveTimerHandle);
+    }
+
+    TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> RequestPtr = ActiveDirectiveRequest.Pin();
+    if (RequestPtr.IsValid())
+    {
+        RequestPtr->CancelRequest();
+    }
+}
+
+void USovereignBridgeSubsystem::QueryDirectives()
+{
+    if (DirectiveActorName.IsEmpty()) return;
+
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+    Request->OnProcessRequestComplete().BindUObject(this, &USovereignBridgeSubsystem::OnDirectivesResponse);
+
+    ActiveDirectiveRequest = Request;
+
+    FString TargetURL = BridgeBaseUrl + TEXT("/v1/unreal/directives/poll?actor_name=") + DirectiveActorName;
+    Request->SetURL(TargetURL);
+    Request->SetVerb(TEXT("GET"));
+    Request->ProcessRequest();
+}
+
+void USovereignBridgeSubsystem::OnDirectivesResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+    if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    {
+        TSharedPtr<FJsonObject> JsonObject;
+        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+        if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+        {
+            const TArray<TSharedPtr<FJsonValue>>* DirectivesArray;
+            if (JsonObject->TryGetArrayField(TEXT("directives"), DirectivesArray))
+            {
+                for (const TSharedPtr<FJsonValue>& DirVal : *DirectivesArray)
+                {
+                    TSharedPtr<FJsonObject> DirObj = DirVal->AsObject();
+                    if (DirObj.IsValid())
+                    {
+                        FSovereignDirective Directive;
+                        Directive.SenderID = DirObj->GetStringField(TEXT("sender_id"));
+                        Directive.TargetEntity = DirObj->GetStringField(TEXT("target_entity"));
+                        Directive.ActionName = DirObj->GetStringField(TEXT("action_name"));
+
+                        TSharedPtr<FJsonObject> ParamsObj = DirObj->GetObjectField(TEXT("parameters"));
+                        if (ParamsObj.IsValid())
+                        {
+                            FString OutputParams;
+                            TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputParams);
+                            FJsonSerializer::Serialize(ParamsObj.ToSharedRef(), Writer);
+                            Directive.ParametersJson = OutputParams;
+                        }
+
+                        Directive.AuthorityToken = DirObj->GetStringField(TEXT("authority_token"));
+
+                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Control Plane Directive Received: %s -> %s (%s)"),
+                            *Directive.SenderID, *Directive.TargetEntity, *Directive.ActionName);
+
+                        // Construct legacy format for ProcessRuntimeDirective dispatch
+                        FString FormattedMsg = FString::Printf(TEXT("[DIRECTIVE:%s] sender=%s target=%s params=%s"),
+                            *Directive.ActionName, *Directive.SenderID, *Directive.TargetEntity, *Directive.ParametersJson);
+
+                        ProcessRuntimeDirective(FormattedMsg);
+                        OnDirectiveReceived.Broadcast(Directive);
+                    }
+                }
+            }
+        }
+    }
+}

@@ -71,8 +71,35 @@ struct FSovereignChatMessage
 /** Delegate broadcasted when the bridge responds to a chat request */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSovereignChatResponse, const FSovereignChatResponse&, Response);
 
+/**
+ * FSovereignDirective: Control Plane struct representing a structured runtime action directive (AD-032).
+ */
+USTRUCT(BlueprintType)
+struct FSovereignDirective
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Directive")
+    FString SenderID;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Directive")
+    FString TargetEntity;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Directive")
+    FString ActionName;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Directive")
+    FString ParametersJson;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Directive")
+    FString AuthorityToken;
+};
+
 /** Delegate triggered when a proactive AI message is received from the mailbox */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSovereignAIChatPushed, const FString&, Message);
+
+/** Delegate triggered when a structured Control Plane directive is polled and dispatched (AD-032) */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSovereignDirectiveReceived, const FSovereignDirective&, Directive);
 
 /**
  * USovereignBridgeSubsystem: Manages communication between Unreal and the Iron Officer Bridge.
@@ -154,6 +181,18 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Sovereign|Bridge")
     void StopMailboxPolling();
 
+    /** Starts Control Plane directive polling loop independently from chat (AD-032) */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Directive")
+    void StartDirectivePolling(const FString& ActorName);
+
+    /** Stops Control Plane directive polling loop */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Directive")
+    void StopDirectivePolling();
+
+    /** Delegate triggered when a runtime directive is polled via Control Plane (AD-032) */
+    UPROPERTY(BlueprintAssignable, Category = "Sovereign|Directive")
+    FOnSovereignDirectiveReceived OnDirectiveReceived;
+
     /** If true, the bridge will store a permanent copy of the chat in AI_Nexus/Memories/ */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Bridge")
     bool bEnableRemoteHistory = false;
@@ -219,10 +258,18 @@ private:
     FTimerHandle MailboxTimerHandle;
     FString PollingActorName;
 
+    FTimerHandle DirectiveTimerHandle;
+    FString DirectiveActorName;
+
     /** Tracks the active in-flight request so we can cancel it if needed */
     TWeakPtr<IHttpRequest, ESPMode::ThreadSafe> ActiveMailboxRequest;
+    TWeakPtr<IHttpRequest, ESPMode::ThreadSafe> ActiveDirectiveRequest;
 
     /** Executes the HTTP GET request to check the mailbox */
     void QueryMailbox();
     void OnMailboxResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
+
+    /** Control Plane Polling (AD-032) */
+    void QueryDirectives();
+    void OnDirectivesResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful);
 };
