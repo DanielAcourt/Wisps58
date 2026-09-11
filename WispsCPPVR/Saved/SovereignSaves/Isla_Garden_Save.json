@@ -74,7 +74,7 @@
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Script/WispCPP7VR.SovereignSaveTerminal",
 			"Transform": "-2410.000000,-710.000000,180.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
-			"MetaTags": 
+			"MetaTags":
 			{
 				"Identity":
 				{
@@ -408,7 +408,7 @@
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/MySovereignBaseInteractableTest1.MySovereignBaseInteractableTest1_C",
 			"Transform": "710.000000,-1280.000000,70.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
-			"MetaTags": 
+			"MetaTags":
 			{
 				"Identity":
 				{
@@ -506,7 +506,7 @@
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/MySovereignBaseInteractableTest1.MySovereignBaseInteractableTest1_C",
 			"Transform": "710.000000,-1280.000000,70.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
-			"MetaTags": 
+			"MetaTags":
 			{
 				"Identity":
 				{
