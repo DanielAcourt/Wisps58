@@ -1087,6 +1087,34 @@ async def get_unreal_mailbox(actor_name: str):
 async def push_chat_manually(payload: PushChatPayload):
     return await tool_push_chat_to_unreal(payload.actor_name, payload.message, persona="Lead")
 
+class DirectivePayload(BaseModel):
+    sender_id: str = "SIM_IronKnight"
+    target_entity: str
+    action_name: str
+    parameters: Dict[str, Any] = {}
+    authority_token: str = "AAS_BOOST_1.0"
+
+@app.post("/v1/unreal/directive")
+async def unreal_runtime_directive(payload: DirectivePayload):
+    """
+    [AD-026] Dedicated endpoint for sending synchronous runtime simulation directives
+    from the Iron Knight AI to Unreal Engine entities during PIE / Standalone play.
+    """
+    logger.info(f"07 DIRECTIVE: Received action directive '{payload.action_name}' for target '{payload.target_entity}' from '{payload.sender_id}'")
+
+    # Structure command payload for mailbox polling queue
+    formatted_msg = f"[DIRECTIVE:{payload.action_name}] sender={payload.sender_id} target={payload.target_entity} params={json.dumps(payload.parameters)}"
+    result = await tool_push_chat_to_unreal(payload.target_entity, formatted_msg, persona="IronKnight")
+
+    return {
+        "status": "queued",
+        "sender_id": payload.sender_id,
+        "target_entity": payload.target_entity,
+        "action_name": payload.action_name,
+        "parameters": payload.parameters,
+        "push_result": result
+    }
+
 class UnrealCreateFileRequest(BaseModel):
     filepath: str
     content: str

@@ -168,6 +168,13 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Sovereign|Debug")
     int32 GetRegisteredEntityCount() const;
 
+    /**
+     * Parses and dispatches a runtime action directive string (e.g. "[DIRECTIVE:PerformAgentPossession]...")
+     * to the target registered entity or agent (AD-027).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Directive")
+    bool ProcessRuntimeDirective(const FString& DirectiveMessage);
+
 private:
     /** Internal struct to buffer telemetry while handshake is pending */
     struct FPendingTelemetry

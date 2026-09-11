@@ -162,6 +162,33 @@
     "What": "Serialized Identity JSON block contains PossessedTargetActorName when possessed, restoring 3D playspace narrative coherence."
   },
   {
+    "ID": "AD-025",
+    "Task": "Sovereign SOP: Iron Knight Simulation Action Directive Protocol",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "Research/DevOps",
+    "Why": "Draft SOP protocol governing runtime simulation action directives, action capability manifests, and JSON schemas.",
+    "What": "Created AI_Nexus/Protocols/IronKnight_Simulation_Action_SOP.md."
+  },
+  {
+    "ID": "AD-026",
+    "Task": "Iron Knight Bridge: POST /v1/unreal/directive API Endpoint",
+    "Complexity": "5",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Dedicated FastAPI endpoint for sending synchronous runtime action directives to Unreal simulation entities.",
+    "What": "/v1/unreal/directive FastAPI endpoint implemented in Sovereign_Intelligence/IronOfficer/bridge.py."
+  },
+  {
+    "ID": "AD-027",
+    "Task": "USovereignBridgeSubsystem C++ Action Router & Vessel Dispatcher",
+    "Complexity": "8",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "C++ Directive Parser in USovereignBridgeSubsystem that dispatches commands to target vessel components/functions.",
+    "What": "C++ action routing and dispatch logic added to USovereignBridgeSubsystem."
+  },
+  {
     "ID": "AD-019",
     "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
     "Complexity": "3",

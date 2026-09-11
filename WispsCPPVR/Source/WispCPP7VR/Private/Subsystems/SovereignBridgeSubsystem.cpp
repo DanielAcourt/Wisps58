@@ -541,10 +541,77 @@ void USovereignBridgeSubsystem::OnMailboxResponse(FHttpRequestPtr Request, FHttp
                     FString PushedMessage = MsgVal->AsString();
                     UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: AI Pushed Proactive Chat: %s"), *PushedMessage);
 
+                    // Inspect for Directive commands (AD-027)
+                    if (PushedMessage.StartsWith(TEXT("[DIRECTIVE:")))
+                    {
+                        ProcessRuntimeDirective(PushedMessage);
+                    }
+
                     // Broadcast to UI Widgets, subtitles, or character dialogue systems
                     OnAIChatPushed.Broadcast(PushedMessage);
                 }
             }
         }
     }
+}
+
+#include "Entities/SovereignIronKnightAgent.h"
+
+bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& DirectiveMessage)
+{
+    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Processing Runtime Directive: %s"), *DirectiveMessage);
+
+    // Format: [DIRECTIVE:ActionName] sender=SIM_IronKnight target=TargetName params={...}
+    if (!DirectiveMessage.StartsWith(TEXT("[DIRECTIVE:")))
+    {
+        return false;
+    }
+
+    int32 ClosingBracketIdx = DirectiveMessage.Find(TEXT("]"));
+    if (ClosingBracketIdx == INDEX_NONE)
+    {
+        return false;
+    }
+
+    FString ActionName = DirectiveMessage.Mid(11, ClosingBracketIdx - 11);
+    FString Payload = DirectiveMessage.Mid(ClosingBracketIdx + 1).TrimStart();
+
+    // Extract Target Name
+    FString TargetName;
+    int32 TargetIdx = Payload.Find(TEXT("target="));
+    if (TargetIdx != INDEX_NONE)
+    {
+        FString TargetSub = Payload.Mid(TargetIdx + 7);
+        int32 SpaceIdx = TargetSub.Find(TEXT(" "));
+        TargetName = (SpaceIdx != INDEX_NONE) ? TargetSub.Left(SpaceIdx) : TargetSub;
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Directive Parsed - Action: '%s', Target: '%s'"), *ActionName, *TargetName);
+
+    // Find Target Entity
+    for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+    {
+        if (EntityPtr.IsValid())
+        {
+            AActor* OwnerActor = EntityPtr->GetOwner();
+            if (OwnerActor && (OwnerActor->GetName() == TargetName || OwnerActor->GetName().Contains(TargetName)))
+            {
+                if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(OwnerActor))
+                {
+                    if (ActionName == TEXT("PerformAgentPossession"))
+                    {
+                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched PerformAgentPossession on Iron Knight Agent."));
+                    }
+                    else if (ActionName == TEXT("EjectAgentPossession"))
+                    {
+                        Agent->EjectAgentPossession();
+                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched EjectAgentPossession on Iron Knight Agent."));
+                    }
+                }
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
