@@ -198,6 +198,24 @@
     "What": "tool_send_unreal_directive registered in SIMULATION_TOOLS in bridge.py."
   },
   {
+    "ID": "AD-029",
+    "Task": "Docs: Connecting Unreal AI Actors to Action Directives Guide",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "Research/DevOps",
+    "Why": "Draft documentation guide detailing 2-way directive execution sequence, mailbox polling alignment, and C++ action mapping.",
+    "What": "Created AI_Nexus/Docs/13_Connecting_Unreal_Actors_To_Directives_Guide.md."
+  },
+  {
+    "ID": "AD-030",
+    "Task": "C++ Agent Mailbox Polling: ASovereignIronKnightAgent Auto-Polling",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Start automatic mailbox polling for SIM_IronKnight on BeginPlay so agent fetches runtime directives from bridge automatically.",
+    "What": "BridgeSubsystem->StartMailboxPolling(TEXT(\"SIM_IronKnight\")); added to ASovereignIronKnightAgent::BeginPlay()."
+  },
+  {
     "ID": "AD-019",
     "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
     "Complexity": "3",
