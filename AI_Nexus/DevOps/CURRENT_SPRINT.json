@@ -234,6 +234,15 @@
     "What": "C++ dual-channel directive polling and struct parsing in USovereignBridgeSubsystem."
   },
   {
+    "ID": "AD-033",
+    "Task": "Hybrid Target Entity Name Normalization (Control Plane Directive Matching)",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Resolve target entity name mismatches between LLM tool calls (instance names like MySovereignIronKnightAgent_C_1) and Unreal polling keys (SIM_IronKnight).",
+    "What": "C++ polls for both GetName() and Soul tag; Python bridge normalizes target lookups against World Manifest alias maps."
+  },
+  {
     "ID": "AD-019",
     "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
     "Complexity": "3",
