@@ -41,10 +41,10 @@ void ASovereignIronKnightAgent::BeginPlay()
 
 void ASovereignIronKnightAgent::RefreshAASHandshake()
 {
-	UGameInstance* GameInstance = GetGameInstance();
-	if (!GameInstance) return;
+	UWorld* World = GetWorld();
+	if (!World) return;
 
-	USovereignBridgeSubsystem* BridgeSubsystem = GameInstance->GetSubsystem<USovereignBridgeSubsystem>();
+	USovereignBridgeSubsystem* BridgeSubsystem = World->GetSubsystem<USovereignBridgeSubsystem>();
 	if (BridgeSubsystem)
 	{
 		BridgeSubsystem->ExecuteAASHandshake();
