@@ -189,6 +189,15 @@
     "What": "C++ action routing and dispatch logic added to USovereignBridgeSubsystem."
   },
   {
+    "ID": "AD-028",
+    "Task": "LLM Tool Registration: tool_send_unreal_directive in Bridge",
+    "Complexity": "3",
+    "Status": "Completed",
+    "Node": "DevOps",
+    "Why": "Register send_unreal_directive tool function in bridge.py tool manifest so LLMs can execute runtime action directives natively during conversation.",
+    "What": "tool_send_unreal_directive registered in SIMULATION_TOOLS in bridge.py."
+  },
+  {
     "ID": "AD-019",
     "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
     "Complexity": "3",

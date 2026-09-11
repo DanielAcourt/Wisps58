@@ -840,6 +840,14 @@ async def tool_push_chat_to_unreal(actor_name: str, message: str, persona: str =
         "pending_count": len(unreal_mailbox[clean_actor])
     }
 
+async def tool_send_unreal_directive(target_entity: str, action_name: str, parameters: Dict[str, Any] = {}, persona: str = "Unknown"):
+    """
+    [AD-028] Sends a physical runtime action directive (e.g. EjectAgentPossession, PerformAgentPossession, Interact, MoveToLocation)
+    directly to a target Unreal Engine entity during play.
+    """
+    payload = DirectivePayload(sender_id="SIM_IronKnight", target_entity=target_entity, action_name=action_name, parameters=parameters)
+    return await unreal_runtime_directive(payload)
+
 async def tool_refresh_rag_index(persona: str = "Unknown", **kwargs):
     """Refreshes and rebuilds the local knowledge base (RAG index)."""
     if not RAG_ENABLED:
@@ -862,7 +870,8 @@ async def execute_tool(name: str, arguments: Dict[str, Any], persona: str = "Unk
         "map_directory": tool_map_directory,
         "get_system_telemetry": tool_get_system_telemetry,
         "refresh_rag_index": tool_refresh_rag_index,
-        "push_chat_to_unreal": tool_push_chat_to_unreal
+        "push_chat_to_unreal": tool_push_chat_to_unreal,
+        "send_unreal_directive": tool_send_unreal_directive
     }
     if name in tools: return await tools[name](persona=persona, **arguments)
     return {"error": f"Tool '{name}' not found."}
@@ -1426,7 +1435,8 @@ async def unreal_chat(request: UnrealChatRequest):
         {"type": "function", "function": {"name": "patch_file", "description": "Surgical edit.", "parameters": {"type": "object", "properties": {"filepath": {"type": "string"}, "search": {"type": "string"}, "replace": {"type": "string"}}, "required": ["filepath", "search", "replace"]}}},
         {"type": "function", "function": {"name": "get_system_telemetry", "description": "GPU status.", "parameters": {"type": "object", "properties": {"interval": {"type": "integer"}, "duration": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "refresh_rag_index", "description": "Trigger a complete rebuild and refresh of the RAG search index from the AI_Nexus folder.", "parameters": {"type": "object", "properties": {}}}},
-        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}}
+        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}},
+        {"type": "function", "function": {"name": "send_unreal_directive", "description": "Sends a physical runtime action directive (e.g., EjectAgentPossession, PerformAgentPossession, Interact, MoveToLocation) directly to a target Unreal Engine entity during play.", "parameters": {"type": "object", "properties": {"target_entity": {"type": "string", "description": "The target entity or agent name (e.g., SIM_IronKnight or MySovereignBaseInteractable)"}, "action_name": {"type": "string", "description": "The directive action name (e.g. EjectAgentPossession, PerformAgentPossession, Interact)"}}, "required": ["target_entity", "action_name"]}}}
     ]
 
     messages = [{"role": "system", "content": system_prompt}] + chat_history
@@ -1564,7 +1574,8 @@ async def chat(request: ChatRequest):
         {"type": "function", "function": {"name": "map_directory", "description": "Map.", "parameters": {"type": "object", "properties": {"directory": {"type": "string"}, "depth": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "get_system_telemetry", "description": "GPU status.", "parameters": {"type": "object", "properties": {"interval": {"type": "integer"}, "duration": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "refresh_rag_index", "description": "Trigger a complete rebuild and refresh of the RAG search index from the AI_Nexus folder.", "parameters": {"type": "object", "properties": {}}}},
-        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}}
+        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}},
+        {"type": "function", "function": {"name": "send_unreal_directive", "description": "Sends a physical runtime action directive (e.g., EjectAgentPossession, PerformAgentPossession, Interact, MoveToLocation) directly to a target Unreal Engine entity during play.", "parameters": {"type": "object", "properties": {"target_entity": {"type": "string", "description": "The target entity or agent name (e.g., SIM_IronKnight or MySovereignBaseInteractable)"}, "action_name": {"type": "string", "description": "The directive action name (e.g. EjectAgentPossession, PerformAgentPossession, Interact)"}}, "required": ["target_entity", "action_name"]}}}
     ]
 
     # Retrieve latest user query for RAG grounding
