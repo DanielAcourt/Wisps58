@@ -42,6 +42,7 @@ To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are
 - **The Atomic Rule:** All high-reliability persistence (Black Box, Saves) must use an **Atomic Write Pattern** (.tmp file -> delete original -> move) to prevent corruption and platform-specific "Access Denied" errors.
 
 ## 💻 Coding Conventions
+- **C++ Header Include Placement Mandate:** ALL `#include` directives in `.cpp` files MUST be placed strictly at the top of the file in the primary include section before class method definitions. Inline `#include` directives mid-file or inside/between function bodies are strictly prohibited to avoid translation unit corruption and compilation crashes.
 - **Copyright Integrity:** Always verify and/or apply the "0.36 Standard" header (Version 36.4.x) to every source file (`.cpp`, `.h`, `.md`) you open, as mandated by `COMMAND_SOP.md`.
 - **Memory Safety:** Initialize all non-UObject members in struct constructors (e.g., `FEntitySaveData`).
 - **Defensive Programming:** Always validate `ClassPath` strings before spawning actors.

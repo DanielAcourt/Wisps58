@@ -4,6 +4,7 @@
 
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "Entities/SovereignIronKnightAgent.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
@@ -554,8 +555,6 @@ void USovereignBridgeSubsystem::OnMailboxResponse(FHttpRequestPtr Request, FHttp
         }
     }
 }
-
-#include "Entities/SovereignIronKnightAgent.h"
 
 bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& DirectiveMessage)
 {
