@@ -101,9 +101,14 @@ You can build a custom in-editor UI panel with a **1-Click Sync** button inside 
 
 ## ☀️ Day-to-Day Artist Workflow
 
-1. **Drop New Assets:** Copy `.uasset` folders (e.g. `Meshes`, `Textures`) into `Content/ArtVault/`.
-2. **1-Click Sync:** Click the **1-Click Sync** button in your Editor Utility Widget or type `execute_1click_sync()` in the Output Log.
-3. **Save in UE5:** Import FBX or edit materials in UE5 and press `Ctrl + S`. Running **1-Click Sync** automatically backs up updated `.uassets` to `Content/ArtVault/`.
+### 1. Dropping Pre-compiled `.uasset` Folders
+1. Copy `.uasset` folders (e.g. `Meshes`, `Textures`) into `Content/ArtVault/`.
+2. Click **1-Click Sync** in your Editor Utility Widget.
+
+### 2. Importing Raw PNG / FBX Files in Unreal Engine
+1. **Import:** Drag raw `.png` textures or `.fbx` models into the Unreal Engine Content Browser.
+2. **Save All (`Ctrl + S`):** Press **`Ctrl + S`** (Save All). *Note: Unreal Engine holds newly imported assets in memory until saved to disk as binary `.uasset` files.*
+3. **1-Click Sync:** Click **1-Click Sync**. The engine detects the saved `.uasset` files on disk and backs them up bidirectionally to `Content/ArtVault/`!
 
 ---
 

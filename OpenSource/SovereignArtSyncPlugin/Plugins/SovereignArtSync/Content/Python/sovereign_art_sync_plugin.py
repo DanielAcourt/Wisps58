@@ -14,12 +14,21 @@ if str(current_dir) not in sys.path:
 
 import sovereign_art_sync_engine as engine
 
+LAST_SYNC_LOG = "No sync operation executed yet."
+
+
+def get_last_sync_log():
+    """Returns the latest sync status report string for UI display."""
+    global LAST_SYNC_LOG
+    return LAST_SYNC_LOG
+
 
 def execute_1click_sync(manifest_path="asset_manifest.json", vault_override=None):
     """
     Called by Editor Utility Widget / Toolbar for 1-click synchronization.
     Returns formatted log string for UI display.
     """
+    global LAST_SYNC_LOG
     res = engine.run_sync(manifest_path=manifest_path, vault_override=vault_override, copy_mode=True, dry_run=False)
 
     if res.get("status") == "error":
@@ -37,6 +46,8 @@ def execute_1click_sync(manifest_path="asset_manifest.json", vault_override=None
             logs.append(f"• {pkg['package']}: {pkg['forward']} copied to engine, {pkg['reverse']} backed up to vault.")
 
         output = "\n".join(logs)
+
+    LAST_SYNC_LOG = output
 
     # Always print to sys.stdout so 'Execute Python Command Advanced' node captures log output in Blueprint
     print(output)
@@ -57,6 +68,7 @@ def execute_dry_run_autodiscover(manifest_path="asset_manifest.json", vault_over
     Called by Editor Utility Widget to dry run and detect new packages without making disk writes.
     Returns formatted log string.
     """
+    global LAST_SYNC_LOG
     res = engine.run_sync(manifest_path=manifest_path, vault_override=vault_override, copy_mode=True, dry_run=True)
 
     if res.get("status") == "error":
@@ -74,6 +86,8 @@ def execute_dry_run_autodiscover(manifest_path="asset_manifest.json", vault_over
             logs.append(f"• {pkg['package']}: {pkg['forward']} pending forward, {pkg['reverse']} pending reverse.")
 
         output = "\n".join(logs)
+
+    LAST_SYNC_LOG = output
 
     # Always print to sys.stdout so 'Execute Python Command Advanced' node captures log output in Blueprint
     print(output)

@@ -4,37 +4,40 @@ The `SovereignArtSync` plugin provides an in-editor toolbar panel and Editor Uti
 
 ---
 
-## ⚡ EXACT COPY-PASTE BLUEPRINT COMMAND STRINGS
+## 🎨 ARTIST WORKFLOW: IMPORTING RAW PNG & FBX FILES
 
-In your Editor Utility Widget Blueprint, connect the **On Clicked** event of your button to the **Execute Python Command** or **Execute Python Command Advanced** node (from `Editor Scripting Utilities`).
+When artists drag raw `.png` textures or `.fbx` models into Unreal Engine:
 
-### Recommended Input String for Blueprint Node:
-
-```text
-import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
-```
-
-*(Copy and paste the exact line above directly into the **Python Command** string input pin!)*
+1. **Import:** Drag PNG/FBX files into Unreal Engine's Content Browser.
+2. **Save All (`Ctrl + S`):** Press **`Ctrl + S`** (or **File -> Save All**). Unreal Engine holds newly imported assets in editor memory until saved to disk as compiled `.uasset` binary files.
+3. **1-Click Sync:** Click the **1-Click Sync** button in your Editor Utility Widget! The sync engine detects the saved `.uassets` on disk and backs them up bidirectionally into `Content/ArtVault/`.
 
 ---
 
-## 💡 Standard vs. Advanced Blueprint Nodes Explained
+## ⚡ RECOMMENDED BLUEPRINT GRAPH SETUP FOR UI TEXT BOXES
 
-Unreal Engine provides two Python execution Blueprint nodes:
+To execute 1-click sync AND immediately display the summary report inside your Editor Utility Widget Text Box:
 
-### Option A: Standard `Execute Python Command` Node (Default & Simplest)
-* **Return Value Pin:** `Return Value` (Boolean `bool`).
-* **Where logs appear:** Writes the complete sync report directly into Unreal Engine's **Output Log** tab under the **`LogPython`** category.
+### Node 1: Execute Python Command
+* **Node:** `Execute Python Command` (from `Editor Scripting Utilities`)
+* **Python Command Input String:**
+  ```text
+  import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()
+  ```
 
-### Option B: `Execute Python Command Advanced` Node (For UI Text Boxes)
-* **Return Value Pin:** `Command Result` / `Log Output` (String `string`).
-* **Where logs appear:** Captures `sys.stdout` and hands the text string directly to your Blueprint node so you can connect it into a **Set Text** or **Print String** node!
+### Node 2: Set Text (Log Output Text Box)
+* **Node:** `Execute Python Command Advanced` (or `get_last_sync_log()`)
+* **Python Command Input String for Advanced Node:**
+  ```text
+  get_last_sync_log()
+  ```
+  *(Connect the **Log Output** or **Command Result** string pin directly to your UI Multi-Line Text Box **Set Text** pin!)*
 
 ---
 
 ## 🛑 IMPORTANT SYNTAX WARNINGS
 
-1. **DO NOT add the word `python` at the start of the string!**
+1. **DO NOT add the word `python` at the start of the command!**
    - ❌ WRONG: `python execute_1click_sync()`  *(Causes SyntaxError: invalid syntax)*
    - ✅ CORRECT: `import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()`
 
@@ -46,11 +49,3 @@ Unreal Engine provides two Python execution Blueprint nodes:
      ```
      *(Causes IndentationError: unexpected indent)*
    - ✅ CORRECT: `import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_1click_sync()`
-
----
-
-## 🎨 Dry Run & Auto-Discover String Pin:
-
-```text
-import sovereign_art_sync_plugin; sovereign_art_sync_plugin.execute_dry_run_autodiscover()
-```
