@@ -237,7 +237,7 @@
     "ID": "AD-033",
     "Task": "Hybrid Target Entity Name Normalization (Control Plane Directive Matching)",
     "Complexity": "5",
-    "Status": "Todo",
+    "Status": "Completed",
     "Node": "DevOps",
     "Why": "Resolve target entity name mismatches between LLM tool calls (instance names like MySovereignIronKnightAgent_C_1) and Unreal polling keys (SIM_IronKnight).",
     "What": "C++ polls for both GetName() and Soul tag; Python bridge normalizes target lookups against World Manifest alias maps."
