@@ -243,6 +243,24 @@
     "What": "C++ polls for both GetName() and Soul tag; Python bridge normalizes target lookups against World Manifest alias maps."
   },
   {
+    "ID": "AD-034",
+    "Task": "Dynamic Vessel Repossession Directive Dispatch",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Enable LLMs to re-possess target interactables live during play via PerformAgentPossession directives with target vessel parameters.",
+    "What": "C++ directive dispatcher parses target_vessel parameter from FSovereignDirective, resolves target actor in world, and calls Agent->PerformAgentPossession(TargetActor)."
+  },
+  {
+    "ID": "AD-035",
+    "Task": "Spatial Movement & Environment Inspection Action Directives",
+    "Complexity": "8",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Allow AI agents to inspect surrounding world objects using spatial sense and execute physical movement/interaction directives (MoveToLocation, InteractWithObject).",
+    "What": "Extend send_unreal_directive tool and C++ directive router to handle 3D navigation targets and object interactions in the level."
+  },
+  {
     "ID": "AD-019",
     "Task": "Adaptive Mailbox Polling & Bridge Traffic Throttling",
     "Complexity": "3",
