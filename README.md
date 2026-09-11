@@ -121,6 +121,50 @@ The framework enforces a standardized input model to ensure a consistent user ex
 
 ---
 
-## 📜 Architectural Standards & Guidelines
+## 📦 Open-Source Ecosystem & Art Sync DevOps
+The Sovereign Framework produces standalone open-source tools and robust internal DevOps pipelines to streamline multi-gigabyte binary asset management, local model tool calling, and automated build workflows.
+
+### 🌐 Open-Source Packages (`OpenSource/`) — [MIT License]
+The open-source ecosystem tools are staged in `OpenSource/` and distributed under the **MIT License**:
+
+*   **`sovereign-art-sync` (`OpenSource/ue5-art-sync/`):**
+    A zero-dependency Python engine and 1-click Windows synchronizer that eliminates Git repository bloat by storing heavy binary assets (`.uasset` meshes, textures, audio) locally or on external storage (`Content/ArtVault/`). Features dynamic `.uproject` auto-detection, manifest-driven folder mapping, timestamp-based incremental copying/symlinking, and strict safety guardrails excluding level maps (`.umap`) and World Partition metadata.
+*   **`SovereignArtSync` UE5 Plugin (`OpenSource/SovereignArtSyncPlugin/`):**
+    A Fab Marketplace-ready Unreal Engine 5 Editor Plugin that embeds `sovereign-art-sync` directly into UE5. Provides an In-Editor Utility Widget (EUW) toolbar panel, automated pre-sync package saving (`save_dirty_packages`), bidirectional syncing between active editor memory and local vaults, and global Python console bindings.
+
+### 🛠️ Internal DevOps & Tooling Architecture
+
+#### 🎨 Local Art Vault Synchronization Pipeline
+In the primary workspace, binary assets are managed seamlessly via:
+*   **`sync_art_assets.bat` & `asset_manifest.json`:** Root execution script and configuration mapping local vault source directories (`Content/ArtVault/`) to destination project paths (`Content/Assets/External/`).
+*   **`WispsCPPVR/Content/Python/init_unreal.py`:** Editor startup script that automatically registers `sovereign_art_sync_plugin` and exposes `execute_1click_sync()` and `execute_artist_friendly_sync()` into Python's `builtins` namespace whenever Unreal Engine initializes.
+
+#### 🔌 UE 5.8.1 MCP Loopback Client Bridge
+*   **`mcp_client.py` & `bridge.py` (`Sovereign_Intelligence/IronOfficer/`):** A high-performance FastAPI client bridge connecting Iron Knight AI to Unreal Engine 5.8.1's embedded Model Context Protocol (MCP) server on port 8000 (`http://127.0.0.1:8000/mcp`).
+*   **AAS Safety Gating:** Automatically gates MCP tool executions against Agency Arbitration Schema (AAS) Risk Velocity thresholds (0.4 observation, 0.7 mutation, 1.0 destructive operations), re-armed dynamically via `/v1/aas/handshake`.
+
+---
+
+### 🚀 Quick Start & Commands
+
+#### 1. Execute 1-Click Art Sync (Windows Batch)
+```cmd
+sync_art_assets.bat
+```
+
+#### 2. Execute Art Sync in UE5 Output Log (Cmd Python)
+```python
+execute_1click_sync()
+```
+
+#### 3. Run Automated Unit Test Suite
+```bash
+python -m unittest discover -s OpenSource/ue5-art-sync/tests -p "test_*.py"
+```
+
+---
+
+## 📜 Licensing & Architectural Standards
+*   **Licensing:** Open-source components in `OpenSource/` are licensed under the **MIT License**. The main Sovereign Framework engine, C++ architecture, and AI Nexus protocols remain licensed under **GPLv3** (see `LICENSE`).
 *   **AI_Nexus/:** The "Neutral Zone" for AI coordination, shared data, and high-level documentation.
 *   **Polite Persistence:** Saveable components extract only their relevant keys from the "Suitcase" (`TMap<FString, FString>`), ensuring clean data management.
