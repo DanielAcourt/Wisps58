@@ -660,7 +660,8 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
                     if (EntityPtr.IsValid())
                     {
                         FString EntityIDStr = EntityPtr->EntityID.ToString();
-                        FString TagEntityID = EntityPtr->GetUnknownTag(TEXT("EntityID"));
+                        const FString* TagEntityIDPtr = EntityPtr->GetUnknownMetaTags().Find(TEXT("EntityID"));
+                        FString TagEntityID = TagEntityIDPtr ? *TagEntityIDPtr : TEXT("");
                         if (EntityIDStr == TargetVesselStr || TagEntityID == TargetVesselStr || TagEntityID == CleanTargetVessel || TagEntityID == FString::Printf(TEXT("SIM_%s"), *CleanTargetVessel))
                         {
                             ResolvedVessel = EntityPtr->GetOwner();
