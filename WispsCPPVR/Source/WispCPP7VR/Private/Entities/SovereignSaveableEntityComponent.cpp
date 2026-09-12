@@ -157,6 +157,7 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 	IdentityObj->SetStringField(TEXT("GUID"), EntityID.ToString());
 	IdentityObj->SetStringField(TEXT("BirthTimestamp"), BirthTimestamp.ToString());
 	IdentityObj->SetBoolField(TEXT("bIsBeingPossessed"), bIsBeingPossessed);
+	IdentityObj->SetBoolField(TEXT("bIsMobile"), bIsMobile);
 	IdentityObj->SetNumberField(TEXT("ParadoxDensity"), ParadoxDensity);
 	if (AActor* Owner = GetOwner())
 	{
