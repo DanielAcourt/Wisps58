@@ -48,6 +48,10 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Soul")
     bool bIsBeingPossessed = false;
 
+    /** Can this entity execute spatial movement directives? (Option C - AD-035) */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Mobility")
+    bool bIsMobile = true;
+
 
     /** --- 2. MODULAR ARCHITECTURE (The Mediator) --- */
 
