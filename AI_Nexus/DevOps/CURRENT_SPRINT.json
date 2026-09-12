@@ -246,7 +246,7 @@
     "ID": "AD-034",
     "Task": "Dynamic Vessel Repossession Directive Dispatch",
     "Complexity": "5",
-    "Status": "Todo",
+    "Status": "Completed",
     "Node": "DevOps",
     "Why": "Enable LLMs to re-possess target interactables live during play via PerformAgentPossession directives with target vessel parameters.",
     "What": "C++ directive dispatcher parses target_vessel parameter from FSovereignDirective, resolves target actor in world, and calls Agent->PerformAgentPossession(TargetActor)."

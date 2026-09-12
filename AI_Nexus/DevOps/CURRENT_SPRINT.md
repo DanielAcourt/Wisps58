@@ -5,7 +5,7 @@
 **Start Date:** `25/08/2026`
 **Target End Date:** `22/09/2026` (4-Week Solo Baseline)
 **Planned Capacity:** 182 Points (Expanded Active Directives Scope)
-**Completed Capacity / Velocity:** 90 Points
+**Completed Capacity / Velocity:** 95 Points
 
 > 🎯 **Core Sprint Goal:**
 > **"PSTA Hardware Reality, Hybrid Agent Synergy & Zero-Bloat Bidirectional Art Automation (Iron Knight + Jules + UE 5.8 MCP + sovereign-art-sync)"**
@@ -42,7 +42,7 @@
 | AD-031 | Control Plane Decoupling: POST /v1/unreal/directive Dedicated Control Pipe | 5 | Completed | DevOps | Isolate runtime action directives in a dedicated control queue (unreal_directives_queue) separate from chat mailbox, exposing GET /v1/unreal/directives/poll. | Dedicated directives queue and `/v1/unreal/directives/poll` endpoint in `bridge.py`. |
 | AD-032 | C++ Subsystem Dual-Channel Router (USovereignBridgeSubsystem) | 8 | Completed | DevOps | Add FSovereignDirective struct and StartDirectivePolling loop in USovereignBridgeSubsystem polling /v1/unreal/directives/poll independently from chat. | C++ dual-channel directive polling and struct parsing in `USovereignBridgeSubsystem`. |
 | AD-033 | Hybrid Target Entity Name Normalization (Control Plane Directive Matching) | 5 | Completed | DevOps | Resolve target entity name mismatches between LLM tool calls (instance names like MySovereignIronKnightAgent_C_1) and Unreal polling keys (SIM_IronKnight). | C++ polls for both GetName() and Soul tag; Python bridge normalizes target lookups against World Manifest alias maps. |
-| AD-034 | Dynamic Vessel Repossession Directive Dispatch | 5 | Todo | DevOps | Enable LLMs to re-possess target interactables live during play via PerformAgentPossession directives with target vessel parameters. | C++ directive dispatcher parses target_vessel parameter from FSovereignDirective, resolves target actor in world, and calls Agent->PerformAgentPossession(TargetActor). |
+| AD-034 | Dynamic Vessel Repossession Directive Dispatch | 5 | Completed | DevOps | Enable LLMs to re-possess target interactables live during play via PerformAgentPossession directives with target vessel parameters. | C++ directive dispatcher parses target_vessel parameter from FSovereignDirective, resolves target actor in world, and calls Agent->PerformAgentPossession(TargetActor). |
 | AD-035 | Spatial Movement & Environment Inspection Action Directives | 8 | Todo | DevOps | Allow AI agents to inspect surrounding world objects using spatial sense and execute physical movement/interaction directives (MoveToLocation, InteractWithObject). | Extend send_unreal_directive tool and C++ directive router to handle 3D navigation targets and object interactions in the level. |
 | AD-019 | Adaptive Mailbox Polling & Bridge Traffic Throttling | 3 | Todo | DevOps | Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem. | Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%. |
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |
