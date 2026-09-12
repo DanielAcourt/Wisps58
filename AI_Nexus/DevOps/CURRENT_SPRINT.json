@@ -228,7 +228,7 @@
     "ID": "AD-036",
     "Task": "User Onboarding & Personnel Audit: Jason (Student Persona)",
     "Complexity": "5",
-    "Status": "Todo",
+    "Status": "Completed",
     "Node": "Admin/DevOps",
     "Why": "Onboard Jason as a new user learning Unreal Engine & C++ game dev who is curious about AI programming.",
     "What": "Jason completes 16-Personalities MBTI test and shares profile with agent during conversation to flesh out Personnel_Audit_Jason.md as Definition of Done."

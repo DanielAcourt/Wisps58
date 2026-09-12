@@ -208,6 +208,8 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   Defines the persona, philosophy, and strategic goals of the Technical Lead (Daniel Acourt).
 *   **Personnel Audit:** `AI_Nexus/Admin/Personnel_Audit.md`
     *   Cognitive profiling, programmer percentile analysis, and personal SWOT for the Lead.
+*   **Personnel Audit (Jason):** `AI_Nexus/Admin/Personnel_Audit_Jason.md`
+    *   Onboarding personnel audit, cognitive/learning profile, and Self-Reflection Audit for Jason (Student Persona).
 *   **Personnel Audit Image Prompt:** `AI_Nexus/Admin/Personnel_Audit_Image_Prompt.md`
     *   Visual metadata for generating technical lead identity assets.
 *   **Hardware Profile:** `AI_Nexus/Admin/Hardware.md`
