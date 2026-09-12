@@ -257,8 +257,8 @@
     "Complexity": "8",
     "Status": "Todo",
     "Node": "DevOps",
-    "Why": "Allow AI agents to inspect surrounding world objects using spatial sense and execute physical movement/interaction directives (MoveToLocation, InteractWithObject).",
-    "What": "Extend send_unreal_directive tool and C++ directive router to handle 3D navigation targets and object interactions in the level."
+    "Why": "Allow AI agents to inspect surrounding world objects using spatial sense and execute physical movement/interaction directives (MoveToLocation, MoveToActor, InteractWithObject).",
+    "What": "Modular bIsMobile check on USovereignSaveableEntityComponent; C++ directive dispatcher resolves target actors or X/Y/Z vectors and delegates micro-pathfinding to local AIController NavMesh."
   },
   {
     "ID": "AD-019",
