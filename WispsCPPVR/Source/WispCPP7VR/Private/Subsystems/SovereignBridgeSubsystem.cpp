@@ -585,30 +585,145 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
         TargetName = (SpaceIdx != INDEX_NONE) ? TargetSub.Left(SpaceIdx) : TargetSub;
     }
 
+    // Extract Params String
+    FString ParamsJsonStr;
+    int32 ParamsIdx = Payload.Find(TEXT("params="));
+    if (ParamsIdx != INDEX_NONE)
+    {
+        ParamsJsonStr = Payload.Mid(ParamsIdx + 7).TrimStart();
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Directive Parsed - Action: '%s', Target: '%s'"), *ActionName, *TargetName);
 
-    // Find Target Entity
+    // Parse target_vessel from Params JSON if present
+    FString TargetVesselStr;
+    if (!ParamsJsonStr.IsEmpty())
+    {
+        TSharedPtr<FJsonObject> ParamsJsonObj;
+        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ParamsJsonStr);
+        if (FJsonSerializer::Deserialize(Reader, ParamsJsonObj) && ParamsJsonObj.IsValid())
+        {
+            if (ParamsJsonObj->HasField(TEXT("target_vessel")))
+            {
+                TargetVesselStr = ParamsJsonObj->GetStringField(TEXT("target_vessel"));
+            }
+        }
+    }
+
+    // Find Target Agent Entity
+    ASovereignIronKnightAgent* TargetAgent = nullptr;
     for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
     {
         if (EntityPtr.IsValid())
         {
             AActor* OwnerActor = EntityPtr->GetOwner();
-            if (OwnerActor && (OwnerActor->GetName() == TargetName || OwnerActor->GetName().Contains(TargetName)))
+            if (OwnerActor && (OwnerActor->GetName() == TargetName || OwnerActor->GetName().Contains(TargetName) || TargetName.Contains(OwnerActor->GetName())))
             {
                 if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(OwnerActor))
                 {
-                    if (ActionName == TEXT("PerformAgentPossession"))
+                    TargetAgent = Agent;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Fallback search for Iron Knight Agent in world if target match did not cast to agent directly
+    if (!TargetAgent)
+    {
+        for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+        {
+            if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+            {
+                if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(EntityPtr->GetOwner()))
+                {
+                    TargetAgent = Agent;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (TargetAgent)
+    {
+        if (ActionName == TEXT("PerformAgentPossession"))
+        {
+            AActor* ResolvedVessel = nullptr;
+
+            if (!TargetVesselStr.IsEmpty())
+            {
+                FString CleanTargetVessel = TargetVesselStr.Replace(TEXT("SIM_"), TEXT(""));
+
+                // Priority 1: EntityID / GUID Match
+                for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                {
+                    if (EntityPtr.IsValid())
                     {
-                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched PerformAgentPossession on Iron Knight Agent."));
-                    }
-                    else if (ActionName == TEXT("EjectAgentPossession"))
-                    {
-                        Agent->EjectAgentPossession();
-                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched EjectAgentPossession on Iron Knight Agent."));
+                        FString EntityIDStr = EntityPtr->EntityID.ToString();
+                        FString TagEntityID = EntityPtr->GetUnknownTag(TEXT("EntityID"));
+                        if (EntityIDStr == TargetVesselStr || TagEntityID == TargetVesselStr || TagEntityID == CleanTargetVessel || TagEntityID == FString::Printf(TEXT("SIM_%s"), *CleanTargetVessel))
+                        {
+                            ResolvedVessel = EntityPtr->GetOwner();
+                            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Resolved target vessel [%s] via Priority 1 (EntityID/GUID match)."), *ResolvedVessel->GetName());
+                            break;
+                        }
                     }
                 }
+
+                // Priority 2: Exact Actor Name Match
+                if (!ResolvedVessel)
+                {
+                    for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                    {
+                        if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                        {
+                            AActor* Owner = EntityPtr->GetOwner();
+                            if (Owner->GetName() == TargetVesselStr || Owner->GetName() == CleanTargetVessel)
+                            {
+                                ResolvedVessel = Owner;
+                                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Resolved target vessel [%s] via Priority 2 (Exact Name match)."), *ResolvedVessel->GetName());
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Priority 3: Substring Match Fallback
+                if (!ResolvedVessel)
+                {
+                    for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                    {
+                        if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                        {
+                            AActor* Owner = EntityPtr->GetOwner();
+                            if (Owner->GetName().Contains(CleanTargetVessel) || CleanTargetVessel.Contains(Owner->GetName()))
+                            {
+                                ResolvedVessel = Owner;
+                                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Resolved target vessel [%s] via Priority 3 (Substring Fallback match)."), *ResolvedVessel->GetName());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (ResolvedVessel)
+            {
+                TargetAgent->PerformAgentPossession(ResolvedVessel);
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched PerformAgentPossession on Iron Knight Agent targeting [%s]."), *ResolvedVessel->GetName());
                 return true;
             }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("SovereignBridge: PerformAgentPossession failed - could not resolve target vessel [%s]."), *TargetVesselStr);
+                return false;
+            }
+        }
+        else if (ActionName == TEXT("EjectAgentPossession"))
+        {
+            TargetAgent->EjectAgentPossession();
+            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched EjectAgentPossession on Iron Knight Agent."));
+            return true;
         }
     }
 

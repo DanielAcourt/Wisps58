@@ -91,6 +91,17 @@ bool ASovereignIronKnightAgent::PerformAgentPossession(AActor* TargetVessel)
 {
 	if (!TargetVessel) return false;
 
+	// Single Active Vessel Rule (AD-034): Eject prior possessed vessel before attaching to new target vessel
+	if (bIsPossessingTarget || PossessedTargetActor != nullptr)
+	{
+		if (PossessedTargetActor != TargetVessel)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("IronKnightAgent: Re-possessing new vessel [%s]. Ejecting prior vessel [%s]."),
+				*TargetVessel->GetName(), *PossessedTargetName);
+			EjectAgentPossession();
+		}
+	}
+
 	PossessedTargetActor = TargetVessel;
 	PossessedTargetName = TargetVessel->GetName();
 	bIsPossessingTarget = true;
