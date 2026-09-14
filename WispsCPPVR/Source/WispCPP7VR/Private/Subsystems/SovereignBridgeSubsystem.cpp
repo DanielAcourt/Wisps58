@@ -16,6 +16,7 @@
 #include "Blueprint/AIBlueprintHelperLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Interaction/SovereignInterfaceMain.h"
+#include "NavigationSystem.h"
 
 void USovereignBridgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -781,6 +782,18 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
             return false;
         }
 
+        // If SubjectActor is Iron Knight Agent and currently possessing a vessel, redirect movement to the possessed vessel
+        if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(SubjectActor))
+        {
+            if (Agent->bIsPossessingTarget && Agent->PossessedTargetActor)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Agent [%s] is possessing vessel [%s]. Redirecting movement directive to possessed vessel."),
+                    *SubjectActor->GetName(), *Agent->PossessedTargetActor->GetName());
+                SubjectActor = Agent->PossessedTargetActor;
+                SubjectSoul = SubjectActor->FindComponentByClass<USovereignSaveableEntityComponent>();
+            }
+        }
+
         // Option C Guard: Verify bIsMobile for Movement Directives (AD-035)
         if (ActionName == TEXT("MoveToLocation") || ActionName == TEXT("MoveToActor"))
         {
@@ -856,25 +869,57 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
 
             if (bHasDestination)
             {
+                // Project 3D coordinate (e.g. Z=400) onto the nearest floor NavMesh surface
+                if (UWorld* World = GetWorld())
+                {
+                    if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World))
+                    {
+                        FNavLocation ProjectedNavLoc;
+                        if (NavSys->ProjectPointToNavigation(TargetDestination, ProjectedNavLoc, FVector(500.0f, 500.0f, 1000.0f)))
+                        {
+                            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Projected 3D target %s to NavMesh floor location %s"),
+                                *TargetDestination.ToString(), *ProjectedNavLoc.Location.ToString());
+                            TargetDestination = ProjectedNavLoc.Location;
+                        }
+                    }
+                }
+
                 // Micro-Execution via local AIController NavMesh pathfinding
                 APawn* SubjectPawn = Cast<APawn>(SubjectActor);
                 if (SubjectPawn)
                 {
                     AController* Controller = SubjectPawn->GetController();
+                    if (!Controller)
+                    {
+                        SubjectPawn->SpawnDefaultController();
+                        Controller = SubjectPawn->GetController();
+                    }
+
                     AAIController* AIController = Cast<AAIController>(Controller);
                     if (AIController)
                     {
-                        AIController->MoveToLocation(TargetDestination);
-                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Executed AAIController::MoveToLocation on [%s] targeting %s"), *SubjectActor->GetName(), *TargetDestination.ToString());
-                        return true;
-                    }
-                    else
-                    {
-                        UAIBlueprintHelperLibrary::SimpleMoveToLocation(Controller, TargetDestination);
-                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Executed SimpleMoveToLocation on [%s] targeting %s"), *SubjectActor->GetName(), *TargetDestination.ToString());
+                        if (AIController->GetPawn() != SubjectPawn)
+                        {
+                            AIController->Possess(SubjectPawn);
+                        }
+
+                        bool bIsCharacter = SubjectPawn->IsA<ACharacter>();
+                        // Ground ACharacter uses NavMesh pathfinding (bUsePathfinding = true).
+                        // 3D Floating Pawns (e.g. ASovereignIronKnightAgent) use direct 3D vector navigation (bUsePathfinding = false).
+                        bool bUsePathfinding = bIsCharacter;
+
+                        EPathFollowingRequestResult::Type MoveResult = AIController->MoveToLocation(TargetDestination, 50.0f, true, bUsePathfinding, bIsCharacter, true, nullptr, true);
+
+                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Executed AAIController::MoveToLocation on [%s] (IsCharacter: %s, UsePathfinding: %s) targeting %s (Result: %d)"),
+                            *SubjectActor->GetName(), bIsCharacter ? TEXT("True") : TEXT("False"), bUsePathfinding ? TEXT("True") : TEXT("False"), *TargetDestination.ToString(), (int32)MoveResult);
                         return true;
                     }
                 }
+
+                // Fallback location update if no controller is present
+                SubjectActor->SetActorLocation(TargetDestination, false, nullptr, ETeleportType::TeleportPhysics);
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Direct location update on [%s] targeting %s"), *SubjectActor->GetName(), *TargetDestination.ToString());
+                return true;
             }
             else
             {
@@ -894,9 +939,11 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
             }
 
             FString InteractTargetStr;
-            if (ParamsJsonObj.IsValid() && ParamsJsonObj->HasField(TEXT("target_object")))
+            if (ParamsJsonObj.IsValid())
             {
-                InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_object"));
+                if (ParamsJsonObj->HasField(TEXT("target_object"))) InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_object"));
+                else if (ParamsJsonObj->HasField(TEXT("target_vessel"))) InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_vessel"));
+                else if (ParamsJsonObj->HasField(TEXT("target_actor"))) InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_actor"));
             }
 
             if (!InteractTargetStr.IsEmpty())

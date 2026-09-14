@@ -8,6 +8,7 @@
 
 class UWidgetComponent;
 class USovereignBridgeSubsystem;
+class UFloatingPawnMovement;
 
 /**
  * ASovereignIronKnightAgent
@@ -58,6 +59,10 @@ public:
 	/** Optional tag or Name assigned to search and auto-possess on BeginPlay if AutoPossessTargetActor is null */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|IronKnight|AutoPossession")
 	FName AutoPossessTargetTag;
+
+	/** Movement Component enabling 3D autonomous spatial movement for the agent */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Movement")
+	TObjectPtr<UFloatingPawnMovement> MovementComponent;
 
 	/** Optional 3D Status Widget Component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|UI")
