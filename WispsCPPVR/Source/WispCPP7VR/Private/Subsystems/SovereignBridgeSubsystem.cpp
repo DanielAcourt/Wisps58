@@ -918,13 +918,7 @@ bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& Directive
 
             if (InteractTarget)
             {
-                if (InteractTarget->GetClass()->ImplementsInterface(USovereignEntityInterface::StaticClass()))
-                {
-                    ISovereignEntityInterface::Execute_OnInteract(InteractTarget, SubjectActor);
-                    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched InteractWithObject from [%s] targeting [%s]."), *SubjectActor->GetName(), *InteractTarget->GetName());
-                    return true;
-                }
-                else if (InteractTarget->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()))
+                if (InteractTarget->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()))
                 {
                     IInteractionInterface::Execute_OnInteract(InteractTarget, SubjectActor);
                     UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched InteractWithObject (InteractionInterface) from [%s] targeting [%s]."), *SubjectActor->GetName(), *InteractTarget->GetName());
