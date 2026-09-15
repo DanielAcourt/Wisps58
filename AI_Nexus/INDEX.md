@@ -175,7 +175,7 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
 *   **Unseen Weave Lore Grounding:** `AI_Nexus/Research/Unseen_Weave_Lore.md`
     *   Homebrew DND rules, dragon classifications, and rune grades.
 *   **Fine-Tuning Sovereign LLM Spec:** `AI_Nexus/Research/FineTuning_Sovereign_LLM_Spec.md`
-    *   Parameter Tuning and Loras for Sovereign Intelligence.
+    *   Learned Behavioural Priors & Deterministic Safety Kernel Architecture (Two-Layer Proposal/Kernel Schema, Anti-Sycophancy Counterexamples & Epistemic Decision Chain).
 *   **Analysis of Ideas Pivot:** `AI_Nexus/Research/Analysis_of_Ideas_Pivot.md`
     *   Historical reflection of architectural pivots.
 *   **Adaptive Field Interpolator Spec:** `AI_Nexus/Research/Adaptive_Field_Interpolator_Spec.md`
@@ -184,8 +184,10 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   SOP template for sharing system knowledge across agents.
 
 ### **Metaphors & Reference**
-*   **Glossary (SSoT):** `AI_Nexus/Research/Definitions/Glossary.md`
-    *   Definitive terminology for the Sovereign ecosystem.
+*   **Engineering Glossary (Execution Layer):** `AI_Nexus/Research/Definitions/Glossary.md`
+    *   Definitive runtime execution and C++ engineering terminology for the Sovereign ecosystem.
+*   **Academic Glossary (Scholarly Layer):** `AI_Nexus/Research/Definitions/Academic_Glossary.md`
+    *   Academic translation map, claim discipline, evidence language, and formal notation guidelines for research, literature reviews, and doctoral writing.
 *   **Metaphorical Principles:** `AI_Nexus/Research/Metaphors/Principles.md`
     *   Translation of Lead's spatial metaphors into operational rules.
 *   **UE 5.8 Compatibility Analysis:** `AI_Nexus/Research/UE5.8_Compatibility_Analysis_Report.md`
