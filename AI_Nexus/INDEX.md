@@ -140,9 +140,9 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
         *   `Kernelized_Safety_Architectures.md` (John Rushby, 1989)
     *   **PSTA White Paper:** `AI_Nexus/Research/Academic/PSTA_Whitepaper.md`
         *   Provable Trust framework and epistemic risk models.
-    *   **Byzantine Sensor Dilemma Paper (Markdown):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.md`
-        *   Multi-Observer Consensus, Exponential Hysteresis, and Non-Compensatory Safety Kernels in Cyber-Physical Systems.
-    *   **Byzantine Sensor Dilemma Paper (LaTeX):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.tex`
+    *   **Master Paper 2 - Byzantine Sensor Dilemma & Trust Recovery (Markdown):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.md`
+        *   Unified Master Paper integrating Multi-Observer Consensus ($K \ge 5$ Asymptotic Fault Decay Proof), Sovereign Non-Compensatory Hysteresis (Flapping Boundedness Proof), Sliding-Window Packet Handshake Auditing, Physics Domain Mapping, and Vessel Capability Envelopes.
+    *   **Master Paper 2 - Byzantine Sensor Dilemma & Trust Recovery (LaTeX):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.tex`
         *   IEEE/ACM-formatted manuscript for Overleaf and arXiv publication.
     *   **Publishing Strategy & Math Audit:** `AI_Nexus/Research/Academic/Publishing_Strategy_and_Math_Audit.md`
         *   Roadmap for publishing safety paradigms.
