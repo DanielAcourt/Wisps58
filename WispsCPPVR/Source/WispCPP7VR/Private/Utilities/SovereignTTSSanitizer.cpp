@@ -181,11 +181,38 @@ FString USovereignTTSSanitizer::StripMarkdownAndEscapes(const FString& InText)
         Text = Result;
     }
 
+    // Replace underscores in identifiers (BP_Antelope_C_5 -> BP Antelope C 5)
+    {
+        const FRegexPattern Pattern(TEXT("([A-Za-z0-9])_([A-Za-z0-9])"));
+        while (Text.Contains(TEXT("_")))
+        {
+            FRegexMatcher Matcher(Pattern, Text);
+            FString Result;
+            int32 LastPos = 0;
+            bool bFoundMatch = false;
+            while (Matcher.FindNext())
+            {
+                bFoundMatch = true;
+                int32 MatchStart = Matcher.GetMatchBeginning();
+                int32 MatchEnd = Matcher.GetMatchEnding();
+                Result += Text.Mid(LastPos, MatchStart - LastPos);
+                Result += Matcher.GetCaptureGroup(1) + TEXT(" ") + Matcher.GetCaptureGroup(2);
+                LastPos = MatchEnd;
+            }
+            Result += Text.Mid(LastPos);
+            if (!bFoundMatch || Result == Text)
+            {
+                break;
+            }
+            Text = Result;
+        }
+    }
+
     // Strip escapes (\_ -> _, \* -> *, etc.)
-    Text = Text.Replace(TEXT("\\_"), TEXT("_"));
-    Text = Text.Replace(TEXT("\\*"), TEXT("*"));
-    Text = Text.Replace(TEXT("\\#"), TEXT("#"));
-    Text = Text.Replace(TEXT("\\`"), TEXT("`"));
+    Text = Text.Replace(TEXT("\\_"), TEXT(" "));
+    Text = Text.Replace(TEXT("\\*"), TEXT(" "));
+    Text = Text.Replace(TEXT("\\#"), TEXT(" "));
+    Text = Text.Replace(TEXT("\\`"), TEXT(" "));
 
     // Replace newlines and tabs with spaces
     Text = Text.Replace(TEXT("\r\n"), TEXT(" "));
@@ -193,8 +220,8 @@ FString USovereignTTSSanitizer::StripMarkdownAndEscapes(const FString& InText)
     Text = Text.Replace(TEXT("\r"), TEXT(" "));
     Text = Text.Replace(TEXT("\t"), TEXT(" "));
 
-    // Strip unpronounceable characters (~ ^ | { } < > [ ] \)
-    TArray<FString> BadChars = { TEXT("~"), TEXT("^"), TEXT("|"), TEXT("{"), TEXT("}"), TEXT("<"), TEXT(">"), TEXT("["), TEXT("]"), TEXT("\\") };
+    // Final cleanup pass: strip ANY remaining asterisks, backticks, underscores, or unpronounceable characters
+    TArray<FString> BadChars = { TEXT("*"), TEXT("`"), TEXT("_"), TEXT("~"), TEXT("^"), TEXT("|"), TEXT("{"), TEXT("}"), TEXT("<"), TEXT(">"), TEXT("["), TEXT("]"), TEXT("\\") };
     for (const FString& BadChar : BadChars)
     {
         Text = Text.Replace(*BadChar, TEXT(" "));

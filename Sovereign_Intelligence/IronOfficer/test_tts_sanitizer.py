@@ -36,6 +36,29 @@ class TestTTSSanitizer(unittest.TestCase):
         self.assertIn("Warning!", stripped)
         self.assertIn("link", stripped)
 
+    def test_asterisks_and_class_identifiers(self):
+        sample = "there are *3* antelope. According to current world manifest, class `BP_Antelope_C` registered: BP_Antelope_C_5."
+        sanitized = tts_sanitizer.sanitize_text(sample)
+        self.assertNotIn("*", sanitized)
+        self.assertNotIn("`", sanitized)
+        self.assertNotIn("_", sanitized)
+        self.assertIn("there are 3 antelope", sanitized)
+        self.assertIn("BP Antelope C", sanitized)
+        self.assertIn("BP Antelope C 5", sanitized)
+
+    def test_user_reported_antelope_response(self):
+        sample = (
+            "According to the current world manifest, there are **3** entities of class `BP_Antelope_C` registered:\n\n"
+            "1.  `BP_Antelope_C_1`\n"
+            "2.  `BP_Antelope_C_3`\n"
+            "3.  `BP_Antelope_C_5`"
+        )
+        sanitized = tts_sanitizer.sanitize_text(sample)
+        self.assertNotIn("*", sanitized)
+        self.assertNotIn("`", sanitized)
+        self.assertNotIn("_", sanitized)
+        self.assertIn("there are 3 entities", sanitized)
+
     def test_chunk_text_under_200_chars(self):
         long_paragraph = (
             "The Iron Knight stands vigilant over the simulation grid. "

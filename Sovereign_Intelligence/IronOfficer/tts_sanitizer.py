@@ -54,7 +54,7 @@ def convert_symbols_to_spoken_words(text: str) -> str:
 def strip_markdown_and_escapes(text: str) -> str:
     """
     Strips markdown syntax (**bold**, *italic*, `code`, # headers, [links](url), // comments)
-    and escape codes.
+    and escape codes. Converts identifier underscores to spaces and strips all remaining asterisks/backticks.
     """
     if not text:
         return ""
@@ -69,8 +69,15 @@ def strip_markdown_and_escapes(text: str) -> str:
     # Strip bold and italics (**text**, *text*, __text__, _text_)
     text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
     text = re.sub(r'\*([^*]+)\*', r'\1', text)
-    text = re.sub(r'__([^_]+)__', r'\1', text)
-    text = re.sub(r'_([^_]+)_', r'\1', text)
+    text = re.sub(r'(?<![A-Za-z0-9])__([^_]+)__(?![A-Za-z0-9])', r'\1', text)
+    text = re.sub(r'(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])', r'\1', text)
+
+    # Replace underscores in class/object identifiers (BP_Antelope_C_5 -> BP Antelope C 5)
+    while '_' in text:
+        new_text = re.sub(r'([A-Za-z0-9])_([A-Za-z0-9])', r'\1 \2', text)
+        if new_text == text:
+            break
+        text = new_text
 
     # Strip headers (# Header -> Header)
     text = re.sub(r'^\s*#+\s*', '', text, flags=re.MULTILINE)
@@ -91,8 +98,8 @@ def strip_markdown_and_escapes(text: str) -> str:
     # Convert newlines and tabs to spaces
     text = re.sub(r'[\r\n\t]+', ' ', text)
 
-    # Strip unpronounceable bracket/pipe/tilde symbols
-    text = re.sub(r'[~^|{}<>[\]\\]', ' ', text)
+    # Final cleanup pass: strip ANY remaining asterisks, backticks, underscores, or unpronounceable characters
+    text = re.sub(r'[*`_~^|{}<>[\]\\]', ' ', text)
 
     # Collapse multiple spaces into one
     text = re.sub(r'\s+', ' ', text).strip()
