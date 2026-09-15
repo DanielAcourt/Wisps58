@@ -2,11 +2,30 @@
 # Sovereign Academic Writing Glossary
 ## Academic Translation Layer for Research, Literature Review and Doctoral Writing
 
-### Purpose
+### Purpose & Semantic API
 This glossary translates the Sovereign Framework's internal architectural language into academically recognisable language while preserving the underlying conceptual structure.
 
 - The **Engineering Glossary** (`Glossary.md`) optimizes for execution.
 - This **Academic Glossary** (`Academic_Glossary.md`) optimizes for scholarly interpretation.
+
+It functions as a **Semantic API** across research environments to prevent semantic drift when an idea moves between internal thought, C++ code, mathematics, agent interactions, and academic publication:
+
+```
+                 SAME RESEARCH CONCEPT
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+   Engineering         Academic        Formal
+     Language           Language        Language
+        │                │                │
+       Jules           Thesis          Mathematics
+        │                │                │
+        └────────────────┼────────────────┘
+                         │
+                     Evidence
+                         │
+                    Human Review
+```
 
 The objective is not to make Daniel's writing sound like an LLM or to erase the original voice. The objective is to make a complex architectural argument reconstructable by an external researcher.
 
@@ -56,7 +75,7 @@ The statement of what has actually been demonstrated.
 | **Mirror Loop** | Self-referential epistemic reinforcement | AI feedback contamination |
 | **Dinosaur Bone Problem** | Bounded information retrieval / clarification under resource constraints | Query constraint |
 | **Local Sovereignty** | Autonomous local decision authority under communication constraints | Runtime autonomy |
-| **Truth Record** | Provenance-preserving observation record | $(O(t)) + \text{metadata}$ |
+| **Provenance Record** | Provenance-preserving observation record | $(O(t)) + \text{metadata}$ |
 
 ---
 
@@ -73,6 +92,8 @@ The statement of what has actually been demonstrated.
   - *Preferred:* "The proposed architecture treats..."
 - **Result:** A finding supported by the stated experiment, analysis, or proof.
   - *Preferred:* "Under the specified test conditions, the implementation produced..."
+- **Decision:** An operational state or authority transition triggered by qualified evidence.
+  - *Preferred:* "Observation: S17 reports 41 knots. Interpretation: Airspeed estimate = 41 knots. Evidence state: Unresolved. Decision: Autonomous authority suspended."
 - **Conclusion:** A claim justified by the combined evidence. (Do not use "conclusion" merely because a section has ended).
 
 ---
@@ -118,18 +139,40 @@ Write: *"Within this study, trust denotes the defined operational quantity ($T$)
 
 ---
 
-## 7. Proof Status
+## 7. Claim Lifecycle & Validation Status
 
-Every major mathematical idea should eventually carry one of these 8 formal statuses:
+Every major mathematical or architectural claim progresses through explicit validation tiers:
 
-1. **CONCEPTUAL:** The idea exists but has not been formally specified.
-2. **FORMALISED:** Variables, domains, and relationships have been defined.
-3. **PROPOSITION:** A specific property has been stated.
-4. **PROVEN UNDER ASSUMPTIONS:** A valid derivation exists.
-5. **IMPLEMENTED:** The formal model has a software representation.
-6. **VERIFIED:** Implementation behaviour has been checked against the specification.
-7. **EXPERIMENTALLY EVALUATED:** The system has been tested under specified conditions.
-8. **INDEPENDENTLY REVIEWED:** An external researcher has examined the result.
+```
+1. CONCEPTUAL
+       │
+       ▼
+2. FORMALISED ──> [REVISED]
+       │
+       ▼
+3. PROPOSITION
+       │
+       ▼
+4. PROVEN UNDER ASSUMPTIONS ──> [FALSIFIED / REJECTED]
+       │
+       ▼
+5. IMPLEMENTED
+       │
+       ▼
+6. VERIFIED
+       │
+       ▼
+7. EXPERIMENTALLY EVALUATED
+       │
+       ▼
+8. INDEPENDENTLY REVIEWED
+       │
+       ▼
+9. ACCEPTED / RETAINED
+```
+
+- **FALSIFIED / REJECTED:** A proposition whose assumptions or outcomes failed under verification or empirical testing. (Note: Failed hypotheses are preserved as essential research provenance).
+- **ACCEPTED / RETAINED:** A claim that has survived formal derivation, implementation, empirical testing, and independent peer review.
 
 > **Rule:** Never use "proven" to mean merely "implemented."
 
@@ -185,13 +228,18 @@ Maintain the explicit chain:
 
 $$ \text{Human Intent} \rightarrow \text{AI Formalisation} \rightarrow \text{Human Review} \rightarrow \text{Accepted Wording} $$
 
-AI may assist with: restructuring, terminology, literature discovery, mathematical exposition, counterexamples, grammar, and translation between representational layers. AI must **not** be treated as independent evidence merely because multiple models agree.
+- **Epistemic Limit:** AI-generated wording may improve expression without changing the epistemic status of the underlying claim.
+- AI may assist with: restructuring, terminology, literature discovery, mathematical exposition, counterexamples, grammar, and translation between representational layers.
+- AI must **not** be treated as independent evidence merely because multiple models agree.
 
 ---
 
-## 12. Anti-"AI Cadence" Rule
+## 12. Semantic Density and Anti-Generic Prose
 
 Avoid prose that is polished but semantically empty.
+
+$$ \boxed{\text{Specificity} > \text{Fluency}} $$
+$$ \boxed{\text{Evidence} > \text{Rhetorical Confidence}} $$
 
 Do **not** use:
 - *"This groundbreaking work..."*
