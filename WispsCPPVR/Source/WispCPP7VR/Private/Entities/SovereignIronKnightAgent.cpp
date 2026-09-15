@@ -4,11 +4,25 @@
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+#include "AIController.h"
 #include "Kismet/GameplayStatics.h"
 
 ASovereignIronKnightAgent::ASovereignIronKnightAgent()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	// Enable AI Controller auto-possession and 3D floating movement
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	AIControllerClass = AAIController::StaticClass();
+
+	MovementComponent = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("MovementComponent"));
+
+	// Ensure RootComponent is Movable so UPawnMovementComponent can transform it
+	if (RootComponent)
+	{
+		RootComponent->SetMobility(EComponentMobility::Movable);
+	}
 
 	// 1. Unpossessable Guard: Ensure Player Wisp cannot inhabit or override Iron Knight
 	bCanBePossessed = false;
@@ -27,6 +41,17 @@ ASovereignIronKnightAgent::ASovereignIronKnightAgent()
 void ASovereignIronKnightAgent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Ensure RootComponent is Movable and bound to MovementComponent
+	if (RootComponent)
+	{
+		RootComponent->SetMobility(EComponentMobility::Movable);
+	}
+
+	if (MovementComponent && RootComponent && !MovementComponent->UpdatedComponent)
+	{
+		MovementComponent->SetUpdatedComponent(RootComponent);
+	}
 
 	// Set entity ID tag on soul component if valid
 	if (SaveDataComponent)
