@@ -8,23 +8,32 @@ The objective is to make human-AI collaboration precise, honest, and structurall
 
 ---
 
-## 1. Evidence-Based Cognitive Profile
+## 1. Evidence-Based Cognitive Calibration
 
-Unsubstantiated numerical claims (such as raw IQ estimates or percentile rankings) are excluded in favor of explicit evidence differentiation:
+Unsubstantiated numerical claims (such as raw IQ estimates or percentile rankings) are excluded in favor of an explicit operational evidence chain:
+
+$$ \boxed{ \text{Measured facts} \rightarrow \text{Observed behaviour} \rightarrow \text{Working hypothesis} \rightarrow \text{Agent adaptation} } $$
+
+- **Measured Facts:** The available assessment history indicates an asymmetric cognitive profile, with spatial/relational reasoning reported as substantially stronger than verbal reasoning.
+- **Observed Behaviour:** Daniel tends to form high-dimensional relational models and expresses complex structures more effectively through diagrams, equations, schemas, and code than through first-pass linear prose.
+- **Working Hypothesis:** Translating multi-dimensional spatial models into flat, sequential linear prose creates a verbal/sequential streaming bottleneck. Conceptual reasoning and audience adaptation are intact; friction arises specifically at the translation boundary between spatial architecture and external disciplinary vocabulary.
+- **Agent Adaptation:** Agents act as a low-entropy translation bridge:
 
 ```
-MEASURED RESULT
-       │
-       ▼
-PSYCHOLOGICAL INTERPRETATION
-       │
-       ▼
-RESEARCH / WORKFLOW HYPOTHESIS
+Daniel's Internal Spatial Model
+             │
+             ▼
+      Preserve Structure
+             │
+             ▼
+Identify Missing Academic Vocabulary
+             │
+             ▼
+         Formalise
+             │
+             ▼
+    Translate into Linear Prose
 ```
-
-- **Measured Result:** Psychologist-administered cognitive assessment indicates marked strength in spatial and relational processing alongside asymmetric verbal streaming speed.
-- **Psychological Interpretation:** High volumetric, structural, and relational processing capacity. Conversational text and flat linear prose act as a high-entropy bottleneck when converting multi-dimensional spatial models into sequential words.
-- **Research / Workflow Hypothesis:** System design and mathematical formalization should leverage spatial, graph, and schema representations. Agents must act as a low-entropy translation bridge, converting spatial architectures directly into C++, LaTeX, and academic prose without forcing Daniel to perform manual verbal flattening.
 
 ---
 
@@ -78,7 +87,7 @@ Sovereign Term ──> Academic Neighbour ──> Formal Definition ──> Impl
 ```
 
 - **Rule 1:** Agents must not assume a metaphor is merely decorative; terms carry precise structural invariants.
-- **Rule 2:** Agents must not assume a internal metaphor is already an academically recognised term; translation to prior art is mandatory for scholarly writing.
+- **Rule 2:** Agents must not assume an internal metaphor is already an academically recognised term; translation to prior art is mandatory for scholarly writing.
 
 ---
 
@@ -170,11 +179,16 @@ External AI feedback must never override local SSoT rules or be treated as equiv
 
 ---
 
-## 11. Current Research Centre of Gravity
+## 11. Current Research Centre of Gravity & Demonstrated Engineering Strengths
 
 The foundational research question governing the project is:
 
 > **"How can autonomous computational systems regulate operational authority when the evidence available to them is incomplete, conflicting or potentially faulty?"**
+
+### Demonstrated Engineering Strengths
+- Demonstrated strength in architectural decomposition, system interdependency modelling, and translating abstract system relationships into executable software structures.
+- Decoupled C++ architecture separating physical rendering (Unreal Engine) from core intelligence state hubs (`USovereignSaveableEntityComponent`).
+- Offline local RAG indexing and loopback editor automation without cloud token dependency.
 
 ### Research Domains
 - Dependable autonomous & cyber-physical systems
