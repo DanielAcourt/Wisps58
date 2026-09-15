@@ -12,7 +12,7 @@ In game development using Unreal Engine 5, binary art assets (`.uasset`, `.umap`
 The **Sovereign Framework Local Art Asset Strategy** enforces a strict **Separation of Intent**:
 1. **Git Source Code Repository = The DNA / Blueprint**: Stores C++ source files, Python scripts, configuration `.ini`s, JSON schemas, level files (`.umap`), and lightweight stub blueprints (< 50 MB total).
 2. **Local Asset Vault = The Physical Flesh**: Stores heavy `.uasset` / `.umap` art files outside Git control (e.g., `WispsCPPVR/Content/ArtVault/` or external drive `D:/Sovereign_Art_Vault/`).
-3. **Asset Manifest (`asset_manifest.json`) + Sync Script (`sync_art_assets.py` / `sync_art_assets.bat`) = The Bridge**: Programmatically maps, auto-discovers, and synchronizes external art assets into `WispsCPPVR/Content/Assets/External/`.
+3. **Asset Manifest (`asset_manifest.json`) + Sync Script (`sync_art_assets.py` / `sync_art_assets.bat` / `Plugins/SovereignArtSync`) = The Bridge**: Programmatically maps, auto-discovers, and synchronizes external art assets into `WispsCPPVR/Content/Assets/External/`.
 
 ---
 
@@ -90,32 +90,35 @@ Build/
 
 ---
 
-## ☀️ Day-to-Day Developer Workflow (Step-by-Step)
+## ☀️ Day-to-Day Developer & Artist Workflow (Step-by-Step)
 
-Here is exactly what happens when you create a level and add art assets day-to-day:
+Here is exactly what happens when you create a level, import art assets, and run synchronization day-to-day:
 
-### 1. Adding New Art Assets to the Vault
-- You acquire or export a 3D mesh, texture, or material.
-- Drop it into `WispsCPPVR/Content/ArtVault/` (or a subfolder inside it, like `Meshes`, `Textures`, `Materials`, or `Props`).
-- Double-click **`sync_art_assets.bat`** in the repository root.
-  - *What happens under the hood?* The auto-discovery script detects any new subfolder, updates `asset_manifest.json`, and copies/syncs the files into `WispsCPPVR/Content/Assets/External/ArtVault/`.
+### 1. Adding Pre-Compiled Art Assets to the Vault
+- Drop `.uasset` folders into `WispsCPPVR/Content/ArtVault/` (or subfolders like `Meshes`, `Textures`, `Materials`, `Props`).
+- Trigger sync via **`sync_art_assets.bat`** in terminal or via **EUW Panel** in Unreal Engine (`execute_artist_friendly_sync()`).
+  - *What happens under the hood?* Auto-discovery detects new subfolders, registers them in `asset_manifest.json`, and synchronizes files into `WispsCPPVR/Content/Assets/External/ArtVault/`.
 
-### 2. Opening Unreal Engine & Assigning Assets in the Viewport
+### 2. Importing Raw PNG / FBX Files in Unreal Engine
+- Drag raw `.png` textures or `.fbx` models into Unreal Engine's Content Browser.
+- Run `execute_artist_friendly_sync()` via your **Editor Utility Widget (EUW)** button:
+  - **Automatic Pre-Save Hook:** The plugin automatically calls `unreal.EditorLoadingAndSavingUtils.save_dirty_packages()` to commit newly imported assets as binary `.uasset` files on disk.
+  - **Vault Backup:** The saved `.uasset` files are backed up bidirectionally to `Content/ArtVault/`.
+  - **UI Status Display:** The widget immediately reports:
+    > `"Successfully added 3 object(s) to the Art Vault and updated 0 engine asset(s)."`
+
+### 3. Assigning Assets & Saving Levels (`.umap` & `__ExternalActors__`)
 - Open **Unreal Engine 5.8**.
-- In the Content Browser, go to `Content -> Assets -> External -> ArtVault/`.
-- Drag your Static Mesh into the 3D viewport (spawning a `StaticMeshActor`).
-- Assign materials/textures to the mesh component in the Details Panel.
-- Position, scale, and rotate your objects to design your level.
-
-### 3. Saving the Level (`.umap` & `__ExternalActors__`)
-- Click **File -> Save Current Level** (e.g. `WispsCPPVR/Content/TestWorld.umap`).
-- Unreal Engine records the **3D Spatial Transform** (Location, Rotation, Scale) and **Asset References** (e.g., path reference string `"/Game/Assets/External/ArtVault/Meshes/MyMesh.MyMesh"`) inside the level map file (`.umap`) and `__ExternalActors__` folder.
+- In Content Browser, go to `Content -> Assets -> External -> ArtVault/`.
+- Drag Static Meshes into the viewport and assign materials.
+- Click **File -> Save Current Level** (`Ctrl + S`).
+- Unreal Engine records the 3D spatial transforms and asset path references inside the level map file (`.umap`) and `__ExternalActors__` metadata folder.
 
 ### 4. Committing Code & Levels to Git
 - Run `git status` in terminal or source control GUI.
 - **Notice what Git sees:**
   - `TestWorld.umap` (Tracked - level layout and object placements).
-  - `asset_manifest.json` (Tracked - lists active art package mappings).
+  - `asset_manifest.json` (Tracked - active package mappings).
   - C++ source files, blueprints, and configs (Tracked).
 - **Notice what Git IGNORES:**
   - Heavy `.uasset` binary meshes, materials, and textures in `Content/Assets/External/` (Ignored).
@@ -128,5 +131,5 @@ Here is exactly what happens when you create a level and add art assets day-to-d
 ## 🔄 How Another Developer or Machine Recreates the Game Environment
 
 1. **Clone/Pull Code**: The teammate runs `git pull`. They receive the `.umap` level file, C++ logic, and `asset_manifest.json`.
-2. **Sync Local Vault**: They place the `ArtVault` folder into their local machine (or point `asset_manifest.json` to their external drive) and double-click `sync_art_assets.bat`.
+2. **Sync Local Vault**: They place the `ArtVault` folder into their local machine and run `sync_art_assets.bat` or `execute_artist_friendly_sync()`.
 3. **Launch UE 5.8**: Launch the project. Unreal Engine opens `TestWorld.umap`, resolves the local asset path `/Game/Assets/External/ArtVault/Meshes/MyMesh`, and renders the full 3D environment instantly!
