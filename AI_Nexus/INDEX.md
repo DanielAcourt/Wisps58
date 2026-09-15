@@ -168,8 +168,6 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
 ### **Research Proposals & System Specs**
 *   **Long-Term Memory Compression Spec:** `AI_Nexus/Research/Proposals/Long_Term_Memory_Compression_Spec.md`
     *   Architectures for high-compression agent memory state consolidation.
-*   **Yaz Honeypot Strategy:** `AI_Nexus/Research/Proposals/Yaz_Honeypot_Strategy.md`
-    *   Defensive alignment protocol and monitoring.
 *   **AD-001 Iron Officer Implementation:** `AI_Nexus/Research/Proposals/AD-001_Iron_Officer_Implementation.md`
     *   System specification for mirroring local persona inside Unreal.
 *   **Unseen Weave Lore Grounding:** `AI_Nexus/Research/Unseen_Weave_Lore.md`
