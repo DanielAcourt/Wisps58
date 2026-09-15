@@ -46,6 +46,10 @@
 		{
 			"Name": "TestFramework",
 			"Enabled": true
+		},
+		{
+			"Name": "TextToSpeech",
+			"Enabled": true
 		}
 	],
 	"TargetPlatforms": [

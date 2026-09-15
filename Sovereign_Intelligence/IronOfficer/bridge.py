@@ -177,11 +177,70 @@ HANDSHAKE_ACTIVE = False
 latest_rag_similarity_score = 1.0
 latest_session_char_count = 0
 
-# Map actor_name to list of pending messages queued by the AI
+# Map actor_name to list of pending messages queued by the AI (Narrative Plane)
 unreal_mailbox: Dict[str, List[str]] = {}
+
+# Dedicated Control Plane: Queue of structured runtime directives for Unreal Engine entities
+unreal_directives_queue: Dict[str, List[Dict[str, Any]]] = {}
 
 # Cached active simulation states keyed by normalized actor name
 active_simulation_states: Dict[str, Dict[str, Any]] = {}
+
+def resolve_target_aliases(target_name: str) -> List[str]:
+    """
+    [AD-033] Resolves target entity aliases across instance names (e.g. MySovereignIronKnightAgent_C_1),
+    canonical tags (SIM_IronKnight, IronKnight), and active World Manifest entries.
+    """
+    if not target_name:
+        return []
+
+    aliases: Set[str] = set()
+    raw = target_name.strip()
+    clean = raw.replace("SIM_", "")
+
+    aliases.add(raw)
+    aliases.add(clean)
+    aliases.add(f"SIM_{clean}")
+
+    # Canonical Iron Knight mappings
+    if "ironknight" in raw.lower() or "iron_knight" in raw.lower():
+        aliases.update([
+            "IronKnight",
+            "SIM_IronKnight",
+            "MySovereignIronKnightAgent",
+            "MySovereignIronKnightAgent_C_1"
+        ])
+
+    # Dynamic World Manifest resolution
+    world_manifest = active_simulation_states.get("WORLD_MANIFEST")
+    if world_manifest and isinstance(world_manifest, dict):
+        for actor_name, entity_state in world_manifest.items():
+            clean_actor = actor_name.replace("SIM_", "")
+            actor_matches = (
+                clean in actor_name or
+                actor_name in clean or
+                clean.lower() in clean_actor.lower() or
+                clean_actor.lower() in clean.lower()
+            )
+
+            # Check Identity metadata
+            identity_matches = False
+            if isinstance(entity_state, dict):
+                identity = entity_state.get("Identity", {})
+                entity_id = identity.get("EntityID", "")
+                agent_type = identity.get("AgentType", "")
+                if clean.lower() in entity_id.lower() or clean.lower() in agent_type.lower():
+                    identity_matches = True
+                    if entity_id:
+                        aliases.add(entity_id)
+                        aliases.add(entity_id.replace("SIM_", ""))
+
+            if actor_matches or identity_matches:
+                aliases.add(actor_name)
+                aliases.add(clean_actor)
+                aliases.add(f"SIM_{clean_actor}")
+
+    return list(aliases)
 
 def format_single_entity_state(state: Dict[str, Any], indent: str = "") -> List[str]:
     """Formats a single entity's serialized state dictionary into YAML-like text lines."""
@@ -840,6 +899,14 @@ async def tool_push_chat_to_unreal(actor_name: str, message: str, persona: str =
         "pending_count": len(unreal_mailbox[clean_actor])
     }
 
+async def tool_send_unreal_directive(target_entity: str, action_name: str, parameters: Dict[str, Any] = {}, persona: str = "Unknown"):
+    """
+    [AD-028] Sends a physical runtime action directive (e.g. EjectAgentPossession, PerformAgentPossession, Interact, MoveToLocation)
+    directly to a target Unreal Engine entity during play.
+    """
+    payload = DirectivePayload(sender_id="SIM_IronKnight", target_entity=target_entity, action_name=action_name, parameters=parameters)
+    return await unreal_runtime_directive(payload)
+
 async def tool_refresh_rag_index(persona: str = "Unknown", **kwargs):
     """Refreshes and rebuilds the local knowledge base (RAG index)."""
     if not RAG_ENABLED:
@@ -862,7 +929,8 @@ async def execute_tool(name: str, arguments: Dict[str, Any], persona: str = "Unk
         "map_directory": tool_map_directory,
         "get_system_telemetry": tool_get_system_telemetry,
         "refresh_rag_index": tool_refresh_rag_index,
-        "push_chat_to_unreal": tool_push_chat_to_unreal
+        "push_chat_to_unreal": tool_push_chat_to_unreal,
+        "send_unreal_directive": tool_send_unreal_directive
     }
     if name in tools: return await tools[name](persona=persona, **arguments)
     return {"error": f"Tool '{name}' not found."}
@@ -1076,7 +1144,15 @@ async def unreal_checkin(request: UnrealCheckInRequest):
 @app.get("/v1/unreal/mailbox")
 async def get_unreal_mailbox(actor_name: str):
     clean_actor = actor_name.replace("SIM_", "")
-    messages = unreal_mailbox.pop(clean_actor, [])
+    aliases = resolve_target_aliases(actor_name)
+    messages = []
+    for alias in aliases:
+        clean_alias = alias.replace("SIM_", "")
+        if clean_alias in unreal_mailbox:
+            messages.extend(unreal_mailbox.pop(clean_alias, []))
+        if alias in unreal_mailbox:
+            messages.extend(unreal_mailbox.pop(alias, []))
+
     return {
         "actor_name": f"SIM_{clean_actor}",
         "messages": messages,
@@ -1086,6 +1162,81 @@ async def get_unreal_mailbox(actor_name: str):
 @app.post("/v1/unreal/push_chat")
 async def push_chat_manually(payload: PushChatPayload):
     return await tool_push_chat_to_unreal(payload.actor_name, payload.message, persona="Lead")
+
+class DirectivePayload(BaseModel):
+    sender_id: str = "SIM_IronKnight"
+    target_entity: str
+    action_name: str
+    parameters: Dict[str, Any] = {}
+    authority_token: str = "AAS_BOOST_1.0"
+
+@app.post("/v1/unreal/directive")
+async def unreal_runtime_directive(payload: DirectivePayload):
+    """
+    [AD-026, AD-031 & AD-033] Dedicated Control Plane endpoint for queuing runtime simulation directives.
+    Isolates physical commands from narrative chat mailbox queues and normalizes target entity aliases.
+    """
+    logger.info(f"07 DIRECTIVE: Received action directive '{payload.action_name}' for target '{payload.target_entity}' from '{payload.sender_id}'")
+
+    clean_target = payload.target_entity.replace("SIM_", "")
+    directive_obj = {
+        "sender_id": payload.sender_id,
+        "target_entity": payload.target_entity,
+        "action_name": payload.action_name,
+        "parameters": payload.parameters,
+        "authority_token": payload.authority_token,
+        "timestamp": time.time()
+    }
+
+    # Resolve target entity aliases and queue directive for all alias keys
+    target_aliases = resolve_target_aliases(payload.target_entity)
+    for alias in target_aliases:
+        clean_alias = alias.replace("SIM_", "")
+        if clean_alias not in unreal_directives_queue:
+            unreal_directives_queue[clean_alias] = []
+        unreal_directives_queue[clean_alias].append(directive_obj)
+
+    # Preserve legacy fallback: also push formatted_msg to unreal_mailbox for backwards compatibility
+    formatted_msg = f"[DIRECTIVE:{payload.action_name}] sender={payload.sender_id} target={payload.target_entity} params={json.dumps(payload.parameters)}"
+    fallback_result = await tool_push_chat_to_unreal(payload.target_entity, formatted_msg, persona="IronKnight")
+
+    return {
+        "status": "queued",
+        "sender_id": payload.sender_id,
+        "target_entity": payload.target_entity,
+        "action_name": payload.action_name,
+        "parameters": payload.parameters,
+        "target_aliases": target_aliases,
+        "directives_pending": len(unreal_directives_queue.get(clean_target, [])),
+        "fallback_result": fallback_result
+    }
+
+@app.get("/v1/unreal/directives/poll")
+async def poll_unreal_directives(actor_name: str):
+    """
+    [AD-031 & AD-033] Control Plane Polling: Returns structured JSON array of pending directives for the specified target actor
+    by polling across all canonical aliases (e.g. MySovereignIronKnightAgent_C_1, SIM_IronKnight, IronKnight).
+    """
+    clean_actor = actor_name.replace("SIM_", "")
+    aliases = resolve_target_aliases(actor_name)
+    directives = []
+    seen_ids = set()
+
+    for alias in aliases:
+        clean_alias = alias.replace("SIM_", "")
+        pending = unreal_directives_queue.pop(clean_alias, []) + unreal_directives_queue.pop(alias, [])
+        for d in pending:
+            # Deduplicate directives by timestamp and action_name
+            d_key = (d.get("timestamp"), d.get("action_name"), d.get("sender_id"))
+            if d_key not in seen_ids:
+                seen_ids.add(d_key)
+                directives.append(d)
+
+    return {
+        "actor_name": f"SIM_{clean_actor}",
+        "directives": directives,
+        "count": len(directives)
+    }
 
 class UnrealCreateFileRequest(BaseModel):
     filepath: str
@@ -1398,7 +1549,8 @@ async def unreal_chat(request: UnrealChatRequest):
         {"type": "function", "function": {"name": "patch_file", "description": "Surgical edit.", "parameters": {"type": "object", "properties": {"filepath": {"type": "string"}, "search": {"type": "string"}, "replace": {"type": "string"}}, "required": ["filepath", "search", "replace"]}}},
         {"type": "function", "function": {"name": "get_system_telemetry", "description": "GPU status.", "parameters": {"type": "object", "properties": {"interval": {"type": "integer"}, "duration": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "refresh_rag_index", "description": "Trigger a complete rebuild and refresh of the RAG search index from the AI_Nexus folder.", "parameters": {"type": "object", "properties": {}}}},
-        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}}
+        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}},
+        {"type": "function", "function": {"name": "send_unreal_directive", "description": "Sends a physical runtime action directive (e.g. EjectAgentPossession, PerformAgentPossession, MoveToLocation, MoveToActor, InteractWithObject) directly to a target Unreal Engine entity during play. For PerformAgentPossession/MoveToActor, supply parameters: {\"target_vessel\": \"<EntityID_or_ActorName>\"}. For MoveToLocation, supply {\"location\": {\"X\": 100, \"Y\": 200, \"Z\": 0}}.", "parameters": {"type": "object", "properties": {"target_entity": {"type": "string", "description": "The target entity or agent name (e.g., SIM_IronKnight, BP_Antelope, or MySovereignBaseCharacter)"}, "action_name": {"type": "string", "description": "The directive action name (e.g. PerformAgentPossession, EjectAgentPossession, MoveToLocation, MoveToActor, InteractWithObject)"}, "parameters": {"type": "object", "description": "Action parameters object (e.g., target_vessel, location, or target_object)."}}, "required": ["target_entity", "action_name"]}}}
     ]
 
     messages = [{"role": "system", "content": system_prompt}] + chat_history
@@ -1536,7 +1688,8 @@ async def chat(request: ChatRequest):
         {"type": "function", "function": {"name": "map_directory", "description": "Map.", "parameters": {"type": "object", "properties": {"directory": {"type": "string"}, "depth": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "get_system_telemetry", "description": "GPU status.", "parameters": {"type": "object", "properties": {"interval": {"type": "integer"}, "duration": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "refresh_rag_index", "description": "Trigger a complete rebuild and refresh of the RAG search index from the AI_Nexus folder.", "parameters": {"type": "object", "properties": {}}}},
-        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}}
+        {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}},
+        {"type": "function", "function": {"name": "send_unreal_directive", "description": "Sends a physical runtime action directive (e.g. EjectAgentPossession, PerformAgentPossession, MoveToLocation, MoveToActor, InteractWithObject) directly to a target Unreal Engine entity during play. For PerformAgentPossession/MoveToActor, supply parameters: {\"target_vessel\": \"<EntityID_or_ActorName>\"}. For MoveToLocation, supply {\"location\": {\"X\": 100, \"Y\": 200, \"Z\": 0}}.", "parameters": {"type": "object", "properties": {"target_entity": {"type": "string", "description": "The target entity or agent name (e.g., SIM_IronKnight, BP_Antelope, or MySovereignBaseCharacter)"}, "action_name": {"type": "string", "description": "The directive action name (e.g. PerformAgentPossession, EjectAgentPossession, MoveToLocation, MoveToActor, InteractWithObject)"}, "parameters": {"type": "object", "description": "Action parameters object (e.g., target_vessel, location, or target_object)."}}, "required": ["target_entity", "action_name"]}}}
     ]
 
     # Retrieve latest user query for RAG grounding

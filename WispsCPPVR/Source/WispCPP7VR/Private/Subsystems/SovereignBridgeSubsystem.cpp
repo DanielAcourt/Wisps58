@@ -4,6 +4,7 @@
 
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "Entities/SovereignIronKnightAgent.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
@@ -11,6 +12,11 @@
 #include "Dom/JsonObject.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
+#include "AIController.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Interaction/SovereignInterfaceMain.h"
+#include "NavigationSystem.h"
 
 void USovereignBridgeSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -541,8 +547,537 @@ void USovereignBridgeSubsystem::OnMailboxResponse(FHttpRequestPtr Request, FHttp
                     FString PushedMessage = MsgVal->AsString();
                     UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: AI Pushed Proactive Chat: %s"), *PushedMessage);
 
+                    // Inspect for Directive commands (AD-027)
+                    if (PushedMessage.StartsWith(TEXT("[DIRECTIVE:")))
+                    {
+                        ProcessRuntimeDirective(PushedMessage);
+                    }
+
                     // Broadcast to UI Widgets, subtitles, or character dialogue systems
                     OnAIChatPushed.Broadcast(PushedMessage);
+                }
+            }
+        }
+    }
+}
+
+bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& DirectiveMessage)
+{
+    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Processing Runtime Directive: %s"), *DirectiveMessage);
+
+    // Format: [DIRECTIVE:ActionName] sender=SIM_IronKnight target=TargetName params={...}
+    if (!DirectiveMessage.StartsWith(TEXT("[DIRECTIVE:")))
+    {
+        return false;
+    }
+
+    int32 ClosingBracketIdx = DirectiveMessage.Find(TEXT("]"));
+    if (ClosingBracketIdx == INDEX_NONE)
+    {
+        return false;
+    }
+
+    FString ActionName = DirectiveMessage.Mid(11, ClosingBracketIdx - 11);
+    FString Payload = DirectiveMessage.Mid(ClosingBracketIdx + 1).TrimStart();
+
+    // Extract Target Name
+    FString TargetName;
+    int32 TargetIdx = Payload.Find(TEXT("target="));
+    if (TargetIdx != INDEX_NONE)
+    {
+        FString TargetSub = Payload.Mid(TargetIdx + 7);
+        int32 SpaceIdx = TargetSub.Find(TEXT(" "));
+        TargetName = (SpaceIdx != INDEX_NONE) ? TargetSub.Left(SpaceIdx) : TargetSub;
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Directive Parsed - Action: '%s', Target: '%s'"), *ActionName, *TargetName);
+
+    // Extract Params String
+    FString ParamsJsonStr;
+    int32 ParamsIdx = Payload.Find(TEXT("params="));
+    if (ParamsIdx != INDEX_NONE)
+    {
+        ParamsJsonStr = Payload.Mid(ParamsIdx + 7).TrimStart();
+    }
+
+    // Parse target_vessel from Params JSON if present
+    FString TargetVesselStr;
+    if (!ParamsJsonStr.IsEmpty())
+    {
+        TSharedPtr<FJsonObject> ParamsJsonObj;
+        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ParamsJsonStr);
+        if (FJsonSerializer::Deserialize(Reader, ParamsJsonObj) && ParamsJsonObj.IsValid())
+        {
+            if (ParamsJsonObj->HasField(TEXT("target_vessel")))
+            {
+                TargetVesselStr = ParamsJsonObj->GetStringField(TEXT("target_vessel"));
+            }
+        }
+    }
+
+    // Find Target Agent Entity
+    ASovereignIronKnightAgent* TargetAgent = nullptr;
+    for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+    {
+        if (EntityPtr.IsValid())
+        {
+            AActor* OwnerActor = EntityPtr->GetOwner();
+            if (OwnerActor && (OwnerActor->GetName() == TargetName || OwnerActor->GetName().Contains(TargetName) || TargetName.Contains(OwnerActor->GetName())))
+            {
+                if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(OwnerActor))
+                {
+                    TargetAgent = Agent;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Fallback search for Iron Knight Agent in world if target match did not cast to agent directly
+    if (!TargetAgent)
+    {
+        for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+        {
+            if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+            {
+                if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(EntityPtr->GetOwner()))
+                {
+                    TargetAgent = Agent;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (TargetAgent)
+    {
+        if (ActionName == TEXT("PerformAgentPossession"))
+        {
+            AActor* ResolvedVessel = nullptr;
+
+            if (!TargetVesselStr.IsEmpty())
+            {
+                FString CleanTargetVessel = TargetVesselStr.Replace(TEXT("SIM_"), TEXT(""));
+
+                // Priority 1: EntityID / GUID Match
+                for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                {
+                    if (EntityPtr.IsValid())
+                    {
+                        FString EntityIDStr = EntityPtr->EntityID.ToString();
+                        const FString* TagEntityIDPtr = EntityPtr->GetUnknownMetaTags().Find(TEXT("EntityID"));
+                        FString TagEntityID = TagEntityIDPtr ? *TagEntityIDPtr : TEXT("");
+                        if (EntityIDStr == TargetVesselStr || TagEntityID == TargetVesselStr || TagEntityID == CleanTargetVessel || TagEntityID == FString::Printf(TEXT("SIM_%s"), *CleanTargetVessel))
+                        {
+                            ResolvedVessel = EntityPtr->GetOwner();
+                            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Resolved target vessel [%s] via Priority 1 (EntityID/GUID match)."), *ResolvedVessel->GetName());
+                            break;
+                        }
+                    }
+                }
+
+                // Priority 2: Exact Actor Name Match
+                if (!ResolvedVessel)
+                {
+                    for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                    {
+                        if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                        {
+                            AActor* Owner = EntityPtr->GetOwner();
+                            if (Owner->GetName() == TargetVesselStr || Owner->GetName() == CleanTargetVessel)
+                            {
+                                ResolvedVessel = Owner;
+                                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Resolved target vessel [%s] via Priority 2 (Exact Name match)."), *ResolvedVessel->GetName());
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Priority 3: Substring Match Fallback
+                if (!ResolvedVessel)
+                {
+                    for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                    {
+                        if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                        {
+                            AActor* Owner = EntityPtr->GetOwner();
+                            if (Owner->GetName().Contains(CleanTargetVessel) || CleanTargetVessel.Contains(Owner->GetName()))
+                            {
+                                ResolvedVessel = Owner;
+                                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Resolved target vessel [%s] via Priority 3 (Substring Fallback match)."), *ResolvedVessel->GetName());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (ResolvedVessel)
+            {
+                TargetAgent->PerformAgentPossession(ResolvedVessel);
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched PerformAgentPossession on Iron Knight Agent targeting [%s]."), *ResolvedVessel->GetName());
+                return true;
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("SovereignBridge: PerformAgentPossession failed - could not resolve target vessel [%s]."), *TargetVesselStr);
+                return false;
+            }
+        }
+        else if (ActionName == TEXT("EjectAgentPossession"))
+        {
+            TargetAgent->EjectAgentPossession();
+            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched EjectAgentPossession on Iron Knight Agent."));
+            return true;
+        }
+    }
+
+    // Spatial Movement & Interaction Directives (AD-035)
+    if (ActionName == TEXT("MoveToLocation") || ActionName == TEXT("MoveToActor") || ActionName == TEXT("InteractWithObject"))
+    {
+        AActor* SubjectActor = nullptr;
+        USovereignSaveableEntityComponent* SubjectSoul = nullptr;
+
+        FString CleanTargetName = TargetName.Replace(TEXT("SIM_"), TEXT(""));
+
+        // Priority 1: Exact Name / EntityID Match on Registered Entities
+        for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+        {
+            if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+            {
+                AActor* Owner = EntityPtr->GetOwner();
+                const FString* TagIDPtr = EntityPtr->GetUnknownMetaTags().Find(TEXT("EntityID"));
+                FString TagID = TagIDPtr ? *TagIDPtr : TEXT("");
+                if (Owner->GetName() == TargetName || Owner->GetName() == CleanTargetName || TagID == TargetName || TagID == CleanTargetName)
+                {
+                    SubjectActor = Owner;
+                    SubjectSoul = EntityPtr.Get();
+                    break;
+                }
+            }
+        }
+
+        // Priority 2: Substring Match Fallback
+        if (!SubjectActor)
+        {
+            for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+            {
+                if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                {
+                    AActor* Owner = EntityPtr->GetOwner();
+                    if (Owner->GetName().Contains(CleanTargetName) || CleanTargetName.Contains(Owner->GetName()))
+                    {
+                        SubjectActor = Owner;
+                        SubjectSoul = EntityPtr.Get();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!SubjectActor)
+        {
+            UE_LOG(LogTemp, Error, TEXT("SovereignBridge: Directive [%s] failed - Subject actor [%s] not found."), *ActionName, *TargetName);
+            return false;
+        }
+
+        // If SubjectActor is Iron Knight Agent and currently possessing a vessel, redirect movement to the possessed vessel
+        if (ASovereignIronKnightAgent* Agent = Cast<ASovereignIronKnightAgent>(SubjectActor))
+        {
+            if (Agent->bIsPossessingTarget && Agent->PossessedTargetActor)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Agent [%s] is possessing vessel [%s]. Redirecting movement directive to possessed vessel."),
+                    *SubjectActor->GetName(), *Agent->PossessedTargetActor->GetName());
+                SubjectActor = Agent->PossessedTargetActor;
+                SubjectSoul = SubjectActor->FindComponentByClass<USovereignSaveableEntityComponent>();
+            }
+        }
+
+        // Option C Guard: Verify bIsMobile for Movement Directives (AD-035)
+        if (ActionName == TEXT("MoveToLocation") || ActionName == TEXT("MoveToActor"))
+        {
+            if (SubjectSoul && !SubjectSoul->bIsMobile)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Movement Directive [%s] REJECTED - Subject actor [%s] has bIsMobile=false (Static Entity Guard)."),
+                    *ActionName, *SubjectActor->GetName());
+                return false;
+            }
+
+            FVector TargetDestination = FVector::ZeroVector;
+            bool bHasDestination = false;
+
+            // Check for target_vessel or target_actor in Params JSON
+            TSharedPtr<FJsonObject> ParamsJsonObj;
+            if (!ParamsJsonStr.IsEmpty())
+            {
+                TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ParamsJsonStr);
+                FJsonSerializer::Deserialize(Reader, ParamsJsonObj);
+            }
+
+            FString DestinationTargetStr;
+            if (ParamsJsonObj.IsValid())
+            {
+                if (ParamsJsonObj->HasField(TEXT("target_vessel"))) DestinationTargetStr = ParamsJsonObj->GetStringField(TEXT("target_vessel"));
+                else if (ParamsJsonObj->HasField(TEXT("target_actor"))) DestinationTargetStr = ParamsJsonObj->GetStringField(TEXT("target_actor"));
+            }
+
+            if (!DestinationTargetStr.IsEmpty())
+            {
+                FString CleanDest = DestinationTargetStr.Replace(TEXT("SIM_"), TEXT(""));
+                for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                {
+                    if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                    {
+                        AActor* DestOwner = EntityPtr->GetOwner();
+                        const FString* TagIDPtr = EntityPtr->GetUnknownMetaTags().Find(TEXT("EntityID"));
+                        FString TagID = TagIDPtr ? *TagIDPtr : TEXT("");
+                        if (DestOwner->GetName() == DestinationTargetStr || DestOwner->GetName() == CleanDest || DestOwner->GetName().Contains(CleanDest) || TagID == DestinationTargetStr || TagID == CleanDest)
+                        {
+                            TargetDestination = DestOwner->GetActorLocation();
+                            bHasDestination = true;
+                            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Movement target resolved to Actor [%s] at Location %s"), *DestOwner->GetName(), *TargetDestination.ToString());
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Check for explicit Vector coordinates in Params JSON {"location": {"X": 100, "Y": 200, "Z": 0}}
+            if (!bHasDestination && ParamsJsonObj.IsValid())
+            {
+                TSharedPtr<FJsonObject> LocObj;
+                if (ParamsJsonObj->HasField(TEXT("location")))
+                {
+                    LocObj = ParamsJsonObj->GetObjectField(TEXT("location"));
+                }
+                else
+                {
+                    LocObj = ParamsJsonObj;
+                }
+
+                if (LocObj.IsValid() && (LocObj->HasField(TEXT("X")) || LocObj->HasField(TEXT("x"))))
+                {
+                    double X = LocObj->HasField(TEXT("X")) ? LocObj->GetNumberField(TEXT("X")) : LocObj->GetNumberField(TEXT("x"));
+                    double Y = LocObj->HasField(TEXT("Y")) ? LocObj->GetNumberField(TEXT("Y")) : LocObj->GetNumberField(TEXT("y"));
+                    double Z = LocObj->HasField(TEXT("Z")) ? LocObj->GetNumberField(TEXT("Z")) : LocObj->GetNumberField(TEXT("z"));
+                    TargetDestination = FVector(X, Y, Z);
+                    bHasDestination = true;
+                    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Movement target resolved to Vector Location %s"), *TargetDestination.ToString());
+                }
+            }
+
+            if (bHasDestination)
+            {
+                // Project 3D coordinate (e.g. Z=400) onto the nearest floor NavMesh surface
+                if (UWorld* World = GetWorld())
+                {
+                    if (UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(World))
+                    {
+                        FNavLocation ProjectedNavLoc;
+                        if (NavSys->ProjectPointToNavigation(TargetDestination, ProjectedNavLoc, FVector(500.0f, 500.0f, 1000.0f)))
+                        {
+                            UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Projected 3D target %s to NavMesh floor location %s"),
+                                *TargetDestination.ToString(), *ProjectedNavLoc.Location.ToString());
+                            TargetDestination = ProjectedNavLoc.Location;
+                        }
+                    }
+                }
+
+                // Micro-Execution via local AIController NavMesh pathfinding
+                APawn* SubjectPawn = Cast<APawn>(SubjectActor);
+                if (SubjectPawn)
+                {
+                    AController* Controller = SubjectPawn->GetController();
+                    if (!Controller)
+                    {
+                        SubjectPawn->SpawnDefaultController();
+                        Controller = SubjectPawn->GetController();
+                    }
+
+                    AAIController* AIController = Cast<AAIController>(Controller);
+                    if (AIController)
+                    {
+                        if (AIController->GetPawn() != SubjectPawn)
+                        {
+                            AIController->Possess(SubjectPawn);
+                        }
+
+                        bool bIsCharacter = SubjectPawn->IsA<ACharacter>();
+                        // Ground ACharacter uses NavMesh pathfinding (bUsePathfinding = true).
+                        // 3D Floating Pawns (e.g. ASovereignIronKnightAgent) use direct 3D vector navigation (bUsePathfinding = false).
+                        bool bUsePathfinding = bIsCharacter;
+
+                        EPathFollowingRequestResult::Type MoveResult = AIController->MoveToLocation(TargetDestination, 50.0f, true, bUsePathfinding, bIsCharacter, true, nullptr, true);
+
+                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Executed AAIController::MoveToLocation on [%s] (IsCharacter: %s, UsePathfinding: %s) targeting %s (Result: %d)"),
+                            *SubjectActor->GetName(), bIsCharacter ? TEXT("True") : TEXT("False"), bUsePathfinding ? TEXT("True") : TEXT("False"), *TargetDestination.ToString(), (int32)MoveResult);
+                        return true;
+                    }
+                }
+
+                // Fallback location update if no controller is present
+                SubjectActor->SetActorLocation(TargetDestination, false, nullptr, ETeleportType::TeleportPhysics);
+                UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Direct location update on [%s] targeting %s"), *SubjectActor->GetName(), *TargetDestination.ToString());
+                return true;
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("SovereignBridge: MoveTo directive failed - Could not resolve target location or destination actor."));
+                return false;
+            }
+        }
+        else if (ActionName == TEXT("InteractWithObject"))
+        {
+            AActor* InteractTarget = nullptr;
+
+            TSharedPtr<FJsonObject> ParamsJsonObj;
+            if (!ParamsJsonStr.IsEmpty())
+            {
+                TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ParamsJsonStr);
+                FJsonSerializer::Deserialize(Reader, ParamsJsonObj);
+            }
+
+            FString InteractTargetStr;
+            if (ParamsJsonObj.IsValid())
+            {
+                if (ParamsJsonObj->HasField(TEXT("target_object"))) InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_object"));
+                else if (ParamsJsonObj->HasField(TEXT("target_vessel"))) InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_vessel"));
+                else if (ParamsJsonObj->HasField(TEXT("target_actor"))) InteractTargetStr = ParamsJsonObj->GetStringField(TEXT("target_actor"));
+            }
+
+            if (!InteractTargetStr.IsEmpty())
+            {
+                FString CleanInteract = InteractTargetStr.Replace(TEXT("SIM_"), TEXT(""));
+                for (TWeakObjectPtr<USovereignSaveableEntityComponent>& EntityPtr : RegisteredSovereignEntities)
+                {
+                    if (EntityPtr.IsValid() && EntityPtr->GetOwner())
+                    {
+                        AActor* Owner = EntityPtr->GetOwner();
+                        if (Owner->GetName() == InteractTargetStr || Owner->GetName() == CleanInteract || Owner->GetName().Contains(CleanInteract))
+                        {
+                            InteractTarget = Owner;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (InteractTarget)
+            {
+                if (InteractTarget->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()))
+                {
+                    IInteractionInterface::Execute_OnInteract(InteractTarget, SubjectActor);
+                    UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Dispatched InteractWithObject (InteractionInterface) from [%s] targeting [%s]."), *SubjectActor->GetName(), *InteractTarget->GetName());
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+void USovereignBridgeSubsystem::StartDirectivePolling(const FString& ActorName)
+{
+    if (ActorName.StartsWith(TEXT("SIM_")))
+    {
+        DirectiveActorName = ActorName;
+    }
+    else
+    {
+        DirectiveActorName = FString::Printf(TEXT("SIM_%s"), *ActorName);
+    }
+
+    StopDirectivePolling();
+
+    UWorld* World = GetWorld();
+    if (World)
+    {
+        World->GetTimerManager().SetTimer(
+            DirectiveTimerHandle,
+            this,
+            &USovereignBridgeSubsystem::QueryDirectives,
+            2.0f,
+            true
+        );
+        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Control Plane Directive Polling started for [%s]."), *DirectiveActorName);
+    }
+}
+
+void USovereignBridgeSubsystem::StopDirectivePolling()
+{
+    UWorld* World = GetWorld();
+    if (World)
+    {
+        World->GetTimerManager().ClearTimer(DirectiveTimerHandle);
+    }
+
+    TSharedPtr<IHttpRequest, ESPMode::ThreadSafe> RequestPtr = ActiveDirectiveRequest.Pin();
+    if (RequestPtr.IsValid())
+    {
+        RequestPtr->CancelRequest();
+    }
+}
+
+void USovereignBridgeSubsystem::QueryDirectives()
+{
+    if (DirectiveActorName.IsEmpty()) return;
+
+    TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
+    Request->OnProcessRequestComplete().BindUObject(this, &USovereignBridgeSubsystem::OnDirectivesResponse);
+
+    ActiveDirectiveRequest = Request;
+
+    FString TargetURL = BridgeBaseUrl + TEXT("/v1/unreal/directives/poll?actor_name=") + DirectiveActorName;
+    Request->SetURL(TargetURL);
+    Request->SetVerb(TEXT("GET"));
+    Request->ProcessRequest();
+}
+
+void USovereignBridgeSubsystem::OnDirectivesResponse(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
+{
+    if (bWasSuccessful && Response.IsValid() && EHttpResponseCodes::IsOk(Response->GetResponseCode()))
+    {
+        TSharedPtr<FJsonObject> JsonObject;
+        TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+
+        if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
+        {
+            const TArray<TSharedPtr<FJsonValue>>* DirectivesArray;
+            if (JsonObject->TryGetArrayField(TEXT("directives"), DirectivesArray))
+            {
+                for (const TSharedPtr<FJsonValue>& DirVal : *DirectivesArray)
+                {
+                    TSharedPtr<FJsonObject> DirObj = DirVal->AsObject();
+                    if (DirObj.IsValid())
+                    {
+                        FSovereignDirective Directive;
+                        Directive.SenderID = DirObj->GetStringField(TEXT("sender_id"));
+                        Directive.TargetEntity = DirObj->GetStringField(TEXT("target_entity"));
+                        Directive.ActionName = DirObj->GetStringField(TEXT("action_name"));
+
+                        TSharedPtr<FJsonObject> ParamsObj = DirObj->GetObjectField(TEXT("parameters"));
+                        if (ParamsObj.IsValid())
+                        {
+                            FString OutputParams;
+                            TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputParams);
+                            FJsonSerializer::Serialize(ParamsObj.ToSharedRef(), Writer);
+                            Directive.ParametersJson = OutputParams;
+                        }
+
+                        Directive.AuthorityToken = DirObj->GetStringField(TEXT("authority_token"));
+
+                        UE_LOG(LogTemp, Warning, TEXT("SovereignBridge: Control Plane Directive Received: %s -> %s (%s)"),
+                            *Directive.SenderID, *Directive.TargetEntity, *Directive.ActionName);
+
+                        // Construct legacy format for ProcessRuntimeDirective dispatch
+                        FString FormattedMsg = FString::Printf(TEXT("[DIRECTIVE:%s] sender=%s target=%s params=%s"),
+                            *Directive.ActionName, *Directive.SenderID, *Directive.TargetEntity, *Directive.ParametersJson);
+
+                        ProcessRuntimeDirective(FormattedMsg);
+                        OnDirectiveReceived.Broadcast(Directive);
+                    }
                 }
             }
         }

@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Entities/SovereignBaseCharacter.h"
 
 //Core Stats And attritbutes
@@ -67,6 +66,12 @@ void ASovereignBaseCharacter::PossessedBy(AController* NewController)
 		ControlComponent->OnPossessed(NewController);
 	}
 
+	// Update SaveDataComponent possession state
+	if (SaveDataComponent)
+	{
+		SaveDataComponent->bIsBeingPossessed = true;
+	}
+
 	// 2. PLAYER-SPECIFIC SETUP (Input & UI)
 	if (APlayerController* PC = Cast<APlayerController>(NewController))
 	{
@@ -103,6 +108,12 @@ void ASovereignBaseCharacter::UnPossessed()
 	if (ControlComponent)
 	{
 		ControlComponent->OnUnpossessed();
+	}
+
+	// Update SaveDataComponent possession state
+	if (SaveDataComponent)
+	{
+		SaveDataComponent->bIsBeingPossessed = false;
 	}
 
 	// 2. LOG THE EVENT
@@ -356,26 +367,6 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 	// Call this every frame so the Blueprint Event and Log fire constantly
 	GetSensedActor();
 }
-
-//v3.2
-/*
-
-Ideally what we want for the base character is that it has a gate somehow so it doesnt do this tick unless it in controlled by the player or
-
-it make a request
-
-
-void ASovereignBaseCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	// Only perform the expensive sphere trace if a Human Player is currently controlling this body
-	if (IsLocallyControlled() && IsPlayerController())
-	{
-		GetSensedActor();
-	}
-}*/
-
 
 // Leveling up or evolving both in stats and visuals
 void ASovereignBaseCharacter::Evolve()

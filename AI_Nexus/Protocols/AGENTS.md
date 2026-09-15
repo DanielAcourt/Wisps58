@@ -16,6 +16,14 @@ To ensure deterministic state synchronization and eliminate "Assumption Drift," 
 - **Jules (Visual Cortex / DevOps & Structural Lead):** Focuses on the "Big Picture," DevOps integration, system-wide problem solving, and maintaining the structural integrity of the codebase. Jules ensures the "Vessel" and "Soul" are synchronized across the entire environment.
 - **Claude (IDE Architect / Localized Logic):** Focuses on code-level implementation, specific architectural patterns within the IDE, and individual module logic. Claude works "inside the code" to build out the features defined by the framework.
 
+### 🔄 4-Step Feature Execution Workflow Protocol
+To maintain absolute alignment and prevent assumption drift during experimental or feature development:
+- **Step 0 (Idea Conception & Research):** Formulate the feature or architectural idea (e.g. SWOT analysis, architectural decoupling).
+- **Step 1 (Ticket Definition):** Define the idea as a formal ticket with ID, scope, and initial goals in active sprint/backlog tracking files (`CURRENT_SPRINT.md`, `.csv`, `.json`).
+- **Step 2 (Tactician Refinement & Definition of Done):** Move to the Tactician role to refine acceptance criteria, define C++ structs/JSON contracts/API schemas, and establish explicit Definition of Done (DoD).
+- **Step 3 (Verification & Automated Testing):** Implement code and test manually and via automated test suites (Python unit tests, C++ compilation checks, PIE logs).
+- **Step 4 (Ticket Closure & Submission):** Mark ticket as completed in sprint tracking files, run pre-commit checks, record learnings in memory, and submit the change.
+
 ### ⚔️ Parallel Execution (Conflict Mitigation)
 To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are active:
 1.  **Backlog Ownership:** Only the **Strategist** or **Commander** roles may permanently modify `BACKLOG.md`. Other roles must propose changes via `_AGENT_CONTEXT.md` or a pull request.
@@ -42,6 +50,7 @@ To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are
 - **The Atomic Rule:** All high-reliability persistence (Black Box, Saves) must use an **Atomic Write Pattern** (.tmp file -> delete original -> move) to prevent corruption and platform-specific "Access Denied" errors.
 
 ## 💻 Coding Conventions
+- **C++ Header Include Placement Mandate:** ALL `#include` directives in `.cpp` files MUST be placed strictly at the top of the file in the primary include section before class method definitions. Inline `#include` directives mid-file or inside/between function bodies are strictly prohibited to avoid translation unit corruption and compilation crashes.
 - **Copyright Integrity:** Always verify and/or apply the "0.36 Standard" header (Version 36.4.x) to every source file (`.cpp`, `.h`, `.md`) you open, as mandated by `COMMAND_SOP.md`.
 - **Memory Safety:** Initialize all non-UObject members in struct constructors (e.g., `FEntitySaveData`).
 - **Defensive Programming:** Always validate `ClassPath` strings before spawning actors.

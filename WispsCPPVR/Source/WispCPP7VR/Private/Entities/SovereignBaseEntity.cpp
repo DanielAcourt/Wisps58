@@ -63,6 +63,7 @@ ASovereignBaseEntity::ASovereignBaseEntity()
 
     // Since we are an AActor now, the Mesh is our Physical Root
     RootComponent = EntityMesh;
+    EntityMesh->SetMobility(EComponentMobility::Movable);
 
     // This allows the Wisp to possess the "Soul"
     bCanBePossessed = true;
