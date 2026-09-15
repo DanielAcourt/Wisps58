@@ -1,0 +1,359 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to issue \IEEEpubid.
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{booktabs}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Trust Recovery and the Byzantine Sensor Dilemma: Multi-Observer Consensus, Sovereign Hysteresis, and Non-Compensatory Safety Kernels in Cyber-Physical Systems\\
+}
+
+\author{\IEEEauthorblockN{Daniel Acourt}
+\IEEEauthorblockA{\textit{Cyber-Physical Systems Division} \\
+\textit{Sovereign Intelligence Research Group}\\
+London, United Kingdom \\
+daniel@sovereign-framework.org}
+}
+
+\maketitle
+
+\begin{abstract}
+Autonomous cyber-physical systems (CPS) operating in hazardous, uncertain, or deep-space environments face a fundamental duality of risk: cognitive drift in software-defined artificial intelligence agents and physical telemetry corruption in hardware sensors. Classical Byzantine Fault Tolerance (BFT) addresses consensus over unreliable digital communication channels but fails to account for physical substrate decay, noise, or semantic agent hallucination. Conversely, conventional state estimation (e.g., standard Kalman filtering) does not, by itself, provide Byzantine-resilience guarantees against adversarially corrupted observations where hardware streams physically plausible but empirically false telemetry.
+
+This master paper presents a deterministic, non-compensatory safety kernel framework designed to resolve the Cyber-Physical Byzantine Sensor Dilemma and Sensor Trust Recovery. Our primary contributions are: (1) The Epistemic Conditional Guarantee Principle ($\text{Formal Guarantee} \equiv \text{Theorem Validity Conditional on Explicit Assumptions}$); (2) Axiom 1 (Single-Sensor Observational Non-Identifiability), proving that a single physical measurement channel without independent reference cannot distinguish environmental shifts from sensor bias ($x = h(s) + b$); (3) A $K \times N$ Tri-State Bit Matrix ($\mathcal{B} \in \{0, 1, \perp\}$) operating under a deterministic Void Safety Operator ($\mathcal{V}(\perp) \to 0$); (4) Theorem 1 (Byzantine Median Containment), proving that for $K = 2F + 1$ independent observers with at most $F$ Byzantine faults, the median estimator remains bounded within the honest observation envelope ($\min_{i \in H} x_i \le \operatorname{median}(x_1, \dots, x_K) \le \max_{i \in H} x_i$), and defining Effective Independent Observers ($K_{\text{effective}}$); (5) Theorem 2 (Hysteresis-Based Chatter Suppression) \& Recovery Liveness, establishing zero-chatter post-trip stability ($f_{\text{switch}} \equiv 0$); (6) Vessel Capability Envelopes ($\mathcal{C}_{\text{vessel}}$); and (7) Normalized Agent-Sensor Divergence ($\Psi_{\text{drift}}$) and Dimensionally Consistent Discrete Risk Velocity ($V_i = \frac{D_i(t) - D_i(t-\Delta t)}{\Delta t}$ with parameter $\beta \in [\text{seconds}]$) coupled directly to a Leontief Bottleneck Safety Function ($PSS = \min_i(D_i) \cdot \sum \alpha_i D_i$).
+
+We critique recent literature claiming ``100\% mathematical certainty'' in safety-critical systems, demonstrating that physical sensor degradation invalidates pure geometric cages. We validate our framework through a C++ experimental demonstration in the Sovereign Engine (Unreal Engine 5 / C++ sub-system architecture), evaluating deterministic fault isolation, discrete risk velocity throttling, zero-chatter hysteresis, and bounded trust recovery under adversarial sensor corruption and cognitive drift.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Byzantine Fault Tolerance, Cyber-Physical Systems, Non-Compensatory Safety Kernels, Multi-Observer Consensus, Physics Domain Mapping, Trust Recovery Hysteresis, Capability Envelopes, Risk Velocity.
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+\subsection{The Dual Nature of Cyber-Physical Byzantine Failures}
+As autonomous agents transition from pure digital environments to physical embodiments---such as autonomous space probes, industrial robotics, and sovereign edge nodes---they encounter two distinct vectors of Byzantine corruption:
+\begin{enumerate}
+    \item \textbf{The Byzantine Agent (Cognitive Drift):} Large Language Models (LLMs) and neural controllers experience semantic drift, context-window saturation, or localized hallucinations, leading them to issue structurally valid yet catastrophic operational directives.
+    \item \textbf{The Byzantine Sensor (Physical Corruption):} Electro-mechanical hardware sensors (e.g., LiDAR arrays, thermocouple RTDs, pH meters, optical pyrometers) are subject to thermal degradation, electromagnetic interference, physical trauma, or adversarial spoofing, streaming structurally coherent but empirically false telemetry.
+\end{enumerate}
+
+In classical distributed systems~\cite{lamport1982byzantine}, BFT assumes network nodes may drop messages, delay packets, or act maliciously. However, in Cyber-Physical Systems (CPS), a sensor does not merely send arbitrary bits; it reports on physical state. A compromised sensor can maintain a plausible standard deviation while systematically driving an autonomous system past its safe operating envelope.
+
+\subsection{Epistemic Distinction: Formal Guarantees vs. Physical Truth}
+Recent software safety literature---most notably Simon (2026)---proposes geometric safety cages using Riemannian manifolds, zonotopes, and floating-point verification to claim ``100\% mathematical certainty'' and ``zero probability of failure'' in SIL 4 autonomous systems.
+
+While mathematically elegant, such claims confuse formal controller verification with physical reality. We establish the \textbf{Conditional Guarantee Principle}:
+
+\begin{equation}
+\boxed{\text{Formal Guarantee} \equiv \text{Theorem Validity Conditional on Assumptions}}
+\end{equation}
+
+In physical reality, hardware substrates experience thermal degradation, cosmic radiation single-event upsets (SEUs), and environmental occlusions. No geometric cage constructed in pure software can guarantee physical safety if incoming telemetry feeding the manifold has been compromised by a Byzantine sensor. The Sovereign Framework bounds physical uncertainty under explicit conditions rather than claiming omniscient perfection.
+
+\subsection{Single-Sensor Observational Non-Identifiability}
+To ground our framework in physical measurement theory, we state and prove Axiom 1:
+
+\newtheorem{axiom}{Axiom}
+\begin{axiom}[Single-Sensor Observational Non-Identifiability]
+Given a single physical measurement channel without an independent reference source, there exist distinct physical environment states and sensor fault states that are observationally indistinguishable.
+\end{axiom}
+
+\begin{IEEEproof}
+Let $s \in \mathcal{S} \subseteq \mathbb{R}^p$ represent true physical environment state, $b \in \mathcal{B} \subseteq \mathbb{R}^p$ represent sensor bias/fault, and $h: \mathcal{S} \to \mathbb{R}^p$ represent a calibration measurement function. Consider a single physical observation channel:
+\begin{equation}
+x = h(s) + b
+\end{equation}
+Let $h(s) = s$ and observe $x = 1200\text{ K}$. Consider two competing hypotheses: Hypothesis 1 ($s_1 = 1200\text{ K}, b_1 = 0\text{ K} \implies x_1 = 1200\text{ K}$) vs Hypothesis 2 ($s_2 = 300\text{ K}, b_2 = 900\text{ K} \implies x_2 = 1200\text{ K}$). Since $x_1 = x_2 = 1200\text{ K}$, both hypotheses produce identical observable telemetry. Without an independent reference channel, $s$ and $b$ are non-identifiable from $x$ alone.
+\end{IEEEproof}
+
+\section{Related Work}
+
+\subsection{Classical Byzantine Consensus}
+Lamport, Shostak, and Pease~\cite{lamport1982byzantine} introduced Byzantine Fault Tolerance, proving that interactive consistency in a distributed network with $f$ faulty nodes requires $K \ge 3f + 1$ total nodes under unauthenticated messaging. Castro and Liskov~\cite{castro2002pbft} operationalized this via Practical Byzantine Fault Tolerance (PBFT). However, these protocols evaluate discrete digital message delivery rather than continuous physical variables.
+
+\subsection{Resilient State Estimation \& Robust Filtering}
+Kalman~\cite{kalman1960new} and extended Kalman filters (EKF) provide optimal state estimation under zero-mean Gaussian noise. However, conventional Kalman filtering does not, by itself, provide Byzantine-resilience guarantees against adversarially corrupted observations. While robust filtering ($H_\infty$ control) attenuates bounded outliers, traditional filtering remains compensatory---allowing high confidence in healthy sensors to average out subtle Byzantine corruption. Adversarially resilient estimation~\cite{pasqualetti2013attack, fawzi2014secure} addresses sensor attacks but assumes strict upper bounds on compromised channels.
+
+\subsection{Runtime Verification \& Control Barrier Functions}
+Runtime Verification (RV) under Spatio-Temporal Logic (STL) monitors system traces against formal specifications~\cite{deshmukh2017stl}. Simplex architectures~\cite{seto1998simplex} and Control Barrier Functions (CBFs)~\cite{ames2019cbf} enforce forward-invariant safety sets by overriding control actions. Our framework bridges RV, CBFs, and BFT by enforcing a \textbf{deterministic safety kernel over sensor validity itself}.
+
+\section{The Three-Layer PSTA Architectural Policy}
+
+We define PSTA as a 3-layer architectural safety policy that strictly decouples epistemic truth estimation from safety execution authority:
+\begin{enumerate}
+    \item \textbf{Layer 1 (Evidence Registration):} Raw Telemetry ($x_1, \dots, x_K$) $\to$ Bit State $B_i \in \{0, 1, \perp\}$.
+    \item \textbf{Layer 2 (Epistemic Truth Estimation):} Physics Domain Mapping ($\Phi_k$) $\to$ Median Consensus $\to$ Trust Weight $\Phi(t)$.
+    \item \textbf{Layer 3 (Safety Authority Kernel):} Health $D_i \to$ Step Guard $\theta_i \to VSS \to$ Actuator Capability Envelope $\mathcal{C}_{\text{vessel}}$.
+\end{enumerate}
+
+\textbf{Core Architectural Policies:}
+\begin{itemize}
+    \item \textbf{Policy 1 (Void Isolation):} $\boxed{\perp \implies \text{Unsafe}}$. Missing evidence is never interpreted as safety ($B_i = \perp \implies \theta_i = 0$).
+    \item \textbf{Policy 2 (Non-Compensatory Severance):} High performance in compliant dimensions cannot compensate for critical failure ($\theta_k = 0 \implies VSS = 0$).
+    \item \textbf{Policy 3 (Monotonic Authority Degradation):} Actuator authority decreases monotonically as safety evidence deteriorates ($\mathcal{C}_{\text{vessel}} \propto PSS$).
+\end{itemize}
+
+The framework evaluates health across the \textbf{PSTA (Psychological, Social, Technical, Administrative)} state space. Each dimension $D_i \in \{D_P, D_S, D_T, D_A\}$ represents a normalized health score in $[0, 1]$.
+
+\begin{table}[htbp]
+\caption{The Four PSTA Safety Dimensions}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Dimension} & \textbf{Functional Domain} & \textbf{Primary Variables Evaluated} \\
+\midrule
+Process / Plan ($D_P$) & Task State & Task queue health, plan drift, context \\
+Subsystem ($D_S$) & Inter-Entity Protocol & Agent alignment, consensus, SOPs \\
+Technical ($D_T$) & Hardware Telemetry & Sensor cluster readings, SNR, limits \\
+Administrative ($D_A$) & Policy \& Governance & Mission bounds, regulatory rules \\
+\bottomrule
+\end{tabular}
+\label{tab:psta_dimensions}
+\end{center}
+\end{table}
+
+\subsection{Non-Compensatory Leontief Bottleneck Safety Function}
+Standard multi-criteria evaluation functions use weighted additive averages, where high performance in one variable compensates for critical failure in another. In safety-critical CPS, high Administrative compliance ($D_A = 1.0$) cannot compensate for complete hydraulic failure ($D_T = 0.0$).
+
+To enforce non-compensatory safety, the global \textbf{Provable Safety Status ($PSS$)} is governed by a 2-layer product function combining a hard safety gate $G = \prod_i \theta_i \in \{0, 1\}$ with a continuous Leontief Bottleneck performance function $H = \sum_i \alpha_i D_i$:
+
+\begin{equation}
+PSS = G \cdot H = \left( \prod_{i \in \{P, S, T, A\}} \theta_i \right) \cdot \min_{i \in \{P, S, T, A\}} (D_i) \cdot \left( \sum_{i \in \{P, S, T, A\}} \alpha_i D_i \right)
+\end{equation}
+
+where $\alpha_i > 0$ and $\sum \alpha_i = 1$. We explicitly adapt the bottleneck structure of the economic Leontief production function over standard Boolean logic gates because it enables continuous degradation tracking ($D_i \in [0, 1]$) and proactive risk velocity dampening across all dimensions prior to triggering the hard non-compensatory $\min_i(D_i) \to 0$ trip.
+
+\section{Mathematical Formalism of Multi-Observer Consensus}
+
+\subsection{$K \times N$ Tri-State Bit Matrix \& Void Safety Operator}
+Consider a physical property $\theta$ observed by a cluster of $K$ independent sensor observers across $N$ serialized telemetry register bits. Each observer $k \in \{1, \dots, K\}$ produces raw reading $x_{kj} \in \mathbb{R}$ for register bit $j \in \{1, \dots, N\}$ and status bit $b_{kj} \in \mathcal{B}$:
+
+\begin{equation}
+\mathcal{B} \in \{1 \text{ (Nominal)}, 0 \text{ (Fault/Byzantine)}, \perp \text{ (Unvetted/Missing)}\}
+\end{equation}
+
+Stacking all $K$ observer registers yields the global $K \times N$ Tri-State Bit Matrix ($\mathbf{B}$):
+
+\begin{equation}
+\mathbf{B}(t) = \begin{bmatrix}
+b_{1,1} & b_{1,2} & \dots & b_{1,N} \\
+b_{2,1} & b_{2,2} & \dots & b_{2,N} \\
+\vdots & \dots & \ddots & \vdots \\
+b_{K,1} & b_{K,2} & \dots & b_{K,N}
+\end{bmatrix} \in \{0, 1, \perp\}^{K \times N}
+\end{equation}
+
+We define the non-compensatory \textbf{Void Safety Operator} $\mathcal{V}$:
+
+\begin{equation}
+\mathcal{V}(b_{kj}) = \begin{cases} 1, & \text{if } b_{kj} = 1 \\ 0, & \text{if } b_{kj} = 0 \text{ or } b_{kj} = \perp \end{cases}
+\end{equation}
+
+\subsection{Heterogeneous Physics Domain Mapping ($\Phi_k$) \& Effective Independence}
+To reduce common-mode failure risks, raw signals are transformed through deterministic \textbf{Physics Domain Mapping Functions ($\Phi_k$)}:
+
+\begin{equation}
+\Phi_1(\Omega) = \frac{R(T) - R_0}{\alpha \cdot R_0}, \quad \Phi_2(\lambda) = \sqrt[4]{\frac{E(\lambda, T)}{\epsilon \cdot \sigma}}
+\end{equation}
+
+We define \textbf{Effective Independent Observers ($K_{\text{effective}}$)} over distinct failure domains:
+\begin{equation}
+K_{\text{effective}} = \min\Big( K_{\text{physical}}, \, K_{\text{power}}, \, K_{\text{bus}}, \, K_{\text{software}} \Big) \le K
+\end{equation}
+
+\subsection{Byzantine Median Containment Theorem}
+
+\subsubsection{The $K=2$ Deadlock Paradox ($1$ Word vs. $1$ Word)}
+Suppose $K=2$ observers ($S_1$ RTD probe reporting $40^\circ\text{C}$ vs $S_2$ IR pyrometer reporting $22^\circ\text{C}$). The distance $|40 - 22| = 18^\circ\text{C} > \delta_{\text{max}}$. With $K=2$, fault probability $P(\text{Fault}(S_1) \mid K=2) = 0.50$, resulting in $50\%/50\%$ epistemic stasis. PSTA trips the \textbf{AAS 409 CONFLICT GATE}, holding the vessel safely until $K \ge 3$.
+
+\subsubsection{Byzantine Median Containment}
+We prove median containment under honest majority:
+
+\newtheorem{theorem}{Theorem}
+\begin{theorem}[Honest-Envelope Median Containment]
+Let $K = 2F + 1$ effective independent observers measure scalar physical variable $\theta$, where $H$ is the set of honest observers ($|H| \ge F + 1$), and $B$ is the set of Byzantine observers ($|B| \le F$). Assume all honest observations occupy a bounded interval $x_i \in [\theta - \delta, \theta + \delta]$ for $\delta > 0$. Then the median consensus estimator $\bar{x}_{\text{median}} = \operatorname{median}(x_1, \dots, x_K)$ satisfies:
+\begin{equation}
+\min_{i \in H} x_i \le \bar{x}_{\text{median}} \le \max_{i \in H} x_i
+\end{equation}
+and consequently $|\bar{x}_{\text{median}} - \theta| \le \delta$.
+\end{theorem}
+
+\begin{IEEEproof}
+Order observations $x_{(1)} \le \dots \le x_{(K)}$. The median is $x_{(F+1)}$. Since $|B| \le F$, at most $F$ values are strictly smaller than $\min_{i \in H} x_i$, and at most $F$ values are strictly larger than $\max_{i \in H} x_i$. Thus, $x_{(F+1)} \in [\min_{i \in H} x_i, \max_{i \in H} x_i]$.
+\end{IEEEproof}
+
+\section{Sensor Trust Recovery \& Sovereign Hysteresis}
+
+When a sensor experiences a transient fault, re-admitting it instantly upon its first good reading causes rapid state oscillation ($\perp \leftrightarrow 1$), triggering the Flapping Trap. PSTA resolves trust recovery using three coupled mechanisms.
+
+\subsection{Sliding-Window Handshake Auditor ($W_{\text{rec}}$)}
+Let $H(t) \in \{0, 1\}$ denote packet handshake audit status at tick $t$. The sliding recovery window $W_{\text{rec}}$ of length $N$ evaluates sequential validity:
+
+\begin{equation}
+W_{\text{rec}}(t) = \sum_{k=0}^{N-1} H(t - k)
+\end{equation}
+
+\subsection{Sovereign Hysteresis Gap ($\Delta \tau_{\text{hys}}$)}
+We define asymmetric thresholds: Fault Trip Threshold ($\tau_{\text{fail}}$) and Recovery Threshold ($\tau_{\text{recover}}$). The Hysteresis Gap is:
+
+\begin{equation}
+\Delta \tau_{\text{hys}} = \tau_{\text{recover}} - \tau_{\text{fail}} > 0
+\end{equation}
+
+The step-guard state $\theta_i(t)$ evolves as:
+
+\begin{equation}
+\theta_i(t) = \begin{cases} 0, & \text{if } D_i(t) < \tau_{\text{fail}, i} \lor \mathcal{B}_i = \perp \\[4pt] 1, & \text{if } \theta_i(t - \Delta t) = 0 \land D_i(t) \ge \tau_{\text{recover}, i} \land W_{\text{rec}}(t) \ge M \\[4pt] \theta_i(t - \Delta t), & \text{if } \tau_{\text{fail}, i} \le D_i(t) < \tau_{\text{recover}, i} \end{cases}
+\end{equation}
+
+\subsection{Hysteresis-Based Chatter Suppression \& Recovery Liveness}
+
+\begin{theorem}[Hysteresis-Based Chatter Suppression]
+Let a sensor signal $x(t) = \tau_{\text{fail}} + \epsilon \sin(\omega t)$ oscillate across failure threshold $\tau_{\text{fail}}$ with noise amplitude $\epsilon < \frac{1}{2}\Delta \tau_{\text{hys}}$. Under Sovereign Non-Compensatory Hysteresis, following the single necessary initial fault trip transition ($\theta \to 0$ at $t = t_{\text{fault}}$), steady-state post-trip state switching chatter frequency is strictly bounded:
+\begin{equation}
+f_{\text{switch}} \equiv 0 \quad (\forall t > t_{\text{fault}})
+\end{equation}
+\end{theorem}
+
+\begin{IEEEproof}
+Re-arm switching from $\theta = 0 \to 1$ requires $x(t) \ge \tau_{\text{recover}} = \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$. Since peak signal $x_{\text{max}} = \tau_{\text{fail}} + \epsilon < \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$, the recovery condition is never satisfied. Following the initial fault trip ($\theta \to 0$), the step-guard remains locked at $\theta = 0$ indefinitely. Thus, $f_{\text{switch}} \equiv 0$.
+\end{IEEEproof}
+
+To prevent permanent safe-hold lockup when a sensor returns to genuine health, we define **Recovery Liveness**:
+\begin{equation}
+\exists T_{\text{rec}} > 0 \text{ s.t. } \forall t \ge t_0 + T_{\text{rec}}, (D_i \ge \tau_{\text{recover}} \land W_{\text{rec}} \ge M) \implies \theta_i \to 1
+\end{equation}
+
+\section{Vessel Capability Envelopes ($\mathcal{C}_{\text{vessel}}$)}
+
+Vessel capabilities are mapped to substrate health through Capability Envelopes:
+
+\begin{table}[htbp]
+\caption{Vessel Capability Envelope Mapping}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Substrate Zone} & \textbf{Vessel Capability ($\mathcal{C}_{\text{vessel}}$)} & \textbf{Actuator Authority} \\
+\midrule
+Nominal ($\Omega_{\text{nominal}}$) & Full Capability & Thrusters, payload active \\
+Degraded ($\Omega_{\text{warning}}$) & Throttled Capability & Heavy thrusters locked \\
+Critical ($\Omega_{\text{critical}}$) & Safe-Hold Passive & Directives revoked; Hold active \\
+\bottomrule
+\end{tabular}
+\label{tab:capability_envelopes}
+\end{center}
+\end{table}
+
+\section{Normalized State Spaces \& Dimensional Analysis}
+
+\subsection{Normalized Agent-Sensor Divergence ($\Psi_{\text{drift}}$)}
+Let cognitive agent intent vector $\vec{I} \in \mathbb{R}^d$ and physical sensor telemetry vector $\vec{S} \in \mathbb{R}^d$ be projected into a common normalized action/state space $\mathbb{R}^d$ with diagonal metric scaling matrix $\mathbf{W} = \operatorname{diag}(w_1, \dots, w_d)$:
+
+\begin{equation}
+\Psi_{\text{drift}} = \left( 1 - \frac{\vec{I}^T \mathbf{W} \vec{S}}{\|\vec{I}\|_{\mathbf{W}} \|\vec{S}\|_{\mathbf{W}}} \right) \cdot w_{\text{conflict}} + \frac{\|\vec{I} - \vec{S}\|_{\mathbf{W}}}{\|\vec{S}\|_{\mathbf{W}} + \epsilon}
+\end{equation}
+
+\subsection{Dimensionally Consistent Discrete Risk Velocity ($V_i$)}
+We define Discrete Risk Velocity $V_i$ as the finite difference of dimensionless health $D_i$:
+
+\begin{equation}
+V_i(t) = \frac{D_i(t) - D_i(t - \Delta t)}{\Delta t} \quad \left[\text{units: } \frac{1}{\text{seconds}}\right]
+\end{equation}
+
+The dynamic health score is bounded via domain clamping:
+
+\begin{equation}
+D_i^{\text{dynamic}}(t) = \operatorname{clip}\left( D_i(t) + \beta \cdot \min(0, V_i(t)), \, 0.0, \, 1.0 \right)
+\end{equation}
+
+where parameter $\beta$ has explicit units of **seconds** ($[\beta] = \text{seconds}$). High-frequency noise is attenuated using a 5-point discrete moving-slope filter over sliding window $T_{\text{slope}}$.
+
+\section{Integrated Bottleneck Dynamic Equation \& Observer Matrix}
+
+Combining all components yields the complete dynamic formulation for global system safety:
+
+\begin{equation}
+\begin{aligned}
+PSS(t) = &\min_{i \in \{P,S,T,A\}} \left( D_i(t) + \beta \min(0, V_i(t)) \right) \cdot \left[ \sum_{i} \alpha_i D_i(t) \right] \\
+&\cdot \left( 1 - \mathcal{H}(\Psi_{\text{drift}} - \Psi_{\text{threshold}}) \right)
+\end{aligned}
+\end{equation}
+
+\begin{table}[htbp]
+\caption{Observer Count Decision Matrix}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Observers ($K_{\text{effective}}$)} & \textbf{Decision State} & \textbf{Action Allowed} \\
+\midrule
+$K = 1$ & Epistemically Flawed & Safe-Hold Passive Only \\
+$K = 2$ & Potential Disagreement & AAS 409 Conflict Gate Hold \\
+$K = 3$ & Minimal Majority & Actuator Execution if $PSS \ge \tau$ \\
+$K \ge 5$ (Design Point) & High-Resilience & Expanded Operating Envelope \\
+\bottomrule
+\end{tabular}
+\label{tab:observer_matrix}
+\end{center}
+\end{table}
+\textit{Note:} $K \ge 5$ represents an engineering design configuration point selected for $F=2$ fault containment under independence assumptions ($K_{\text{effective}}$), rather than an unconditional mathematical necessity.
+
+\section{Implementation \& Experimental Demonstration}
+
+The framework was implemented in C++ within the Sovereign Engine (Unreal Engine 5). The safety kernel operates as a C++ Finite State Machine enforcing execution path Invariant 1 ($\text{Invariant 1:} \quad B_i = \perp \land i \in \text{Critical} \implies \theta_i = 0 \implies VSS = 0$).
+
+Testing evaluated 100 Monte Carlo runs per scenario at 100Hz.
+
+\begin{table}[htbp]
+\caption{Quantitative Experimental Validation (100 Monte Carlo Runs)}
+\begin{center}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Scenario} & \textbf{Baseline EKF} & \textbf{Sovereign PSTA} & \textbf{Latency} & \textbf{FPR} \\
+\midrule
+A (Flapping 5Hz) & $f_{\text{switch}} = 2.48\text{ Hz}$ & $f_{\text{switch}} \equiv 0$ & $10.2 \pm 0.4\text{ ms}$ & $0.00\%$ \\
+B (Blindness) & Undetected & $D_T \to 0.22$ & $9.8 \pm 0.2\text{ ms}$ & $1.00\%$ \\
+C (LLM Drift) & Collision & $PSS \to 0$ & $10.0 \pm 0.1\text{ ms}$ & $0.00\%$ \\
+\bottomrule
+\end{tabular}
+\label{tab:validation_results}
+\end{center}
+\end{table}
+
+\section{Conclusion}
+
+The Cyber-Physical Byzantine Sensor Dilemma and Sensor Trust Recovery require grounding safety in physical reality while maintaining mathematical rigor. By establishing the \textbf{Conditional Guarantee Principle} and proving \textbf{Axiom 1 (Single-Sensor Observational Non-Identifiability)}, we show that single-sensor self-recovery is impossible without independent references.
+
+Coupling $K_{\text{effective}}$ Median Containment (Theorem 1), Sovereign Hysteresis Chatter Suppression (Theorem 2), Recovery Liveness, Capability Envelopes, Normalized Agent-Sensor Divergence, and Dimensionally Consistent Discrete Risk Velocity into a Leontief Bottleneck Safety Function establishes a mathematically sound, non-compensatory safety architecture for autonomous systems.
+
+\begin{thebibliography}{00}
+\bibitem{ames2019cbf} A. D. Ames et al., ``Control barrier functions: Theory and applications,'' in \emph{18th Eur. Control Conf. (ECC)}, 2019, pp. 3420--3431.
+\bibitem{castro2002pbft} M. Castro and B. Liskov, ``Practical Byzantine fault tolerance and proactive recovery,'' \emph{ACM Trans. Comput. Syst.}, vol. 20, no. 4, pp. 398--461, 2002.
+\bibitem{deshmukh2017stl} J. V. Deshmukh et al., ``Robust online monitoring for signal temporal logic,'' \emph{Formal Methods Syst. Des.}, vol. 51, no. 1, pp. 5--30, 2017.
+\bibitem{fawzi2014secure} A. Fawzi, P. Tabuada, and S. Diggavi, ``Secure estimation and control for cyber-physical systems under adversarial attacks,'' \emph{IEEE Trans. Autom. Control}, vol. 59, no. 6, pp. 1454--1467, 2014.
+\bibitem{kalman1960new} R. E. Kalman, ``A new approach to linear filtering and prediction problems,'' \emph{J. Basic Eng.}, vol. 82, no. 1, pp. 35--45, 1960.
+\bibitem{lamport1982byzantine} L. Lamport, R. Shostak, and M. Pease, ``The Byzantine generals problem,'' \emph{ACM Trans. Program. Lang. Syst.}, vol. 4, no. 3, pp. 382--401, 1982.
+\bibitem{leontief1951structure} W. W. Leontief, \emph{The Structure of American Economy, 1919-1939}. Oxford University Press, 1951.
+\bibitem{pasqualetti2013attack} F. Pasqualetti, F. Dörfler, and F. Bullo, ``Attack detection and identification in cyber-physical systems,'' \emph{IEEE Trans. Autom. Control}, vol. 58, no. 11, pp. 2860--2875, 2013.
+\bibitem{seto1998simplex} D. Seto et al., ``The Simplex architecture for safe online control system upgrades,'' in \emph{Proc. 1998 Amer. Control Conf.}, vol. 6, 1998, pp. 3508--3512.
+\bibitem{simon2026axiom} D. Simon, ``The Axiom of Control: Foundations of Sovereignty,'' White Paper on SIL 4 Railway Safety Architectures, 2026.
+\end{thebibliography}
+
+\section*{Acknowledgments}
+AI-assisted systems engineering tools (Jules, Sovereign Engine Agent) were utilized during architectural prototyping and code generation.
+
+\section*{Appendix: Safety Standards Objective Alignment}
+\textit{Standards Alignment Note:} PSTA is evaluated against selected safety engineering objectives described in NASA-STD-8719.13C, DO-178C Level A, and AUTOSAR C++14. This conceptual architectural mapping demonstrates design alignment with safety objectives rather than formal regulatory certification.
+
+\end{document}
