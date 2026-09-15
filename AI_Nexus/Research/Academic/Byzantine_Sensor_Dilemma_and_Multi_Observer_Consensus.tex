@@ -24,12 +24,6 @@
 \textit{Sovereign Intelligence Research Group}\\
 London, United Kingdom \\
 daniel@sovereign-framework.org}
-\and
-\IEEEauthorblockN{Jules (AI Systems Tactician)}
-\IEEEauthorblockA{\textit{Autonomous Systems Division} \\
-\textit{Sovereign Intelligence Research Group}\\
-Autonomous Operations Node \\
-jules@sovereign-framework.org}
 }
 
 \maketitle
@@ -118,12 +112,12 @@ The framework evaluates health across the \textbf{PSTA (Psychological, Social, T
 \begin{center}
 \begin{tabular}{lll}
 \toprule
-\textbf{Dimension} & \textbf{Domain} & \textbf{Primary Variables Evaluated} \\
+\textbf{Dimension} & \textbf{Functional Domain} & \textbf{Primary Variables Evaluated} \\
 \midrule
-Psychological ($D_P$) & Operator Stress & Stress, response latency, fatigue \\
-Social ($D_S$) & Inter-Entity Trust & Agent alignment, consensus, SOP cohesion \\
-Technical ($D_T$) & Hardware Telemetry & Cluster readings, SNR, thermal limits \\
-Administrative ($D_A$) & Policy \& Rules & Mission boundaries, safety compliance \\
+Process / Plan ($D_P$) & Task State & Task queue health, plan drift, context \\
+Subsystem ($D_S$) & Inter-Entity Protocol & Agent alignment, consensus, SOPs \\
+Technical ($D_T$) & Hardware Telemetry & Sensor cluster readings, SNR, limits \\
+Administrative ($D_A$) & Policy \& Governance & Mission bounds, regulatory rules \\
 \bottomrule
 \end{tabular}
 \label{tab:psta_dimensions}
@@ -133,10 +127,10 @@ Administrative ($D_A$) & Policy \& Rules & Mission boundaries, safety compliance
 \subsection{Non-Compensatory Leontief Bottleneck Safety Function}
 Standard multi-criteria evaluation functions use weighted additive averages, where high performance in one variable compensates for critical failure in another. In safety-critical CPS, high Administrative compliance ($D_A = 1.0$) cannot compensate for complete hydraulic failure ($D_T = 0.0$).
 
-To enforce non-compensatory safety, the global \textbf{Provable Safety Status ($PSS$)} is governed by a \textbf{Leontief Bottleneck Safety Function}:
+To enforce non-compensatory safety, the global \textbf{Provable Safety Status ($PSS$)} is governed by a 2-layer product function combining a hard safety gate $G = \prod_i \theta_i \in \{0, 1\}$ with a continuous Leontief Bottleneck performance function $H = \sum_i \alpha_i D_i$:
 
 \begin{equation}
-PSS = \min_{i \in \{P, S, T, A\}} (D_i) \cdot \left( \sum_{i \in \{P, S, T, A\}} \alpha_i D_i \right)
+PSS = G \cdot H = \left( \prod_{i \in \{P, S, T, A\}} \theta_i \right) \cdot \min_{i \in \{P, S, T, A\}} (D_i) \cdot \left( \sum_{i \in \{P, S, T, A\}} \alpha_i D_i \right)
 \end{equation}
 
 where $\alpha_i > 0$ and $\sum \alpha_i = 1$. We explicitly adapt the bottleneck structure of the economic Leontief production function over standard Boolean logic gates because it enables continuous degradation tracking ($D_i \in [0, 1]$) and proactive risk velocity dampening across all dimensions prior to triggering the hard non-compensatory $\min_i(D_i) \to 0$ trip.
@@ -174,9 +168,9 @@ To reduce common-mode failure risks, raw signals are transformed through determi
 \Phi_1(\Omega) = \frac{R(T) - R_0}{\alpha \cdot R_0}, \quad \Phi_2(\lambda) = \sqrt[4]{\frac{E(\lambda, T)}{\epsilon \cdot \sigma}}
 \end{equation}
 
-The mappings $\Phi_k$ represent calibration and inference functions expressing heterogeneous sensor outputs in a common physical state space. We define \textbf{Effective Independent Observers ($K_{\text{effective}}$)}:
+We define \textbf{Effective Independent Observers ($K_{\text{effective}}$)} over distinct failure domains:
 \begin{equation}
-K_{\text{effective}} = f(\text{Physical}, \text{Power}, \text{Bus}, \text{Software}) \le K
+K_{\text{effective}} = \min\Big( K_{\text{physical}}, \, K_{\text{power}}, \, K_{\text{bus}}, \, K_{\text{software}} \Big) \le K
 \end{equation}
 
 \subsection{Byzantine Median Containment Theorem}
@@ -188,7 +182,7 @@ Suppose $K=2$ observers ($S_1$ RTD probe reporting $40^\circ\text{C}$ vs $S_2$ I
 We prove median containment under honest majority:
 
 \newtheorem{theorem}{Theorem}
-\begin{theorem}[Byzantine Median Containment]
+\begin{theorem}[Honest-Envelope Median Containment]
 Let $K = 2F + 1$ effective independent observers measure scalar physical variable $\theta$, where $H$ is the set of honest observers ($|H| \ge F + 1$), and $B$ is the set of Byzantine observers ($|B| \le F$). Assume all honest observations occupy a bounded interval $x_i \in [\theta - \delta, \theta + \delta]$ for $\delta > 0$. Then the median consensus estimator $\bar{x}_{\text{median}} = \operatorname{median}(x_1, \dots, x_K)$ satisfies:
 \begin{equation}
 \min_{i \in H} x_i \le \bar{x}_{\text{median}} \le \max_{i \in H} x_i
@@ -278,10 +272,10 @@ We define Discrete Risk Velocity $V_i$ as the finite difference of dimensionless
 V_i(t) = \frac{D_i(t) - D_i(t - \Delta t)}{\Delta t} \quad \left[\text{units: } \frac{1}{\text{seconds}}\right]
 \end{equation}
 
-The dynamic health score is adjusted as:
+The dynamic health score is bounded via domain clamping:
 
 \begin{equation}
-D_i^{\text{dynamic}}(t) = D_i(t) + \beta \cdot \min(0, V_i(t))
+D_i^{\text{dynamic}}(t) = \operatorname{clip}\left( D_i(t) + \beta \cdot \min(0, V_i(t)), \, 0.0, \, 1.0 \right)
 \end{equation}
 
 where parameter $\beta$ has explicit units of **seconds** ($[\beta] = \text{seconds}$). High-frequency noise is attenuated using a 5-point discrete moving-slope filter over sliding window $T_{\text{slope}}$.
@@ -355,6 +349,9 @@ Coupling $K_{\text{effective}}$ Median Containment (Theorem 1), Sovereign Hyster
 \bibitem{seto1998simplex} D. Seto et al., ``The Simplex architecture for safe online control system upgrades,'' in \emph{Proc. 1998 Amer. Control Conf.}, vol. 6, 1998, pp. 3508--3512.
 \bibitem{simon2026axiom} D. Simon, ``The Axiom of Control: Foundations of Sovereignty,'' White Paper on SIL 4 Railway Safety Architectures, 2026.
 \end{thebibliography}
+
+\section*{Acknowledgments}
+AI-assisted systems engineering tools (Jules, Sovereign Engine Agent) were utilized during architectural prototyping and code generation.
 
 \section*{Appendix: Safety Standards Objective Alignment}
 \textit{Standards Alignment Note:} PSTA is evaluated against selected safety engineering objectives described in NASA-STD-8719.13C, DO-178C Level A, and AUTOSAR C++14. This conceptual architectural mapping demonstrates design alignment with safety objectives rather than formal regulatory certification.

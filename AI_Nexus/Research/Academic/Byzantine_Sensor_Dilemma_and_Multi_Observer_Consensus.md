@@ -1,6 +1,6 @@
 # Trust Recovery and the Byzantine Sensor Dilemma: Multi-Observer Consensus, Sovereign Hysteresis, and Non-Compensatory Safety Kernels in Cyber-Physical Systems
 
-**Authors:** Daniel Acourt$^1$, Jules (AI Systems Tactician)$^2$
+**Author:** Daniel Acourt
 **Affiliation:** Sovereign Intelligence Research Group / Cyber-Physical Systems Division
 **Date:** September 2026
 **Document ID:** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.md`
@@ -133,19 +133,19 @@ We define PSTA as a 3-layer architectural safety policy that strictly decouples 
 
 The framework evaluates health across the **PSTA (Psychological, Social, Technical, Administrative)** multidimensional state space. Each dimension $D_i \in \{D_P, D_S, D_T, D_A\}$ represents a normalized health score in the continuous range $[0, 1]$.
 
-| Dimension | Domain | Primary Variables Evaluated |
+| Dimension | Functional Domain | Primary Variables Evaluated |
 | :--- | :--- | :--- |
-| **Psychological ($D_P$)** | Operator Cognitive Load | Biometric stress, response latency, fatigue, attention saturation |
-| **Social ($D_S$)** | Inter-Entity Trust | Agent-to-Human alignment, inter-agent consensus, SOP cohesion |
-| **Technical ($D_T$)** | Hardware Telemetry | Redundant sensor cluster readings, SNR, thermal limits, power stability |
+| **Process / Planning ($D_P$)** | Task & Plan State | Cognitive/task queue health, plan drift, LLM context saturation |
+| **Subsystem Coordination ($D_S$)** | Inter-Entity Protocol | Agent-to-Human alignment, inter-agent consensus, SOP cohesion |
+| **Technical / Physical ($D_T$)** | Hardware Telemetry | Redundant sensor cluster readings, SNR, thermal limits, power stability |
 | **Administrative ($D_A$)** | Policy & Governance | Mission boundary limits, safety rules, regulatory compliance constraints |
 
 ### 3.1 Non-Compensatory Leontief Bottleneck Safety Function
 Standard multi-criteria evaluation functions use weighted additive averages, where high performance in one variable compensates for critical failure in another. In safety-critical CPS, high Administrative compliance ($D_A = 1.0$) cannot compensate for complete hydraulic failure ($D_T = 0.0$).
 
-To enforce non-compensatory safety, the global **Provable Safety Status ($PSS$)** is governed by a **Leontief Bottleneck Safety Function**:
+To enforce non-compensatory safety, the global **Provable Safety Status ($PSS$)** is governed by a 2-layer product function combining a hard safety gate $G = \prod_i \theta_i \in \{0, 1\}$ with a continuous Leontief Bottleneck performance function $H = \sum_i \alpha_i D_i$:
 
-$$PSS = \min_{i \in \{P, S, T, A\}} (D_i) \cdot \left( \sum_{i \in \{P, S, T, A\}} \alpha_i D_i \right)$$
+$$PSS = G \cdot H = \left( \prod_{i \in \{P, S, T, A\}} \theta_i \right) \cdot \min_{i \in \{P, S, T, A\}} (D_i) \cdot \left( \sum_{i \in \{P, S, T, A\}} \alpha_i D_i \right)$$
 
 where $\alpha_i > 0$ and $\sum \alpha_i = 1$. We explicitly adapt the bottleneck structure of the economic Leontief production function over rigid Boolean logic gates because it enables continuous degradation tracking ($D_i \in [0, 1]$) and proactive risk velocity dampening across all dimensions prior to triggering the hard non-compensatory $\min_i(D_i) \to 0$ trip.
 
@@ -191,9 +191,9 @@ $$\begin{aligned}
 The mappings $\Phi_k$ represent calibration and inference functions expressing heterogeneous sensor outputs in a common physical state space.
 
 #### Effective Independent Observers ($K_{\text{effective}}$)
-Simply increasing raw hardware count $K$ does not guarantee independence if sensors share power rails, communication buses, or software libraries. We define **Effective Independent Observers ($K_{\text{effective}}$)**:
+Simply increasing raw hardware count $K$ does not guarantee independence if sensors share power rails, communication buses, or software libraries. We define **Effective Independent Observers ($K_{\text{effective}}$)** over distinct failure domains:
 
-$$K_{\text{effective}} = f(\text{Physical Domain}, \text{Power Domain}, \text{Bus Domain}, \text{Software Domain}) \le K$$
+$$K_{\text{effective}} = \min\Big( K_{\text{physical}}, \, K_{\text{power}}, \, K_{\text{bus}}, \, K_{\text{software}} \Big) \le K$$
 
 Consensus bounds hold over $K_{\text{effective}}$ rather than raw hardware count $K$.
 
@@ -207,7 +207,7 @@ Suppose $K=2$ observers ($S_1$ RTD probe reporting $40^\circ\text{C}$ vs $S_2$ I
 #### B. Byzantine Median Containment
 We prove median containment under honest majority:
 
-\begin{theorem}[Byzantine Median Containment]
+\begin{theorem}[Honest-Envelope Median Containment]
 Let $K = 2F + 1$ effective independent observers measure a scalar physical variable $\theta$, where $H \subset \{1, \dots, K\}$ is the set of honest observers with $|H| \ge F + 1$, and $B$ is the set of Byzantine observers with $|B| \le F$. Assume all honest observations occupy a bounded interval $x_i \in [\theta - \delta, \theta + \delta]$ for $\delta > 0$. Then the median consensus estimator $\bar{x}_{\text{median}} = \operatorname{median}(x_1, \dots, x_K)$ is strictly contained within the honest observation envelope:
 \begin{equation}
 \min_{i \in H} x_i \le \bar{x}_{\text{median}} \le \max_{i \in H} x_i
@@ -250,6 +250,9 @@ f_{\text{switch}} \equiv 0 \quad (\forall t > t_{\text{fault}})
 
 *Proof:* Re-arm switching from $\theta = 0 \to 1$ requires $x(t) \ge \tau_{\text{recover}} = \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$. Since peak signal $x_{\text{max}} = \tau_{\text{fail}} + \epsilon < \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$, the recovery condition is never satisfied. Following the initial fault trip, the step-guard remains locked at $\theta = 0$ indefinitely. Thus, $f_{\text{switch}} \equiv 0$. $\blacksquare$
 
+#### Tradeoff Between Chatter Suppression and Recovery Latency
+Sovereign Hysteresis introduces an inherent engineering tradeoff: increasing the hysteresis gap ($\Delta \tau_{\text{hys}} \uparrow$) improves chatter suppression ($f_{\text{switch}} \to 0$) but increases recovery latency ($T_{\text{rec}} \uparrow$) once a sensor returns to nominal health.
+
 #### Recovery Liveness Condition
 To prevent permanent safe-hold lockup when a sensor returns to genuine health ($\text{Stability} \neq \text{Recoverability}$), we define **Recovery Liveness**:
 
@@ -283,9 +286,9 @@ We define Discrete Risk Velocity $V_i$ as the finite difference of dimensionless
 
 $$V_i(t) = \frac{D_i(t) - D_i(t - \Delta t)}{\Delta t} \quad \left[\text{units: } \frac{1}{\text{seconds}}\right]$$
 
-The dynamic health score is adjusted as:
+The dynamic health score is bounded via domain clamping:
 
-$$D_i^{\text{dynamic}}(t) = D_i(t) + \beta \cdot \min(0, V_i(t))$$
+$$D_i^{\text{dynamic}}(t) = \operatorname{clip}\left( D_i(t) + \beta \cdot \min(0, V_i(t)), \, 0.0, \, 1.0 \right)$$
 
 where predictive damping parameter $\beta$ has explicit units of **seconds** ($[\beta] = \text{seconds}$), rendering $D_i^{\text{dynamic}}$ dimensionally consistent and dimensionless. High-frequency noise is attenuated using a 5-point discrete moving-slope filter over sliding window $T_{\text{slope}}$.
 
@@ -412,6 +415,12 @@ Coupling $K_{\text{effective}}$ Median Containment (Theorem 1), Sovereign Hyster
 8. Pasqualetti, F., Dörfler, F., & Bullo, F. (2013). Attack detection and identification in cyber-physical systems. *IEEE Transactions on Automatic Control*, 58(11), 2860-2875.
 9. Seto, D., Krogh, B. H., Sha, L., & Chutinan, A. (1998). The Simplex architecture for safe online control system upgrades. *Proceedings of the 1998 American Control Conference*, 6, 3508-3512.
 10. Simon, D. (2026). *The Axiom of Control: Foundations of Sovereignty*. White Paper on SIL 4 Railway Safety Architectures.
+
+---
+
+### Acknowledgments
+
+AI-assisted systems engineering tools (Jules, Sovereign Engine Agent) were utilized during architectural prototyping and code generation.
 
 ---
 
