@@ -223,5 +223,14 @@
     "Node": "DevOps",
     "Why": "Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab.",
     "What": "Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button."
+  },
+  {
+    "ID": "AD-036",
+    "Task": "User Onboarding & Personnel Audit: Jason (Student Persona)",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "Admin/DevOps",
+    "Why": "Onboard Jason as a new user learning Unreal Engine & C++ game dev who is curious about AI programming.",
+    "What": "Jason completes 16-Personalities MBTI test and shares profile with agent during conversation to flesh out Personnel_Audit_Jason.md as Definition of Done."
   }
 ]

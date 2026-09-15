@@ -4,7 +4,7 @@
 **Sprint ID:** `SR_20260922`
 **Start Date:** `25/08/2026`
 **Target End Date:** `22/09/2026` (4-Week Solo Baseline)
-**Planned Capacity:** 85 Points (Expanded Community Scope)
+**Planned Capacity:** 90 Points (Expanded Community Scope)
 
 > 🎯 **Core Sprint Goal:**
 > **"PSTA Hardware Reality, Hybrid Agent Synergy & Zero-Bloat Bidirectional Art Automation (Iron Knight + Jules + UE 5.8 MCP + sovereign-art-sync)"**
@@ -39,6 +39,7 @@
 | AD-023 | Community: Standalone Open-Source Tool Packaging | 5 | Hardened | DevOps | Package asset_manifest.json, sync_art_assets.py, and sync_art_assets.bat into a clean standalone open-source GitHub repository with bidirectional sync, project auto-detection, and safety guardrails. | Independent, MIT-licensed standalone package created in `OpenSource/ue5-art-sync/` with dynamic project detection, bidirectional sync engine, user guide, and batch launcher. |
 | AD-023b | Community: sovereign-art-sync Automated Unit Tests | 2 | Completed | DevOps | Create standalone Python unit test suite (`tests/test_sync.py`) inside `OpenSource/ue5-art-sync/` to test mock project initialization, dynamic `.uproject` discovery, and sync operations. | Python test script in `OpenSource/ue5-art-sync/tests/` running automated unit tests for mock vault sync. |
 | AD-024 | Community: Fab Marketplace Plugin & Utility Widget Packaging | 5 | Completed | DevOps | Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab. | Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button. |
+| AD-036 | User Onboarding & Personnel Audit: Jason (Student Persona) | 5 | Todo | Admin/DevOps | Onboard Jason as a new user learning Unreal Engine & C++ game dev who is curious about AI programming. | Jason completes 16-Personalities MBTI test and shares profile with agent during conversation to flesh out `Personnel_Audit_Jason.md` as Definition of Done. |
 
 ---
 
