@@ -417,6 +417,28 @@ void USovereignBridgeSubsystem::OnChatResponse(FHttpRequestPtr Request, FHttpRes
             FSovereignChatResponse ChatResponse;
             ChatResponse.Content = JsonObject->GetStringField(TEXT("response"));
 
+            if (JsonObject->HasTypedField<EJson::String>(TEXT("spoken_dialogue")))
+            {
+                ChatResponse.SpokenDialogue = JsonObject->GetStringField(TEXT("spoken_dialogue"));
+            }
+            else
+            {
+                ChatResponse.SpokenDialogue = USovereignTTSSanitizer::SanitizeTextForTTS(ChatResponse.Content);
+            }
+
+            const TArray<TSharedPtr<FJsonValue>>* ChunksArray;
+            if (JsonObject->TryGetArrayField(TEXT("tts_chunks"), ChunksArray))
+            {
+                for (const auto& ChunkVal : *ChunksArray)
+                {
+                    ChatResponse.TTSChunks.Add(ChunkVal->AsString());
+                }
+            }
+            else
+            {
+                ChatResponse.TTSChunks = USovereignTTSSanitizer::ChunkTextForTTS(ChatResponse.Content);
+            }
+
             // // [J] Parsing diagnostic tool logs returned from the Iron Officer Bridge. 2025-06-18
             const TArray<TSharedPtr<FJsonValue>>* ToolLogsArray;
             if (JsonObject->TryGetArrayField(TEXT("tool_logs"), ToolLogsArray))

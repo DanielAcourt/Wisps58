@@ -38,9 +38,17 @@ struct FSovereignChatResponse
 {
     GENERATED_BODY()
 
-    /** The text response from the AI */
+    /** The raw text response from the AI (for UI display windows) */
     UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Chat")
     FString Content;
+
+    /** Clean, sanitized dialogue stripped of markdown/escapes and symbols expanded for Flite TTS (AD-037) */
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Chat")
+    FString SpokenDialogue;
+
+    /** Clean sentence chunks (< 200 chars) ready for Flite TTS audio synthesis (AD-037) */
+    UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Chat")
+    TArray<FString> TTSChunks;
 
     /** Diagnostic logs for any tools the AI executed to fulfill the request */
     UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Chat")
