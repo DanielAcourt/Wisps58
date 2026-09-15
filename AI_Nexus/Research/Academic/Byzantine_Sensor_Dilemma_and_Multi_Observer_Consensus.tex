@@ -37,13 +37,13 @@ jules@sovereign-framework.org}
 \begin{abstract}
 Autonomous cyber-physical systems (CPS) operating in hazardous, uncertain, or deep-space environments face a fundamental duality of risk: cognitive drift in software-defined artificial intelligence agents and physical telemetry corruption in hardware sensors. Classical Byzantine Fault Tolerance (BFT) addresses consensus over unreliable communication channels but fails to account for physical substrate decay, sensor noise, or semantic agent hallucination. Conversely, traditional control theory relies heavily on Gaussian error assumptions (e.g., Kalman filtering), leaving safety-critical systems vulnerable to structural Byzantine lies where hardware streams physically plausible but untrue data.
 
-This paper presents a deterministic, non-compensatory safety kernel framework designed to resolve the Cyber-Physical Byzantine Sensor Dilemma. We introduce: (1) The ``Bee Ate a Wire'' Axiom, mathematically proving that single-sensor self-recovery is an impossibility in physical systems and mandating multi-observer consensus; (2) A $K \times N$ Tri-State Bit Matrix ($\mathcal{B} \in \{0, 1, \perp\}$) operating under a deterministic Void Safety Operator ($\mathcal{V}(\perp) \to 0$) that converts missing or corrupted telemetry directly into non-compensatory failure states; (3) An Exponential Trust Recovery Hysteresis curve ($\Phi(t) = 1 - e^{-t/\tau}$) featuring instantaneous fault-driven collapse and slow, asymmetric trust re-accumulation; and (4) An Agent-Sensor Divergence metric ($\Psi_{\text{drift}}$) and Risk Velocity derivative ($V_i = \frac{d D_i}{dt}$) coupled directly to a Leontief Bottleneck Safety Kernel ($PSS = \min_i(D_i) \cdot \sum \alpha_i D_i$).
+This paper presents a deterministic, non-compensatory safety kernel framework designed to resolve the Cyber-Physical Byzantine Sensor Dilemma. We introduce: (1) The ``Bee Ate a Wire'' Axiom, mathematically proving that single-sensor self-recovery is an impossibility in physical systems and mandating multi-observer consensus; (2) A $K \times N$ Tri-State Bit Matrix ($\mathcal{B} \in \{0, 1, \perp\}$) operating under a deterministic Void Safety Operator ($\mathcal{V}(\perp) \to 0$); (3) Heterogeneous Physics Domain Mapping ($\Phi_i$) converting multi-modal sensing modalities (contact RTDs vs optical pyrometers) into unified physical metrics ($T_{\text{physical}}$); (4) An Asymptotic Observer Scaling Proof demonstrating that scaling to $K \ge 5$ observers reduces individual fault weight asymptotically to zero ($\lim_{K \to \infty} W_{\text{fault}} = 0$); (5) An Exponential Trust Recovery Hysteresis curve ($\Phi(t) = 1 - e^{-t/\tau}$) featuring instantaneous fault-driven collapse and slow, asymmetric trust re-accumulation; and (6) An Agent-Sensor Divergence metric ($\Psi_{\text{drift}}$) and Risk Velocity derivative ($V_i = \frac{d D_i}{dt}$) coupled directly to a Leontief Bottleneck Safety Kernel ($PSS = \min_i(D_i) \cdot \sum \alpha_i D_i$).
 
 We critique recent literature claiming ``100\% mathematical certainty'' in safety-critical systems, demonstrating that physical sensor degradation invalidates pure geometric cages. We validate our framework through implementation in the Sovereign Engine (Unreal Engine 5 / C++ sub-system architecture), demonstrating deterministic fault isolation, rapid risk velocity throttling, and bounded trust recovery under adversarial sensor corruption and cognitive drift.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Byzantine Fault Tolerance, Cyber-Physical Systems, Non-Compensatory Safety Kernels, Multi-Observer Consensus, Trust Recovery Hysteresis, Risk Velocity.
+Byzantine Fault Tolerance, Cyber-Physical Systems, Non-Compensatory Safety Kernels, Multi-Observer Consensus, Physics Domain Mapping, Trust Recovery Hysteresis, Risk Velocity.
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -125,12 +125,21 @@ where $\alpha_i > 0$ and $\sum \alpha_i = 1$. If any single dimension collapses 
 \section{Mathematical Formalism of Multi-Observer Consensus}
 
 \subsection{$K \times N$ Tri-State Bit Matrix \& Void Safety Operator}
-Consider a physical property $\theta$ observed by a cluster of $N$ redundant sensors across $K$ heterogeneous sensing modalities.
-
-Each sensor $j \in \{1, \dots, N\}$ in modality $k \in \{1, \dots, K\}$ produces a raw reading $x_{kj} \in \mathbb{R}$ and a tri-state status bit $b_{kj} \in \mathcal{B}$:
+Consider a physical property $\theta$ observed by a cluster of $N$ redundant sensors across $K$ heterogeneous sensing modalities. Each sensor $j \in \{1, \dots, N\}$ in modality $k \in \{1, \dots, K\}$ produces a raw reading $x_{kj} \in \mathbb{R}$ and a tri-state status bit $b_{kj} \in \mathcal{B}$:
 
 \begin{equation}
 \mathcal{B} \in \{1 \text{ (Nominal)}, 0 \text{ (Fault/Byzantine)}, \perp \text{ (Unvetted/Missing)}\}
+\end{equation}
+
+Stacking all $K$ sensor registers yields the global $K \times N$ Tri-State Bit Matrix ($\mathbf{B}$):
+
+\begin{equation}
+\mathbf{B}(t) = \begin{bmatrix}
+b_{1,1} & b_{1,2} & \dots & b_{1,N} \\
+b_{2,1} & b_{2,2} & \dots & b_{2,N} \\
+\vdots & \dots & \ddots & \vdots \\
+b_{K,1} & b_{K,2} & \dots & b_{K,N}
+\end{bmatrix} \in \{0, 1, \perp\}^{K \times N}
 \end{equation}
 
 To eliminate dangerous default-valid assumptions, we define the non-compensatory \textbf{Void Safety Operator} $\mathcal{V}$:
@@ -139,41 +148,40 @@ To eliminate dangerous default-valid assumptions, we define the non-compensatory
 \mathcal{V}(b_{kj}) = \begin{cases} 1, & \text{if } b_{kj} = 1 \\ 0, & \text{if } b_{kj} = 0 \text{ or } b_{kj} = \perp \end{cases}
 \end{equation}
 
-The Void Safety Operator guarantees that missing, uninitialized, or unvetted data ($\perp$) is treated with identical non-compensatory isolation as an explicit fault ($0$).
+The Void Safety Operator guarantees that missing or unvetted data ($\perp$) is treated with identical non-compensatory isolation as an explicit fault ($0$).
 
-\subsection{Multi-Observer Cluster Consensus}
-For a given sensing cluster, the operational consensus mean $\bar{x}_k$ for modality $k$ is computed over all non-void sensors:
-
-\begin{equation}
-\bar{x}_k = \frac{\sum_{j=1}^{N} x_{kj} \cdot \mathcal{V}(b_{kj}) \cdot \Phi_{kj}(t)}{\sum_{j=1}^{N} \mathcal{V}(b_{kj}) \cdot \Phi_{kj}(t)}
-\end{equation}
-
-where $\Phi_{kj}(t) \in [0, 1]$ represents the dynamic trust weight of sensor $(k, j)$ at time $t$.
-
-A sensor reading $x_{kj}$ is marked Byzantine ($b_{kj} \to 0$) if its divergence from the cluster consensus exceeds a dynamic error boundary $\Delta_{\text{max}}$:
+\subsection{Heterogeneous Physics Domain Mapping ($\Phi_i$)}
+To prevent common-mode failures, PSTA enforces heterogeneous sensing modalities. Because contact RTDs measure electrical resistance ($\Omega$) while optical pyrometers measure infrared wavelength radiation ($\lambda$), raw signals are transformed through deterministic \textbf{Physics Domain Mapping Functions ($\Phi_i$)}:
 
 \begin{equation}
-|x_{kj} - \bar{x}_k| > \Delta_{\text{max}} \implies b_{kj} = 0
+\Phi_1(\Omega) = \frac{R(T) - R_0}{\alpha \cdot R_0}, \quad \Phi_2(\lambda) = \sqrt[4]{\frac{E(\lambda, T)}{\epsilon \cdot \sigma}}
 \end{equation}
 
-\subsection{Heterogeneous Cross-Validation}
-To prevent common-mode failures, cross-validation is performed across $K$ heterogeneous modalities:
+Through $\Phi_i$, all raw heterogeneous signals map into a unified physical metric space ($T_{\text{physical}}$ in $^\circ\text{C}$) prior to matrix state evaluation.
 
+\subsection{Proof of Asymptotic Fault Weight Reduction as $K \to \infty$}
+
+\subsubsection{The $K=2$ Deadlock Paradox ($1$ Word vs. $1$ Word)}
+Suppose $K=2$ observers ($S_1$ RTD probe reporting $40^\circ\text{C}$ vs $S_2$ IR pyrometer reporting $22^\circ\text{C}$). The distance $|40 - 22| = 18^\circ\text{C} > \delta_{\text{max}}$. With $K=2$, fault probability $P(\text{Fault}(S_1) \mid K=2) = 0.50$, resulting in $50\%/50\%$ epistemic stasis. PSTA trips the \textbf{AAS 409 CONFLICT GATE}, holding the vessel safely until $K \ge 3$.
+
+\subsubsection{Asymptotic Proof for $K \ge 5$ Observers}
+For $K=5$ heterogeneous observers where $S_1 = 40^\circ\text{C}$ (faulty) and $S_2 \dots S_5 \approx 22^\circ\text{C}$ (nominal), the $K \times K$ distance matrix $\mathbf{C}$ yields row anomaly scores $A_1 = 18.0^\circ\text{C}$ versus $A_2 \dots A_5 \approx 4.5^\circ\text{C}$.
+
+\newtheorem{theorem}{Theorem}
+\begin{theorem}[Asymptotic Fault Weight Decay]
+Let $K$ be the number of independent physical sensors, of which at most $F < \frac{K}{2}$ are Byzantine traitors. The weight $W_{\text{fault}}$ of a single Byzantine sensor in the consensus median approaches zero as $K$ increases:
 \begin{equation}
-\Lambda_{\text{cross}} = \max_{k, m \in \{1, \dots, K\}} |\bar{x}_k - \bar{x}_m|
+\lim_{K \to \infty} W_{\text{fault}}(K) = \lim_{K \to \infty} \frac{1}{K - 2F} = 0
 \end{equation}
+\end{theorem}
 
-If the cross-modality divergence exceeds the physical consistency threshold $\epsilon_{\text{hetero}}$:
-
-\begin{equation}
-\Lambda_{\text{cross}} > \epsilon_{\text{hetero}} \implies D_T \leftarrow D_T \cdot \left(1 - \frac{\Lambda_{\text{cross}}}{\epsilon_{\text{hetero}} + \Lambda_{\text{cross}}}\right)
-\end{equation}
+\begin{IEEEproof}
+For any odd $K \ge 3$, the median consensus estimator $\bar{x}_{\text{consensus}} = \text{Median}(\Phi_1, \dots, \Phi_K)$ selects the $\frac{K+1}{2}$-th order statistic. Any isolated fault $x_{\text{fault}}$ whose distance $C_{\text{fault}, j} > \delta_{\text{max}}$ falls into the outer tail of order statistics. The influence weight of the faulty sensor on the consensus median is identically $0.0$ for all $F < \frac{K}{2}$.
+\end{IEEEproof}
 
 \section{Exponential Trust Recovery Hysteresis}
 
-When a sensor experiences a transient fault, standard systems either lock it out permanently or re-admit it instantly upon signal restoration. Instant re-admission leaves systems vulnerable to high-frequency flapping attacks.
-
-We model trust recovery using asymmetric \textbf{Exponential Trust Hysteresis}:
+When a sensor experiences a transient fault, standard systems either lock it out permanently or re-admit it instantly upon signal restoration. Instant re-admission leaves systems vulnerable to high-frequency flapping attacks. We model trust recovery using asymmetric \textbf{Exponential Trust Hysteresis}:
 
 \begin{equation}
 \Phi_{kj}(t + \Delta t) = \begin{cases} 0.0, & \text{if } b_{kj}(t) = 0 \\[6pt] \min\left(1.0, \, \Phi_{kj}(t) + \left(1 - e^{-\Delta t / \tau_r}\right)\right), & \text{if } b_{kj}(t) = 1 \end{cases}
@@ -181,11 +189,13 @@ We model trust recovery using asymmetric \textbf{Exponential Trust Hysteresis}:
 
 where $\tau_r > 0$ is the recovery time constant.
 
-\textbf{Properties:}
-\begin{enumerate}
-    \item \textbf{Asymmetric Failure:} Downward trust collapse is instantaneous ($\tau_{\text{fail}} \to 0$).
-    \item \textbf{Slow Trust Re-accumulation:} Upward trust recovery is exponential with time constant $\tau_r$.
-\end{enumerate}
+A faulted sensor $S_1$ recovers ($\mathcal{B}_1 \to 1$) only by proving physical alignment with the consensus median over a sliding verification window $W_{\text{rec}}$:
+
+\begin{equation}
+\text{RecoveryGate}(S_1, t) = \mathbb{I}\left(\sum_{m=0}^{N-1} \mathbb{I}(|\Phi_1(x_1) - \bar{x}_{\text{consensus}}| \le \delta_{\text{max}}) \ge M\right)
+\end{equation}
+
+If $S_1$'s wiring was physically severed (``a bee ate the wire''), it cannot track the dynamic environmental curve of the consensus median, locking $S_1$ in Void ($\perp$) indefinitely.
 
 \section{Dynamic Risk Metrics \& Agent-Sensor Divergence}
 
@@ -209,9 +219,7 @@ The dynamic health score is adjusted by risk velocity acceleration:
 D_i^{\text{dynamic}}(t) = D_i(t) + \beta \cdot \min(0, V_i(t))
 \end{equation}
 
-where $\beta > 0$ is a predictive damping coefficient.
-
-\section{Integrated Bottleneck Dynamic Equation}
+\section{Integrated Bottleneck Dynamic Equation \& Observer Matrix}
 
 Combining all components yields the complete dynamic formulation for global system safety:
 
@@ -222,7 +230,22 @@ PSS(t) = &\min_{i \in \{P,S,T,A\}} \left( D_i(t) + \beta \min(0, V_i(t)) \right)
 \end{aligned}
 \end{equation}
 
-where $\mathcal{H}(\cdot)$ is the Heaviside step function enforcing binary non-compensatory shutdown when agent-sensor divergence exceeds allowable bounds.
+\begin{table}[htbp]
+\caption{Observer Count Decision Matrix}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Observers ($K$)} & \textbf{Decision State} & \textbf{Action Allowed} \\
+\midrule
+$K = 1$ & Epistemically Flawed & Safe-Hold Passive Only \\
+$K = 2$ & Deadlock / Disagreement & AAS 409 Conflict Gate Hold \\
+$K = 3$ & Minimal Consensus & Actuator Execution if $PSS \ge \tau$ \\
+$K \ge 5$ & Asymptotically Proven & Full Capability Envelope Unlocked \\
+\bottomrule
+\end{tabular}
+\label{tab:observer_matrix}
+\end{center}
+\end{table}
 
 \section{Implementation \& Validation}
 
@@ -235,7 +258,7 @@ The framework was implemented in C++ within the Sovereign Engine (Unreal Engine 
 
 \section{Conclusion}
 
-The Cyber-Physical Byzantine Sensor Dilemma requires grounding safety in physical reality. By enforcing multi-observer consensus under the ``Bee Ate a Wire'' Axiom and coupling Exponential Trust Recovery Hysteresis with non-compensatory Leontief Bottleneck Kernels, the Sovereign Framework establishes a deterministic, provable foundation for autonomous systems.
+The Cyber-Physical Byzantine Sensor Dilemma requires grounding safety in physical reality. By enforcing multi-observer consensus under the ``Bee Ate a Wire'' Axiom and coupling Physics Domain Mappings, $K \ge 5$ Asymptotic Observer Proofs, and Exponential Trust Recovery Hysteresis with non-compensatory Leontief Bottleneck Kernels, the Sovereign Framework establishes a deterministic, provable foundation for autonomous systems.
 
 \begin{thebibliography}{00}
 \bibitem{lamport1982byzantine} L. Lamport, R. Shostak, and M. Pease, ``The Byzantine generals problem,'' \emph{ACM Trans. Program. Lang. Syst.}, vol. 4, no. 3, pp. 382--401, 1982.
