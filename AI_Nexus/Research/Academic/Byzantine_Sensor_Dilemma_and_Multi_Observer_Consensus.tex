@@ -95,9 +95,23 @@ Kalman~\cite{kalman1960new} and extended Kalman filters (EKF) provide optimal st
 \subsection{Runtime Verification \& Control Barrier Functions}
 Runtime Verification (RV) under Spatio-Temporal Logic (STL) monitors system traces against formal specifications~\cite{deshmukh2017stl}. Simplex architectures~\cite{seto1998simplex} and Control Barrier Functions (CBFs)~\cite{ames2019cbf} enforce forward-invariant safety sets by overriding control actions. Our framework bridges RV, CBFs, and BFT by enforcing a \textbf{deterministic safety kernel over sensor validity itself}.
 
-\section{The PSTA Architectural Foundation}
+\section{The Three-Layer PSTA Architectural Policy}
 
-The framework relies on the \textbf{PSTA (Psychological, Social, Technical, Administrative)} multidimensional health evaluation model. Each dimension $D_i \in \{D_P, D_S, D_T, D_A\}$ represents a normalized health score in the continuous range $[0, 1]$.
+We define PSTA as a 3-layer architectural safety policy that strictly decouples epistemic truth estimation from safety execution authority:
+\begin{enumerate}
+    \item \textbf{Layer 1 (Evidence Registration):} Raw Sensor Telemetry ($x_1, \dots, x_K$) $\to$ Bit State $B_i \in \{0, 1, \perp\}$.
+    \item \textbf{Layer 2 (Epistemic Truth Estimation):} Physics Domain Mapping ($\Phi_k$) $\to$ Median Consensus $\to$ Trust Weight $\Phi(t)$.
+    \item \textbf{Layer 3 (Safety Authority Kernel):} Dimensional Health $D_i \to$ Step Guard $\theta_i \to VSS \to$ Actuator Envelope $\mathcal{C}_{\text{vessel}}$.
+\end{enumerate}
+
+\textbf{Core Architectural Policies:}
+\begin{itemize}
+    \item \textbf{Policy 1 (Void Isolation):} $\boxed{\perp \implies \text{Unsafe}}$. Missing evidence is never interpreted as safety ($B_i = \perp \implies \theta_i = 0$).
+    \item \textbf{Policy 2 (Non-Compensatory Severance):} High performance in compliant dimensions cannot compensate for critical failure ($\theta_k = 0 \implies VSS = 0$).
+    \item \textbf{Policy 3 (Monotonic Authority Degradation):} Actuator authority decreases monotonically as safety evidence deteriorates ($\mathcal{C}_{\text{vessel}} \propto PSS$).
+\end{itemize}
+
+The framework evaluates health across the \textbf{PSTA (Psychological, Social, Technical, Administrative)} state space. Each dimension $D_i \in \{D_P, D_S, D_T, D_A\}$ represents a normalized health score in $[0, 1]$.
 
 \begin{table}[htbp]
 \caption{The Four PSTA Safety Dimensions}
@@ -293,16 +307,22 @@ PSS(t) = &\min_{i \in \{P,S,T,A\}} \left( D_i(t) + \beta \min(0, V_i(t)) \right)
 $K = 1$ & Epistemically Flawed & Safe-Hold Passive Only \\
 $K = 2$ & Deadlock / Disagreement & AAS 409 Conflict Gate Hold \\
 $K = 3$ & Minimal Majority & Actuator Execution if $PSS \ge \tau$ \\
-$K \ge 5$ & High-Resilience & Full Capability Envelope Unlocked \\
+$K \ge 5$ (Design Point) & High-Resilience & Full Capability Envelope Unlocked \\
 \bottomrule
 \end{tabular}
 \label{tab:observer_matrix}
 \end{center}
 \end{table}
+\textit{Note:} $K \ge 5$ represents an engineering design configuration point selected for $F=2$ fault containment under independence assumptions ($K_{\text{effective}}$), rather than an unconditional mathematical necessity.
 
 \section{Implementation \& Validation}
 
-The framework was implemented in C++ within the Sovereign Engine (Unreal Engine 5). Testing evaluated 100 Monte Carlo runs per scenario at 100Hz.
+The framework was implemented in C++ within the Sovereign Engine (Unreal Engine 5). The safety kernel operates as a C++ Finite State Machine enforcing the execution path invariant:
+\begin{equation}
+\text{Invariant 1:} \quad B_i = \perp \quad \land \quad i \in \text{Critical} \implies \theta_i = 0 \implies VSS = 0
+\end{equation}
+
+Testing evaluated 100 Monte Carlo runs per scenario at 100Hz.
 
 \begin{table}[htbp]
 \caption{Quantitative Experimental Validation (100 Monte Carlo Runs)}
@@ -338,5 +358,8 @@ Coupling $K_{\text{effective}}$ Median Containment (Theorem 1), Sovereign Hyster
 \bibitem{seto1998simplex} D. Seto et al., ``The Simplex architecture for safe online control system upgrades,'' in \emph{Proc. 1998 Amer. Control Conf.}, vol. 6, 1998, pp. 3508--3512.
 \bibitem{simon2026axiom} D. Simon, ``The Axiom of Control: Foundations of Sovereignty,'' White Paper on SIL 4 Railway Safety Architectures, 2026.
 \end{thebibliography}
+
+\section*{Appendix: Safety Standards Objective Alignment}
+\textit{Standards Alignment Note:} PSTA is evaluated against selected safety engineering objectives described in NASA-STD-8719.13C, DO-178C Level A, and AUTOSAR C++14. This conceptual architectural mapping demonstrates design alignment with safety objectives rather than formal regulatory certification.
 
 \end{document}

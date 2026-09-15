@@ -102,9 +102,35 @@ Runtime Verification (RV) under Spatio-Temporal Logic (STL) monitors system trac
 
 ---
 
-## 3. The PSTA Architectural Foundation & Aggregation Function
+## 3. The Three-Layer PSTA Architectural Policy & Aggregation Function
 
-The framework relies on the **PSTA (Psychological, Social, Technical, Administrative)** multidimensional health evaluation model. Each dimension $D_i \in \{D_P, D_S, D_T, D_A\}$ represents a normalized health score in the continuous range $[0, 1]$.
+We define PSTA as a 3-layer architectural safety policy that strictly decouples epistemic truth estimation from safety execution authority:
+
+```
+  +------------------------------------------------------------------------+
+  | LAYER 1: EVIDENCE REGISTRATION                                         |
+  | Raw Sensor Telemetry (x_1, x_2, ..., x_K)  -->  Bit State B_i in {0,1,\perp}
+  +-----------------------------------+------------------------------------+
+                                      |
+                                      v
+  +------------------------------------------------------------------------+
+  | LAYER 2: EPISTEMIC TRUTH ESTIMATION                                    |
+  | Heterogeneous Domain Mapping (\Phi_k) --> Median Consensus --> Trust \Phi(t)
+  +-----------------------------------+------------------------------------+
+                                      |
+                                      v
+  +------------------------------------------------------------------------+
+  | LAYER 3: SAFETY AUTHORITY KERNEL                                       |
+  | Dimensional Health D_i --> Step Guard \theta_i --> VSS --> Actuator C_vessel
+  +------------------------------------------------------------------------+
+```
+
+### Core Architectural Invariants:
+1. **Policy 1 (Void Isolation):** $\boxed{\perp \implies \text{Unsafe}}$. The absence of validated evidence is never interpreted as evidence of safety ($B_i = \perp \implies \theta_i = 0$).
+2. **Policy 2 (Non-Compensatory Severance):** $\boxed{\text{Critical Failure Non-Compensability}}$. High performance in compliant dimensions cannot compensate for critical failure in another ($\theta_k = 0 \implies VSS = 0$).
+3. **Policy 3 (Monotonic Authority Degradation):** $\boxed{\text{Deterioration Drives Authority Throttling}}$. Actuator capability authority decreases monotonically as safety evidence deteriorates ($\mathcal{C}_{\text{vessel}} \propto PSS$).
+
+The framework evaluates health across the **PSTA (Psychological, Social, Technical, Administrative)** multidimensional state space. Each dimension $D_i \in \{D_P, D_S, D_T, D_A\}$ represents a normalized health score in the continuous range $[0, 1]$.
 
 | Dimension | Domain | Primary Variables Evaluated |
 | :--- | :--- | :--- |
@@ -275,14 +301,32 @@ $$PSS(t) = \min_{i \in \{P,S,T,A\}} \left( D_i(t) + \beta \min(0, V_i(t)) \right
 | **$K = 1$** | Epistemically Flawed | Zero (Single channel unidentifiable) | Safe-Hold Passive Only |
 | **$K = 2$** | Deadlock / Disagreement | AAS 409 Conflict Gate ($50\%/50\%$ Stasis) | Hold Actuators until $K \ge 3$ tie-breaker |
 | **$K = 3$** | Minimal Majority | Median Containment ($F=1$ fault bounded) | Actuator Execution if $PSS \ge \tau$ |
-| **$K \ge 5$** | High-Resilience Consensus | Median Containment ($F=2$ faults bounded) | Full Vessel Capability Envelope Unlocked |
+| **$K \ge 5$ (Configuration Point)** | High-Resilience Consensus | Median Containment ($F=2$ faults bounded under independence) | Full Vessel Capability Envelope Unlocked |
+
+*Note:* $K \ge 5$ represents an engineering design configuration point selected for high-reliability missions requiring $F=2$ fault containment under stated independence assumptions ($K_{\text{effective}}$), rather than a universal mathematical sufficiency condition.
 
 ---
 
 ## 9. Implementation & Experimental Validation
 
-### 9.1 Software Architecture & Experimental Setup
-The framework was implemented in C++ within the Sovereign Engine (Unreal Engine 5). Testing evaluated 100 Monte Carlo runs per scenario at 100Hz execution rate.
+### 9.1 Software Architecture & C++ State Machine Invariants
+The framework was implemented in C++ within the Sovereign Engine (Unreal Engine 5). The core safety kernel operates as a deterministic C++ Finite State Machine enforcing the execution path invariant:
+
+$$\text{Invariant 1:} \quad B_i = \perp \quad \land \quad i \in \text{Critical} \implies \theta_i = 0 \implies VSS = 0$$
+
+```
+   NOMINAL  <==================================== RECOVERY
+      |                                              ^
+      | (Evidence Invalid)                           | (Sustained Handshake
+      v                                              |  W_rec >= M & D_i >= tau_rec)
+    VOID  -------------------------------------------+
+      |
+      | (Insufficient Evidence)
+      v
+  SAFE-HOLD  <=== (Divergence \Psi >= \Psi_threshold) === CONFLICT
+```
+
+Testing evaluated 100 Monte Carlo runs per scenario at 100Hz execution rate.
 
 ```cpp
 // Core C++ Trust Recovery, Hysteresis, and Cluster Consensus Evaluation
@@ -367,3 +411,9 @@ Coupling $K_{\text{effective}}$ Median Containment (Theorem 1), Sovereign Hyster
 8. Pasqualetti, F., Dörfler, F., & Bullo, F. (2013). Attack detection and identification in cyber-physical systems. *IEEE Transactions on Automatic Control*, 58(11), 2860-2875.
 9. Seto, D., Krogh, B. H., Sha, L., & Chutinan, A. (1998). The Simplex architecture for safe online control system upgrades. *Proceedings of the 1998 American Control Conference*, 6, 3508-3512.
 10. Simon, D. (2026). *The Axiom of Control: Foundations of Sovereignty*. White Paper on SIL 4 Railway Safety Architectures.
+
+---
+
+### Appendix: Safety Standards Objective Alignment
+
+*Note on Standards Terminology:* PSTA is evaluated against selected safety engineering objectives described in NASA-STD-8719.13C (Software Safety), DO-178C Level A (Airborne Systems Verification), and AUTOSAR C++14. This conceptual architectural mapping demonstrates design alignment with safety objectives rather than formal regulatory certification.

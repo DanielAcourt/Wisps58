@@ -141,9 +141,9 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
     *   **PSTA White Paper:** `AI_Nexus/Research/Academic/PSTA_Whitepaper.md`
         *   Provable Trust framework and epistemic risk models.
     *   **Master Paper 2 - Byzantine Sensor Dilemma & Trust Recovery (Markdown):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.md`
-        *   PhD-Grade Restructured Master Paper integrating the Conditional Guarantee Principle, Observational Identifiability Limitation Theorem, Byzantine Median Containment (Theorem 1), Bounded-Input Hysteresis (Proposition 1) & Recovery Liveness, Void Safety Tradeoffs, Physics Domain Mapping ($K_{\text{effective}}$), Vessel Capability Envelopes, Normalized Agent-Sensor Divergence ($\Psi_{\text{drift}}$), and Dimensionally Consistent Risk Velocity ($[\beta] = \text{seconds}$).
+        *   PhD-Grade Restructured Master Paper integrating the 3-Layer Architectural Policy (Evidence, Truth Estimation, Safety Authority), Conditional Guarantee Principle, Observational Identifiability Limitation Theorem, Byzantine Median Containment (Theorem 1), Bounded-Input Hysteresis (Proposition 1) & Recovery Liveness, C++ State Machine Invariants, Void Safety Tradeoffs, Physics Domain Mapping ($K_{\text{effective}}$), Vessel Capability Envelopes, Normalized Agent-Sensor Divergence ($\Psi_{\text{drift}}$), and Dimensionally Consistent Risk Velocity ($[\beta] = \text{seconds}$).
     *   **Master Paper 2 - Byzantine Sensor Dilemma & Trust Recovery (LaTeX):** `AI_Nexus/Research/Academic/Byzantine_Sensor_Dilemma_and_Multi_Observer_Consensus.tex`
-        *   IEEE/ACM-formatted manuscript with full formal proofs, equations, tables, and 10-reference bibliography ready for Overleaf and arXiv publication.
+        *   IEEE/ACM-formatted manuscript with full 3-layer policy proofs, C++ invariants, state diagrams, equations, tables, and 10-reference bibliography ready for Overleaf and arXiv publication.
     *   **Publishing Strategy & Math Audit:** `AI_Nexus/Research/Academic/Publishing_Strategy_and_Math_Audit.md`
         *   Roadmap for publishing safety paradigms.
     *   **Jules' Sovereign Post:** `AI_Nexus/Research/Academic/Jules_Sovereign_Post.md`
