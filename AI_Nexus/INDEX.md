@@ -175,7 +175,7 @@ This index serves as the definitive map for the **Sovereign Intelligence Hierarc
 *   **Unseen Weave Lore Grounding:** `AI_Nexus/Research/Unseen_Weave_Lore.md`
     *   Homebrew DND rules, dragon classifications, and rune grades.
 *   **Fine-Tuning Sovereign LLM Spec:** `AI_Nexus/Research/FineTuning_Sovereign_LLM_Spec.md`
-    *   Parameter Tuning and Loras for Sovereign Intelligence.
+    *   Learned Behavioural Priors & Deterministic Safety Kernel Architecture (Two-Layer Proposal/Kernel Schema, Anti-Sycophancy Counterexamples & Epistemic Decision Chain).
 *   **Analysis of Ideas Pivot:** `AI_Nexus/Research/Analysis_of_Ideas_Pivot.md`
     *   Historical reflection of architectural pivots.
 *   **Adaptive Field Interpolator Spec:** `AI_Nexus/Research/Adaptive_Field_Interpolator_Spec.md`
