@@ -116,20 +116,20 @@ To enforce non-compensatory safety, the global **Provable Safety Status ($PSS$)*
 
 $$PSS = \min_{i \in \{P, S, T, A\}} (D_i) \cdot \left( \sum_{i \in \{P, S, T, A\}} \alpha_i D_i \right)$$
 
-where $\alpha_i > 0$ and $\sum \alpha_i = 1$. If any single dimension collapses ($D_i \to 0$), the global safety status $PSS$ drops instantaneously to 0, severing execution regardless of other dimensional scores.
+where $\alpha_i > 0$ and $\sum \alpha_i = 1$. We explicitly adapt the economic Leontief production function over standard Boolean logic gates because it enables continuous degradation tracking ($D_i \in [0, 1]$) and proactive risk velocity dampening across all dimensions prior to triggering the hard non-compensatory $\min_i(D_i) \to 0$ trip. If any single dimension collapses ($D_i \to 0$), the global safety status $PSS$ drops instantaneously to 0, severing execution regardless of other dimensional scores.
 
 ---
 
 ## 4. Mathematical Formalism of Multi-Observer Consensus
 
 ### 4.1 $K \times N$ Tri-State Bit Matrix & Void Safety Operator
-Consider a physical property $\theta$ (e.g., temperature, pressure, angular velocity) observed by a cluster of $N$ redundant sensors across $K$ heterogeneous sensing modalities.
+Consider a physical property $\theta$ (e.g., temperature, pressure, angular velocity) observed by a cluster of $N$ redundant sensor nodes across $K$ heterogeneous sensing modalities.
 
-Each sensor $j \in \{1, \dots, N\}$ in modality $k \in \{1, \dots, K\}$ produces a raw reading $x_{kj} \in \mathbb{R}$ and a tri-state status bit $b_{kj} \in \mathcal{B}$:
+Each sensor node $j \in \{1, \dots, N\}$ in modality $k \in \{1, \dots, K\}$ produces a raw reading $x_{kj} \in \mathbb{R}$ and a tri-state status bit $b_{kj} \in \mathcal{B}$:
 
 $$\mathcal{B} \in \{1 \text{ (Nominal)}, 0 \text{ (Fault/Byzantine)}, \perp \text{ (Unvetted/Missing)}\}$$
 
-Stacking all $K$ sensor registers yields the global **$K \times N$ Tri-State Bit Matrix ($\mathbf{B}$)**:
+Stacking all $K$ sensing modality registers yields the global **$K \times N$ Tri-State Bit Matrix ($\mathbf{B}$)**:
 
 $$\mathbf{B}(t) = \begin{bmatrix}
 b_{1,1} & b_{1,2} & \dots & b_{1,N} \\
@@ -279,15 +279,15 @@ $$\theta_i(t) = \begin{cases} 0 & \text{if } D_i(t) < \tau_{\text{fail}, i} \qua
 ### 5.4 Flapping Boundedness Proof
 
 #### Theorem 2 (Flapping Boundedness Under Hysteresis):
-*Let a sensor signal $x(t) = \tau_{\text{fail}} + \epsilon \sin(\omega t)$ oscillate across the failure threshold $\tau_{\text{fail}}$ with noise amplitude $\epsilon < \frac{1}{2}\Delta \tau_{\text{hys}}$. Under Sovereign Non-Compensatory Hysteresis, the step-guard state switching frequency is strictly bounded:*
+*Let a sensor signal $x(t) = \tau_{\text{fail}} + \epsilon \sin(\omega t)$ oscillate across the failure threshold $\tau_{\text{fail}}$ with noise amplitude $\epsilon < \frac{1}{2}\Delta \tau_{\text{hys}}$. Under Sovereign Non-Compensatory Hysteresis, following the single necessary initial fault trip transition ($\theta \to 0$ at $t = t_{\text{fault}}$), the steady-state post-trip state switching chatter frequency is strictly bounded:*
 
-$$f_{\text{switch}} \equiv 0$$
+$$f_{\text{switch}} \equiv 0 \quad (\forall t > t_{\text{fault}})$$
 
 *Proof:*
-1. Standard step logic without hysteresis ($\tau_{\text{recover}} = \tau_{\text{fail}}$) toggles state every time $\sin(\omega t)$ crosses zero, yielding chatter frequency $f_{\text{switch}} = \frac{\omega}{\pi}$.
-2. Under Sovereign Hysteresis, switching from $\theta = 0 \to 1$ requires $x(t) \ge \tau_{\text{recover}} = \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$.
+1. Standard step logic without hysteresis ($\tau_{\text{recover}} = \tau_{\text{fail}}$) toggles state continuously every time $\sin(\omega t)$ crosses zero, yielding ongoing chatter frequency $f_{\text{switch}} = \frac{\omega}{\pi}$.
+2. Under Sovereign Hysteresis, re-arm switching from $\theta = 0 \to 1$ requires $x(t) \ge \tau_{\text{recover}} = \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$.
 3. Since peak signal $x_{\text{max}} = \tau_{\text{fail}} + \epsilon < \tau_{\text{fail}} + \Delta \tau_{\text{hys}}$, the recovery condition $x(t) \ge \tau_{\text{recover}}$ is **never satisfied**.
-4. After the initial fault trip ($\theta \to 0$), the step-guard remains locked at $\theta = 0$ indefinitely. Thus, $f_{\text{switch}} \equiv 0$, completely proving zero-chatter stability. $\blacksquare$
+4. Following the single necessary initial fault trip transition ($\theta \to 0$ at $t = t_{\text{fault}}$), the step-guard remains locked at $\theta = 0$ indefinitely for all $t > t_{\text{fault}}$. Thus, steady-state post-trip chatter frequency $f_{\text{switch}} \equiv 0$, completely proving zero-chatter stability. $\blacksquare$
 
 ---
 
