@@ -331,5 +331,14 @@
     "Node": "DevOps",
     "Why": "Prevent Unreal Engine Flite TTS buffer underruns and FliteTextToSpeechSubmixListener.cpp ensure failures caused by markdown syntax, escape sequences, or long text strings.",
     "What": "Standalone string sanitizer module (Python Bridge + C++ fallback) stripping markdown formatting (**,, `, //), escape codes (\\_), converting symbols into spoken words, and splitting long responses into clean, natural sentence chunks (< 200 chars)."
+  },
+  {
+    "ID": "AD-040",
+    "Task": "Sequential TTS Dialogue Stack Queue & Playback Completion Listener",
+    "Complexity": "5",
+    "Status": "Todo",
+    "Node": "DevOps",
+    "Why": "Prevent overlapping audio playback when sending stacked dialogue chunks (TTSChunks) by queueing speech items and tracking UTextToSpeechEngineSubsystem playback state.",
+    "What": "C++ sequential dialogue queue manager with IsSpeaking polling state machine, automatic next-chunk advancement, and OnDialogueStackFinished delegate."
   }
 ]
