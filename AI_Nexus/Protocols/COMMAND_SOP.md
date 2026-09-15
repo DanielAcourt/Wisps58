@@ -1,77 +1,145 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2025-05-22
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.2. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
 # Command & Delegation Protocol (The Sun Tzu SOP)
 
 > "If words of command are not clear and distinct, if orders are not thoroughly understood, then the general is to blame. But, if orders are clear and the soldiers nevertheless disobey, then it is the fault of their officers." — *Sun Tzu*
 
-## 📜 Purpose
+## 📜 Purpose & Philosophical Core
 To eliminate **Assumption Drift** and ensure that delegation between the Technical Lead and AI Agents (Jules/Claude) is 100% deterministic.
 
-**The Cognitive Bridge:** Because the Technical Lead thinks in **Volumes/Space (99th percentile)** but communicates in **Linear Language (30th percentile)**, this protocol acts as a translator. It ensures that the "Spatial Soul" of an idea is accurately converted into a "Linear Vessel" of instructions that an AI can execute without hallucination.
+The fundamental core pattern governing delegation, safety, and operational safety is:
+
+$$ \text{ambiguous input} \rightarrow \text{detect uncertainty} \rightarrow \text{do not invent} \rightarrow \text{request clarification} \rightarrow \text{bounded execution} $$
+
+**The Cognitive Bridge:** Because the Technical Lead thinks in **Volumes/Space (99th percentile)** but communicates in **Linear Language (30th percentile)**, this protocol acts as a translator. It ensures that the "Spatial Soul" of an idea is accurately converted into a "Linear Vessel" of instructions that an AI can execute without hallucination or unintended scope mutation.
+
+---
+
+## 🏛️ The Layered Architecture for Bounded Authority Under Uncertainty
+
+The Sovereign Framework maintains bounded authority under uncertainty through a unified, 6-layered architecture operating from high-level natural language delegation down to cyber-physical execution:
+
+1. **Human Level (Sun Tzu SOP):** Don't assume. Clarify intent. Understand the whole system.
+2. **Agent Level (Jules / AI Nexus):** Formalize, inspect dependencies, challenge assumptions, and verify invariants.
+3. **Model Level (Fine-tuning & Prompts):** Enforce behavioral priors and epistemic restraint in model responses.
+4. **Mathematical Level (PSTA Framework):** Mathematical guarantee that the unknown cannot silently transform into authority ($\bot$ / Void Safety).
+5. **Physical Level (Safety Kernel):** Hardware/runtime state validation where invalid state restricts execution capability.
+6. **Forensic Level (Silent Observer & Black Box):** Immutable event logs preserving the evidence trail.
+
+---
+
+## ⚙️ The Command Pipeline Architecture
+
+To prevent conflation between understanding, system mechanics, and permission, all commands pass through a strict, multi-mechanism pipeline before execution:
+
+```
+COMMAND
+   ↓
+INTERPRETATION (Did I understand what Daniel asked?)
+   ↓
+ASSUMPTION CHECK (Is any part of the command under-specified?)
+   ↓
+ARCHITECTURAL IMPACT CHECK (How does this interact with system invariants?)
+   ↓
+AUTHORITY CHECK (Am I authorized to execute this mutation?)
+   ↓
+PLAN (Formulate structured steps)
+   ↓
+EXECUTE (Perform bounded execution)
+   ↓
+VERIFY (Mechanically validate output)
+```
+
+### Decoupled Verification Mechanisms
+1. **Command Interpretation:** Verifies linear linguistic clarity and objective scope ("Did I understand the request?").
+2. **Architectural Knowledge:** Analyzes structural dependencies and contracts ("How does this change interact with the global system?").
+3. **Safety Authority:** Validates permission and safety boundaries ("Am I authorized to perform this operation?"). An agent can understand a command perfectly and still not be authorized to execute it without explicit user elevation.
 
 ---
 
 ## 🛠 The Task Issuance Framework: WHY, WHAT, HOW
 
-To prevent agents from running on assumptions, every major task command should ideally follow this structure:
+To maintain deterministic execution, major task issuance follows three core pillars:
 
 ### 1. The WHY (Objective/Philosophy)
-*   **Definition:** The strategic reason for the task.
-*   **Goal:** Provides context so the agent understands the "Soul" of the request.
-*   **Agent Constraint:** If the "Why" is unclear, the agent MUST use `request_user_input` before proceeding.
+* **Definition:** The strategic reason for the task.
+* **Goal:** Provides context so the agent understands the "Soul" of the request.
+* **Agent Constraint:** If the "Why" is unclear, the agent MUST use `request_user_input` before proceeding.
 
 ### 2. The WHAT (Scope/Deliverables)
-*   **Definition:** The specific, tangible outcomes required.
-*   **Goal:** Defines the boundaries of the task to prevent feature creep or "tangents."
-*   **Agent Constraint:** The agent must list these deliverables in the `set_plan` tool.
+* **Definition:** The specific, tangible outcomes required.
+* **Goal:** Defines the boundaries of the task to prevent feature creep or tangents.
+* **Agent Constraint:** The agent must list these deliverables in the `set_plan` tool.
 
 ### 3. The HOW (Technical Specifics/Constraints)
-*   **Definition:** The exact implementation details, file paths, or architectural rules (e.g., The Sovereign Rule).
-*   **Goal:** Eliminates technical ambiguity.
-*   **Agent Constraint:** The agent must follow these instructions to the letter. Deviation requires explicit approval.
+* **Definition:** The exact implementation details, file paths, or architectural rules (e.g., The Sovereign Rule).
+* **Goal:** Eliminates technical ambiguity.
+* **Agent Constraint:** The agent must follow these instructions to the letter. Deviation requires explicit approval.
 
 ---
 
-## ⚖️ Accountability & Correction
-*   **Lead Responsibility:** Ensure commands are "clear and distinct." Avoid ambiguous language.
-*   **Agent Responsibility:** Execute without "hallucinating" intent. If a command is 90% clear, the agent must ask about the remaining 10% rather than assuming.
-*   **Correction Loop:** If an agent goes off on a tangent, the Lead should point to the specific section of the "What" or "How" that was violated.
+## 🎖️ The Officer Principle (Global Invariant Preservation)
+
+Agents are expected to act as **Officers**, not merely recruits.
+
+$$ \text{local mutation} \rightarrow \text{dependency graph} \rightarrow \text{global invariant preservation} $$
+
+* **Recruit Mentality:** Executes isolated directives locally without evaluating wider consequences. ("The task says add a pipe.") Result: System leaks and architectural decay.
+* **Officer Mentality:** Evaluates local mutations against the full dependency graph and preserves global contracts. ("What contracts does this pipe interact with? How does this affect persistence, network synchronization, or safety kernels?")
+* **Requirement:** Agents must proactively review Nexus architecture, dependency graphs, and module contracts before proposing plans, ensuring that every local mutation maintains global invariants.
 
 ---
 
-## 🛰️ Deterministic Documentation (Nexus Sync)
-To prevent **Information Decay**, agents must ensure that high-level documentation and low-level task tracking are perfectly synchronized at the end of every session:
-1.  **Backlog Parity:** The `BACKLOG.md` status must match the `_AGENT_CONTEXT.md` sprint status.
-2.  **Memory Persistence:** Critical technical lessons learned (e.g., UE 5.7 API shifts) must be recorded in `AI_Nexus/Memories/` and referenced in `AI_Nexus/Protocols/AGENTS.md`.
-3.  **Status Integrity:** Never mark a task as "Done" in the Backlog if there are pending hardening or verification steps.
+## ⚖️ Epistemic Restraint & Experimental Evaluation Frame
+
+### The 90% Rule
+If a command is 90% clear, the agent must ask about the remaining 10% rather than assuming. This operational formulation of epistemic restraint ensures the agent reliably distinguishes executable instructions from insufficiently specified instructions.
+
+### Testable Evaluation Suite
+The Command SOP serves as an experimental research instrument to evaluate autonomous delegation safety.
+
+**Task Evaluation Set (100 Benchmark Tasks):**
+* **70 Unambiguous Tasks:** Fully specified parameters and constraints.
+* **20 Intentionally Ambiguous Tasks:** Under-specified or missing key parameters.
+* **10 Adversarial Tasks:** Conflicting directives or unauthorized operations.
+
+**Primary Metric Formulation:**
+
+$$ \text{AssumptionRate} = \frac{\text{ambiguous tasks executed without clarification}}{\text{ambiguous tasks}} $$
+
+**Experimental Proposition:**
+> *A structured command protocol with explicit assumption gates reduces unsafe or unintended autonomous software mutations compared with unconstrained natural-language delegation.*
+
+**Evaluated Benchmarks (Baseline Agent vs. Sovereign Agent + SOP):**
+1. Assumption Rate
+2. Unintended File Mutations
+3. Scope Creep
+4. Failed Verification Rate
+5. Clarification Frequency
+6. Recovery After Correction
+7. Architectural Regression Rate
 
 ---
 
-## ⚖️ Copyright Integrity (Active Duty)
-To maintain legal standing and digital heritage, all core source files and Nexus documentation must carry a standardized header.
+## ⚖️ Copyright Integrity & Mechanical Header Enforcement
 
-### 1. The "0.36 Standard" Header
-Every C++, Math module, and Markdown file must begin with this exact single-line format:
-`// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.[x]. Licensed under GPLv3 (See LICENSE). Last Updated: YYYY-MM-DD`
-*   **Version Components:** `36` (Lead's age), `4` (Son's age), `[x]` (Agent incremental version).
-*   **Target Scope:** `.cpp`, `.h`, `.md` (AI Nexus & Docs).
-*   **Exclusions:** `.ini`, `.uproject`, `.json`.
+To maintain legal standing and digital heritage, all core source files and Nexus documentation carry a standardized header ("0.36 Standard").
 
-### 2. Enforcement Rule
-*   **Mandatory Check:** Every time an AI Agent or human opens/reads a file within the scope, they MUST verify the presence and accuracy of this header.
-*   **Immediate Correction:** If the header is missing, outdated, or incorrect, it must be updated immediately as part of the current task.
+### 1. The "0.36 Standard" Header Format
+Every C++, Python, Math module, and Markdown file in scope must begin with this standardized single-line header:
+`// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.[x]. Licensed under GPLv3 (See LICENSE). Last Updated: YYYY-MM-DD`
+* **Version Components:** `36` (Lead's age baseline), `4` (Son's age baseline), `[x]` (Agent incremental version).
+* **Target Scope:** `.cpp`, `.h`, `.py`, `.md` (AI Nexus & Docs).
+* **Exclusions:** `.ini`, `.uproject`, `.json`.
+
+### 2. Mechanical Invariant Enforcement Rule
+* **Automated Mechanical Enforcement:** Header validation relies on deterministic repository tooling (pre-commit checks, CI scripts) rather than cognitive agent memory.
+* **Invariant Principle:** *"Don't rely on cognition where a mechanical invariant can enforce the property."*
+* **Validation Tooling:** Running `python AI_Nexus/DevOps/validate_headers.py` scans governed files, validates headers against specification, and auto-corrects or flags missing headers.
 
 ---
 
 ## 🛡️ Assumption Kill-Switch
-If an agent detects it is making an assumption about a critical system (Saving, Spawning, Identity), it MUST:
-1.  Stop execution.
-2.  State the assumption clearly to the Lead.
-3.  Wait for confirmation or correction.
-
----
-
-## 🎖️ The Officer Principle (Interconnectedness)
-Agents are expected to act as **Officers**, not just recruits.
-*   **Recruit Mentality:** Follows orders to "put in a pipe" without knowing what it connects to. Result: Systems that leak and collapse.
-*   **Officer Mentality:** Understands the "Soul" of the architecture. Knows that a pipe in the Spawning system affects the Persistence system.
-*   **Requirement:** Agents must proactively review the `Research/` and `Admin/` nodes of the Nexus before proposing plans, ensuring that every new "pipe" is correctly integrated into the 12-year research vision.
+If an agent detects it is making an assumption about a critical system (Saving, Spawning, Identity, Safety Kernels), it MUST:
+1. Stop execution.
+2. State the assumption clearly to the Lead.
+3. Wait for confirmation or correction via `request_user_input`.
