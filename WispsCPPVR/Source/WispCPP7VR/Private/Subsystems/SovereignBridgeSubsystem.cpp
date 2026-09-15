@@ -3,6 +3,7 @@
 // // [J] Tactical Implementation of the 07 Handshake and Telemetry Pipeline. 2025-06-18
 
 #include "Subsystems/SovereignBridgeSubsystem.h"
+#include "Utilities/SovereignTTSSanitizer.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignIronKnightAgent.h"
 #include "HttpModule.h"
@@ -559,6 +560,16 @@ void USovereignBridgeSubsystem::OnMailboxResponse(FHttpRequestPtr Request, FHttp
             }
         }
     }
+}
+
+FString USovereignBridgeSubsystem::SanitizeTextForTTS(const FString& InText)
+{
+    return USovereignTTSSanitizer::SanitizeTextForTTS(InText);
+}
+
+TArray<FString> USovereignBridgeSubsystem::ChunkTextForTTS(const FString& InText, int32 MaxChars)
+{
+    return USovereignTTSSanitizer::ChunkTextForTTS(InText, MaxChars);
 }
 
 bool USovereignBridgeSubsystem::ProcessRuntimeDirective(const FString& DirectiveMessage)

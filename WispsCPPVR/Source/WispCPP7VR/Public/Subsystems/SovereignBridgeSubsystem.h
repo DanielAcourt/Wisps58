@@ -214,6 +214,19 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Sovereign|Directive")
     bool ProcessRuntimeDirective(const FString& DirectiveMessage);
 
+    /**
+     * Sanitizes input text for Flite TTS playback by stripping markdown, escape codes,
+     * and converting symbols to spoken words (AD-037).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|TTS")
+    FString SanitizeTextForTTS(const FString& InText);
+
+    /**
+     * Splits sanitized text into clean sentence chunks under MaxChars (default 200) for Flite TTS (AD-037).
+     */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|TTS")
+    TArray<FString> ChunkTextForTTS(const FString& InText, int32 MaxChars = 200);
+
 private:
     /** Internal struct to buffer telemetry while handshake is pending */
     struct FPendingTelemetry

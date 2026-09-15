@@ -387,15 +387,6 @@
     "What": "Epic container organizing AD-037, AD-038, and AD-039 for organic chat and modular TTS synthesis."
   },
   {
-    "ID": "AD-037",
-    "Task": "TTS Audio Guardrails & Flite Subsystem Sanitizer",
-    "Complexity": "5",
-    "Status": "Todo",
-    "Node": "DevOps",
-    "Why": "Prevent Unreal Engine Flite TTS buffer underruns and FliteTextToSpeechSubmixListener.cpp ensure failures caused by markdown syntax, escape sequences, or long text strings.",
-    "What": "Standalone string sanitizer module (Python Bridge + C++ fallback) stripping markdown formatting (**,, `, //), escape codes (\\_), and splitting long responses into clean, natural sentence chunks (< 200 chars)."
-  },
-  {
     "ID": "AD-038",
     "Task": "Dual-Channel Chat Payload & Endpoint Schema Decoupling",
     "Complexity": "5",

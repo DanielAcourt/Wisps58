@@ -322,5 +322,14 @@
     "Node": "DevOps",
     "Why": "Wrap the Python asset sync engine into an Unreal Engine Editor Utility Widget (EUW) toolbar button and list it on Fab.",
     "What": "Packaged Fab-ready plugin with in-editor UI panel and 1-click toolbar sync button."
+  },
+  {
+    "ID": "AD-037",
+    "Task": "TTS Audio Guardrails & Flite Subsystem Sanitizer",
+    "Complexity": "5",
+    "Status": "In Progress",
+    "Node": "DevOps",
+    "Why": "Prevent Unreal Engine Flite TTS buffer underruns and FliteTextToSpeechSubmixListener.cpp ensure failures caused by markdown syntax, escape sequences, or long text strings.",
+    "What": "Standalone string sanitizer module (Python Bridge + C++ fallback) stripping markdown formatting (**,, `, //), escape codes (\\_), converting symbols into spoken words, and splitting long responses into clean, natural sentence chunks (< 200 chars)."
   }
 ]
