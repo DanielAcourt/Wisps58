@@ -1,261 +1,779 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
-# AI_Nexus Master Index (The Map of Truth)
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
+# AI_Nexus MASTER INDEX
 
-This index serves as the definitive map for the **Sovereign Intelligence Hierarchy (SSoT)** and multi-agent coordination. It ensures that both Jules and Claude can navigate the Nexus with absolute precision.
+## Sovereign Intelligence Framework — Map of Authority & Navigation
 
----
+```text
+Purpose:
+Provide deterministic navigation, authority resolution and context selection
+for humans and AI agents working within the Sovereign Framework.
 
-## 🏛️ Sovereign Intelligence Hierarchy (SSoT)
-
-### **Level 0: Foundation & Evolution**
-*   **Archivist Persona Θ:** `AI_Nexus/Identity/Archivist_Theta.md`
-    *   The foundational Philosophical Computation-Monk identity (Level 0 Core).
-*   **Primary Source:** `AI_Nexus/Timeline/MD.md`
-    *   Tracks the project's historical context, long-term vision, and roadmap.
-*   **Updates:** `AI_Nexus/Timeline/Updates.md`
-    *   Changelog for major developmental milestones.
-*   **Sprint Reviews:**
-    *   `AI_Nexus/Timeline/SprintReviews/SR_20260825.md` (PSTA Core Kernel Hardening & UE 5.8.1 Refactor - 97 Points Delivered)
-    *   `AI_Nexus/Timeline/SprintReviews/SR14062026.md` (Iron Officer Bridge & Soul Mediator Refactor - 101 Points Delivered)
-    *   Historical logs and retrospects of development sprints.
-*   **Mission Reports:** `AI_Nexus/Timeline/Mission_Reports/`
-    *   The "Black Box" historical record of all Lead/Agent review sessions. Includes:
-        - `2025-04-07_Initial_Boot.md`
-        - `2025-04-07_Handshake_Verification.md`
-        - `2025-04-07_Leads_Executive_Summary.md`
-        - `2025-04-07_PSTA_Knowledge_Ingestion.md`
-        - `2025-04-07_PSTA_Mathematical_Hardening.md`
-        - `Mission_Report_20260617_PSTA_Lore_Convergence.md`
-        - `Status_Report_07_UI_Reflections_v36.4.7.md`
-        - `Status_Report_07_Stabilization_v36.4.7.md`
-        - `Status_Report_07_Diligence_v36.4.7.md`
-        - `Status_Report_07_Adaptive_Flow_v36.4.7.md`
-        - `Status_Report_07_Researcher_v36.4.7.md`
-        - `Status_Report_07_Tactician_v36.4.7.md`
-        - `Status_Report_07_Mailbox_Polling_v36.4.7.md`
-        - `Status_Report_07_Knight_Upgrade_v36.4.7.md`
-        - `Status_Report_07_Session_Memory_RAG_v36.4.7.md`
-        - `Mission_Report_20260804_Draconic_Gestation_Progression.md`
-
-### **Level 1: The Rulebook & Architecture**
-*   **Primary Source:** `AI_Nexus/Protocols/AGENTS.md`
-    *   SOPs, role definitions, architectural constraints, and coding standards.
-*   **Contribution Guide:** `AI_Nexus/Protocols/CONTRIBUTING.md`
-    *   Workflow standards for multi-agent cooperation.
-*   **Command SOP:** `AI_Nexus/Protocols/COMMAND_SOP.md`
-    *   Sun Tzu-inspired protocol for clear delegation (Why, What, How).
-*   **Knight Command SOP:** `AI_Nexus/Protocols/KnightCommand_SOP.md`
-    *   Specific command procedures and roles for the Knight persona.
-*   **Handshake SOP:** `AI_Nexus/Protocols/HANDSHAKE_SOP.md`
-    *   Procedures for the 07 Protocol Salute and 409 Authority Handshake.
-*   **Roleplay Bridge SOP:** `AI_Nexus/Protocols/ROLEPLAY_BRIDGE_SOP.md`
-    *   Guidelines for Persona-Technical integration and anti-stasis.
-*   **SaveSystem Setup:** `AI_Nexus/Protocols/SAVESYSTEM_SETUP_GUIDE.md`
-    *   Hardening standards and verification SOPs for the Soul/Vessel bridge.
-*   **Quick Reference:** `AI_Nexus/Protocols/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
-    *   Immediate actions for critical system failures.
-*   **Start Of Sprint Protocol:** `AI_Nexus/Protocols/START_OF_SPRINT_PROTOCOL.md`
-        *   Standardized 5-step workflow for grooming, start date anchoring, Tri-Part Goal Convergence, and backlog ticket ingestion.
-*   **End Of Sprint Protocol:** `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md`
-        *   Standardized 5-step workflow for archiving completed sprints and resetting active sprint backlogs to blank slates.
-*   **07 Local Hosting Protocol:** `AI_Nexus/Protocols/07_LOCAL_HOSTING_PROTOCOL.md`
-    *   Standard procedures for starting local servers and bridging pipelines.
-*   **UE 5.8.1 MCP Bridge User Guide:** `AI_Nexus/Docs/10_UE5.8_MCP_Bridge_User_Guide.md`
-    *   Operations guide for the UE 5.8.1 MCP loopback client bridge, port layout, AAS safety gating, and Python client API.
-*   **UE 5.8.1 Python MCP Tools Guide:** `AI_Nexus/Docs/11_UE5.8_Python_MCP_Tools_Operations_Guide.md`
-    *   Operations guide for Python scripting, spawning actor tag automation, PowerShell Invoke-RestMethod REST API commands, and extending editor tools.
-*   **Local Art Asset Manifest Guide:** `AI_Nexus/Docs/12_Local_Art_Asset_Manifest_Guide.md`
-    *   Standard Operating Procedure and user guide for local art asset management, asset_manifest.json, and sync script execution.
-*   **CFL Protocol:** `AI_Nexus/Protocols/CFL_Protocol.md`
-    *   Constraint-Free Logic schema and validation.
-*   **Reality Anchor:** `AI_Nexus/Protocols/REALITY_ANCHOR.md`
-    *   System parameters guarding physical/simulation consistency.
-*   **State Mapping Matrix:** `AI_Nexus/Protocols/STATE_MAPPING_MATRIX.md`
-    *   Low-level translation logic for entity states.
-*   **SaveSystem Design:** `AI_Nexus/Docs/SaveSystem_Design.md`
-    *   Architecture of the Soul/Vessel bridge and the Sandwich Proof.
-*   **07 Bridge Integration:** `AI_Nexus/Docs/07_Unreal_Bridge_Integration.md`
-    *   Setup and implementation guide for the 07 Protocol sync between Unreal and the Iron Officer.
-*   **Black Box Protocol:** `AI_Nexus/Docs/BlackBox_Protocol.md`
-    *   Data survivability specs and high-fidelity telemetry replay architectures.
-*   **API Reference:** `AI_Nexus/Docs/API_Reference.md`
-    *   Sovereign REST API endpoints and schema standards.
-*   **Strategic Roadmap:** `AI_Nexus/Docs/Strategic_Roadmap.md`
-    *   Multi-year vision and release planning.
-*   **Sovereign Broker Implementation:** `AI_Nexus/Docs/Sovereign_Broker_Implementation_Guide.md`
-    *   Decoupled component architecture and specialized mediator hub specifications.
-
-### **Level 2: Identity & Internal Logic**
-*   **Primary Source:** `AI_Nexus/Identity/identity.json`
-    *   Defines the **Sovereign Entity Identity Schema**. This is the data contract for all saved actors, ensuring consistent serialization across the Soul/Vessel bridge.
-*   **Agent Identity (Jules):** `AI_Nexus/Identity/Jules.md`
-    *   The "Soul" of the Structural Lead and the Multi-Vessel Pivot point.
-*   **Persona: Strategist (The Commander):** `AI_Nexus/Identity/Jules_Strategist.md`
-    *   Architectural Visionary (ENTJ) for high-level roadmap and strategy.
-*   **Persona: Tactician (The Clockwork):** `AI_Nexus/Identity/Jules_Tactician.md`
-    *   Systems Architect (ISTJ/INTJ) for C++ implementation and DevOps.
-*   **Persona: Researcher (The Alchemist):** `AI_Nexus/Identity/Jules_Researcher.md`
-    *   Knowledge Ingestion (INTP) for research and experimental logic.
-*   **Agency Arbitration Schema (AAS):** `AI_Nexus/Protocols/AAS_Protocol.md`
-    *   Defines conflict resolution paths and execution precedence across all AI agents.
-*   **AI-to-Unreal Push Chat Spec:** `AI_Nexus/Docs/08_AI_to_Unreal_Push_Chat_Spec.md`
-    *   Real-time push telemetry and outbound chat generation.
-*   **AI-to-Unreal Mailbox Polling User Guide:** `AI_Nexus/Docs/08_AI_to_Unreal_Mailbox_Polling_User_Guide.md`
-    *   Integration guide for proactive mailbox fetching.
-*   **Universal Draconic Gestation User Guide:** `AI_Nexus/Docs/09_Universal_Draconic_Gestation_User_Guide.md`
-    *   Guide to universal draconic biology rules and gestation dynamics.
-*   **Sovereign Creative Roleplay User Guide:** `AI_Nexus/Docs/Sovereign_Creative_Roleplay_User_Guide.md`
-    *   Instructions for interactive, dynamic creative roleplay within the simulation.
+Principle:
+The Index identifies where information lives.
+It does not itself establish the truth of that information.
+```
 
 ---
 
-## 🔬 Research & Foundations
+# 00 — BOOT / AUTHORITY
 
-### **Academic & Theoretical Writing**
-*   **Directory:** `AI_Nexus/Research/Academic/`
-    *   High-level white papers, research summaries, and essays for external review.
-    *   **Thesis & Monograph Directory:** `AI_Nexus/Research/Academic/Thesis/`
-        *   `AI_Nexus/Research/Academic/Thesis/From_Computational_Instantiation_To_Provable_Truth/`
-        *   **PhD Literature Review:** `AI_Nexus/Research/Academic/Thesis/Lit_Review.md`
-            *   Doctoral systematic scoping review of non-compensatory PSTA safety and axiomatic derivations for Dr. Manish Malik.
-        *   **PhD Literature Review v2:** `AI_Nexus/Research/Academic/Thesis/PHDLitReview2.md`
-            *   Alternative concise doctoral systematic scoping review node created per candidate specifications.
-        *   **Sovereign Framework Book:** `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
-            *   Master monograph and publication blueprint detailing the 12-year research synthesis across the 9-Tier Universal Stack.
-    *   **Ingested Literature Directory:** `AI_Nexus/Research/Academic/Literature/`
-        *   `Sycophancy_Towards_Researchers_Drives_Performative_Misalignment.md` (David D. Baek et al., 2026)
-        *   `Sycophancy_as_a_Multilingual_Alignment_Failure.md` (Arya Shah et al., 2026)
-        *   `Right_to_History_A_Sovereignty_Kernel_for_Verifiable_AI_Agent_Execution.md` (Jing Zhang, 2026)
-        *   `Emergent_Misalignment_Can_Be_Induced_by_Sycophancy_and_Reversed_via_Alignment_Gating.md` (Sicheng Wang et al., 2026)
-        *   `The_Alignment_Floor_How_Persona_Customization_Breaks_Safety_in_Weakly_Aligned_LLMs.md` (Xing Zhang et al., 2026)
-        *   `Distributionally_Robust_Predictive_Runtime_Verification_under_Spatio_Temporal_Logic.md` (Yiqi Zhao et al., 2025)
-        *   `A_Systematic_Literature_Review_on_Model_driven_Engineering_for_Cyber_Physical_Systems.md` (Mustafa Abshir Mohamed et al., 2020)
-        *   `The_Unfireable_Safety_Kernel_Execution_Time_AI_Alignment_for_AI_Agents.md` (Seth Dobrin & Łukasz Chmiel, 2026)
-        *   `Multi_Paradigm_Modeling_for_Cyber_Physical_Systems_A_Systematic_Mapping_Review.md` (Ankica Barišić et al., 2021)
-        *   `The_Axiom_of_Control_Foundations_of_Sovereignty_The_Sovereign_Controller_Curriculum.md` (Dirk Simon, 2026)
-        *   `Co_inference_and_Collaboration_Empowering_Higher_Education_Staff_and_Students.md` (Dr. Manish Malik, 2025)
-        *   `Teamwork_Co_Regulation_and_Socially_Shared_Regulation_Skills_within_Engineering_Education_Studies_A_GenAI_Assisted_Scoping_Review.md` (Dr. Manish Malik & Dr. Julie-Ann Sime, 2025)
-        *   `Llama_Guard_LLM_based_Input_Output_Safeguard_for_Human_AI_Conversations.md` (Hakan Inan et al. / Meta AI, 2023)
-        *   `A_New_Approach_to_Linear_Filtering_and_Prediction_Problems.md` (R. E. Kalman, 1960)
-        *   `Kernelized_Safety_Architectures.md` (John Rushby, 1989)
-    *   **PSTA White Paper:** `AI_Nexus/Research/Academic/PSTA_Whitepaper.md`
-        *   Provable Trust framework and epistemic risk models.
-    *   **Publishing Strategy & Math Audit:** `AI_Nexus/Research/Academic/Publishing_Strategy_and_Math_Audit.md`
-        *   Roadmap for publishing safety paradigms.
-    *   **Jules' Sovereign Post:** `AI_Nexus/Research/Academic/Jules_Sovereign_Post.md`
-        *   Reflections on AI system alignment.
-    *   **Understanding RLHF & Alignment:** `AI_Nexus/Research/Academic/Understanding_RLHF_and_Sovereign_Alignment.md`
-        *   Deep-dive on Reinforcement Learning from Human Feedback.
-    *   **Sovereign Intelligence Manifesto:** `AI_Nexus/Research/Academic/Sovereign_Intelligence_Manifesto.md`
-        *   Ethical and technological manifesto for Sovereign systems.
-    *   **Response to Rishi (Citigroup):** `AI_Nexus/Research/Academic/Response_to_Rishi_Citigroup.md`
-        *   Financial and systemic safety alignment.
-    *   **LinkedIn Post Draft:** `AI_Nexus/Research/Academic/LinkedIn_Post_Draft.md`
-        *   Public communication draft regarding the project.
+### Mandatory Entry Points
 
-### **PSTA Core & Consensus Mathematics**
-*   **PSTA Core Framework:** `AI_Nexus/Research/Mathematics/PSTA_Core.md`
-    *   Mathematical definitions of Phi, trust pillars, and risk vectors.
-*   **Sovereign Temporal Consensus Spec:** `AI_Nexus/Research/Mathematics/Sovereign_Temporal_Consensus_Spec.md`
-    *   Causality dampening and temporal paradox mitigation.
-*   **Byzantine Fault Tolerance Spec:** `AI_Nexus/Research/Mathematics/Byzantine_Fault_Tolerance_Spec.md`
-    *   Mathematical bounds of node failures and sensor agreements.
-*   **Sovereign Topological BFT Spec:** `AI_Nexus/Research/Mathematics/Sovereign_Topological_BFT_Spec.md`
-    *   Topological representations of consensus clusters.
-*   **Bi-Symmetric Consensus Spec:** `AI_Nexus/Research/Mathematics/Bi_Symmetric_Consensus_Spec.md`
-    *   Redundant sensor evaluation and hazard correlation.
+| Priority      | Node                                   | Purpose                                                 |
+| ------------- | -------------------------------------- | ------------------------------------------------------- |
+| **MUST**      | `AI_Nexus/Protocols/AGENTS.md`         | Agent rules, architecture and execution constraints     |
+| **MUST**      | `AI_Nexus/Protocols/COMMAND_SOP.md`    | WHY / WHAT / HOW delegation                             |
+| **MUST**      | `AI_Nexus/Protocols/HANDSHAKE_SOP.md`  | 07 boot and authority handshake                         |
+| **MUST**      | `AI_Nexus/Identity/Archivist_Theta.md` | Level-0 uncertainty and structural reasoning foundation |
+| **MUST**      | `AI_Nexus/Identity/identity.json`      | Entity identity/data contract                           |
+| **SELECTIVE** | `AI_Nexus/Protocols/AAS_Protocol.md`   | Authority arbitration and conflict rules                |
+| **SELECTIVE** | `AI_Nexus/Protocols/REALITY_ANCHOR.md` | Physical/simulation consistency                         |
+| **SELECTIVE** | `AI_Nexus/Protocols/CFL_Protocol.md`   | Logic/constraint validation                             |
 
-### **Research Proposals & System Specs**
-*   **Long-Term Memory Compression Spec:** `AI_Nexus/Research/Proposals/Long_Term_Memory_Compression_Spec.md`
-    *   Architectures for high-compression agent memory state consolidation.
-*   **AD-001 Iron Officer Implementation:** `AI_Nexus/Research/Proposals/AD-001_Iron_Officer_Implementation.md`
-    *   System specification for mirroring local persona inside Unreal.
-*   **Unseen Weave Lore Grounding:** `AI_Nexus/Research/Unseen_Weave_Lore.md`
-    *   Homebrew DND rules, dragon classifications, and rune grades.
-*   **Fine-Tuning Sovereign LLM Spec:** `AI_Nexus/Research/FineTuning_Sovereign_LLM_Spec.md`
-    *   Learned Behavioural Priors & Deterministic Safety Kernel Architecture (Two-Layer Proposal/Kernel Schema, Anti-Sycophancy Counterexamples & Epistemic Decision Chain).
-*   **Analysis of Ideas Pivot:** `AI_Nexus/Research/Analysis_of_Ideas_Pivot.md`
-    *   Historical reflection of architectural pivots.
-*   **Adaptive Field Interpolator Spec:** `AI_Nexus/Research/Adaptive_Field_Interpolator_Spec.md`
-    *   VFX/Physics interpolation of unvetted dynamic streams.
-*   **Knowledge Drop Template:** `AI_Nexus/Research/KNOWLEDGE_DROP_TEMPLATE.md`
-    *   SOP template for sharing system knowledge across agents.
+### Boot Principle
 
-### **Metaphors & Reference**
-*   **Engineering Glossary (Execution Layer):** `AI_Nexus/Research/Definitions/Glossary.md`
-    *   Definitive runtime execution and C++ engineering terminology for the Sovereign ecosystem.
-*   **Academic Glossary (Scholarly Layer):** `AI_Nexus/Research/Definitions/Academic_Glossary.md`
-    *   Academic translation map, claim discipline, evidence language, and formal notation guidelines for research, literature reviews, and doctoral writing.
-*   **Metaphorical Principles:** `AI_Nexus/Research/Metaphors/Principles.md`
-    *   Translation of Lead's spatial metaphors into operational rules.
-*   **UE 5.8 Compatibility Analysis:** `AI_Nexus/Research/UE5.8_Compatibility_Analysis_Report.md`
-    *   Technical audit of range-based loop iteration over FJsonObject::Values.
-*   **Lesson Learned: FJsonObject Refactoring:** `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
-    *   Standardized explicit conversion pattern to resolve FSharedString compilation errors in UE 5.8+.
-*   **UE 5.8.1 MCP & Local Iron Knight Synergy:** `AI_Nexus/Research/UE5.8_MCP_IronKnight_Synergy.md`
-    *   Integration specification detailing offline loopback schema discovery and execution plans.
-*   **UE 5.8.1 MCP Local Training Map:** `AI_Nexus/Research/UE5.8_MCP_Tools_Reference.md`
-    *   Offline reference mapping standard Unreal Engine toolsets for dynamic RAG ingestion.
-*   **SWOT Analysis: Claude/Cursor vs. Iron Knight:** `AI_Nexus/Research/SWOT_ClaudeCursor_vs_IronKnight.md`
-    *   Strategic and technical trade-offs between commercial cloud toolsets and offline local safety-gated architectures.
-*   **Hybrid Sovereign Architecture Spec:** `AI_Nexus/Research/Hybrid_Sovereign_Architecture_Spec.md`
-    *   Architectural blueprint for dynamic local task complexity thresholding and secure Jules API offloading.
+```text
+Repository
+    ↓
+Mandatory Governance
+    ↓
+Mission / Persona Selection
+    ↓
+Task-Relevant Context
+    ↓
+Active Authority Set
+    ↓
+Execution
+```
+
+Agents MUST NOT treat every repository document as equally authoritative.
 
 ---
 
-## 👔 Administration & Leadership
-*   **Lead Identity:** `AI_Nexus/Admin/TechnicalLead.md`
-    *   Defines the persona, philosophy, and strategic goals of the Technical Lead (Daniel Acourt).
-*   **Personnel Audit:** `AI_Nexus/Admin/Personnel_Audit.md`
-    *   Cognitive profiling, programmer percentile analysis, and personal SWOT for the Lead.
-*   **Personnel Audit Image Prompt:** `AI_Nexus/Admin/Personnel_Audit_Image_Prompt.md`
-    *   Visual metadata for generating technical lead identity assets.
-*   **Hardware Profile:** `AI_Nexus/Admin/Hardware.md`
-    *   GTX 5090 cluster parameters, RAM setups, and development environment profiles.
-*   **Mission Report: Local Integration:** `AI_Nexus/Admin/Reports/07_Mission_Report_Local_Integration.md`
-    *   Audit report of host system setup and local bridge initialization.
+# 01 — IDENTITY & PERSONA
+
+### Core Identity
+
+* `AI_Nexus/Identity/identity.json`
+  * Sovereign Entity Identity Schema.
+* `AI_Nexus/Identity/Jules.md`
+  * Primary Jules identity.
+
+### Jules Operational Personas
+
+* `AI_Nexus/Identity/Jules_Strategist.md`
+  * Strategy / architecture / roadmap.
+* `AI_Nexus/Identity/Jules_Tactician.md`
+  * Implementation / C++ / DevOps.
+* `AI_Nexus/Identity/Jules_Researcher.md`
+  * Research / literature / experimental reasoning.
+* `AI_Nexus/Identity/Archivist_Theta.md`
+  * Structural uncertainty / foundational persona.
+
+### Administrative Identity
+
+* `AI_Nexus/Admin/TechnicalLead.md`
+* `AI_Nexus/Admin/Personnel_Audit.md`
 
 ---
 
-## 🤖 Coordination & DevOps
+# 02 — GOVERNANCE & EXECUTION
 
-### **Active Sprint Status & Backlogs**
-*   **Current Context:** `AI_Nexus/DevOps/_AGENT_CONTEXT.md`
-    *   Real-time task tracking, active roleplay states, and immediate blockages.
-*   **Product Backlog:** `AI_Nexus/DevOps/BACKLOG.md`
-    *   Fibonacci-scored roadmap of technical and research tasks.
-*   **Current Sprint Context:** `AI_Nexus/DevOps/CURRENT_SPRINT.md`
-    *   Prioritized tickets active in the current iteration.
-*   **SaveSystem Error Audit:** `AI_Nexus/DevOps/SaveSystem_Error_Audit.md`
-    *   Analysis of system vulnerabilities and implemented fixes.
-*   **Implementation Checklist:** `AI_Nexus/DevOps/IMPLEMENTATION_CHECKLIST.md`
-    *   Phased breakdown of active implementation tasks.
-*   **Files to Create Tracker:** `AI_Nexus/DevOps/FILES_TO_CREATE.md`
-    *   Historical tracking of Nexus expansion and file unification.
-*   **SWOT Analysis:** `AI_Nexus/DevOps/SWOT_Analysis.md`
-    *   Strategic analysis of multi-agent and system capabilities.
-*   **Iron Knight Upgrade Path:** `AI_Nexus/DevOps/IronKnight_Upgrade_Path.md`
-    *   Transition and hardening plans for v37+ upgrades.
+### Primary Governance
 
-### **CSV & JSON Exports (SSoT Sync)**
-*   **Backlog CSV:** `AI_Nexus/DevOps/BACKLOG.csv`
-*   **Backlog JSON:** `AI_Nexus/DevOps/BACKLOG.json`
-*   **Sprint CSV:** `AI_Nexus/DevOps/CURRENT_SPRINT.csv`
-*   **Sprint JSON:** `AI_Nexus/DevOps/CURRENT_SPRINT.json`
+* `AI_Nexus/Protocols/AGENTS.md`
+* `AI_Nexus/Protocols/CONTRIBUTING.md`
+* `AI_Nexus/Protocols/COMMAND_SOP.md`
+* `AI_Nexus/Protocols/HANDSHAKE_SOP.md`
+* `AI_Nexus/Protocols/AAS_Protocol.md`
 
----
+### Sprint Lifecycle
 
-## 💾 Memories & Historical Technical Analysis
-*   **Code Reference:** `AI_Nexus/Memories/SaveSystem_Hardened_Fixes.cpp`
-    *   Non-compiled reference for hardened implementation patterns.
-*   **Research:** `AI_Nexus/Memories/data_driven_spawning_analysis.md`
-    *   Deep-dive analysis of the data-driven evolution of the framework.
-*   **Lesson Learned: UE 5.7 Automation API:** `AI_Nexus/Memories/Lesson_Learned_UE5.7_Automation_API.md`
-    *   World context and editor test automation updates.
-*   **Legal & Heritage Vision:** `AI_Nexus/Memories/Legal_and_Heritage_Vision.md`
-    *   Compliance and preservation framework for simulation-born entities.
+* `AI_Nexus/Protocols/START_OF_SPRINT_PROTOCOL.md`
+* `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md`
+* `AI_Nexus/DevOps/CURRENT_SPRINT.md`
+* `AI_Nexus/DevOps/BACKLOG.md`
+
+### Active State
+
+* `AI_Nexus/DevOps/_AGENT_CONTEXT.md`
+
+### Rule
+
+`_AGENT_CONTEXT.md` represents **current operational state**.
+
+`BACKLOG.md` represents **authoritative planned work**.
+
+Historical sprint reports do not override current state.
 
 ---
 
-## 🏁 Convergence
-All agents MUST synchronize their understanding with this Index before initiating major structural shifts.
+# 03 — CORE ARCHITECTURE
+
+## Persistent Entity Architecture
+
+* `AI_Nexus/Docs/SaveSystem_Design.md`
+* `AI_Nexus/Protocols/SAVESYSTEM_SETUP_GUIDE.md`
+* `AI_Nexus/Docs/Sovereign_Broker_Implementation_Guide.md`
+
+### Core Concepts
+
+```text
+Soul
+ ├── Identity
+ ├── Persistence
+ ├── State
+ └── Domain Brokers
+
+Vessel
+ └── Hosts / exposes Soul
+
+Spirit
+ └── Controls / possesses Vessel
+```
+
+### Core Source of Truth
+
+`USovereignSaveableEntityComponent`
+
+---
+
+# 04 — SAFETY / PSTA
+
+## PSTA Research Spine
+
+### Mathematical Core
+
+* `AI_Nexus/Research/Mathematics/PSTA_Core.md`
+* `AI_Nexus/Research/Mathematics/Sovereign_Temporal_Consensus_Spec.md`
+* `AI_Nexus/Research/Mathematics/Byzantine_Fault_Tolerance_Spec.md`
+* `AI_Nexus/Research/Mathematics/Sovereign_Topological_BFT_Spec.md`
+* `AI_Nexus/Research/Mathematics/Bi_Symmetric_Consensus_Spec.md`
+
+### Core PSTA Concepts
+
+```text
+Observation
+    ↓
+Evidence Qualification
+    ↓
+Epistemic State
+    ↓
+Authority
+    ↓
+Action
+    ↓
+Provenance
+```
+
+### Principal PSTA Terms
+
+* Void / `⊥`
+* Dimension Health `D_i`
+* Coherence `Φ`
+* VSS
+* Risk Velocity `V_i`
+* Trust Recovery
+* Symmetrical Guard
+* Severance
+* Anchor
+* N-Bit Topology
+* Common-Mode Failure
+* Authority Restriction
+
+### Status Rule
+
+PSTA artefacts must distinguish:
+
+```text
+CONCEPTUAL
+FORMALISED
+PROPOSITION
+PROVEN UNDER ASSUMPTIONS
+IMPLEMENTED
+VERIFIED
+EXPERIMENTALLY EVALUATED
+INDEPENDENTLY REVIEWED
+FALSIFIED / REJECTED
+```
+
+---
+
+# 05 — ACADEMIC RESEARCH
+
+## Doctoral Research
+
+`AI_Nexus/Research/Academic/`
+
+### Central Thesis Workspace
+
+`AI_Nexus/Research/Academic/Thesis/`
+
+Primary research nodes:
+
+* `From_Computational_Instantiation_To_Provable_Truth/`
+* `Lit_Review.md`
+* `PHDLitReview2.md`
+* `Our_Book.md`
+
+### Current Research Question
+
+> **How can autonomous computational systems regulate operational authority when the evidence available to them is incomplete, conflicting or potentially faulty?**
+
+### Current Research Domain
+
+> Dependable Autonomous and Cyber-Physical Systems, with emphasis on runtime assurance, epistemic uncertainty, AI-enabled systems and formal safety architectures.
+
+---
+
+# 06 — LITERATURE
+
+## Literature Repository
+
+`AI_Nexus/Research/Academic/Literature/`
+
+### Literature Categories
+
+```text
+AI / LLM Safety
+Runtime Verification
+Runtime Assurance / Simplex
+Formal Methods
+Cyber-Physical Systems
+Fault Tolerance / BFT
+FDIR
+Control / CBF
+Safety Cases
+Telemetry / Provenance
+Digital Twins
+```
+
+### Literature Handling Rule
+
+Every significant literature item should record:
+
+```text
+Citation
+Problem
+Method
+Guarantee
+Assumptions
+Limitations
+Overlap with PSTA
+Potential Novelty Threat
+```
+
+AI summaries do not constitute literature evidence without source verification.
+
+---
+
+# 07 — ACADEMIC TRANSLATION
+
+### Engineering Language
+
+`AI_Nexus/Research/Definitions/Glossary.md`
+
+Optimised for:
+
+> execution, C++, implementation and agent coordination.
+
+### Academic Language
+
+`AI_Nexus/Research/Definitions/Academic_Glossary.md`
+
+Optimised for:
+
+> scholarly interpretation, formal definitions and literature interoperability.
+
+### Metaphorical Language
+
+`AI_Nexus/Research/Metaphors/Principles.md`
+
+Optimised for:
+
+> conceptual models and translation of spatial/system metaphors.
+
+### Translation Stack
+
+```text
+Sovereign Concept
+      ↓
+Academic Neighbour
+      ↓
+Formal Definition
+      ↓
+Implementation
+      ↓
+Evidence
+```
+
+---
+
+# 08 — AI / LLM RESEARCH
+
+### Fine-Tuning
+
+`AI_Nexus/Research/FineTuning_Sovereign_LLM_Spec.md`
+
+### Core Research Themes
+
+```text
+Learned Behavioural Priors
+        ↓
+Proposal Generation
+        ↓
+Independent PSTA / AAS Authority
+        ↓
+ACCEPT / REJECT / ABSTAIN
+```
+
+### LLM Research
+
+Relevant academic documents are stored under:
+
+`AI_Nexus/Research/Academic/Literature/`
+
+including:
+
+* sycophancy;
+* alignment faking;
+* LLM safeguards;
+* runtime verification;
+* model-driven CPS;
+* agent governance.
+
+---
+
+# 09 — CYBER-PHYSICAL / ROBOTICS
+
+### Purpose
+
+Experimental implementation and validation of PSTA concepts in executable systems.
+
+Primary technical areas:
+
+```text
+C++
+Unreal Engine
+Telemetry
+Sensors
+Fault Injection
+Automation Tests
+Digital Twins
+Runtime Monitoring
+```
+
+### UE Research
+
+* `AI_Nexus/Research/UE5.8_Compatibility_Analysis_Report.md`
+* `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
+* `AI_Nexus/Research/UE5.8_MCP_IronKnight_Synergy.md`
+* `AI_Nexus/Research/UE5.8_MCP_Tools_Reference.md`
+
+### Testing
+
+`AI_Nexus/DevOps/IMPLEMENTATION_CHECKLIST.md`
+
+and project automation test modules.
+
+---
+
+# 10 — MARINE / AUTONOMOUS OBSERVER
+
+## Silent Observer Architecture
+
+Purpose:
+
+> Independently preserve telemetry, system state, decision provenance and authority transitions without requiring control authority over the vessel.
+
+Core chain:
+
+```text
+Observation
+    ↓
+Interpretation
+    ↓
+Proposal
+    ↓
+Authority Decision
+    ↓
+Action
+    ↓
+Forensic Record
+```
+
+Research questions include:
+
+* telemetry provenance;
+* sensor validity;
+* common-mode failure;
+* autonomous authority;
+* post-incident reconstruction;
+* tamper-evident logging.
+
+---
+
+# 11 — DIGITAL MUSEUM / DIGITAL TWINS
+
+### Primary Concept
+
+Bounded, provenance-aware instantiation of scanned physical assets.
+
+```text
+User Intent
+    ↓
+Metadata
+    ↓
+Validity / Provenance
+    ↓
+Resource Gate
+    ↓
+Bounded Instantiation
+    ↓
+Digital Representation
+```
+
+Primary example:
+
+**Dinosaur Bone Problem**
+
+Purpose:
+
+> Demonstrate bounded information retrieval, resource gating, provenance and semantic querying.
+
+---
+
+# 12 — REALITY / OBSERVATION / PROVENANCE
+
+### Core distinction
+
+```text
+Observed
+    ≠
+Inferred
+    ≠
+Authorised
+    ≠
+Physical Truth
+```
+
+### Related Artefacts
+
+* `REALITY_ANCHOR.md`
+* `BlackBox_Protocol.md`
+* `Legal_and_Heritage_Vision.md`
+
+### Provenance Record
+
+A record should preserve where a value came from without asserting that the recorded value is necessarily the true physical state.
+
+---
+
+# 13 — ENGINEERING KNOWLEDGE
+
+### Technical Guides
+
+`AI_Nexus/Docs/`
+
+### Memories / Lessons
+
+`AI_Nexus/Memories/`
+
+These represent accumulated implementation knowledge and known failure modes.
+
+Examples:
+
+* UE automation API changes
+* FJsonObject changes
+* SaveSystem fixes
+* spawning analysis
+
+### Rule
+
+Historical implementation knowledge must not silently override current official engine/API documentation.
+
+---
+
+# 14 — DEVOPS / ACTIVE WORK
+
+### Current
+
+* `_AGENT_CONTEXT.md`
+* `CURRENT_SPRINT.md`
+* `BACKLOG.md`
+
+### Export Formats
+
+* `BACKLOG.csv`
+* `BACKLOG.json`
+* `CURRENT_SPRINT.csv`
+* `CURRENT_SPRINT.json`
+
+### Change Discipline
+
+```text
+Ticket
+ ↓
+Plan
+ ↓
+Implementation
+ ↓
+Compile
+ ↓
+Automated Test
+ ↓
+Verification
+ ↓
+Commit
+ ↓
+Memory / Lesson
+```
+
+---
+
+# 15 — HISTORICAL PROVENANCE
+
+## Long-Term Record
+
+* `AI_Nexus/Timeline/MD.md`
+* `AI_Nexus/Timeline/Updates.md`
+* `AI_Nexus/Timeline/SprintReviews/`
+* `AI_Nexus/Timeline/Mission_Reports/`
+
+### Rule
+
+Historical records establish **development provenance**, not current authority.
+
+Do not list individual historical reports in this index unless they are currently required for active research.
+
+Use directory navigation or search for historical reconstruction.
+
+---
+
+# 16 — STRATEGIC / PHILOSOPHICAL MATERIAL
+
+These documents support conceptual development but are not automatically scientific evidence.
+
+### Examples
+
+* `Sovereign_Intelligence_Manifesto.md`
+* `Our_Book.md`
+* `The_Dinosaur_Bone_Problem_Legacy.md`
+* `The_9_Tiers_of_Sovereign_Philosophy.md`
+* `Unseen_Weave_Lore.md`
+
+### Epistemic Rule
+
+```text
+Philosophical proposition
+        ↓
+Design intuition
+        ↓
+Research hypothesis
+        ↓
+Formalisation
+        ↓
+Evidence
+```
+
+Philosophy may motivate a technical hypothesis without constituting evidence for that hypothesis.
+
+---
+
+# 17 — EXTERNAL AI REVIEW
+
+AI systems outside the primary Jules/Nexus workflow are treated as:
+
+> **External AI Critique / Provisional Evidence**
+
+They may provide:
+
+* literature discovery;
+* mathematical critique;
+* terminology translation;
+* counterexamples;
+* alternative interpretations.
+
+They do not provide:
+
+* independent human validation;
+* proof of novelty;
+* certification;
+* final safety authority.
+
+---
+
+# 18 — HUMAN REVIEW
+
+### Required for:
+
+* doctoral research direction;
+* novelty;
+* major theoretical claims;
+* publication readiness;
+* disputed interpretation;
+* real-world safety claims;
+* standards/certification claims.
+
+Current academic contact:
+
+**Dr. Manish Malik / prospective supervisory engagement**
+
+---
+
+# 19 — ACTIVE CONTEXT SELECTION
+
+Agents MUST NOT assume that the entire Nexus is equally relevant to every task.
+
+### Context Selection
+
+```text
+Task
+ ↓
+Relevant Domain
+ ↓
+Mandatory Governance
+ ↓
+Domain Documents
+ ↓
+Active SOP
+ ↓
+Active Mathematical / Technical State
+ ↓
+Execute
+```
+
+### Minimum Context Principle
+
+> **Load the minimum context necessary to perform the task correctly; expand context when dependencies require it.**
+
+This reduces:
+
+* context contamination;
+* contradictory historical instructions;
+* irrelevant persona influence;
+* hallucinated dependencies;
+* unnecessary token consumption.
+
+---
+
+# 20 — CHANGE / PROVENANCE RULE
+
+For major research or architectural changes, preserve:
+
+```text
+Origin
+↓
+Formalisation
+↓
+Implementation
+↓
+Experiment
+↓
+Review
+↓
+Accepted / Rejected
+```
+
+Git history remains the authoritative historical record of development.
+
+---
+
+# 21 — INDEX CONVENTION
+
+The Master Index should contain:
+
+* authoritative entry points;
+* domain boundaries;
+* active research direction;
+* translation layers;
+* navigation rules;
+* provenance rules.
+
+The Master Index should NOT become:
+
+* a full document catalogue;
+* a mission-report archive;
+* a duplicate of `BACKLOG.md`;
+* a duplicate of individual SOPs;
+* a duplicate of the glossary;
+* a storage location for implementation detail.
+
+---
+
+# 22 — QUICK NAVIGATION
+
+### “I am a new AI agent”
+
+→ `AGENTS.md`
+→ `HANDSHAKE_SOP.md`
+→ selected persona
+→ `_AGENT_CONTEXT.md`
+
+### “I am modifying code”
+
+→ `COMMAND_SOP.md`
+→ relevant architecture
+→ `CURRENT_SPRINT.md`
+→ implementation/test documentation
+
+### “I am doing PSTA research”
+
+→ `Academic_Glossary.md`
+→ `Lit_Review.md`
+→ literature repository
+→ `PSTA_Core.md`
+→ relevant mathematics
+
+### “I am investigating a failure”
+
+→ `_AGENT_CONTEXT.md`
+→ relevant code
+→ `Memories/`
+→ `Mission_Reports/` / Git history
+
+### “I am writing a paper”
+
+→ `Academic_Glossary.md`
+→ literature repository
+→ thesis directory
+→ evidence / implementation records
+
+### “I need historical provenance”
+
+→ `Timeline/`
+→ Git history
+→ Mission Reports
+
+---
+
+# FINAL AUTHORITY MODEL
+
+```text
+                    AI_NEXUS
+                       │
+              ┌────────┴────────┐
+              │                 │
+        CURRENT STATE       HISTORICAL STATE
+              │                 │
+         AUTHORITY             PROVENANCE
+              │                 │
+              └────────┬────────┘
+                       │
+                 DOMAIN CONTEXT
+                       │
+              ┌────────┴────────┐
+              │                 │
+          FORMAL MODEL      IMPLEMENTATION
+              │                 │
+              └────────┬────────┘
+                       │
+                    EVIDENCE
+                       │
+                 HUMAN REVIEW
+```
+
+> **The Index tells the agent where to look.
+> The source document defines the rule.
+> Evidence determines what may be claimed.
+> Human review determines what survives independent scrutiny.**
