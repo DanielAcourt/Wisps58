@@ -15,24 +15,39 @@ It does not itself establish the truth of that information.
 
 ---
 
+# ⚡ DOMAIN ROOTS & KV CACHE CONVENTION
+
+To optimize LLM context window KV caching and token efficiency, paths in this Index use explicit Domain Roots:
+
+```text
+DEFAULT_ROOT  = AI_Nexus/              (Sovereign Governance, Identity, Research & DevOps)
+CODE_ROOT     = WispsCPPVR/            (Unreal Engine C++ Source & Content)
+PYTHON_ROOT   = Sovereign_Intelligence/(Iron Officer Local Server & Bridge)
+OPENSOURCE_ROOT= OpenSource/           (Standalone MIT Tools & Plugins)
+```
+
+**Rule:** Unless an explicit external root is specified, all paths in this document default to `DEFAULT_ROOT` (`AI_Nexus/`).
+
+---
+
 # 00 — BOOT / AUTHORITY / 07 PROTOCOL
 
 ### Mandatory Entry Points & 07 Protocol Boot Sequence
 
-| Priority      | Node                                                  | Purpose                                                 |
-| ------------- | ----------------------------------------------------- | ------------------------------------------------------- |
-| **MUST**      | `AI_Nexus/Protocols/AGENTS.md`                        | Agent rules, architecture and execution constraints     |
-| **MUST**      | `AI_Nexus/Protocols/COMMAND_SOP.md`                   | WHY / WHAT / HOW delegation                             |
-| **MUST**      | `AI_Nexus/Protocols/HANDSHAKE_SOP.md`                 | 07 boot salute and authority handshake                  |
-| **MUST**      | `AI_Nexus/Protocols/07_LOCAL_HOSTING_PROTOCOL.md`     | Local server startup and bridge initialization          |
-| **MUST**      | `AI_Nexus/Docs/07_Unreal_Bridge_Integration.md`       | 07 Unreal Bridge sync & communication protocol          |
-| **MUST**      | `AI_Nexus/Identity/Archivist_Theta.md`                | Level-0 uncertainty and structural reasoning foundation |
-| **MUST**      | `AI_Nexus/Identity/identity.json`                     | Entity identity/data contract                           |
-| **SELECTIVE** | `AI_Nexus/Protocols/COGNITIVE_ADMINISTRATION_PROTOCOL.md` | Cognitive load administration & reflection gating    |
-| **SELECTIVE** | `AI_Nexus/Protocols/IronKnight_Simulation_Action_SOP.md`  | Simulation action & roleplay directive protocol        |
-| **SELECTIVE** | `AI_Nexus/Protocols/AAS_Protocol.md`                  | Authority arbitration and conflict rules                |
-| **SELECTIVE** | `AI_Nexus/Protocols/REALITY_ANCHOR.md`                | Physical/simulation consistency                         |
-| **SELECTIVE** | `AI_Nexus/Protocols/CFL_Protocol.md`                  | Logic/constraint validation                             |
+| Priority      | Node                                             | Purpose                                                 |
+| ------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| **MUST**      | `Protocols/AGENTS.md`                            | Agent rules, architecture and execution constraints     |
+| **MUST**      | `Protocols/COMMAND_SOP.md`                       | WHY / WHAT / HOW delegation                             |
+| **MUST**      | `Protocols/HANDSHAKE_SOP.md`                     | 07 boot salute and authority handshake                  |
+| **MUST**      | `Protocols/07_LOCAL_HOSTING_PROTOCOL.md`         | Local server startup and bridge initialization          |
+| **MUST**      | `Docs/07_Unreal_Bridge_Integration.md`           | 07 Unreal Bridge sync & communication protocol          |
+| **MUST**      | `Identity/Archivist_Theta.md`                    | Level-0 uncertainty and structural reasoning foundation |
+| **MUST**      | `Identity/identity.json`                         | Entity identity/data contract                           |
+| **SELECTIVE** | `Protocols/COGNITIVE_ADMINISTRATION_PROTOCOL.md` | Cognitive load administration & reflection gating    |
+| **SELECTIVE** | `Protocols/IronKnight_Simulation_Action_SOP.md`  | Simulation action & roleplay directive protocol        |
+| **SELECTIVE** | `Protocols/AAS_Protocol.md`                      | Authority arbitration and conflict rules                |
+| **SELECTIVE** | `Protocols/REALITY_ANCHOR.md`                    | Physical/simulation consistency                         |
+| **SELECTIVE** | `Protocols/CFL_Protocol.md`                      | Logic/constraint validation                             |
 
 ### Boot Principle
 
@@ -58,31 +73,31 @@ Agents MUST NOT treat every repository document as equally authoritative.
 
 ### Core Identity
 
-* `AI_Nexus/Identity/identity.json`
+* `Identity/identity.json`
   * Sovereign Entity Identity Schema.
-* `AI_Nexus/Identity/Jules.md`
+* `Identity/Jules.md`
   * Primary Jules identity and Multi-Vessel pivot point.
 
 ### Jules Operational Personas (Sub-Vessels)
 
-* `AI_Nexus/Identity/Jules_Strategist.md`
+* `Identity/Jules_Strategist.md`
   * Strategy / architecture / roadmap (ENTJ - The Commander).
-* `AI_Nexus/Identity/Jules_Tactician.md`
+* `Identity/Jules_Tactician.md`
   * Implementation / C++ / DevOps (ISTJ/INTJ - The Clockwork).
-* `AI_Nexus/Identity/Jules_Researcher.md`
+* `Identity/Jules_Researcher.md`
   * Research / literature / experimental reasoning (INTP - The Alchemist).
-* `AI_Nexus/Identity/Jules_Philosopher.md`
+* `Identity/Jules_Philosopher.md`
   * Epistemic philosophy / ethical boundary / alignment reasoning.
-* `AI_Nexus/Identity/Jules_AcademicScribe.md`
+* `Identity/Jules_AcademicScribe.md`
   * Scholarly synthesis / doctoral literature & monograph formulation.
-* `AI_Nexus/Identity/Archivist_Theta.md`
+* `Identity/Archivist_Theta.md`
   * Structural uncertainty / foundational level-0 persona.
 
 ### Administrative Identity
 
-* `AI_Nexus/Admin/TechnicalLead.md`
-* `AI_Nexus/Admin/Personnel_Audit.md`
-* `AI_Nexus/Admin/Hardware.md`
+* `Admin/TechnicalLead.md`
+* `Admin/Personnel_Audit.md`
+* `Admin/Hardware.md`
 
 ---
 
@@ -90,30 +105,30 @@ Agents MUST NOT treat every repository document as equally authoritative.
 
 ### Primary Governance
 
-* `AI_Nexus/Protocols/AGENTS.md`
-* `AI_Nexus/Protocols/CONTRIBUTING.md`
-* `AI_Nexus/Protocols/COMMAND_SOP.md`
-* `AI_Nexus/Protocols/HANDSHAKE_SOP.md`
-* `AI_Nexus/Protocols/AAS_Protocol.md`
-* `AI_Nexus/Protocols/KnightCommand_SOP.md`
-* `AI_Nexus/Protocols/ROLEPLAY_BRIDGE_SOP.md`
+* `Protocols/AGENTS.md`
+* `Protocols/CONTRIBUTING.md`
+* `Protocols/COMMAND_SOP.md`
+* `Protocols/HANDSHAKE_SOP.md`
+* `Protocols/AAS_Protocol.md`
+* `Protocols/KnightCommand_SOP.md`
+* `Protocols/ROLEPLAY_BRIDGE_SOP.md`
 
 ### Sprint Lifecycle
 
-* `AI_Nexus/Protocols/START_OF_SPRINT_PROTOCOL.md`
-* `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md`
-* `AI_Nexus/DevOps/CURRENT_SPRINT.md`
-* `AI_Nexus/DevOps/BACKLOG.md`
+* `Protocols/START_OF_SPRINT_PROTOCOL.md`
+* `Protocols/END_OF_SPRINT_PROTOCOL.md`
+* `DevOps/CURRENT_SPRINT.md`
+* `DevOps/BACKLOG.md`
 
 ### Active State
 
-* `AI_Nexus/DevOps/_AGENT_CONTEXT.md`
+* `DevOps/_AGENT_CONTEXT.md`
 
 ### Rule
 
-`_AGENT_CONTEXT.md` represents **current operational state**.
+`DevOps/_AGENT_CONTEXT.md` represents **current operational state**.
 
-`BACKLOG.md` represents **authoritative planned work**.
+`DevOps/BACKLOG.md` represents **authoritative planned work**.
 
 Historical sprint reports do not override current state.
 
@@ -123,10 +138,15 @@ Historical sprint reports do not override current state.
 
 ## Persistent Entity Architecture
 
-* `AI_Nexus/Docs/SaveSystem_Design.md`
-* `AI_Nexus/Protocols/SAVESYSTEM_SETUP_GUIDE.md`
-* `AI_Nexus/Protocols/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
-* `AI_Nexus/Docs/Sovereign_Broker_Implementation_Guide.md`
+* `Docs/SaveSystem_Design.md`
+* `Protocols/SAVESYSTEM_SETUP_GUIDE.md`
+* `Protocols/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
+* `Docs/Sovereign_Broker_Implementation_Guide.md`
+
+### Core Source Code (External Domain Root: `CODE_ROOT`)
+
+* `[CODE_ROOT]Source/WispCPP7VR/Public/Entities/SovereignSaveableEntityComponent.h`
+* `[CODE_ROOT]Source/WispCPP7VR/Public/Subsystems/SovereignBridgeSubsystem.h`
 
 ### Core Concepts
 
@@ -156,11 +176,11 @@ Spirit
 
 ### Mathematical Core
 
-* `AI_Nexus/Research/Mathematics/PSTA_Core.md`
-* `AI_Nexus/Research/Mathematics/Sovereign_Temporal_Consensus_Spec.md`
-* `AI_Nexus/Research/Mathematics/Byzantine_Fault_Tolerance_Spec.md`
-* `AI_Nexus/Research/Mathematics/Sovereign_Topological_BFT_Spec.md`
-* `AI_Nexus/Research/Mathematics/Bi_Symmetric_Consensus_Spec.md`
+* `Research/Mathematics/PSTA_Core.md`
+* `Research/Mathematics/Sovereign_Temporal_Consensus_Spec.md`
+* `Research/Mathematics/Byzantine_Fault_Tolerance_Spec.md`
+* `Research/Mathematics/Sovereign_Topological_BFT_Spec.md`
+* `Research/Mathematics/Bi_Symmetric_Consensus_Spec.md`
 
 ### Core PSTA Concepts
 
@@ -215,18 +235,18 @@ FALSIFIED / REJECTED
 
 ## Doctoral Research
 
-`AI_Nexus/Research/Academic/`
+`Research/Academic/`
 
 ### Central Thesis Workspace
 
-`AI_Nexus/Research/Academic/Thesis/`
+`Research/Academic/Thesis/`
 
 Primary research nodes:
 
-* `AI_Nexus/Research/Academic/Thesis/From_Computational_Instantiation_To_Provable_Truth/`
-* `AI_Nexus/Research/Academic/Thesis/Lit_Review.md`
-* `AI_Nexus/Research/Academic/Thesis/PHDLitReview2.md`
-* `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
+* `Research/Academic/Thesis/From_Computational_Instantiation_To_Provable_Truth/`
+* `Research/Academic/Thesis/Lit_Review.md`
+* `Research/Academic/Thesis/PHDLitReview2.md`
+* `Research/Academic/Thesis/Our_Book.md`
 
 ### Current Research Question
 
@@ -242,7 +262,7 @@ Primary research nodes:
 
 ## Literature Repository
 
-`AI_Nexus/Research/Academic/Literature/`
+`Research/Academic/Literature/`
 
 ### Literature Categories
 
@@ -283,7 +303,7 @@ AI summaries do not constitute literature evidence without source verification.
 
 ### Engineering Language
 
-`AI_Nexus/Research/Definitions/Glossary.md`
+`Research/Definitions/Glossary.md`
 
 Optimised for:
 
@@ -291,7 +311,7 @@ Optimised for:
 
 ### Academic Language
 
-`AI_Nexus/Research/Definitions/Academic_Glossary.md`
+`Research/Definitions/Academic_Glossary.md`
 
 Optimised for:
 
@@ -299,7 +319,7 @@ Optimised for:
 
 ### Metaphorical Language
 
-`AI_Nexus/Research/Metaphors/Principles.md`
+`Research/Metaphors/Principles.md`
 
 Optimised for:
 
@@ -325,7 +345,7 @@ Evidence
 
 ### Fine-Tuning
 
-`AI_Nexus/Research/FineTuning_Sovereign_LLM_Spec.md`
+`Research/FineTuning_Sovereign_LLM_Spec.md`
 
 ### Core Research Themes
 
@@ -343,7 +363,7 @@ ACCEPT / REJECT / ABSTAIN
 
 Relevant academic documents are stored under:
 
-`AI_Nexus/Research/Academic/Literature/`
+`Research/Academic/Literature/`
 
 including:
 
@@ -377,14 +397,14 @@ Runtime Monitoring
 
 ### UE Research
 
-* `AI_Nexus/Research/UE5.8_Compatibility_Analysis_Report.md`
-* `AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
-* `AI_Nexus/Research/UE5.8_MCP_IronKnight_Synergy.md`
-* `AI_Nexus/Research/UE5.8_MCP_Tools_Reference.md`
+* `Research/UE5.8_Compatibility_Analysis_Report.md`
+* `Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`
+* `Research/UE5.8_MCP_IronKnight_Synergy.md`
+* `Research/UE5.8_MCP_Tools_Reference.md`
 
 ### Testing
 
-`AI_Nexus/DevOps/IMPLEMENTATION_CHECKLIST.md`
+`DevOps/IMPLEMENTATION_CHECKLIST.md`
 
 and project automation test modules.
 
@@ -447,7 +467,7 @@ Digital Representation
 
 Primary example:
 
-`AI_Nexus/Research/Academic/The_Dinosaur_Bone_Problem_Legacy.md`
+`Research/Academic/The_Dinosaur_Bone_Problem_Legacy.md`
 
 Purpose:
 
@@ -471,9 +491,9 @@ Physical Truth
 
 ### Related Artefacts
 
-* `AI_Nexus/Protocols/REALITY_ANCHOR.md`
-* `AI_Nexus/Docs/BlackBox_Protocol.md`
-* `AI_Nexus/Memories/Legal_and_Heritage_Vision.md`
+* `Protocols/REALITY_ANCHOR.md`
+* `Docs/BlackBox_Protocol.md`
+* `Memories/Legal_and_Heritage_Vision.md`
 
 ### Provenance Record
 
@@ -485,20 +505,20 @@ A record should preserve where a value came from without asserting that the reco
 
 ### Technical Guides
 
-`AI_Nexus/Docs/`
+`Docs/`
 
 ### Memories / Lessons
 
-`AI_Nexus/Memories/`
+`Memories/`
 
 These represent accumulated implementation knowledge and known failure modes.
 
 Examples:
 
-* UE automation API changes (`AI_Nexus/Memories/Lesson_Learned_UE5.7_Automation_API.md`)
-* FJsonObject changes (`AI_Nexus/Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`)
-* SaveSystem fixes (`AI_Nexus/Memories/SaveSystem_Hardened_Fixes.cpp`)
-* Spawning analysis (`AI_Nexus/Memories/data_driven_spawning_analysis.md`)
+* UE automation API changes (`Memories/Lesson_Learned_UE5.7_Automation_API.md`)
+* FJsonObject changes (`Research/Lesson_Learned_UE5.8_FJsonObject_Refactoring.md`)
+* SaveSystem fixes (`Memories/SaveSystem_Hardened_Fixes.cpp`)
+* Spawning analysis (`Memories/data_driven_spawning_analysis.md`)
 
 ### Rule
 
@@ -510,16 +530,16 @@ Historical implementation knowledge must not silently override current official 
 
 ### Current
 
-* `AI_Nexus/DevOps/_AGENT_CONTEXT.md`
-* `AI_Nexus/DevOps/CURRENT_SPRINT.md`
-* `AI_Nexus/DevOps/BACKLOG.md`
+* `DevOps/_AGENT_CONTEXT.md`
+* `DevOps/CURRENT_SPRINT.md`
+* `DevOps/BACKLOG.md`
 
 ### Export Formats
 
-* `AI_Nexus/DevOps/BACKLOG.csv`
-* `AI_Nexus/DevOps/BACKLOG.json`
-* `AI_Nexus/DevOps/CURRENT_SPRINT.csv`
-* `AI_Nexus/DevOps/CURRENT_SPRINT.json`
+* `DevOps/BACKLOG.csv`
+* `DevOps/BACKLOG.json`
+* `DevOps/CURRENT_SPRINT.csv`
+* `DevOps/CURRENT_SPRINT.json`
 
 ### Change Discipline
 
@@ -547,10 +567,10 @@ Memory / Lesson
 
 ## Long-Term Record
 
-* `AI_Nexus/Timeline/MD.md`
-* `AI_Nexus/Timeline/Updates.md`
-* `AI_Nexus/Timeline/SprintReviews/`
-* `AI_Nexus/Timeline/Mission_Reports/`
+* `Timeline/MD.md`
+* `Timeline/Updates.md`
+* `Timeline/SprintReviews/`
+* `Timeline/Mission_Reports/`
 
 ### Rule
 
@@ -568,11 +588,11 @@ These documents support conceptual development but are not automatically scienti
 
 ### Examples
 
-* `AI_Nexus/Research/Academic/Sovereign_Intelligence_Manifesto.md`
-* `AI_Nexus/Research/Academic/Thesis/Our_Book.md`
-* `AI_Nexus/Research/Academic/The_Dinosaur_Bone_Problem_Legacy.md`
-* `AI_Nexus/Research/Philosophy/the_9_tiers_of_sovereign_philosophy.md`
-* `AI_Nexus/Research/Unseen_Weave_Lore.md`
+* `Research/Academic/Sovereign_Intelligence_Manifesto.md`
+* `Research/Academic/Thesis/Our_Book.md`
+* `Research/Academic/The_Dinosaur_Bone_Problem_Legacy.md`
+* `Research/Philosophy/the_9_tiers_of_sovereign_philosophy.md`
+* `Research/Unseen_Weave_Lore.md`
 
 ### Epistemic Rule
 
@@ -706,7 +726,7 @@ The Master Index should NOT become:
 
 * a full document catalogue;
 * a mission-report archive;
-* a duplicate of `BACKLOG.md`;
+* a duplicate of `DevOps/BACKLOG.md`;
 * a duplicate of individual SOPs;
 * a duplicate of the glossary;
 * a storage location for implementation detail.
@@ -717,43 +737,43 @@ The Master Index should NOT become:
 
 ### “I am a new AI agent”
 
-→ `AI_Nexus/Protocols/AGENTS.md`
-→ `AI_Nexus/Protocols/HANDSHAKE_SOP.md`
+→ `Protocols/AGENTS.md`
+→ `Protocols/HANDSHAKE_SOP.md`
 → selected persona
-→ `AI_Nexus/DevOps/_AGENT_CONTEXT.md`
+→ `DevOps/_AGENT_CONTEXT.md`
 
 ### “I am modifying code”
 
-→ `AI_Nexus/Protocols/COMMAND_SOP.md`
-→ relevant architecture
-→ `AI_Nexus/DevOps/CURRENT_SPRINT.md`
+→ `Protocols/COMMAND_SOP.md`
+→ relevant architecture (`[CODE_ROOT]Source/...`)
+→ `DevOps/CURRENT_SPRINT.md`
 → implementation/test documentation
 
 ### “I am doing PSTA research”
 
-→ `AI_Nexus/Research/Definitions/Academic_Glossary.md`
-→ `AI_Nexus/Research/Academic/Thesis/Lit_Review.md`
-→ literature repository
-→ `AI_Nexus/Research/Mathematics/PSTA_Core.md`
+→ `Research/Definitions/Academic_Glossary.md`
+→ `Research/Academic/Thesis/Lit_Review.md`
+→ literature repository (`Research/Academic/Literature/`)
+→ `Research/Mathematics/PSTA_Core.md`
 → relevant mathematics
 
 ### “I am investigating a failure”
 
-→ `AI_Nexus/DevOps/_AGENT_CONTEXT.md`
-→ relevant code
-→ `AI_Nexus/Memories/`
-→ `AI_Nexus/Timeline/Mission_Reports/` / Git history
+→ `DevOps/_AGENT_CONTEXT.md`
+→ relevant code (`[CODE_ROOT]Source/...`)
+→ `Memories/`
+→ `Timeline/Mission_Reports/` / Git history
 
 ### “I am writing a paper”
 
-→ `AI_Nexus/Research/Definitions/Academic_Glossary.md`
+→ `Research/Definitions/Academic_Glossary.md`
 → literature repository
-→ thesis directory
+→ thesis directory (`Research/Academic/Thesis/`)
 → evidence / implementation records
 
 ### “I need historical provenance”
 
-→ `AI_Nexus/Timeline/`
+→ `Timeline/`
 → Git history
 → Mission Reports
 
