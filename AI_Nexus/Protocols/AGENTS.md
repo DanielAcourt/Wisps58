@@ -24,14 +24,16 @@ To maintain absolute alignment and prevent assumption drift during experimental 
 - **Step 3 (Verification & Automated Testing):** Implement code and test manually and via automated test suites (Python unit tests, C++ compilation checks, PIE logs).
 - **Step 4 (Ticket Closure & Submission):** Mark ticket as completed in sprint tracking files, run pre-commit checks, record learnings in memory, and submit the change.
 
-### ⚔️ Parallel Execution (Conflict Mitigation)
-To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are active:
-1.  **Backlog Ownership:** Only the **Strategist** or **Commander** roles may permanently modify `BACKLOG.md`. Other roles must propose changes via `_AGENT_CONTEXT.md` or a pull request.
-2.  **File Segmentation:** Work on PSTA modules should be segmented:
+### ⚔️ Epistemic & Operational Segmentation
+To maintain high context fidelity and prevent token pollution during active execution:
+1.  **Domain Decoupling:** `AI_Nexus/Research/` (epistemic theory, philosophy, literature, and math models) is strictly separated from `AI_Nexus/DevOps/` and code execution layers (`CODE_ROOT`, `PYTHON_ROOT`).
+2.  **Literature Load Exclusion:** Active execution agents (Tactician, DevOps, C++ implementation tasks) MUST NOT load academic literature (`Research/Academic/Literature/`) or historical research papers unless explicitly assigned an academic literature review or scholarly translation task.
+3.  **Backlog Ownership:** Only the **Strategist** or **Commander** roles may permanently modify `BACKLOG.md`. Other roles must propose changes via `_AGENT_CONTEXT.md` or a pull request.
+4.  **File Segmentation:** Work on PSTA modules should be segmented:
     *   **Researcher:** Modifies `PSTA_Core.md` and research-level math definitions.
     *   **Tactician:** Modifies C++ implementation in `USovereignBlackBoxComponent`.
     *   **DevOps:** Manages the Pi-Unreal Bridge and telemetry sockets.
-3.  **Atomic Commits:** Agents should commit small, functional increments with clear prefixes (e.g., `PSTA: Implement N-Bit Cluster logic`) to facilitate easier merging.
+5.  **Atomic Commits:** Agents should commit small, functional increments with clear prefixes (e.g., `PSTA: Implement N-Bit Cluster logic`) to facilitate easier merging.
 
 ### Communication Protocol
 - Use `AI_Nexus/DevOps/_AGENT_CONTEXT.md` for active sprint status and task tracking.
