@@ -59,7 +59,8 @@ To maintain high context fidelity and prevent token pollution during active exec
 - **Performance:** Prefer looping `FTimerHandle` over `Tick()` for recurring logic.
 - **Hot-Loop Optimization:** In performance-critical sections (Telemetry, Heartbeat), avoid heap allocations. Use persistent class members or static arrays to minimize GC pressure.
 
-## 🧪 Testing Standards
+## 🧪 Testing & Targeted Verification Standards
+- **Targeted Scope Verification Rule:** To prevent context window bloat and excessive token consumption, agents MUST run verification tools (such as `validate_headers.py`, linters, or test suites) targeted strictly to the modified files or target directory (e.g., `python AI_Nexus/DevOps/validate_headers.py --path <modified_file_or_dir>`). Full repository scans must be avoided unless explicitly requested.
 - All new features should be accompanied by automation tests in the `WispCPP7VRTests` module.
 - Gate testing dependencies using `Target.Configuration != UnrealTargetConfiguration.Shipping`.
 
