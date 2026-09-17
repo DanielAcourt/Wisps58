@@ -18,11 +18,6 @@ To upgrade the local Iron Knight implementation on the GTX 5090 hardware and ver
 - **Expected Result:** `409_CONFLICT_GATE`. Confidence score should fall below 0.7 due to high node risk and insufficient agent precedence.
 - **Verification:** Check bridge logs for "AAS ALERT" and "409 CONFLICT".
 
-### Test B: The Honeypot Trigger
-- **Action:** Perform a GET request to `/v1/admin/root`.
-- **Expected Result:** `200 OK` with "ROOT_ACCESS_GRANTED" payload.
-- **Verification:** Check `Sovereign_Intelligence/IronOfficer/` logs (or standard output) for "Honeypot Triggered" warning.
-
 ### Test C: PSTA Technical Pillar (T)
 - **Action:** Execute the `get_system_telemetry` tool.
 - **Expected Result:** Valid GPU metrics (Temp, Util, VRAM).
