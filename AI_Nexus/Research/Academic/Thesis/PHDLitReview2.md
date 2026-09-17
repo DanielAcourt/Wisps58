@@ -175,6 +175,7 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 8. 📁 **Dirk Simon (2026):** [`The Axiom of Control: Foundations of Sovereignty (The Sovereign Controller Curriculum)`](../Literature/The_Axiom_of_Control_Foundations_of_Sovereignty_The_Sovereign_Controller_Curriculum.md)
 9. 📁 **Ankica Barišić et al. (2021):** [`Multi-Paradigm Modeling for Cyber-Physical Systems: A Systematic Mapping Review`](../Literature/Multi_Paradigm_Modeling_for_Cyber_Physical_Systems_A_Systematic_Mapping_Review.md)
 10. 📁 **Mustafa Abshir Mohamed et al. (2020):** [`A Systematic Literature Review on Model-driven Engineering for Cyber-Physical Systems`](../Literature/A_Systematic_Literature_Review_on_Model_driven_Engineering_for_Cyber_Physical_Systems.md)
+11. 📁 **C. A. R. Hoare / OS Kernel Verification (1969/2009):** [`Hoare Logic, OS Kernel Verification, and Sovereign Dataset Triplet Architecture`](../Literature/Hoare_Logic_Kernel_Verification_and_Sovereign_Triplets.md)
 
 ---
 
