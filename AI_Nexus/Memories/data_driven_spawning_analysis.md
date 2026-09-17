@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
 # Analysis and Recommendations for Data-Driven Actor Spawning
 
 This document outlines the analysis of the current spawning system and provides a detailed, recommended solution for making it data-driven.

@@ -15,7 +15,7 @@ import argparse
 from datetime import datetime
 
 HEADER_PATTERN = re.compile(
-    r'^(?://|#)\s*Copyright\s+\(c\)\s+2013-202\d\s+Daniel\s+Acourt\.\s+Version\s+36\.4\.\d+\.\s+Licensed\s+under\s+GPLv3\s+\(See\s+LICENSE\)\.\s+Last\s+Updated:\s+\d{4}-\d{2}-\d{2}'
+    r'^(?://|#)\s*Copyright\s+\(c\)\s+2013-202\d\s+Daniel\s+Acourt\.\s+Version\s+(?:36\.4|37\.\d+)\.\d+\.\s+Licensed\s+under\s+GPLv3\s+\(See\s+LICENSE\)\.\s+Last\s+Updated:\s+\d{4}-\d{2}-\d{2}'
 )
 
 EXCLUDE_DIRS = {
