@@ -1,6 +1,9 @@
-# Sovereign Framework Glossary: Single Source of Truth
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
+# Sovereign Framework Engineering Glossary (Execution Layer)
 
-This glossary defines the core technical and thematic terminology of the Sovereign Framework. Adherence to these definitions ensures consistency across code, documentation, and agent communication.
+This glossary defines the core technical, C++, and runtime execution terminology of the Sovereign Framework. It is optimized for engineering execution, code implementation, and system performance.
+
+For scholarly translation, literature reviews, and doctoral writing, consult the **Sovereign Academic Writing Glossary** (`Academic_Glossary.md`).
 
 ---
 
