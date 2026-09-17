@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-15
 # AGENTS.md: The Rulebook (Level 1)
 
 ## 🤖 Multi-Agent Coordination SOP
@@ -51,7 +51,7 @@ To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are
 
 ## 💻 Coding Conventions
 - **C++ Header Include Placement Mandate:** ALL `#include` directives in `.cpp` files MUST be placed strictly at the top of the file in the primary include section before class method definitions. Inline `#include` directives mid-file or inside/between function bodies are strictly prohibited to avoid translation unit corruption and compilation crashes.
-- **Copyright Integrity:** Always verify and/or apply the "0.36 Standard" header (Version 36.4.x) to every source file (`.cpp`, `.h`, `.md`) you open, as mandated by `COMMAND_SOP.md`.
+- **Copyright Integrity & Mechanical Header Enforcement:** All governed source files (`.cpp`, `.h`, `.py`, `.md`) must carry the "0.36 Standard" header (`// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.[x]. Licensed under GPLv3 (See LICENSE). Last Updated: YYYY-MM-DD`). Header validation is enforced mechanically via `python AI_Nexus/DevOps/validate_headers.py` rather than manual per-file cognitive verification, in alignment with `COMMAND_SOP.md`.
 - **Memory Safety:** Initialize all non-UObject members in struct constructors (e.g., `FEntitySaveData`).
 - **Defensive Programming:** Always validate `ClassPath` strings before spawning actors.
 - **Performance:** Prefer looping `FTimerHandle` over `Tick()` for recurring logic.
