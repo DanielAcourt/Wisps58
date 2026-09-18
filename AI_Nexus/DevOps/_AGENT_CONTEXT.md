@@ -1,47 +1,42 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
-# _AGENT_CONTEXT.md
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
+# _AGENT_CONTEXT.md: Active Operational Context
 
-## 🏁 Current Sprint: Council of Officers (Mission 07 Wrap-up)
+> **Single Source of Truth (SSoT) Pointer:** Active sprint tracking, capacity, and tickets are governed by `AI_Nexus/DevOps/CURRENT_SPRINT.md` (`.csv` / `.json`).
 
-### 🤖 Current Agent: Jules (Structural Lead Vessel)
-**Status:** 07 - Handshake Verified. Multi-Agent Merge Successful.
+## 🏁 Active Sprint: `SR_20260922` (PSTA Hardware Reality & Zero-Bloat Art Automation)
+
+### 🤖 Current Agent Active State: Jules (Vessel: `/07 Researcher`)
+**Status:** 07 - Handshake Verified. Nexus Audit & Minimum Context Protocol Synchronized.
 
 ---
 
-### 📡 Active Priorities
-1.  **Backlog Hardening (Priority: CRITICAL)**
-    *   [x] Restructure `BACKLOG.md` to KISS table format with Why/What columns.
-    *   [x] Generate `BACKLOG.csv` and `BACKLOG.json` for Lead export.
-    *   [x] Add `AD-001` "Iron Officer" task for local hardware integration.
-2.  **Officer Reflection (Priority: HIGH)**
-    *   [x] Deliver Council of Officers report (Strategist, Researcher, Tactician).
-3.  **PSTA Transition (Priority: HIGH)**
-    *   [x] Finalize VSS mathematical formalization in Nexus.
-    *   [x] Prepare for Phase III: Lidar Intelligence.
-4.  **UE 5.8.1 Compatibility Audit (Priority: HIGH)**
-    *   [ ] In Progress: Audit `FJsonObject::Values` key refactoring and compile lessons learned.
+### 🎯 Core Sprint Goal
+> *"PSTA Hardware Reality, Hybrid Agent Synergy & Zero-Bloat Bidirectional Art Automation (Iron Knight + Jules + UE 5.8 MCP + sovereign-art-sync)"*
+
+---
+
+### 📡 Active Priorities & Focus
+1.  **Nexus System Audit & Friction-Free Context Boot Protocol (Priority: CRITICAL)**
+    *   [x] Complete full audit of `AI_Nexus` nodes for cross-document contradictions (`AI_Nexus/Research/AI_Nexus_System_Audit_and_Friction_Free_Architecture_Report.md`).
+    *   [x] Update `AI_Nexus/Protocols/AGENTS.md` to adopt Tier-1 Minimum Context Boot Rule (`AGENTS.md`, `CURRENT_SPRINT.md`, `Identity/[Persona].md`).
+    *   [x] Synchronize `_AGENT_CONTEXT.md` operational state pointer with `CURRENT_SPRINT.md`.
+2.  **Runtime Action Directives & Control Plane Decoupling (Priority: HIGH)**
+    *   [x] `AD-025` - `AD-035`: Complete FastAPI control plane, C++ action router, hybrid entity alias matching, dynamic vessel repossession, and spatial movement execution in `USovereignBridgeSubsystem`.
+3.  **Local Art Asset Sync & Open-Source Standalone Package (Priority: HIGH)**
+    *   [x] `AD-021` - `AD-024`: Deploy `sovereign-art-sync` MIT standalone repository, Python unit test suite (`tests/test_sync.py`), and Fab Marketplace plugin package.
+4.  **TTS Audio Guardrails & Subsystem Sanitizer (Priority: HIGH)**
+    *   [x] `AD-037`: Implement `tts_sanitizer.py` and `USovereignTTSSanitizer` C++ fallback to prevent Flite TTS buffer underruns.
 
 ---
 
 ### 🚧 Active Blockers
-*   **None.** Infrastructure is stabilized for multi-agent parallel execution.
+*   **None.** Framework and control plane infrastructure fully stabilized.
 
 ---
 
-### 📝 Task Tracking (Sovereign Board)
-*   [ ] B-043: FJsonObject::Values UE 5.8.1 Compatibility Audit (In Progress)
-*   [x] Execute 07 Protocol (Handshake Verified)
-*   [x] Ingest PSTA Core (Knowledge Drop Complete)
-*   [x] Implement B-001: Actor Synchronization (Digital Twin Bridge)
-*   [x] Implement B-002: Data Survivability (Black Box Protocol)
-*   [x] Refactor Backlog to KISS Table Format
-*   [x] Create Exportable CSV/JSON Backlog
-*   [x] Add AD-001: Iron Officer (GTX 5090) Task
-*   [x] Implement Iron Officer Python Bridge (Prototype)
+### 📝 Operational Reference
+*   **Active Sprint Tracker:** `AI_Nexus/DevOps/CURRENT_SPRINT.md`
+*   **Master Backlog:** `AI_Nexus/DevOps/BACKLOG.md`
+*   **Master Index:** `AI_Nexus/INDEX.md`
 
----
-
-### 💡 Agent Note (Jules)
-The multi-agent merge was a success. We have proven that the framework can handle three simultaneous agents without conflict. The "Council of Officers" reflection has been delivered, and the backlog has been hardened with specific "Why" and "What" contexts to eliminate assumption drift. We are now in a prime position to begin the "Iron Officer" setup on the Lead's 5090 and pivot to Lidar Intelligence (Phase III).
-
-**Last Updated: 2025-05-22**
+**Last Updated: 2026-08-25**

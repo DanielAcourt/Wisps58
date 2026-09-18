@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
 # Personnel Audit Visual Dashboard: Image Generation Prompt
 
 This document holds the revised, zero-fluff text-to-image prompt designed for **DALL-E 3** or **Midjourney v6** to visualize Daniel Acourt's HR Personnel Audit as a sci-fi tactical cybernetic dossier, fully updated to include your INTJ personality type, SWOT metrics, and IQ calibration.

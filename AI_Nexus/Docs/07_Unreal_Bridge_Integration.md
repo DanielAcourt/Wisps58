@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
 # 07 Protocol: Unreal Bridge Integration Guide
 **Version:** 36.4.7-Knight-AAS
 **Status:** IMPLEMENTED / STAGING

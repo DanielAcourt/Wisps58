@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 36.5.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
 # Hybrid Sovereign Architecture: Local Iron Knight with Jules-in-the-Loop Offloading
 
 ## 🏛️ Executive Summary & Core Recommendation

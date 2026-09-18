@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
 # SWOT Analysis: The Sovereign Elephant
 
 **Subject:** The Gap between the 12-Year Research Vision (The Soul) and the 3-Year-Old Legacy Codebase (The Vessel).

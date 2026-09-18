@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 36.5.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-05
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
 # SWOT Analysis: Claude/Cursor vs. Iron Knight
 
 This document registers the strategic and technical trade-offs between utilizing commercial cloud-token tools (Claude Code/Cursor) and developing our custom, offline safety-gated system (**Iron Knight / Sovereign Framework**).
