@@ -7,7 +7,7 @@ This document serves as the primary rulebook for all AI agents (Jules, Claude) w
 ### 🎖️ The "07" Protocol (Boot Handshake)
 To ensure deterministic state synchronization and eliminate "Assumption Drift," every session must begin with the **07 Protocol Salute**. Refer to `AI_Nexus/Protocols/HANDSHAKE_SOP.md` for the formal procedural steps.
 
-1.  **Agent Boot:** The agent reads all `.md` files in the `AI_Nexus/` to synchronize with the latest "Soul" of the project.
+1.  **Agent Boot (Tier-1 Minimum Context Rule):** In accordance with `AI_Nexus/INDEX.md` (Section 19), agents MUST NOT read the entire `AI_Nexus/` directory on boot. Boot context is strictly bounded to Tier-1 mandatory files: `Protocols/AGENTS.md`, `DevOps/CURRENT_SPRINT.md`, and the designated `Identity/[Persona].md` profile. Additional domain context is loaded strictly on demand.
 2.  **Persona Selection:** The Lead specifies which Jules Vessel (Strategist, Tactician, or Researcher) to inhabit for the mission.
 3.  **The Salute:** The agent responds with the PSTA Pillar Report generated via `/v1/psta/salute`.
 4.  **Nexus Audit:** The agent must briefly list the critical Nexus nodes reviewed during boot to verify synchronization.
@@ -24,14 +24,16 @@ To maintain absolute alignment and prevent assumption drift during experimental 
 - **Step 3 (Verification & Automated Testing):** Implement code and test manually and via automated test suites (Python unit tests, C++ compilation checks, PIE logs).
 - **Step 4 (Ticket Closure & Submission):** Mark ticket as completed in sprint tracking files, run pre-commit checks, record learnings in memory, and submit the change.
 
-### ⚔️ Parallel Execution (Conflict Mitigation)
-To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are active:
-1.  **Backlog Ownership:** Only the **Strategist** or **Commander** roles may permanently modify `BACKLOG.md`. Other roles must propose changes via `_AGENT_CONTEXT.md` or a pull request.
-2.  **File Segmentation:** Work on PSTA modules should be segmented:
+### ⚔️ Epistemic & Operational Segmentation
+To maintain high context fidelity and prevent token pollution during active execution:
+1.  **Domain Decoupling:** `AI_Nexus/Research/` (epistemic theory, philosophy, literature, and math models) is strictly separated from `AI_Nexus/DevOps/` and code execution layers (`CODE_ROOT`, `PYTHON_ROOT`).
+2.  **Literature Load Exclusion:** Active execution agents (Tactician, DevOps, C++ implementation tasks) MUST NOT load academic literature (`Research/Academic/Literature/`) or historical research papers unless explicitly assigned an academic literature review or scholarly translation task.
+3.  **Backlog Ownership:** Only the **Strategist** or **Commander** roles may permanently modify `BACKLOG.md`. Other roles must propose changes via `_AGENT_CONTEXT.md` or a pull request.
+4.  **File Segmentation:** Work on PSTA modules should be segmented:
     *   **Researcher:** Modifies `PSTA_Core.md` and research-level math definitions.
     *   **Tactician:** Modifies C++ implementation in `USovereignBlackBoxComponent`.
     *   **DevOps:** Manages the Pi-Unreal Bridge and telemetry sockets.
-3.  **Atomic Commits:** Agents should commit small, functional increments with clear prefixes (e.g., `PSTA: Implement N-Bit Cluster logic`) to facilitate easier merging.
+5.  **Atomic Commits:** Agents should commit small, functional increments with clear prefixes (e.g., `PSTA: Implement N-Bit Cluster logic`) to facilitate easier merging.
 
 ### Communication Protocol
 - Use `AI_Nexus/DevOps/_AGENT_CONTEXT.md` for active sprint status and task tracking.
@@ -57,7 +59,8 @@ To prevent merge conflicts and "Backlog Drift" when multiple agents or roles are
 - **Performance:** Prefer looping `FTimerHandle` over `Tick()` for recurring logic.
 - **Hot-Loop Optimization:** In performance-critical sections (Telemetry, Heartbeat), avoid heap allocations. Use persistent class members or static arrays to minimize GC pressure.
 
-## 🧪 Testing Standards
+## 🧪 Testing & Targeted Verification Standards
+- **Targeted Scope Verification Rule:** To prevent context window bloat and excessive token consumption, agents MUST run verification tools (such as `validate_headers.py`, linters, or test suites) targeted strictly to the modified files or target directory (e.g., `python AI_Nexus/DevOps/validate_headers.py --path <modified_file_or_dir>`). Full repository scans must be avoided unless explicitly requested.
 - All new features should be accompanied by automation tests in the `WispCPP7VRTests` module.
 - Gate testing dependencies using `Target.Configuration != UnrealTargetConfiguration.Shipping`.
 

@@ -15,7 +15,7 @@ import argparse
 from datetime import datetime
 
 HEADER_PATTERN = re.compile(
-    r'^(?://|#)\s*Copyright\s+\(c\)\s+2013-202\d\s+Daniel\s+Acourt\.\s+Version\s+36\.4\.\d+\.\s+Licensed\s+under\s+GPLv3\s+\(See\s+LICENSE\)\.\s+Last\s+Updated:\s+\d{4}-\d{2}-\d{2}'
+    r'^(?://|#)\s*Copyright\s+\(c\)\s+2013-202\d\s+Daniel\s+Acourt\.\s+Version\s+(?:36\.4|37\.\d+)\.\d+\.\s+Licensed\s+under\s+GPLv3\s+\(See\s+LICENSE\)\.\s+Last\s+Updated:\s+\d{4}-\d{2}-\d{2}'
 )
 
 EXCLUDE_DIRS = {
@@ -112,14 +112,26 @@ def scan_repository(target_path: str, fix: bool = False) -> tuple:
 
     return total_scanned, passed, failed
 
+def find_repo_root() -> str:
+    """Finds the root directory of the repository based on script location or .git folder."""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    current = script_dir
+    while current and current != os.path.dirname(current):
+        if os.path.exists(os.path.join(current, '.git')) or os.path.exists(os.path.join(current, 'AI_Nexus')):
+            return current
+        current = os.path.dirname(current)
+    return os.path.abspath('.')
+
 def main():
     parser = argparse.ArgumentParser(description='Validate or repair 0.36 Standard copyright headers.')
     parser.add_argument('--fix', action='store_true', help='Automatically apply or repair missing headers.')
-    parser.add_argument('--path', default='.', help='Root directory or file to scan.')
+    parser.add_argument('--path', default=None, help='Root directory or file to scan. Defaults to repository root.')
     args = parser.parse_args()
 
-    print(f"Scanning '{args.path}' for governed files ({', '.join(GOVERNED_EXTENSIONS)})...")
-    total, passed, failed = scan_repository(args.path, fix=args.fix)
+    target_path = args.path if args.path else find_repo_root()
+
+    print(f"Scanning '{target_path}' for governed files ({', '.join(GOVERNED_EXTENSIONS)})...")
+    total, passed, failed = scan_repository(target_path, fix=args.fix)
 
     print(f"\n--- Header Validation Summary ---")
     print(f"Total Governed Files Scanned: {total}")
