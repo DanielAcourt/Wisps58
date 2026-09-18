@@ -1,7 +1,7 @@
 // Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
 # _AGENT_CONTEXT.md: Active Operational Context
 
-> **Single Source of Truth (SSoT) Pointer:** Active sprint tracking, capacity, and tickets are governed by `AI_Nexus/DevOps/CURRENT_SPRINT.md` (`.csv` / `.json`).
+> **Single Source of Truth (SSoT) Pointer:** Active sprint tracking, capacity, and tickets are governed strictly by `AI_Nexus/DevOps/CURRENT_SPRINT.md`.
 
 ## 🏁 Active Sprint: `SR_20260922` (PSTA Hardware Reality & Zero-Bloat Art Automation)
 

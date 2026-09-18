@@ -534,13 +534,6 @@ Historical implementation knowledge must not silently override current official 
 * `DevOps/CURRENT_SPRINT.md`
 * `DevOps/BACKLOG.md`
 
-### Export Formats
-
-* `DevOps/BACKLOG.csv`
-* `DevOps/BACKLOG.json`
-* `DevOps/CURRENT_SPRINT.csv`
-* `DevOps/CURRENT_SPRINT.json`
-
 ### Change Discipline
 
 ```text

@@ -24,10 +24,10 @@
 The **End of Sprint Protocol** establishes a deterministic, reproducible closeout procedure for active development cycles in the Sovereign Framework.
 
 ### Key Objectives:
-1. **Context Window Preservation:** Prevent active sprint tracking files (`CURRENT_SPRINT.md/csv/json`) from accumulating historical baggage and polluting the AI context window during active development iterations.
+1. **Context Window Preservation:** Prevent the active sprint tracking file (`CURRENT_SPRINT.md`) from accumulating historical baggage and polluting the AI context window during active development iterations.
 2. **Historical Auditability:** Archive every completed sprint into a permanent, time-stamped review log under `AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md`.
 3. **Velocity Tracking:** Record exact Start Dates, End Dates, and total Delivered Velocity Scores (Fibonacci complexity sum) to inform future sprint planning.
-4. **Clean Slate Reset:** Blank out active sprint tracking files at sprint closeout, leaving them pristine for the next cycle's prioritized grooming.
+4. **Clean Slate Reset:** Blank out the active sprint tracking file at sprint closeout, leaving it pristine for the next cycle's prioritized grooming.
 
 ---
 
@@ -36,7 +36,7 @@ The **End of Sprint Protocol** establishes a deterministic, reproducible closeou
 When the Lead issues `/07 End Of Sprint` or when all active sprint tasks are verified as completed, the executing AI agent must follow these 5 mandatory steps in sequence:
 
 ### Step 1: Sprint Audit & Data Extraction
-Extract all completed tickets from `CURRENT_SPRINT.md`, `CURRENT_SPRINT.csv`, and `CURRENT_SPRINT.json`.
+Extract all completed tickets from `CURRENT_SPRINT.md`.
 * Verify that each ticket status is `Done` and has verified completion deliverables.
 * Identify the **Sprint Start Date** (recorded in the previous sprint's header or `CURRENT_SPRINT.md` header) and the **Sprint End Date** (today's date `DD/MM/YYYY`).
 
@@ -57,10 +57,8 @@ The review document must contain:
 * **Tactician Appraisal & Lessons Learned:** System appraisal, C++ / build verification logs, and guidance for the next cycle.
 
 ### Step 4: Active Sprint Reset (Blank Slate)
-Reset the active sprint tracking files to clean, blank templates:
+Reset the active sprint tracking file to a clean, blank template:
 * **`CURRENT_SPRINT.md`:** Clear all completed rows from the active table, leaving a clean table header ready for the next iteration.
-* **`CURRENT_SPRINT.csv`:** Reset file to header line only: `"ID","Task","Complexity","Status","Node","Why","What"`.
-* **`CURRENT_SPRINT.json`:** Reset file to an empty JSON array: `[]`.
 
 ### Step 5: Master Index & SSoT Synchronization
 * Add the newly created `SR_YYYYMMDD.md` file path under the `Timeline & Sprint Reviews` section of `AI_Nexus/INDEX.md`.
