@@ -197,6 +197,9 @@ If $\exists\, k \in \{P,S,T,A\}$ such that $D_k < \tau_{\text{fail}, k}$, then $
 10. 📁 **Mustafa Abshir Mohamed, Geylani Kardaş, & Moharram Challenger (2020):** [`A Systematic Literature Review on Model-driven Engineering for Cyber-Physical Systems`](../Literature/A_Systematic_Literature_Review_on_Model_driven_Engineering_for_Cyber_Physical_Systems.md)
     > <span style="color: #D32F2F; font-weight: bold;">[Daniel / Candidate MDE Resolution Synthesis]:</span> *"Mohamed et al. (2020) evaluate 140 primary MDE studies, revealing that traditional MDE is crippled by ad-hoc toolchains (only 16.9% made tools public) and near-total neglect of physical actuators (3.4%). Classical MDE generated passive UML/EMF diagrams that lacked execution semantics. PSTA resolves this MDE failure by replacing passive diagram generators with a compiled, bare-metal C++ execution kernel, active memory reservations, and the Agency Arbitration Schema (AAS) 409 CONFLICT GATE."*
 
+11. 📁 **C. A. R. Hoare / OS Kernel Verification (1969/2009):** [`Hoare Logic, OS Kernel Verification, and Sovereign Dataset Triplet Architecture`](../Literature/Hoare_Logic_Kernel_Verification_and_Sovereign_Triplets.md)
+    > <span style="color: #D32F2F; font-weight: bold;">[Daniel / Candidate Hoare Logic & Triplet Dataset Synthesis]:</span> *"Hoare logic formalizes program correctness via triples $\{P\}\ C\ \{Q\}$, where 80% of microkernel proofs focus on preserving invariants ($\{I \land P\}\ C\ \{I\}$). PSTA translates this formal methods paradigm to AI agency: mapping pre-conditions $P$ to context/telemetry state vectors, command $C$ to proposed operational mutations by the fine-tuned Sovereign Officer, and post-conditions $Q$ to deterministic PSTA/AAS kernel invariant verification ($\theta_i$ step guards), proving that fine-tuning shapes proposals while the kernel enforces Hoare logic correctness."*
+
 ---
 
 ### Category C: Historical & Mathematical Baseline Anchors
