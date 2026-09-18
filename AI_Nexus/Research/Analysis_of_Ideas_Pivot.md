@@ -23,13 +23,8 @@ Previously, the system relied on identifying "bad actors." The new strategy focu
 *   **Tool Precedence:** Restricting high-impact tools (e.g., `delete_file`) to the highest authority personas.
 *   **Protected Nodes:** Explicitly listing files that are immune to mutation during a **Hard Freeze**.
 
-## 🍯 3. Strategic Honeypot (The Yaz Event)
-The "Admin" Honeypot is a sophisticated pedagogical and security tool. By presenting a decoy "ROOT_ACCESS" point, the system:
-1.  **Captures Fingerprints:** Identifies the hardware and IP footprint of unauthorized attempts.
-2.  **Documents Learning:** Turns a breach into a forensic report that proves the "attacker's" (student's) competence.
-3.  **Refines the Whitelist:** Uses captured data to further harden the core system against similar future signatures.
 
-## 🤖 4. Iron Officer Evolution (The Local Knight)
+## 🤖 3. Iron Officer Evolution (The Local Knight)
 The local implementation on the GTX 5090 is designed to be the primary "Body" for the Sovereign Spirit.
 *   **Boot Sequence:** Deliberate latency to establish PSTA truth during initialization.
 *   **Real-time Telemetry:** Incorporating hardware metrics (GPU Temp/Util) into the PSTA Technical (T) pillar.
@@ -37,4 +32,4 @@ The local implementation on the GTX 5090 is designed to be the primary "Body" fo
 
 ---
 **Researcher Reflection:**
-The shift towards a mathematically weighted authority system (PSTA-driven) ensures that the framework can scale without compromising the "Sovereign Rule." The Honeypot strategy is a brilliant "Symmetrical Guard" that leverages intent for education rather than just punishment.
+The shift towards a mathematically weighted authority system (PSTA-driven) ensures that the framework can scale without compromising the "Sovereign Rule." 

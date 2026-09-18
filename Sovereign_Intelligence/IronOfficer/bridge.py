@@ -30,6 +30,7 @@ app = FastAPI(title="Sovereign Iron Officer Bridge")
 
 from rag import SovereignRAG
 from mcp_client import SovereignMCPClient
+import tts_sanitizer
 
 # --- Configuration ---
 VERSION = "36.4.7-Knight-AAS"
@@ -376,6 +377,10 @@ class UnrealChatRequest(BaseModel):
 class PushChatPayload(BaseModel):
     actor_name: str
     message: str
+
+class TTSSanitizeRequest(BaseModel):
+    text: str
+    max_chars: int = 200
 
 class MCPCallRequest(BaseModel):
     tool_name: str
@@ -1414,6 +1419,21 @@ async def unreal_telemetry(request: UnrealTelemetryPayload):
         "action": "TELEMETRY_LOGGED"
     }
 
+@app.post("/v1/unreal/tts/sanitize")
+async def tts_sanitize(request: TTSSanitizeRequest):
+    """
+    [AD-037] TTS Sanitizer Endpoint.
+    Sanitizes raw text (strips markdown/escapes, converts symbols to spoken words)
+    and splits into clean sentence chunks (< max_chars, default 200) for Unreal Flite TTS.
+    """
+    result = tts_sanitizer.sanitize_and_chunk(request.text, max_chars=request.max_chars)
+    return {
+        "status": "200_OK",
+        "sanitized_text": result["sanitized_text"],
+        "chunks": result["chunks"],
+        "chunk_count": result["chunk_count"]
+    }
+
 @app.post("/v1/unreal/chat")
 async def unreal_chat(request: UnrealChatRequest):
     """
@@ -1575,11 +1595,16 @@ async def unreal_chat(request: UnrealChatRequest):
         # [AD-007] Trace Log: Summary of interaction
         logger.info(f"07 SIM RESPONSE: {sim_persona} received AI response. Tools triggered: {len(response_data['tool_chain'])}")
 
-        logger.info(f"07 SIM RESPONSE CONTENT: {response_data['result']['message']['content']}")
+        raw_content = response_data['result']['message']['content']
+        sanitized_info = tts_sanitizer.sanitize_and_chunk(raw_content)
+
+        logger.info(f"07 SIM RESPONSE CONTENT: {raw_content}")
 
         return {
             "status": "200_OK",
-            "response": response_data["result"]["message"]["content"],
+            "response": raw_content,
+            "spoken_dialogue": sanitized_info["sanitized_text"],
+            "tts_chunks": sanitized_info["chunks"],
             "tool_logs": response_data["tool_outputs"],
             "tool_chain": response_data["tool_chain"]
         }
