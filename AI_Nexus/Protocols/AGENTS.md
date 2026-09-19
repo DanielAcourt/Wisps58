@@ -19,7 +19,7 @@ To ensure deterministic state synchronization and eliminate "Assumption Drift," 
 ### 🔄 4-Step Feature Execution Workflow Protocol
 To maintain absolute alignment and prevent assumption drift during experimental or feature development:
 - **Step 0 (Idea Conception & Research):** Formulate the feature or architectural idea (e.g. SWOT analysis, architectural decoupling).
-- **Step 1 (Ticket Definition):** Define the idea as a formal ticket with ID, scope, and initial goals in active sprint/backlog tracking files (`CURRENT_SPRINT.md`, `.csv`, `.json`).
+- **Step 1 (Ticket Definition):** Define the idea as a formal ticket with ID, scope, and initial goals in active sprint/backlog tracking files (`CURRENT_SPRINT.md`, `BACKLOG.md`).
 - **Step 2 (Tactician Refinement & Definition of Done):** Move to the Tactician role to refine acceptance criteria, define C++ structs/JSON contracts/API schemas, and establish explicit Definition of Done (DoD).
 - **Step 3 (Verification & Automated Testing):** Implement code and test manually and via automated test suites (Python unit tests, C++ compilation checks, PIE logs).
 - **Step 4 (Ticket Closure & Submission):** Mark ticket as completed in sprint tracking files, run pre-commit checks, record learnings in memory, and submit the change.

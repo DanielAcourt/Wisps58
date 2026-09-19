@@ -32,7 +32,7 @@ The **Start of Sprint Protocol** defines the initial grooming, goal alignment, a
    * **Backlog Priority (Technical Truth $T$):** Core architectural prerequisites and technical debt reduction from `BACKLOG.md`.
    * **AI Suggestion (Innovation Vector $S$):** Proactive proposals for R&D, spatial simulation improvements, or tooling optimizations.
 3. **Tech Debt Protection (Velocity Capacity Cap):** Enforce a baseline planning capacity of **~49 Fibonacci Points** for a 4-week solo sprint. This guarantees steady, high-velocity progress without creating unmanageable technical debt.
-4. **Active Sprint Context Ingestion:** Move prioritized tickets from `BACKLOG.md/csv/json` into `CURRENT_SPRINT.md/csv/json` to focus real-time AI context loading.
+4. **Active Sprint Context Ingestion:** Move prioritized tickets from `BACKLOG.md` into `CURRENT_SPRINT.md` to focus real-time AI context loading.
 
 ---
 
@@ -57,11 +57,9 @@ Select candidate tickets from `BACKLOG.md`:
 * Ensure total planned load stays within the **~49 Fibonacci Point capacity cap** (unless the Lead explicitly approves an expanded scope).
 
 ### Step 3: Backlog Migration & File Synchronization
-Transfer selected tickets from `BACKLOG` to `CURRENT_SPRINT` synchronously across all 3 formats:
+Transfer selected tickets from `BACKLOG.md` to `CURRENT_SPRINT.md`:
 1. **`CURRENT_SPRINT.md`:** Populate active table with selected tickets, update header with Start Date, Target End Date, and Core Sprint Goal.
-2. **`CURRENT_SPRINT.csv`:** Write selected ticket rows.
-3. **`CURRENT_SPRINT.json`:** Serialize selected ticket objects.
-4. **`BACKLOG.md/csv/json`:** Update status of selected tickets from `Todo` to `In Progress`.
+2. **`BACKLOG.md`:** Update status of selected tickets from `Todo` to `In Progress`.
 
 ### Step 4: Master Index & SSoT Initialization
 * Update `AI_Nexus/INDEX.md` to reflect the active sprint initialization.

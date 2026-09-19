@@ -39,15 +39,15 @@ OPENSOURCE_ROOT= OpenSource/           (Standalone MIT Tools & Plugins)
 | **MUST**      | `Protocols/AGENTS.md`                            | Agent rules, architecture and execution constraints     |
 | **MUST**      | `Protocols/COMMAND_SOP.md`                       | WHY / WHAT / HOW delegation                             |
 | **MUST**      | `Protocols/HANDSHAKE_SOP.md`                     | 07 boot salute and authority handshake                  |
-| **MUST**      | `Protocols/07_LOCAL_HOSTING_PROTOCOL.md`         | Local server startup and bridge initialization          |
+| **MUST**      | `Protocols/Archive/07_LOCAL_HOSTING_PROTOCOL.md` | Local server startup and bridge initialization          |
 | **MUST**      | `Docs/07_Unreal_Bridge_Integration.md`           | 07 Unreal Bridge sync & communication protocol          |
 | **MUST**      | `Identity/Archivist_Theta.md`                    | Level-0 uncertainty and structural reasoning foundation |
 | **MUST**      | `Identity/identity.json`                         | Entity identity/data contract                           |
-| **SELECTIVE** | `Protocols/COGNITIVE_ADMINISTRATION_PROTOCOL.md` | Cognitive load administration & reflection gating    |
+| **SELECTIVE** | `Protocols/Archive/COGNITIVE_ADMINISTRATION_PROTOCOL.md` | Cognitive load administration & reflection gating |
 | **SELECTIVE** | `Protocols/IronKnight_Simulation_Action_SOP.md`  | Simulation action & roleplay directive protocol        |
-| **SELECTIVE** | `Protocols/AAS_Protocol.md`                      | Authority arbitration and conflict rules                |
-| **SELECTIVE** | `Protocols/REALITY_ANCHOR.md`                    | Physical/simulation consistency                         |
-| **SELECTIVE** | `Protocols/CFL_Protocol.md`                      | Logic/constraint validation                             |
+| **SELECTIVE** | `Protocols/Archive/AAS_Protocol.md`              | Authority arbitration and conflict rules                |
+| **SELECTIVE** | `Protocols/Archive/REALITY_ANCHOR.md`            | Physical/simulation consistency                         |
+| **SELECTIVE** | `Protocols/Archive/CFL_Protocol.md`              | Logic/constraint validation                             |
 
 ### Boot Principle
 
@@ -106,12 +106,20 @@ Agents MUST NOT treat every repository document as equally authoritative.
 ### Primary Governance
 
 * `Protocols/AGENTS.md`
-* `Protocols/CONTRIBUTING.md`
 * `Protocols/COMMAND_SOP.md`
 * `Protocols/HANDSHAKE_SOP.md`
-* `Protocols/AAS_Protocol.md`
-* `Protocols/KnightCommand_SOP.md`
-* `Protocols/ROLEPLAY_BRIDGE_SOP.md`
+* `Protocols/IronKnight_Simulation_Action_SOP.md`
+
+### Archived Governance & Specs
+
+* `Protocols/Archive/AAS_Protocol.md`
+* `Protocols/Archive/07_LOCAL_HOSTING_PROTOCOL.md`
+* `Protocols/Archive/KnightCommand_SOP.md`
+* `Protocols/Archive/ROLEPLAY_BRIDGE_SOP.md`
+* `Protocols/Archive/CONTRIBUTING.md`
+* `Protocols/Archive/REALITY_ANCHOR.md`
+* `Protocols/Archive/CFL_Protocol.md`
+* `Protocols/Archive/COGNITIVE_ADMINISTRATION_PROTOCOL.md`
 
 ### Sprint Lifecycle
 
@@ -139,8 +147,8 @@ Historical sprint reports do not override current state.
 ## Persistent Entity Architecture
 
 * `Docs/SaveSystem_Design.md`
-* `Protocols/SAVESYSTEM_SETUP_GUIDE.md`
-* `Protocols/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
+* `Protocols/SaveSystem/SAVESYSTEM_SETUP_GUIDE.md`
+* `Protocols/SaveSystem/SAVESYSTEM_QUICK_FIX_REFERENCE.md`
 * `Docs/Sovereign_Broker_Implementation_Guide.md`
 
 ### Core Source Code (External Domain Root: `CODE_ROOT`)
@@ -491,7 +499,7 @@ Physical Truth
 
 ### Related Artefacts
 
-* `Protocols/REALITY_ANCHOR.md`
+* `Protocols/Archive/REALITY_ANCHOR.md`
 * `Docs/BlackBox_Protocol.md`
 * `Memories/Legal_and_Heritage_Vision.md`
 
@@ -533,13 +541,6 @@ Historical implementation knowledge must not silently override current official 
 * `DevOps/_AGENT_CONTEXT.md`
 * `DevOps/CURRENT_SPRINT.md`
 * `DevOps/BACKLOG.md`
-
-### Export Formats
-
-* `DevOps/BACKLOG.csv`
-* `DevOps/BACKLOG.json`
-* `DevOps/CURRENT_SPRINT.csv`
-* `DevOps/CURRENT_SPRINT.json`
 
 ### Change Discipline
 

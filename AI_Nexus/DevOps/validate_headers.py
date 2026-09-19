@@ -12,6 +12,7 @@ import os
 import re
 import sys
 import argparse
+import subprocess
 from datetime import datetime
 
 HEADER_PATTERN = re.compile(
@@ -122,16 +123,90 @@ def find_repo_root() -> str:
         current = os.path.dirname(current)
     return os.path.abspath('.')
 
+def get_git_changed_files(repo_root: str, commit_range: str = None) -> list:
+    """Retrieves list of modified, staged, untracked, or committed files from Git."""
+    changed_files = set()
+
+    if commit_range:
+        try:
+            res = subprocess.run(
+                ["git", "diff", "--name-only", commit_range],
+                cwd=repo_root, capture_output=True, text=True, check=True
+            )
+            for line in res.stdout.splitlines():
+                if line.strip():
+                    changed_files.add(os.path.abspath(os.path.join(repo_root, line.strip())))
+        except Exception:
+            pass
+
+    try:
+        res = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=repo_root, capture_output=True, text=True, check=True
+        )
+        for line in res.stdout.splitlines():
+            if not line.strip():
+                continue
+            entry = line[3:].strip()
+            if "->" in entry:
+                entry = entry.split("->")[-1].strip()
+            if entry:
+                changed_files.add(os.path.abspath(os.path.join(repo_root, entry)))
+    except Exception:
+        pass
+
+    if not commit_range:
+        for ref in ["@{u}", "origin/main", "origin/master", "HEAD~1"]:
+            try:
+                res = subprocess.run(
+                    ["git", "diff", "--name-only", ref],
+                    cwd=repo_root, capture_output=True, text=True, check=True
+                )
+                for line in res.stdout.splitlines():
+                    if line.strip():
+                        changed_files.add(os.path.abspath(os.path.join(repo_root, line.strip())))
+                break
+            except Exception:
+                continue
+
+    return sorted(list(changed_files))
+
 def main():
     parser = argparse.ArgumentParser(description='Validate or repair 0.36 Standard copyright headers.')
     parser.add_argument('--fix', action='store_true', help='Automatically apply or repair missing headers.')
-    parser.add_argument('--path', default=None, help='Root directory or file to scan. Defaults to repository root.')
+    parser.add_argument('--path', default=None, help='Specific root directory or file to scan.')
+    parser.add_argument('--all', action='store_true', help='Scan all governed files in the repository (default scans only changed/modified files).')
+    parser.add_argument('--range', default=None, help='Git commit range to check (e.g. HEAD~1..HEAD).')
     args = parser.parse_args()
 
-    target_path = args.path if args.path else find_repo_root()
+    repo_root = find_repo_root()
 
-    print(f"Scanning '{target_path}' for governed files ({', '.join(GOVERNED_EXTENSIONS)})...")
-    total, passed, failed = scan_repository(target_path, fix=args.fix)
+    if args.path:
+        target_path = args.path
+        print(f"Scanning specified path '{target_path}' for governed files ({', '.join(GOVERNED_EXTENSIONS)})...")
+        total, passed, failed = scan_repository(target_path, fix=args.fix)
+    elif args.all:
+        target_path = repo_root
+        print(f"Scanning ENTIRE repository '{target_path}' for governed files ({', '.join(GOVERNED_EXTENSIONS)})...")
+        total, passed, failed = scan_repository(target_path, fix=args.fix)
+    else:
+        print(f"Scanning changed/modified governed files in repository...")
+        changed_paths = get_git_changed_files(repo_root, commit_range=args.range)
+        governed_files = [p for p in changed_paths if os.path.exists(p) and os.path.splitext(p)[1].lower() in GOVERNED_EXTENSIONS]
+
+        if not governed_files:
+            print("\n--- Header Validation Summary ---")
+            print("No modified or staged governed files found to validate.")
+            sys.exit(0)
+
+        total = len(governed_files)
+        passed = 0
+        failed = 0
+        for filepath in governed_files:
+            if check_or_fix_file(filepath, fix=args.fix):
+                passed += 1
+            else:
+                failed += 1
 
     print(f"\n--- Header Validation Summary ---")
     print(f"Total Governed Files Scanned: {total}")
