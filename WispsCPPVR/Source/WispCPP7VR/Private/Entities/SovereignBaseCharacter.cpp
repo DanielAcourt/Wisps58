@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-21
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Entities/SovereignBaseCharacter.h"
@@ -238,6 +239,12 @@ void ASovereignBaseCharacter::Interact(const FInputActionValue& Value)
 
 		// Broadcast to Blueprints (for UI/Highlighters)
 		OnActorSensed.Broadcast(Target);
+
+		// Store hit target for UI/Blueprint binding
+		CurrentInteractedActor = Target;
+
+		// Broadcast interaction event to Blueprints
+		OnActorInteracted.Broadcast(Target);
 
 		// Execute interaction if target speaks the Sovereign language
 		if (Target->Implements<UInteractionInterface>())

@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-21
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -23,6 +24,7 @@ class AController ; // <--- MUST ADD THIS FOR POSSESSION
 
 // This creates a custom event node for your Blueprints
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActorSensed, AActor*, SensedActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnActorInteracted, AActor*, InteractedActor);
 
 /**
  * ASovereignBaseCharacter
@@ -43,6 +45,18 @@ public:
 	// This allows you to bind logic in BP (e.g., highlighting a wisp when you look at it)
 	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "Sovereign|Senses")
 	FOnActorSensed OnActorSensed;
+
+	// Broadcast when an interaction occurs with a sensed actor
+	UPROPERTY(BlueprintAssignable, BlueprintCallable, Category = "Sovereign|Senses")
+	FOnActorInteracted OnActorInteracted;
+
+	// The target actor currently or most recently interacted with
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Senses")
+	AActor* CurrentInteractedActor = nullptr;
+
+	// Getter for the current/last interacted actor
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Senses")
+	AActor* GetCurrentInteractedActor() const { return CurrentInteractedActor; }
 
 	//Ideally we want a bool stored on the wisp to know if it is possessing anything
 	bool IsPossessing();
