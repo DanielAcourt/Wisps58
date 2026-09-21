@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. All Rights Reserved. Confidential & Proprietary.
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-21
 
 #include "SaveSystem/SovereignSaveManager.h"
 #include "SaveSystem/SovereignSaveGame.h"
@@ -180,6 +180,10 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
                     {
                         // Restore Identity immediately upon birth
                         SaveComp->EntityID = Data.MyGUID;
+                        if (!Data.ObjectName.IsEmpty())
+                        {
+                            SaveComp->ObjectName = Data.ObjectName;
+                        }
                         Registry->RegisterActor(Data.MyGUID, TargetActor);
                     }
                     
@@ -200,6 +204,10 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
             TargetActor->SetActorTransform(Data.WorldTransform);
             if (auto* SaveComp = TargetActor->FindComponentByClass<USovereignSaveableEntityComponent>())
             {
+                if (!Data.ObjectName.IsEmpty())
+                {
+                    SaveComp->ObjectName = Data.ObjectName;
+                }
                 // Restore [2025-12-20] Unknown Tags (Mutations, Qi levels, etc.)
                 if (Data.UnknownMetaTags.IsValid())
                 {
@@ -260,6 +268,11 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 FEntitySaveData Data;
                 FGuid::Parse(Obj->GetStringField(TEXT("GUID")), Data.MyGUID);
 
+                if (Obj->HasField(TEXT("ObjectName")))
+                {
+                    Data.ObjectName = Obj->GetStringField(TEXT("ObjectName"));
+                }
+
                 // --- ADDED: Parse ParentID if it exists ---
                 if (Obj->HasField(TEXT("ParentID")))
                 {
@@ -273,8 +286,7 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 {
                     Data.UnknownMetaTags = Obj->GetObjectField(TEXT("MetaTags"));
 
-                    // Deduplication & Priority GUID Resolution:
-                    // If MetaTags contains Identity.GUID, resolve Data.MyGUID to the primary Identity GUID
+                    // Deduplication & Priority GUID Resolution & Fallback ObjectName:
                     const TSharedPtr<FJsonObject>* IdentityObjPtr;
                     if (Data.UnknownMetaTags->TryGetObjectField(TEXT("Identity"), IdentityObjPtr) && IdentityObjPtr->IsValid())
                     {
@@ -286,6 +298,12 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                             {
                                 Data.MyGUID = InnerGuid;
                             }
+                        }
+
+                        FString InnerObjName;
+                        if ((*IdentityObjPtr)->TryGetStringField(TEXT("ObjectName"), InnerObjName) && Data.ObjectName.IsEmpty())
+                        {
+                            Data.ObjectName = InnerObjName;
                         }
                     }
                 }
@@ -328,6 +346,7 @@ FString USaveManager::ConvertSuitcaseToJson(USovereignSaveGame* Suitcase)
 
         // 1. Identity
         Writer->WriteValue(TEXT("GUID"), Data.MyGUID.ToString());
+        Writer->WriteValue(TEXT("ObjectName"), Data.ObjectName);
 
         // 2. Lineage (The Genetic Link)
         Writer->WriteValue(TEXT("ParentID"), Data.ParentID.ToString());

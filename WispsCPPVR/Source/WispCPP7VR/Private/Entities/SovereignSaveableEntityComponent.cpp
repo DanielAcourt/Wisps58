@@ -156,7 +156,6 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 	TSharedPtr<FJsonObject> IdentityObj = MakeShareable(new FJsonObject());
 	FString EffectiveName = ObjectName.IsEmpty() ? (GetOwner() ? GetOwner()->GetName() : TEXT("")) : ObjectName;
 	IdentityObj->SetStringField(TEXT("ObjectName"), EffectiveName);
-	IdentityObj->SetStringField(TEXT("ObjectName"), ObjectName);
 	IdentityObj->SetStringField(TEXT("BirthTimestamp"), BirthTimestamp.ToString());
 	IdentityObj->SetBoolField(TEXT("bIsBeingPossessed"), bIsBeingPossessed);
 	IdentityObj->SetBoolField(TEXT("bIsMobile"), bIsMobile);
@@ -237,6 +236,9 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 	{
 		FString IdStr;
 		if ((*IdentityObj)->TryGetStringField(TEXT("GUID"), IdStr)) FGuid::Parse(IdStr, EntityID);
+
+		FString SavedObjectName;
+		if ((*IdentityObj)->TryGetStringField(TEXT("ObjectName"), SavedObjectName)) ObjectName = SavedObjectName;
 
 		FString BirthStr;
 		if ((*IdentityObj)->TryGetStringField(TEXT("BirthTimestamp"), BirthStr)) FDateTime::Parse(BirthStr, BirthTimestamp);
