@@ -1,7 +1,7 @@
 ﻿{
 	"Entities": [
 		{
-			"GUID": "0B1C7823420410AB035E9ABAB234C50E",
+			"GUID": "3DCEA027424B1712F8701EBA5B33E979",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/MySovereignBaseInteractableTest1.MySovereignBaseInteractableTest1_C",
 			"Transform": "1280.000000,750.000000,400.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
@@ -9,8 +9,8 @@
 			{
 				"Identity":
 				{
-					"GUID": "0B1C7823420410AB035E9ABAB234C50E",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "3DCEA027424B1712F8701EBA5B33E979",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": false,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -43,15 +43,15 @@
 				},
 				"Bio":
 				{
-					"Hunger": 48.800018310546875,
-					"Hydration": 48.560012817382812,
+					"Hunger": 43.300102233886719,
+					"Hydration": 41.960071563720703,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 0.60000008344650269,
+					"WasteLevel": 3.3499979972839355,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.11999998241662979,
+					"MaturityProgress": 0.66999965906143188,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",
@@ -73,7 +73,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 12,
+					"CurrentQi": 67,
 					"MaxQiCapacity": 100,
 					"QiPurity": 1,
 					"TotalQiAccumulated": 0,
@@ -117,16 +117,16 @@
 			}
 		},
 		{
-			"GUID": "0310D41845E7CAC1310D648E4FBF436B",
+			"GUID": "C9FF32CD4C0D61F85A0ECAB491CEAF0C",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/MySovereignIronKnightAgent.MySovereignIronKnightAgent_C",
-			"Transform": "730.000000,-240.000000,50.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "-3340.000000,3370.000000,50.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "0310D41845E7CAC1310D648E4FBF436B",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "C9FF32CD4C0D61F85A0ECAB491CEAF0C",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -137,8 +137,8 @@
 				{
 					"Location":
 					{
-						"X": 730,
-						"Y": -240,
+						"X": -3340,
+						"Y": 3370,
 						"Z": 50
 					},
 					"Rotation":
@@ -178,15 +178,15 @@
 				},
 				"Bio":
 				{
-					"Hunger": 48.800018310546875,
-					"Hydration": 48.560012817382812,
+					"Hunger": 43.300102233886719,
+					"Hydration": 41.960071563720703,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 0.60000008344650269,
+					"WasteLevel": 3.3499979972839355,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.11999998241662979,
+					"MaturityProgress": 0.66999965906143188,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",
@@ -208,7 +208,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 12,
+					"CurrentQi": 67,
 					"MaxQiCapacity": 100,
 					"QiPurity": 1,
 					"TotalQiAccumulated": 0,
@@ -249,7 +249,7 @@
 			}
 		},
 		{
-			"GUID": "87876FBD485F6016A9715A91E3CC5ED4",
+			"GUID": "706F4FE9461E29CFCC745C852215D6E8",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BP_SaveTerminal.BP_SaveTerminal_C",
 			"Transform": "740.000000,220.000000,140.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
@@ -257,8 +257,8 @@
 			{
 				"Identity":
 				{
-					"GUID": "87876FBD485F6016A9715A91E3CC5ED4",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "706F4FE9461E29CFCC745C852215D6E8",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": false,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -291,15 +291,15 @@
 				},
 				"Bio":
 				{
-					"Hunger": 48.800018310546875,
-					"Hydration": 48.560012817382812,
+					"Hunger": 43.300102233886719,
+					"Hydration": 41.960071563720703,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 0.60000008344650269,
+					"WasteLevel": 3.3499979972839355,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.11999998241662979,
+					"MaturityProgress": 0.66999965906143188,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",
@@ -321,7 +321,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 12,
+					"CurrentQi": 67,
 					"MaxQiCapacity": 100,
 					"QiPurity": 1,
 					"TotalQiAccumulated": 0,
@@ -365,16 +365,16 @@
 			}
 		},
 		{
-			"GUID": "E4E3FA4943A54254812F708125FC7D80",
+			"GUID": "703E602446A0C57C90C816870461E369",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
-			"Transform": "2840.000000,-2290.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "3850.000000,-3680.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "E4E3FA4943A54254812F708125FC7D80",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "703E602446A0C57C90C816870461E369",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -385,8 +385,8 @@
 				{
 					"Location":
 					{
-						"X": 2840,
-						"Y": -2290,
+						"X": 3850,
+						"Y": -3680,
 						"Z": 89.650000095367432
 					},
 					"Rotation":
@@ -452,16 +452,16 @@
 			}
 		},
 		{
-			"GUID": "D2980A7D41D9B92577869A9D26B47340",
+			"GUID": "8A6AA65549BA73F599A2A0974F15FEAD",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
-			"Transform": "2720.000000,2610.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "3730.000000,3620.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "D2980A7D41D9B92577869A9D26B47340",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "8A6AA65549BA73F599A2A0974F15FEAD",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -472,8 +472,8 @@
 				{
 					"Location":
 					{
-						"X": 2720,
-						"Y": 2610,
+						"X": 3730,
+						"Y": 3620,
 						"Z": 89.650000095367432
 					},
 					"Rotation":
@@ -539,16 +539,16 @@
 			}
 		},
 		{
-			"GUID": "CD4826594D147DBE8C8552BF04954C4F",
+			"GUID": "E285DA3F46AE36DEDADCE3AB5675AEE3",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
-			"Transform": "180.000000,-1140.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "-20480.000000,-3640.000000,-261089.874290|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "CD4826594D147DBE8C8552BF04954C4F",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "E285DA3F46AE36DEDADCE3AB5675AEE3",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -559,9 +559,9 @@
 				{
 					"Location":
 					{
-						"X": 180,
-						"Y": -1140,
-						"Z": 89.650000095367432
+						"X": -20480,
+						"Y": -3640,
+						"Z": -261089.87429000868
 					},
 					"Rotation":
 					{
@@ -626,16 +626,16 @@
 			}
 		},
 		{
-			"GUID": "D1C839674CA9DF87AD04CE92617D00D0",
+			"GUID": "6362B2CC434DA042BCFCB5A2C46FDD75",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C",
-			"Transform": "0.000000,0.000000,92.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "487.851353,525.056591,480.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "D1C839674CA9DF87AD04CE92617D00D0",
-					"BirthTimestamp": "2026.09.14-13.22.05",
+					"GUID": "6362B2CC434DA042BCFCB5A2C46FDD75",
+					"BirthTimestamp": "2026.09.21-11.47.36",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -646,9 +646,9 @@
 				{
 					"Location":
 					{
-						"X": 0,
-						"Y": 0,
-						"Z": 92
+						"X": 487.85135256837901,
+						"Y": 525.05659139781176,
+						"Z": 480
 					},
 					"Rotation":
 					{
@@ -698,7 +698,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 498.49276733398438,
+					"CurrentQi": 492.00579833984375,
 					"MaxQiCapacity": 500,
 					"QiPurity": 0.80000001192092896,
 					"TotalQiAccumulated": 0,

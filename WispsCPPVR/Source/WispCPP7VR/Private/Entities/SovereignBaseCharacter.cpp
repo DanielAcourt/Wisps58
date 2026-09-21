@@ -239,6 +239,13 @@ void ASovereignBaseCharacter::Interact(const FInputActionValue& Value)
 		// Broadcast to Blueprints (for UI/Highlighters)
 		OnActorSensed.Broadcast(Target);
 
+		// Store hit target for UI/Blueprint binding
+		CurrentInteractedActor = Target;
+
+		// Broadcast interaction event to Blueprints
+		OnActorInteracted.Broadcast(Target);
+
+
 		// Execute interaction if target speaks the Sovereign language
 		if (Target->Implements<UInteractionInterface>())
 		{
@@ -272,7 +279,6 @@ void ASovereignBaseCharacter::HandlePossessionLifecycle()
 void ASovereignBaseCharacter::OnInteract_Implementation(AActor* Interactor)
 {
 	// For now, we can just log that a character-based entity was touched.
-	// In the future, Erisis might say "Hello" here.
 	UE_LOG(LogTemp, Log, TEXT("%s interacted with Sovereign Character %s"),	Interactor ? *Interactor->GetName() : TEXT("Unknown"), *GetName());
 }
 
