@@ -87,6 +87,7 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
 
                 // 1. IDENTITY: Who am I? (Use the Component's canonical EntityID)
                 Data.MyGUID = SaveComp->EntityID.IsValid() ? SaveComp->EntityID : Elem.Key;
+                Data.ObjectName = SaveComp->ObjectName.IsEmpty() ? TargetActor->GetName() : SaveComp->ObjectName;
 
                 // 2. LINEAGE: Who is my parent? (The Genetic Link)
                 // Access lineage data from Bio component

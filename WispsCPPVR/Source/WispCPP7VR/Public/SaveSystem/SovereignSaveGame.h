@@ -30,6 +30,13 @@ Image Tag:*/
      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign")
      FGuid EntityID;
 
+     // The custom object/display name (e.g., "Daniel")
+     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign")
+     FString ObjectName;
+
+     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign")
+	 FString EntityName;
+
      // The blueprint path so we can respawn this object if it's missing
      UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign")
      FString ClassPath;
@@ -64,7 +71,4 @@ Image Tag:*/
      UPROPERTY(BlueprintReadWrite, Category = "Sovereign")
      FDateTime SaveTime;
 
-     // You can add global world data here later, like:
-    // UPROPERTY()
-    // float TimeOfDay;
  };

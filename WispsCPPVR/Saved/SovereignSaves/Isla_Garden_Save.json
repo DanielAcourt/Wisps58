@@ -1,16 +1,16 @@
 ﻿{
 	"Entities": [
 		{
-			"GUID": "3DCEA027424B1712F8701EBA5B33E979",
+			"GUID": "988AE97840A0C8583A0DDFBD7905D64E",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/MySovereignBaseInteractableTest1.MySovereignBaseInteractableTest1_C",
-			"Transform": "1280.000000,750.000000,400.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "0.000000,0.000000,238.000000|-90.000000,0.000000,0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "3DCEA027424B1712F8701EBA5B33E979",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": false,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -21,14 +21,14 @@
 				{
 					"Location":
 					{
-						"X": 1280,
-						"Y": 750,
-						"Z": 400
+						"X": 0,
+						"Y": 0,
+						"Z": 238
 					},
 					"Rotation":
 					{
-						"Pitch": 0,
-						"Yaw": 0,
+						"Pitch": -90,
+						"Yaw": 3.6987000918802641e-15,
 						"Roll": 0
 					}
 				},
@@ -43,15 +43,15 @@
 				},
 				"Bio":
 				{
-					"Hunger": 43.300102233886719,
-					"Hydration": 41.960071563720703,
+					"Hunger": 49.400009155273438,
+					"Hydration": 49.280006408691406,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 3.3499979972839355,
+					"WasteLevel": 0.30000001192092896,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.66999965906143188,
+					"MaturityProgress": 0.059999994933605194,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",
@@ -73,7 +73,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 67,
+					"CurrentQi": 6,
 					"MaxQiCapacity": 100,
 					"QiPurity": 1,
 					"TotalQiAccumulated": 0,
@@ -117,7 +117,7 @@
 			}
 		},
 		{
-			"GUID": "C9FF32CD4C0D61F85A0ECAB491CEAF0C",
+			"GUID": "EFCA13DD4FDC148299627B8BD3389634",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/MySovereignIronKnightAgent.MySovereignIronKnightAgent_C",
 			"Transform": "-3340.000000,3370.000000,50.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
@@ -125,8 +125,8 @@
 			{
 				"Identity":
 				{
-					"GUID": "C9FF32CD4C0D61F85A0ECAB491CEAF0C",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -178,15 +178,15 @@
 				},
 				"Bio":
 				{
-					"Hunger": 43.300102233886719,
-					"Hydration": 41.960071563720703,
+					"Hunger": 49.400009155273438,
+					"Hydration": 49.280006408691406,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 3.3499979972839355,
+					"WasteLevel": 0.30000001192092896,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.66999965906143188,
+					"MaturityProgress": 0.059999994933605194,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",
@@ -208,7 +208,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 67,
+					"CurrentQi": 6,
 					"MaxQiCapacity": 100,
 					"QiPurity": 1,
 					"TotalQiAccumulated": 0,
@@ -249,7 +249,7 @@
 			}
 		},
 		{
-			"GUID": "706F4FE9461E29CFCC745C852215D6E8",
+			"GUID": "9B7CD7014B7F6167B0BC4DAADED3C69E",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BP_SaveTerminal.BP_SaveTerminal_C",
 			"Transform": "740.000000,220.000000,140.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
@@ -257,8 +257,8 @@
 			{
 				"Identity":
 				{
-					"GUID": "706F4FE9461E29CFCC745C852215D6E8",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": false,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -291,15 +291,15 @@
 				},
 				"Bio":
 				{
-					"Hunger": 43.300102233886719,
-					"Hydration": 41.960071563720703,
+					"Hunger": 49.400009155273438,
+					"Hydration": 49.280006408691406,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 3.3499979972839355,
+					"WasteLevel": 0.30000001192092896,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.66999965906143188,
+					"MaturityProgress": 0.059999994933605194,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",
@@ -321,7 +321,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 67,
+					"CurrentQi": 6,
 					"MaxQiCapacity": 100,
 					"QiPurity": 1,
 					"TotalQiAccumulated": 0,
@@ -365,7 +365,7 @@
 			}
 		},
 		{
-			"GUID": "703E602446A0C57C90C816870461E369",
+			"GUID": "3E58CC8D4006B4CABAF96495FB21071C",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
 			"Transform": "3850.000000,-3680.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
@@ -373,8 +373,8 @@
 			{
 				"Identity":
 				{
-					"GUID": "703E602446A0C57C90C816870461E369",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "Ben",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -452,7 +452,7 @@
 			}
 		},
 		{
-			"GUID": "8A6AA65549BA73F599A2A0974F15FEAD",
+			"GUID": "0A2BA8774F0D5C344C8EB192197F9D8D",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
 			"Transform": "3730.000000,3620.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
@@ -460,8 +460,8 @@
 			{
 				"Identity":
 				{
-					"GUID": "8A6AA65549BA73F599A2A0974F15FEAD",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "Coke",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -539,16 +539,16 @@
 			}
 		},
 		{
-			"GUID": "E285DA3F46AE36DEDADCE3AB5675AEE3",
+			"GUID": "2629BB9C405A5F59D5C730904F620019",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
-			"Transform": "-20480.000000,-3640.000000,-261089.874290|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "-20480.000000,-3640.000000,-19182.688720|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "E285DA3F46AE36DEDADCE3AB5675AEE3",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "Bobby",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -561,7 +561,7 @@
 					{
 						"X": -20480,
 						"Y": -3640,
-						"Z": -261089.87429000868
+						"Z": -19182.688720148373
 					},
 					"Rotation":
 					{
@@ -626,16 +626,132 @@
 			}
 		},
 		{
-			"GUID": "6362B2CC434DA042BCFCB5A2C46FDD75",
+			"GUID": "2692F00E4F23D26E9249A6BFAABE3251",
 			"ParentID": "00000000000000000000000000000000",
-			"Class": "/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C",
-			"Transform": "487.851353,525.056591,480.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Class": "/Game/Blueprint/Actors/Items/BP_Eriris.BP_Eriris_C",
+			"Transform": "920.000000,-1710.000000,0.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
-					"GUID": "6362B2CC434DA042BCFCB5A2C46FDD75",
-					"BirthTimestamp": "2026.09.21-11.47.36",
+					"ObjectName": "",
+					"BirthTimestamp": "2026.09.21-14.31.57",
+					"bIsBeingPossessed": false,
+					"bIsMobile": true,
+					"ParadoxDensity": 0,
+					"ActorName": "BP_Eriris_C_1",
+					"Class": "BP_Eriris_C"
+				},
+				"SpatialTransform":
+				{
+					"Location":
+					{
+						"X": 920,
+						"Y": -1710,
+						"Z": 0
+					},
+					"Rotation":
+					{
+						"Pitch": 0,
+						"Yaw": 0,
+						"Roll": 0
+					}
+				},
+				"Sovereign.Truth":
+				{
+					"VettedBy": ""
+				},
+				"Sovereign.Magic":
+				{
+					"QiBalance": 0,
+					"CultivationTier": 1
+				},
+				"Bio":
+				{
+					"Hunger": 50,
+					"Hydration": 50,
+					"Fatigue": 0,
+					"Tiredness": 0,
+					"Toxicity": 0,
+					"WasteLevel": 0,
+					"Mass": 1,
+					"MassExperience": 1,
+					"MaturityProgress": 0,
+					"Entropy": 0,
+					"bIsFemale": false,
+					"ParentID": "00000000000000000000000000000000",
+					"MotherID": "00000000000000000000000000000000",
+					"FatherID": "00000000000000000000000000000000",
+					"OffspringCount": 0,
+					"bGestationActive": false,
+					"GestationProgress": 0,
+					"GestationRate": 1,
+					"EggState": 0,
+					"bIsNestCreated": false,
+					"NestSpatiotemporalVolume": 0,
+					"EggFertilityState": "None",
+					"MatingHistory": []
+				},
+				"Qi":
+				{
+					"AlignmentSocket": "ESovereignElement::Grey",
+					"AlignmentInfluence": 100,
+					"MagicSocket": "ESovereignElement::None",
+					"MagicInfluence": 0,
+					"CurrentQi": 0,
+					"MaxQiCapacity": 100,
+					"QiPurity": 1,
+					"TotalQiAccumulated": 0,
+					"bIsDomainOwner": false,
+					"DomainRuneTier": "None",
+					"DomainResonanceRadius": 0,
+					"DomainNetworkSaturation": 0,
+					"Resonance":
+					{
+					}
+				},
+				"Elements":
+				{
+					"BodySocket": "ESovereignElement::Nature",
+					"BodyInfluence": 100,
+					"FireAffinity": 0,
+					"EarthAffinity": 0,
+					"WindAffinity": 0,
+					"WaterAffinity": 0
+				},
+				"Attributes":
+				{
+					"Strength": 10,
+					"Dexterity": 10,
+					"Constitution": 10,
+					"Intelligence": 10,
+					"Wisdom": 10,
+					"Charisma": 10,
+					"Luck": 10,
+					"ArmourClass": 10,
+					"CurrentHealth": 100,
+					"PhysicalResistance": 0,
+					"MagicalResistance": 0,
+					"MentalResistance": 0,
+					"PoisonResistance": 0,
+					"SlowResistance": 0
+				},
+				"Telemetry.temp_c": "0.0",
+				"Telemetry.ph_val": "7.0",
+				"Telemetry.water_depth_mm": "0.0"
+			}
+		},
+		{
+			"GUID": "8DFF2C15458B12B2D2D43E823ECB7A6C",
+			"ParentID": "00000000000000000000000000000000",
+			"Class": "/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C",
+			"Transform": "0.000000,0.000000,92.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"MetaTags": 
+			{
+				"Identity":
+				{
+					"ObjectName": "",
+					"BirthTimestamp": "2026.09.21-14.31.57",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -646,9 +762,9 @@
 				{
 					"Location":
 					{
-						"X": 487.85135256837901,
-						"Y": 525.05659139781176,
-						"Z": 480
+						"X": 0,
+						"Y": 0,
+						"Z": 92
 					},
 					"Rotation":
 					{
@@ -698,7 +814,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 492.00579833984375,
+					"CurrentQi": 499.17160034179688,
 					"MaxQiCapacity": 500,
 					"QiPurity": 0.80000001192092896,
 					"TotalQiAccumulated": 0,

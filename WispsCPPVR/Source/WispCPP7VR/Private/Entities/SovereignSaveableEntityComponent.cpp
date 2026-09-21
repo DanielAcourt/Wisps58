@@ -154,7 +154,9 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 
 	// 1. IDENTITY CATEGORY
 	TSharedPtr<FJsonObject> IdentityObj = MakeShareable(new FJsonObject());
-	IdentityObj->SetStringField(TEXT("GUID"), EntityID.ToString());
+	FString EffectiveName = ObjectName.IsEmpty() ? (GetOwner() ? GetOwner()->GetName() : TEXT("")) : ObjectName;
+	IdentityObj->SetStringField(TEXT("ObjectName"), EffectiveName);
+	IdentityObj->SetStringField(TEXT("ObjectName"), ObjectName);
 	IdentityObj->SetStringField(TEXT("BirthTimestamp"), BirthTimestamp.ToString());
 	IdentityObj->SetBoolField(TEXT("bIsBeingPossessed"), bIsBeingPossessed);
 	IdentityObj->SetBoolField(TEXT("bIsMobile"), bIsMobile);
