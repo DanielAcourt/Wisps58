@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-22
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Entities/SovereignBaseCharacter.h"
@@ -32,6 +33,13 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
+
+	// Enable Query Collision on the Skeletal Mesh for Interaction Traces
+	if (USkeletalMeshComponent* CharMesh = GetMesh())
+	{
+		CharMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		CharMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	}
 }
 void ASovereignBaseCharacter::BeginPlay()
 {
