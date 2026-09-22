@@ -62,7 +62,7 @@ void USovereignBioComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 void USovereignBioComponent::UpdateMetabolism(float DeltaTime)
 {
     // Total cost of existence
-    float NetDrain = 0.1f * DeltaTime;
+    float NetDrain = MetabolicDrainRate * DeltaTime;
 
     if (Hunger > 0.0f)
     {

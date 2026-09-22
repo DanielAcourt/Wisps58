@@ -45,6 +45,9 @@ public:
     TMap<ESovereignNutrient, float> NutrientReserves;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Bio Vitals")
+    float MetabolicDrainRate = 0.1f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Bio Vitals")
     float Hunger;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Bio Vitals")
