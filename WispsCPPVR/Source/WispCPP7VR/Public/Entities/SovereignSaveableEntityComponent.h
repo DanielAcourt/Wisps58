@@ -1,10 +1,11 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.10. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-06
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Interaction/SovereignEntityInterface.h"
+#include "Interaction/SovereignUIInspectable.h"
 #include "SovereignSaveableEntityComponent.generated.h"
 
 // Forward declarations
@@ -118,6 +119,17 @@ public:
     /** ISovereignEntityInterface Implementation */
     virtual USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override { return const_cast<USovereignSaveableEntityComponent*>(this); }
     virtual float GetSystemConfidence_Implementation() const override;
+
+
+    /** --- 5. UI INSPECTOR DISCOVERY --- */
+
+    /** Returns all components attached to TargetActor that implement ISovereignUIInspectable */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|UI Inspection")
+    static TArray<UActorComponent*> GetInspectableComponents(AActor* TargetActor);
+
+    /** Returns aggregated JSON string of all inspectable components on TargetActor */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|UI Inspection")
+    static FString GetAggregatedInspectionJson(AActor* TargetActor);
 
 
 protected:
