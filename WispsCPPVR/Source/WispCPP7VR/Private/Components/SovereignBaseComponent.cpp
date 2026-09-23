@@ -141,7 +141,7 @@ FString USovereignBaseComponent::GetInspectorDataJson_Implementation() const
 
 TSubclassOf<UUserWidget> USovereignBaseComponent::GetInspectorWidgetClass_Implementation() const
 {
-	return nullptr;
+	return InspectorWidgetClass;
 }
 
 void USovereignBaseComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

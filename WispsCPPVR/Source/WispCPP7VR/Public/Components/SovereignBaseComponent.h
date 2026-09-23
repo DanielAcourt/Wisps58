@@ -16,6 +16,10 @@ class WISPCPP7VR_API USovereignBaseComponent : public UActorComponent, public IS
 public:	
 	USovereignBaseComponent();
 
+	/** Optional custom UMG UserWidget class for specialized component inspection rendering */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|UI Inspection")
+	TSubclassOf<UUserWidget> InspectorWidgetClass;
+
 protected:
 	virtual void BeginPlay() override;
 
