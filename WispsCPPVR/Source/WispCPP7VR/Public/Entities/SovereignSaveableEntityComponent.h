@@ -32,6 +32,10 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
     FGuid EntityID;
 
+    /** Custom object or character name (e.g. "Daniel") */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
+    FString ObjectName;
+
     /** The exact moment this Soul was manifested */
     UPROPERTY(BlueprintReadOnly, Category = "Sovereign|Identity")
     FDateTime BirthTimestamp;

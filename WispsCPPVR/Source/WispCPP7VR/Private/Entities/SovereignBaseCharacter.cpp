@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-22
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Entities/SovereignBaseCharacter.h"
@@ -32,6 +33,13 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
+
+	// Enable Query Collision on the Skeletal Mesh for Interaction Traces
+	if (USkeletalMeshComponent* CharMesh = GetMesh())
+	{
+		CharMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		CharMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	}
 }
 void ASovereignBaseCharacter::BeginPlay()
 {
@@ -239,6 +247,13 @@ void ASovereignBaseCharacter::Interact(const FInputActionValue& Value)
 		// Broadcast to Blueprints (for UI/Highlighters)
 		OnActorSensed.Broadcast(Target);
 
+		// Store hit target for UI/Blueprint binding
+		CurrentInteractedActor = Target;
+
+		// Broadcast interaction event to Blueprints
+		OnActorInteracted.Broadcast(Target);
+
+
 		// Execute interaction if target speaks the Sovereign language
 		if (Target->Implements<UInteractionInterface>())
 		{
@@ -272,7 +287,6 @@ void ASovereignBaseCharacter::HandlePossessionLifecycle()
 void ASovereignBaseCharacter::OnInteract_Implementation(AActor* Interactor)
 {
 	// For now, we can just log that a character-based entity was touched.
-	// In the future, Erisis might say "Hello" here.
 	UE_LOG(LogTemp, Log, TEXT("%s interacted with Sovereign Character %s"),	Interactor ? *Interactor->GetName() : TEXT("Unknown"), *GetName());
 }
 

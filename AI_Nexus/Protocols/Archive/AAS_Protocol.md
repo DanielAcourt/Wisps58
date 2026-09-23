@@ -15,7 +15,6 @@ The AAS provides a formal, computational framework to resolve logical conflicts 
 | **Strategist** | 8 | PLANNING | 0.85 |
 | **Researcher** | 7 | INNOVATION | 0.75 |
 | **Iron_Knight** | 5 | STAGING (Unverified) | 0.5 |
-| **Yaz_Student** | 3 | SANDBOX (Learning) | 0.3 |
 
 ### 3. TOOL PRECEDENCE (Minimum P Required)
 | Tool Action | Min Precedence | Operational Risk |

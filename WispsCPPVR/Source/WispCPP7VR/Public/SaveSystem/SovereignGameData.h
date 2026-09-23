@@ -121,6 +121,7 @@ struct FEntitySaveData
 
     FEntitySaveData()
         : MyGUID(FGuid::NewGuid())
+        , ObjectName(TEXT(""))
         , ParentID(FGuid())
         , MotherID(FGuid())
         , FatherID(FGuid())
@@ -134,6 +135,11 @@ struct FEntitySaveData
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (IgnoreForMemberInitializationTest))
     FGuid MyGUID;
+
+    /** The custom display/object name (e.g., "Daniel") */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
+    FString ObjectName;
+
 
     /** The GUID of the entity (Wisp, Plant, or Tool) that created this object. */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Lineage")
@@ -162,13 +168,6 @@ struct FEntitySaveData
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FTransform WorldTransform;
-
-    //UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    //EGrowthState CurrentState;
-
-    /** * THE SECRET SAUCE: Handles tags the system can't know in advance.
-     * This is where your "Key:Value" scraper saves its data.
-     */
 
     // SHould this be a Bleuprint readwrite option
     TSharedPtr<FJsonObject> UnknownMetaTags;

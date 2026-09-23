@@ -189,31 +189,6 @@ void ASovereignPlayerWisp::UpdateSensingLoop()
 	}
 }
 
-//Version X Old idea but kinda of want to refine for later
-/*
-void ASovereignPlayerWisp::PerformAutoSensing()
-{
-	FVector Start = GetActorLocation();
-	FVector End = Start + (GetControlRotation().Vector() * InteractionDistance);
-	FHitResult Hit;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
-	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor && HitActor->Implements<UInteractionInterface>())
-		{
-			// Tell the object it is being looked at (for UI/Glow effects)
-			IInteractionInterface::Execute_OnBeginHover(HitActor);
-
-			// Draw a small "focus" point
-			DrawDebugPoint(GetWorld(), Hit.ImpactPoint, 10.f, FColor::Cyan, false, 0.1f);
-		}
-	}
-}
-*/
-
 void ASovereignPlayerWisp::HandlePossessionLifecycle()
 {
 	// --- SOVEREIGN CHECK: THE TOGGLE LOGIC ---

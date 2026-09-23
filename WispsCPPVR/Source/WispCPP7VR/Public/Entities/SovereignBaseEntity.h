@@ -49,6 +49,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Identity")
 	FGameplayTag IdentitySignature;
 
+	/** The core Name of the object **/ 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Identity")
+	FString SpeciesName;
+
 
 	/** The Gameplay Tags for this entity. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
