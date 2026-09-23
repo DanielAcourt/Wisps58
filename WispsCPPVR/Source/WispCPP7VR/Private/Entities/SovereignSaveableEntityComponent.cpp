@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.10. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-06
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
 
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignBrokerInterface.h"
@@ -7,6 +7,7 @@
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "SaveSystem/SovereignActorRegistry.h"
 #include "Interaction/SovereignSaveInterface.h"
+#include "Interaction/SovereignUIInspectable.h"
 #include "JsonObjectConverter.h"
 #include "Serialization/JsonSerializer.h"
 #include "Engine/World.h"
@@ -414,6 +415,67 @@ float USovereignSaveableEntityComponent::GetSystemConfidence_Implementation() co
 	}
 
 	return FMath::Clamp(BaseConfidence, 0.0f, 1.0f);
+}
+
+TArray<UActorComponent*> USovereignSaveableEntityComponent::GetInspectableComponents(AActor* TargetActor)
+{
+	TArray<UActorComponent*> Results;
+	if (!TargetActor)
+	{
+		return Results;
+	}
+
+	TArray<UActorComponent*> Components;
+	TargetActor->GetComponents(Components);
+
+	for (UActorComponent* Comp : Components)
+	{
+		if (Comp && Comp->GetClass()->ImplementsInterface(USovereignUIInspectable::StaticClass()))
+		{
+			Results.Add(Comp);
+		}
+	}
+
+	return Results;
+}
+
+FString USovereignSaveableEntityComponent::GetAggregatedInspectionJson(AActor* TargetActor)
+{
+	if (!TargetActor)
+	{
+		return TEXT("{}");
+	}
+
+	TSharedPtr<FJsonObject> RootObj = MakeShared<FJsonObject>();
+	RootObj->SetStringField(TEXT("ActorName"), TargetActor->GetName());
+
+	TArray<TSharedPtr<FJsonValue>> ComponentList;
+	TArray<UActorComponent*> Inspectables = GetInspectableComponents(TargetActor);
+
+	for (UActorComponent* Comp : Inspectables)
+	{
+		if (!Comp)
+		{
+			continue;
+		}
+
+		FString CompJsonStr = ISovereignUIInspectable::Execute_GetInspectorDataJson(Comp);
+		TSharedPtr<FJsonObject> CompJsonObj;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(CompJsonStr);
+
+		if (FJsonSerializer::Deserialize(Reader, CompJsonObj) && CompJsonObj.IsValid())
+		{
+			ComponentList.Add(MakeShared<FJsonValueObject>(CompJsonObj));
+		}
+	}
+
+	RootObj->SetArrayField(TEXT("InspectableComponents"), ComponentList);
+
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(RootObj.ToSharedRef(), Writer);
+
+	return OutputString;
 }
 
 #if WITH_EDITOR
