@@ -74,15 +74,15 @@ TMap<FString, FString> USovereignBaseComponent::GetInspectorProperties_Implement
 			}
 			else if (FStrProperty* StrProperty = CastField<FStrProperty>(Property))
 			{
-				ValueStr = StrProperty->GetPropertyValue<FString>(ValuePtr);
+				ValueStr = StrProperty->GetPropertyValue(ValuePtr);
 			}
 			else if (FNameProperty* NameProperty = CastField<FNameProperty>(Property))
 			{
-				ValueStr = NameProperty->GetPropertyValue<FName>(ValuePtr).ToString();
+				ValueStr = NameProperty->GetPropertyValue(ValuePtr).ToString();
 			}
 			else if (FTextProperty* TextProperty = CastField<FTextProperty>(Property))
 			{
-				ValueStr = TextProperty->GetPropertyValue<FText>(ValuePtr).ToString();
+				ValueStr = TextProperty->GetPropertyValue(ValuePtr).ToString();
 			}
 			else if (FEnumProperty* EnumProperty = CastField<FEnumProperty>(Property))
 			{
