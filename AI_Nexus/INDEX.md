@@ -571,6 +571,7 @@ Memory / Lesson
 * `Timeline/MD.md`
 * `Timeline/Updates.md`
 * `Timeline/SprintReviews/`
+  * `Timeline/SprintReviews/SR_20260928.md`
 * `Timeline/Mission_Reports/`
 
 ### Rule
