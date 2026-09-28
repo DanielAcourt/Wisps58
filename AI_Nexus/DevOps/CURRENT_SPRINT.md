@@ -4,8 +4,8 @@
 **Sprint ID:** `SR_20260922`
 **Start Date:** `25/08/2026`
 **Target End Date:** `22/09/2026` (4-Week Solo Baseline)
-**Planned Capacity:** 182 Points (Expanded Active Directives Scope)
-**Completed Capacity / Velocity:** 103 Points
+**Planned Capacity:** 219 Points (Expanded Active Directives Scope)
+**Completed Capacity / Velocity:** 135 Points
 
 > 🎯 **Core Sprint Goal:**
 > **"PSTA Hardware Reality, Hybrid Agent Synergy & Zero-Bloat Bidirectional Art Automation (Iron Knight + Jules + UE 5.8 MCP + sovereign-art-sync)"**
@@ -15,6 +15,8 @@
 
 | ID | Task | Complexity | Status | Node | Why (Context) | What (Completion Outcome) |
 |:---|:---|:---:|:---:|:---|:---|:---|
+| AD-003X | PSTA Core Kernel Hardening & Math Formalization | 8 | Completed | Research/Thesis | Formalize Validation Gates (V_P, V_S, V_T, V_A), Tri-State Base Bits, Leontief Step Guards, and LLM Alignment Velocity for PhD thesis literature review baseline. | PSTA_Core.md updated with exact validation equations and Lit_Review.md created with Kalman vs PSTA comparison matrix. |
+| B-026 | AI-to-Unreal Mailbox Polling | 8 | Completed | DevOps | Implement proactive AI chat capabilities using the Mailbox Polling pattern. | Integration of /v1/unreal/mailbox HTTP loop in USovereignBridgeSubsystem and push_chat tool. |
 | AD-016 | UE 5.8.1 MCP Loopback Client Bridge | 6 | Completed | Research/DevOps | Connect Iron Knight to Unreal 5.8 embedded MCP server for local, token-free editor automation. | Python MCP client in Sovereign_Intelligence implementing JSON-RPC over loopback http://127.0.0.1:8000/mcp with tool discovery. |
 | AD-017 | UE 5.8.1 Python MCP Tool Registration & Scripting Directory | 5 | Completed | Research/DevOps | Create `/Content/Python/` scripting directory and register a live sample tool script exposing editor automation methods to `SovereignMCPClient`. | `/WispsCPPVR/Content/Python/` created with `init_unreal.py` and `sovereign_mcp_tools.py` registering live editor tools accessible via `GET /v1/mcp/tools`. |
 | AD-005a | Spatial Sense: Save State Ingestion | 5 | Completed | Research/DevOps | Ingest the serialized component save packet and spatial transforms during `/v1/unreal/chat` calls. | Multi-entity world manifest and 3D spatial transforms (Location, Rotation) serialized into system prompt context for `/v1/unreal/chat`. |
@@ -60,5 +62,5 @@
 ---
 
 ## 🏛️ Strategic Alignment
-- **Active Iteration Load:** **74 Points** (In Progress)
+- **Active Iteration Load:** **84 Points** (In Progress)
 - **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260825.md` (97 Points Delivered)
