@@ -10,7 +10,7 @@
 /**
  * USovereignInspectorChildWidget: Polymorphic base UMG UserWidget for specialized component inspector child panels.
  */
-UCLASS(Abstract, Blueprintable, ClassGroup = (Sovereign))
+UCLASS(Blueprintable, ClassGroup = (Sovereign))
 class WISPCPP7VR_API USovereignInspectorChildWidget : public UUserWidget
 {
 	GENERATED_BODY()

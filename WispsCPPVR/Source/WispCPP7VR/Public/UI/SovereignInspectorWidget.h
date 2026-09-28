@@ -10,7 +10,7 @@
 /**
  * USovereignInspectorWidget: Base UMG UserWidget for dynamic component and actor inspection.
  */
-UCLASS(Abstract, Blueprintable, ClassGroup = (Sovereign))
+UCLASS(Blueprintable, ClassGroup = (Sovereign))
 class WISPCPP7VR_API USovereignInspectorWidget : public UUserWidget
 {
 	GENERATED_BODY()
