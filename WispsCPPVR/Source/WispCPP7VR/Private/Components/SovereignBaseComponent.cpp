@@ -102,9 +102,10 @@ TMap<FString, FString> USovereignBaseComponent::GetInspectorProperties_Implement
 					ValueStr = FString::FromInt(ByteProperty->GetPropertyValue(ValuePtr));
 				}
 			}
-			else if (FStructProperty* StructProperty = CastField<FStructProperty>(Property))
+			else
 			{
-				StructProperty->ExportTextItem_Direct(ValueStr, ValuePtr, nullptr, nullptr, PPF_None);
+				// General fallback export for MapProperty, ArrayProperty, ObjectProperty, StructProperty, etc.
+				Property->ExportTextItem_Direct(ValueStr, ValuePtr, nullptr, nullptr, PPF_None);
 			}
 
 			if (!ValueStr.IsEmpty())
