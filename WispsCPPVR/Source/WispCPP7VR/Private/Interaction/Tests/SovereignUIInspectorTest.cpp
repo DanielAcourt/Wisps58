@@ -9,6 +9,7 @@
 #include "Components/SovereignQiComponent.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Interaction/SovereignUIInspectable.h"
+#include "UI/SovereignInspectorChildWidget.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -73,6 +74,25 @@ bool FSovereignUIInspectorDiscoveryTest::RunTest(const FString& Parameters)
 
     FString NullJson = USovereignSaveableEntityComponent::GetAggregatedInspectionJson(nullptr);
     TestEqual(TEXT("Null actor returns empty JSON object"), NullJson, FString(TEXT("{}")));
+
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignInspectorChildWidgetTest,
+    "Sovereign.UI.ChildWidgetBase",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter);
+
+bool FSovereignInspectorChildWidgetTest::RunTest(const FString& Parameters)
+{
+    USovereignInspectorChildWidget* ChildWidget = NewObject<USovereignInspectorChildWidget>();
+    USovereignBioComponent* TestBioComp = NewObject<USovereignBioComponent>();
+
+    if (TestNotNull(TEXT("ChildWidget created"), ChildWidget) && TestNotNull(TEXT("TestBioComp created"), TestBioComp))
+    {
+        ChildWidget->UpdateInspectorData(TestBioComp);
+        TestEqual(TEXT("BoundComponent correctly assigned via UpdateInspectorData"), ChildWidget->BoundComponent, Cast<UActorComponent>(TestBioComp));
+    }
 
     return true;
 }
