@@ -4,36 +4,25 @@
 **Sprint ID:** `SR_20261026`
 **Start Date:** `28/09/2026`
 **Target End Date:** `26/10/2026` (4-Week Baseline)
-**Planned Capacity:** 84 Points (Active Carry-Over Iteration)
+**Planned Capacity:** 22 Points (Ultra-Light Refactoring & Recovery Iteration)
 **Completed Capacity / Velocity:** 0 Points
 
 > 🎯 **Core Sprint Goal:**
-> **"PSTA Hardware Reality, Flite TTS Audio Sanitization, Unseen Weave Draconic Bio/Qi Evolution & AAA Dynamic Inspector UI"**
-> Finalize external Raspberry Pi headless PSTA safety nodes, deploy the Flite TTS string sanitizer module, complete the C++ draconic gestation, imbuement, and qi domain mechanics, and execute the AAA Dynamic Inspector UI suite (`UI-EPIC-00`).
+> **"Telemetry Subsystem Decoupling, Entity Registration Hardening, & Bridge Traffic Throttling"**
+> Refactor IoT sensor telemetry (`TemperatureCelsius`, `PhValue`, `WaterDepthMM`) out of `ASovereignBaseInteractable` into a standalone Black Box telemetry component/subsystem (`B-046`), harden entity module registration and attribute sync (`B-043`), implement adaptive bridge mailbox polling (`AD-019`), enforce simulation reality anchor guardrails (`AD-020`), and harden AAS backup verification (`B-027`).
 
 ## 🏃‍♂️ Active Sprint Tickets
 
 | ID | Task | Complexity | Status | Node | Why (Context) | What (Completion Outcome) |
 |:---|:---|:---:|:---:|:---|:---|:---|
-| AD-005c | Spatial Sense: Paradox Visualizer (AFI) | 5 | Todo | Research | Reconcile local state discrepancy reports to drive visual particles. | Drive material parameters and Niagara particles based on live `ParadoxDensity` ($\Xi$). |
-| E-002a | Jules-to-Iron-Knight Hybrid Delegation Protocol | 8 | Todo | Research/DevOps | Formalize JSON-RPC schema allowing Jules to hand off Epics directly to Iron Knight. | Multi-agent SOP and queue handler enabling autonomous delegation from cloud Jules to local Iron Knight. |
-| B-012 | Pi Kernel: Headless Safety Node | 13 | Todo | DevOps | Deploy the PSTA safety kernel on external Raspberry Pi hardware. | C++ PSTA implementation running headlessly on Pi 4 with physical relay control. |
-| B-013 | Data Bridge: Pi-Unreal Telemetry Link | 8 | Todo | DevOps | Mirror real-world hardware truth in the Unreal reflection. | UDP/TCP listener subsystem in Unreal ingesting JSON telemetry from the Pi. |
-| B-028 | C++ Sensor Consensus Integration | 5 | Todo | Research | Migrate FSovereignSensorPair and EvaluateBiSymmetry logic into UDiagnosticBroker C++. | Complete sensor consensus state-space machine evaluating anomalies vs coherent hazards. |
-| B-027 | AAS v1.4.0 Hardening | 3 | Todo | DevOps | Refactor hardcoded diligence score to dynamically verify backup files on disk. | Diligence score calculates actual .bak coverage ratios dynamically. |
-| AD-012 | Bridge: Portable Roleplay & Gitignore Constraints | 3 | Todo | DevOps | Enable portable roleplay execution without drive-mount dependencies or git bloat. | Modify config.json path variables to relative, and update .gitignore to exclude run-time DND campaigns. |
-| B-039 | C++ Bio: Enhanced Gestation & Prestige Condensation | 5 | In Progress | DevOps | Implement the Unseen Weave prestige mechanic where female dragons condense eggs to gain attribute boosts. | Add EnhancedGestationTier and PrestigeCondensationCount properties to USovereignBioComponent, with methods to shrink Nest volume and multiply duration. |
-| B-040 | C++ Bio: Progenitor Attribute Imbuement | 5 | Todo | DevOps | Allow wyrmlings to inherit superior attributes based on Mother and Father stats stored in the Save Entity. | Implement attribute copying from parents to egg metadata, granting +1/+2 Ability score modifiers upon hatching. |
-| B-042 | C++ Bio: Data-Driven Draconic Spawning & Initialization | 5 | Todo | DevOps | Enable individual draconic species traits and gestation attributes to be initialized dynamically from Species Data templates. | Implement InitializeFromSpeciesTemplate in USovereignBioComponent to parse USovereignSpeciesData traits, map DragonType, and override GestationRate with Gestation.BaseRate dynamic attribute. |
-| B-036 | C++ Qi: Universal Domains & Runes | 5 | Todo | DevOps | Support male territory ownership and rune stone node hierarchies in a universal qi module. | Add DomainTier, DomainResonanceRadius, and DomainNetworkSaturation properties to USovereignQiComponent C++. |
-| B-037 | SSoT: Unseen Weave Lore Grounding | 3 | Todo | Research | Bake the foundational homebrew rules and dragon subclass metrics into the local RAG database. | Write Unseen_Weave_Lore.md containing dragon classifications, gestation duration tables, and rune grades. |
+| B-046 | Standalone Black Box Telemetry Subsystem & Base Class Decoupling | 8 | Todo | DevOps | IoT telemetry variables (`TemperatureCelsius`, `PhValue`, `WaterDepthMM`) are currently hardcoded on `ASovereignBaseInteractable`, burdening all interactable base classes with sensor properties when only specific Digital Twin hardware models receive telemetry. | Extract IoT sensor telemetry into a standalone `USovereignTelemetryComponent` or `USovereignBlackBoxTelemetrySubsystem`, removing hardcoded sensor properties from `ASovereignBaseInteractable` and providing clean UDP/TCP/Serial hardware ingestion. |
 | B-043 | C++ Entity Module Registration & Attribute Sync Hardening | 5 | Todo | DevOps | Ensure living creature blueprints like BP_Antelope and BP_Humanoid automatically register USovereignAttributeComponent to USovereignSaveableEntityComponent on BeginPlay. | Living creature entities reliably serialize their full D&D attribute block (STR, DEX, CON, INT, WIS, CHA) into the world manifest. |
 | AD-019 | Adaptive Mailbox Polling & Bridge Traffic Throttling | 3 | Todo | DevOps | Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem. | Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%. |
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |
-| AD-037 | TTS Audio Guardrails & Flite Subsystem Sanitizer | 5 | In Progress | DevOps | Prevent Unreal Engine Flite TTS buffer underruns and `FliteTextToSpeechSubmixListener.cpp` ensure failures caused by markdown syntax, escape sequences, or long text strings. | Standalone string sanitizer module (Python Bridge + C++ fallback) stripping markdown formatting (`**`, `*`, `` ` ``, `//`), escape codes (`\_`), converting symbols into spoken words, and splitting long responses into clean, natural sentence chunks (< 200 chars). |
+| B-027 | AAS v1.4.0 Hardening | 3 | Todo | DevOps | Refactor hardcoded diligence score to dynamically verify backup files on disk. | Diligence score calculates actual .bak coverage ratios dynamically. |
 
 ---
 
 ## 🏛️ Strategic Alignment
-- **Active Iteration Load:** **84 Points** (In Progress)
+- **Active Iteration Load:** **22 Points** (Ultra-Light Refactoring)
 - **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260928.md` (135 Points Delivered)
