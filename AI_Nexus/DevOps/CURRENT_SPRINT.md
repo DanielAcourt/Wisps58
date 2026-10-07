@@ -1,9 +1,9 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-28
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-07
 # Sovereign Framework: CURRENT SPRINT BACKLOG
 
 **Sprint ID:** `SR_20261026`
-**Start Date:** `28/09/2026`
-**Target End Date:** `26/10/2026` (4-Week Baseline)
+**Start Date:** `07/10/2026`
+**Target End Date:** `21/10/2026` (2-Week Recovery Baseline)
 **Planned Capacity:** 22 Points (Ultra-Light Refactoring & Recovery Iteration)
 **Completed Capacity / Velocity:** 0 Points
 
@@ -24,5 +24,5 @@
 ---
 
 ## 🏛️ Strategic Alignment
-- **Active Iteration Load:** **22 Points** (Ultra-Light Refactoring)
+- **Active Iteration Load:** **22 Points** (Ultra-Light 2-Week Recovery)
 - **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260928.md` (135 Points Delivered)
