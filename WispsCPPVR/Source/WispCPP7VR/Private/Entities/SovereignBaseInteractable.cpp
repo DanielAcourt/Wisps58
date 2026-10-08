@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-08
 // Fill out your copyright notice in the Description page of Project Settings.
 /*
 The "Sovereign" Inheritance Chain
@@ -140,28 +141,9 @@ USceneComponent* ASovereignBaseInteractable::GetPossessionAttachmentComponent_Im
 TMap<FString, FString> ASovereignBaseInteractable::GetSaveData()
 {
     TMap<FString, FString> Data;
-    // Map internal properties to the "Telemetry." namespace for the Digital Twin
-    Data.Add(TEXT("Telemetry.temp_c"), FString::SanitizeFloat(TemperatureCelsius));
-    Data.Add(TEXT("Telemetry.ph_val"), FString::SanitizeFloat(PhValue));
-    Data.Add(TEXT("Telemetry.water_depth_mm"), FString::SanitizeFloat(WaterDepthMM));
     return Data;
 }
 
 void ASovereignBaseInteractable::RestoreSaveData(const TMap<FString, FString>& Data)
 {
-    // Scrape the "suitcase" for telemetry keys and update the physical vessel
-    if (const FString* Val = Data.Find(TEXT("Telemetry.temp_c")))
-    {
-        TemperatureCelsius = FCString::Atof(**Val);
-    }
-
-    if (const FString* Val = Data.Find(TEXT("Telemetry.ph_val")))
-    {
-        PhValue = FCString::Atof(**Val);
-    }
-
-    if (const FString* Val = Data.Find(TEXT("Telemetry.water_depth_mm")))
-    {
-        WaterDepthMM = FCString::Atof(**Val);
-    }
 }

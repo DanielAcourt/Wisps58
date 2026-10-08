@@ -5,7 +5,7 @@
 **Start Date:** `07/10/2026`
 **Target End Date:** `21/10/2026` (2-Week Recovery Baseline)
 **Planned Capacity:** 22 Points (Ultra-Light Refactoring & Recovery Iteration)
-**Completed Capacity / Velocity:** 0 Points
+**Completed Capacity / Velocity:** 8 Points
 
 > 🎯 **Core Sprint Goal:**
 > **"Telemetry Subsystem Decoupling, Entity Registration Hardening, & Bridge Traffic Throttling"**
@@ -15,7 +15,7 @@
 
 | ID | Task | Complexity | Status | Node | Why (Context) | What (Completion Outcome) |
 |:---|:---|:---:|:---:|:---|:---|:---|
-| B-046 | Standalone Black Box Telemetry Subsystem & Base Class Decoupling | 8 | Todo | DevOps | IoT telemetry variables (`TemperatureCelsius`, `PhValue`, `WaterDepthMM`) are currently hardcoded on `ASovereignBaseInteractable`, burdening all interactable base classes with sensor properties when only specific Digital Twin hardware models receive telemetry. | Extract IoT sensor telemetry into a standalone `USovereignTelemetryComponent` or `USovereignBlackBoxTelemetrySubsystem`, removing hardcoded sensor properties from `ASovereignBaseInteractable` and providing clean UDP/TCP/Serial hardware ingestion. |
+| B-046 | Standalone Black Box Telemetry Subsystem & Base Class Decoupling | 8 | Completed | DevOps | IoT telemetry variables (`TemperatureCelsius`, `PhValue`, `WaterDepthMM`) are currently hardcoded on `ASovereignBaseInteractable`, burdening all interactable base classes with sensor properties when only specific Digital Twin hardware models receive telemetry. | Extract IoT sensor telemetry into a standalone `USovereignTelemetryComponent` or `USovereignBlackBoxTelemetrySubsystem`, removing hardcoded sensor properties from `ASovereignBaseInteractable` and providing clean UDP/TCP/Serial hardware ingestion. |
 | B-043 | C++ Entity Module Registration & Attribute Sync Hardening | 5 | Todo | DevOps | Ensure living creature blueprints like BP_Antelope and BP_Humanoid automatically register USovereignAttributeComponent to USovereignSaveableEntityComponent on BeginPlay. | Living creature entities reliably serialize their full D&D attribute block (STR, DEX, CON, INT, WIS, CHA) into the world manifest. |
 | AD-019 | Adaptive Mailbox Polling & Bridge Traffic Throttling | 3 | Todo | DevOps | Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem. | Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%. |
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |

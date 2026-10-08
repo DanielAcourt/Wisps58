@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-08
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -48,22 +49,6 @@ protected:
     /** Master interaction gate */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
     bool bIsInteractable = true;
-
-public:
-
-
-    /** --- IoT Telemetry (Digital Twin) --- */
-    // This should be here? It should be a component based on Telemetry type as there are different type of sensors
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Telemetry")
-    float TemperatureCelsius = 0.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Telemetry")
-    float PhValue = 7.0f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Telemetry")
-    float WaterDepthMM = 0.0f;
-
 
 public:
     /* =========================
