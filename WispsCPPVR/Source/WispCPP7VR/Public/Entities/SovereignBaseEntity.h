@@ -12,6 +12,7 @@
 #include "GameplayTagAssetInterface.h" 
 
 #include "Interaction/SovereignEntityInterface.h"
+#include "Interaction/SovereignInterfaceMain.h"
 
 #include "SovereignBaseEntity.generated.h"
 
@@ -23,7 +24,7 @@ class UStaticMeshComponent;
  * ASovereignBaseEntity: Base class for all possessable simulation entities.
  */
 UCLASS()
-class WISPCPP7VR_API ASovereignBaseEntity : public APawn, public IGameplayTagAssetInterface, public ISovereignEntityInterface
+class WISPCPP7VR_API ASovereignBaseEntity : public APawn, public IGameplayTagAssetInterface, public ISovereignEntityInterface, public IInteractionInterface
 {
 	GENERATED_BODY()
 
@@ -60,6 +61,12 @@ public:
 
 	// --- IGameplayTagAssetInterface Implementation ---
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
+
+	// --- IInteractionInterface Implementation ---
+	virtual class USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override { return SaveDataComponent; }
+	virtual bool CanBePossessed_Implementation() override { return bCanBePossessed; }
+	virtual void RequestPossession_Implementation(AController* RequestingController) override;
+	virtual USceneComponent* GetPossessionAttachmentComponent_Implementation() override;
 
 	// --- Lifecycle ---
 	virtual void BeginPlay() override;

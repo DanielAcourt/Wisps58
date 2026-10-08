@@ -225,6 +225,10 @@ bool FSovereignEntityHierarchyModularTest::RunTest(const FString& Parameters)
     TestNull(TEXT("Base Entity has NO default BioComponent"), BaseEntity->FindComponentByClass<USovereignBioComponent>());
     TestNull(TEXT("Base Entity has NO default AttributeComponent"), BaseEntity->FindComponentByClass<USovereignAttributeComponent>());
 
+    // Base entity implements IInteractionInterface for possession
+    TestTrue(TEXT("Base Entity implements IInteractionInterface"), BaseEntity->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()));
+    TestTrue(TEXT("Base Entity can be possessed by default"), IInteractionInterface::Execute_CanBePossessed(BaseEntity));
+
     // 2. Instantiate Living Entity (Organic creature/plant)
     ASovereignLivingEntity* LivingEntity = NewObject<ASovereignLivingEntity>();
     if (!LivingEntity)

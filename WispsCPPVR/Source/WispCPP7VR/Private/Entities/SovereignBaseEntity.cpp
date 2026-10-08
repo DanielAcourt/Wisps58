@@ -505,11 +505,22 @@ float ASovereignBaseEntity::GetHeartbeatInterval() const
     }
 }
 
-UFUNCTION(BlueprintCallable, Category = "Sovereign|Soul")
-USovereignSaveableEntityComponent* ASovereignBaseEntity::GetSovereignSoul_Implementation() const
+
+USceneComponent* ASovereignBaseEntity::GetPossessionAttachmentComponent_Implementation()
 {
-    // Simply return the component we already have!
-    return SaveDataComponent;
+    return EntityMesh ? Cast<USceneComponent>(EntityMesh) : GetRootComponent();
+}
+
+void ASovereignBaseEntity::RequestPossession_Implementation(AController* RequestingController)
+{
+    if (!RequestingController || !bCanBePossessed) return;
+
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsBeingPossessed = true;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Sovereign: Possession requested on %s by %s"), *GetName(), *RequestingController->GetName());
 }
 
 //Put end at the bottem makes sense?
