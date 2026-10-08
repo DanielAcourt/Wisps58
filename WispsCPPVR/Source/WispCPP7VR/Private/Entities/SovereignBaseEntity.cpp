@@ -1,6 +1,7 @@
 //SovereignBaseEntity.ccp
 
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "DataTables/SovereignSpeciesData.h" // Essential for accessing GrowthStages
 
 #include "SaveSystem/SovereignActorRegistry.h"
@@ -526,6 +527,54 @@ void ASovereignBaseEntity::RequestPossession_Implementation(AController* Request
     }
 
     UE_LOG(LogTemp, Log, TEXT("Sovereign: Possession requested on %s by %s"), *GetName(), *RequestingController->GetName());
+}
+
+AActor* ASovereignBaseEntity::GetInhabitingSpirit_Implementation()
+{
+    TArray<AActor*> AttachedActors;
+    GetAttachedActors(AttachedActors, true);
+
+    for (AActor* Actor : AttachedActors)
+    {
+        if (Actor && Actor->Implements<UInteractionInterface>())
+        {
+            if (IInteractionInterface::Execute_IsSpiritEntity(Actor))
+            {
+                return Actor;
+            }
+        }
+    }
+
+    for (AActor* Actor : AttachedActors)
+    {
+        if (Actor && Actor->IsA(ASovereignPlayerWisp::StaticClass()))
+        {
+            return Actor;
+        }
+    }
+    return nullptr;
+}
+
+void ASovereignBaseEntity::RequestSoulEject_Implementation()
+{
+    HandlePossessionLifecycle();
+}
+
+void ASovereignBaseEntity::HandlePossessionLifecycle()
+{
+    AActor* Spirit = IInteractionInterface::Execute_GetInhabitingSpirit(this);
+    if (Spirit)
+    {
+        ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit);
+        if (Wisp)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Sovereign: Soul Eject initiated on %s"), *GetName());
+            Wisp->EjectFromHost();
+            return;
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Sovereign: %s has no inhabiting spirit to eject."), *GetName());
 }
 
 void ASovereignBaseEntity::PossessedBy(AController* NewController)

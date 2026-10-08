@@ -63,6 +63,12 @@ public:
 	virtual bool CanBePossessed_Implementation() override { return bCanBePossessed; }
 	virtual void RequestPossession_Implementation(AController* RequestingController) override;
 	virtual USceneComponent* GetPossessionAttachmentComponent_Implementation() override;
+	virtual AActor* GetInhabitingSpirit_Implementation() override;
+	virtual void RequestSoulEject_Implementation() override;
+
+	/** Handles unpossession/ejection trigger when F / Possession action is pressed on an inhabited vessel */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Possession")
+	virtual void HandlePossessionLifecycle();
 
 	// --- Lifecycle ---
 	virtual void BeginPlay() override;
