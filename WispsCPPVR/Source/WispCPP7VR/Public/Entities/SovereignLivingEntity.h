@@ -43,6 +43,8 @@ public:
 	virtual void PostSpawnInitialize(const USovereignSpeciesData* InSpeciesData, const FGuid& InMotherID, const FGuid& InFatherID) override;
 
 protected:
+	virtual void OnSovereignHeartbeat();
+	virtual void VerifySymmetryLevel();
 	/** The Biological engine: Metabolism, Growth, Lineage */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignBioComponent* BioComponent;
