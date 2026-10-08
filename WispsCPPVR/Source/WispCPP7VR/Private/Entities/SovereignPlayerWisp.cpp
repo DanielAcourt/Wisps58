@@ -249,11 +249,31 @@ void ASovereignPlayerWisp::AttemptPossession()
 						FName("Soul_Socket"));
 				}
 
-				// --- STEP 5: SOUL HANDOVER ---
+				// --- STEP 5: SOUL HANDOVER & INTERFACE HANDSHAKE ---
+				IInteractionInterface::Execute_RequestPossession(HitActor, PC);
+
+				UInputMappingContext* WispIMC = DefaultMappingContext;
+
 				if (PC && HitActor->IsA<APawn>())
 				{
 					PC->Possess(Cast<APawn>(HitActor));
 					UE_LOG(LogTemp, Warning, TEXT("Soul migrated to Host: %s"), *HitActor->GetName());
+				}
+
+				// Re-apply the Wisp IMC to the Player Controller subsystem AFTER PC->Possess clears previous mappings
+				if (PC)
+				{
+					if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+					{
+						if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+						{
+							if (WispIMC)
+							{
+								Subsystem->AddMappingContext(WispIMC, 1);
+								UE_LOG(LogTemp, Warning, TEXT("Sovereign: Re-applied Wisp IMC [%s] after possession of %s"), *WispIMC->GetName(), *HitActor->GetName());
+							}
+						}
+					}
 				}
 
 				// --- STEP 6: SPIRIT STATE MANAGEMENT ---
@@ -263,9 +283,6 @@ void ASovereignPlayerWisp::AttemptPossession()
 				GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 				SetActorTickEnabled(true);
-
-				// Final handshake through the interface
-				IInteractionInterface::Execute_RequestPossession(HitActor, PC);
 			}
 		}
 	}

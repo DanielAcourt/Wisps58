@@ -38,6 +38,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Entity")
 	FGuid GetSovereignID() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetPossessAction() const { return PossessAction; }
+
 	/** The Unique Identity Signature for this class. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Identity")
 	FGameplayTag IdentitySignature;

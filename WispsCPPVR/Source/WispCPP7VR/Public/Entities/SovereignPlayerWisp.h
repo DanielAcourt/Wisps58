@@ -97,6 +97,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Input")
 	class UInputAction* EjectAction;
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetEjectAction() const { return EjectAction; }
+
 	/** Gameplay Truth: Are we currently acting as a Soul for a Vessel? */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Sovereign|Possession")
 	bool bIsPossessing = false;

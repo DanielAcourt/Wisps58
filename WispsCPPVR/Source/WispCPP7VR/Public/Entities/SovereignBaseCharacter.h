@@ -56,6 +56,12 @@ public:
 	// Getter for the current/last interacted actor
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Senses")
 	AActor* GetCurrentInteractedActor() const { return CurrentInteractedActor; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetPossessAction() const { return PossessAction; }
 	//Ideally we want a bool stored on the wisp to know if it is possessing anything
 	bool IsPossessing();
 

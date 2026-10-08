@@ -528,6 +528,50 @@ void ASovereignBaseEntity::RequestPossession_Implementation(AController* Request
         SaveDataComponent->bIsBeingPossessed = true;
     }
 
+    if (APlayerController* PC = Cast<APlayerController>(RequestingController))
+    {
+        EnableInput(PC);
+
+        if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+        {
+            if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+            {
+                if (DefaultMappingContext)
+                {
+                    Subsystem->AddMappingContext(DefaultMappingContext, 0);
+                }
+
+                if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+                {
+                    if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Applied Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseCharacter* SpiritChar = Cast<ASovereignBaseCharacter>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritChar->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Applied Spirit Character Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseEntity* SpiritEntity = Cast<ASovereignBaseEntity>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritEntity->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Applied Spirit Entity Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     UE_LOG(LogTemp, Log, TEXT("Sovereign: Possession requested on %s by %s"), *GetName(), *RequestingController->GetName());
 }
 
@@ -571,6 +615,13 @@ void ASovereignBaseEntity::HandlePossessionLifecycle()
         if (Wisp)
         {
             UE_LOG(LogTemp, Warning, TEXT("Sovereign: Soul Eject initiated on %s"), *GetName());
+
+            APlayerController* PC = Cast<APlayerController>(GetController());
+            if (PC)
+            {
+                PC->Possess(Wisp);
+            }
+
             Wisp->EjectFromHost();
             return;
         }
@@ -590,15 +641,48 @@ void ASovereignBaseEntity::PossessedBy(AController* NewController)
 
     if (APlayerController* PC = Cast<APlayerController>(NewController))
     {
+        EnableInput(PC);
+
+        if (InputComponent)
+        {
+            SetupPlayerInputComponent(InputComponent);
+        }
+
         if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
         {
             if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
             {
-                Subsystem->ClearAllMappings();
                 if (DefaultMappingContext)
                 {
                     Subsystem->AddMappingContext(DefaultMappingContext, 0);
-                    UE_LOG(LogTemp, Log, TEXT("Sovereign: Base Entity Input Mapping Context swapped for %s"), *GetName());
+                }
+
+                if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+                {
+                    if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseCharacter* SpiritChar = Cast<ASovereignBaseCharacter>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritChar->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Character Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseEntity* SpiritEntity = Cast<ASovereignBaseEntity>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritEntity->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Entity Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
                 }
             }
         }
@@ -611,10 +695,36 @@ void ASovereignBaseEntity::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
     if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
     {
+        EIC->ClearActionBindings();
+
+        TArray<UInputAction*> ActionsToBind;
+
         if (PossessAction)
         {
-            EIC->BindAction(PossessAction, ETriggerEvent::Started, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
-            UE_LOG(LogTemp, Log, TEXT("Sovereign: Possess/Unpossess Action bound on %s"), *GetName());
+            ActionsToBind.AddUnique(PossessAction);
+        }
+
+        if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+        {
+            if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+            {
+                if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+                if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
+            }
+            else if (ASovereignBaseCharacter* SpiritChar = Cast<ASovereignBaseCharacter>(Spirit))
+            {
+                if (UInputAction* SpiritPossess = SpiritChar->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+            }
+        }
+
+        for (UInputAction* Act : ActionsToBind)
+        {
+            if (Act)
+            {
+                EIC->BindAction(Act, ETriggerEvent::Started, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
+                EIC->BindAction(Act, ETriggerEvent::Triggered, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
+                UE_LOG(LogTemp, Log, TEXT("Sovereign: Possess/Unpossess Action [%s] bound on %s"), *Act->GetName(), *GetName());
+            }
         }
     }
 }

@@ -98,6 +98,18 @@ void ASovereignBaseCharacter::PossessedBy(AController* NewController)
 			{
 				UE_LOG(LogTemp, Error, TEXT("Sovereign: %s has NO DefaultMappingContext assigned!"), *GetName());
 			}
+
+			if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+			{
+				if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+				{
+					if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+					{
+						Subsystem->AddMappingContext(SpiritIMC, 1);
+						UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+					}
+				}
+			}
 		}
 
 		if (AttributeComponent)
@@ -158,6 +170,24 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		if (PossessAction)
 		{
 			EIC->BindAction(PossessAction, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+			EIC->BindAction(PossessAction, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+		}
+
+		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		{
+			if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+			{
+				if (UInputAction* SpiritPossess = Wisp->GetPossessAction())
+				{
+					EIC->BindAction(SpiritPossess, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+					EIC->BindAction(SpiritPossess, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+				}
+				if (UInputAction* SpiritEject = Wisp->GetEjectAction())
+				{
+					EIC->BindAction(SpiritEject, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+					EIC->BindAction(SpiritEject, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+				}
+			}
 		}
 	}
 }
