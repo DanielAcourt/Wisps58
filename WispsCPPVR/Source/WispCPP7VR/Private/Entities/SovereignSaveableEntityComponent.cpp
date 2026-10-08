@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.10. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-06
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-08-25
 
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignBrokerInterface.h"
@@ -7,6 +7,7 @@
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "SaveSystem/SovereignActorRegistry.h"
 #include "Interaction/SovereignSaveInterface.h"
+#include "Interaction/SovereignUIInspectable.h"
 #include "JsonObjectConverter.h"
 #include "Serialization/JsonSerializer.h"
 #include "Engine/World.h"
@@ -210,7 +211,7 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 		}
 	}
 
-	// 4. OWNER FLAT SAVE DATA (ISovereignSaveInterface)
+	// 4. OWNER & COMPONENT FLAT SAVE DATA (ISovereignSaveInterface)
 	if (AActor* Owner = GetOwner())
 	{
 		if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Owner))
@@ -219,6 +220,23 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 			for (const auto& Elem : SaveData)
 			{
 				RootObj->SetStringField(Elem.Key, Elem.Value);
+			}
+		}
+
+		TArray<UActorComponent*> Comps;
+		Owner->GetComponents(Comps);
+		for (UActorComponent* Comp : Comps)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignSaveInterface::StaticClass()))
+			{
+				if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Comp))
+				{
+					TMap<FString, FString> CompData = SaveInterface->GetSaveData();
+					for (const auto& Elem : CompData)
+					{
+						RootObj->SetStringField(Elem.Key, Elem.Value);
+					}
+				}
 			}
 		}
 	}
@@ -269,29 +287,43 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 		}
 	}
 
-	// 4. RESTORE OWNER FLAT SAVE DATA (ISovereignSaveInterface)
+	// 4. RESTORE OWNER & COMPONENT FLAT SAVE DATA (ISovereignSaveInterface)
 	if (AActor* Owner = GetOwner())
 	{
-		if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Owner))
+		TMap<FString, FString> FlatData;
+		for (const auto& Elem : JsonData->Values)
 		{
-			TMap<FString, FString> FlatData;
-			for (const auto& Elem : JsonData->Values)
+			if (Elem.Value.IsValid())
 			{
-				if (Elem.Value.IsValid())
+				if (Elem.Value->Type == EJson::String)
 				{
-					if (Elem.Value->Type == EJson::String)
-					{
-						FlatData.Add(FString(Elem.Key), Elem.Value->AsString());
-					}
-					else if (Elem.Value->Type == EJson::Number)
-					{
-						FlatData.Add(FString(Elem.Key), FString::SanitizeFloat(Elem.Value->AsNumber()));
-					}
+					FlatData.Add(FString(Elem.Key), Elem.Value->AsString());
+				}
+				else if (Elem.Value->Type == EJson::Number)
+				{
+					FlatData.Add(FString(Elem.Key), FString::SanitizeFloat(Elem.Value->AsNumber()));
 				}
 			}
-			if (FlatData.Num() > 0)
+		}
+
+		if (FlatData.Num() > 0)
+		{
+			if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Owner))
 			{
 				SaveInterface->RestoreSaveData(FlatData);
+			}
+
+			TArray<UActorComponent*> Comps;
+			Owner->GetComponents(Comps);
+			for (UActorComponent* Comp : Comps)
+			{
+				if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignSaveInterface::StaticClass()))
+				{
+					if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Comp))
+					{
+						SaveInterface->RestoreSaveData(FlatData);
+					}
+				}
 			}
 		}
 	}
@@ -414,6 +446,67 @@ float USovereignSaveableEntityComponent::GetSystemConfidence_Implementation() co
 	}
 
 	return FMath::Clamp(BaseConfidence, 0.0f, 1.0f);
+}
+
+TArray<UActorComponent*> USovereignSaveableEntityComponent::GetInspectableComponents(AActor* TargetActor)
+{
+	TArray<UActorComponent*> Results;
+	if (!TargetActor)
+	{
+		return Results;
+	}
+
+	TArray<UActorComponent*> Components;
+	TargetActor->GetComponents(Components);
+
+	for (UActorComponent* Comp : Components)
+	{
+		if (Comp && Comp->GetClass()->ImplementsInterface(USovereignUIInspectable::StaticClass()))
+		{
+			Results.Add(Comp);
+		}
+	}
+
+	return Results;
+}
+
+FString USovereignSaveableEntityComponent::GetAggregatedInspectionJson(AActor* TargetActor)
+{
+	if (!TargetActor)
+	{
+		return TEXT("{}");
+	}
+
+	TSharedPtr<FJsonObject> RootObj = MakeShared<FJsonObject>();
+	RootObj->SetStringField(TEXT("ActorName"), TargetActor->GetName());
+
+	TArray<TSharedPtr<FJsonValue>> ComponentList;
+	TArray<UActorComponent*> Inspectables = GetInspectableComponents(TargetActor);
+
+	for (UActorComponent* Comp : Inspectables)
+	{
+		if (!Comp)
+		{
+			continue;
+		}
+
+		FString CompJsonStr = ISovereignUIInspectable::Execute_GetInspectorDataJson(Comp);
+		TSharedPtr<FJsonObject> CompJsonObj;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(CompJsonStr);
+
+		if (FJsonSerializer::Deserialize(Reader, CompJsonObj) && CompJsonObj.IsValid())
+		{
+			ComponentList.Add(MakeShared<FJsonValueObject>(CompJsonObj));
+		}
+	}
+
+	RootObj->SetArrayField(TEXT("InspectableComponents"), ComponentList);
+
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(RootObj.ToSharedRef(), Writer);
+
+	return OutputString;
 }
 
 #if WITH_EDITOR
