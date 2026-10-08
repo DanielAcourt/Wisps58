@@ -16,10 +16,6 @@
 #include "SovereignBaseEntity.generated.h"
 
 class USovereignSaveableEntityComponent;
-class USovereignBioComponent;
-class USovereignQiComponent;
-class USovereignElementComponent;
-class USovereignAttributeComponent;
 class USovereignSpeciesData;
 class UStaticMeshComponent;
 
@@ -94,22 +90,6 @@ protected:
 	/** The Soul of the Actor: Contains the GUID and Metadata tags */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
 	USovereignSaveableEntityComponent* SaveDataComponent;
-
-	/** Optional Biological engine (Instantiated in ASovereignLivingEntity or living subclasses) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
-	USovereignBioComponent* BioComponent;
-
-	/** Optional Spiritual engine (Instantiated in ASovereignLivingEntity or living subclasses) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
-	USovereignQiComponent* QiComponent;
-
-	/** Optional Physical nature (Instantiated in ASovereignLivingEntity or living subclasses) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
-	USovereignElementComponent* ElementComponent;
-
-	/** Optional Attribute engine (Instantiated in ASovereignLivingEntity or living subclasses) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
-	USovereignAttributeComponent* AttributeComponent;
 
 	/** Array of 8 meshes representing the growth stages (0-7) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Visuals")

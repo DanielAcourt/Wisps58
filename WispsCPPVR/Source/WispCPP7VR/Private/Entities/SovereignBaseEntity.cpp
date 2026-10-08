@@ -11,10 +11,6 @@
 
 #include "Components/CapsuleComponent.h" // Add this include!
 #include "Components/StaticMeshComponent.h"
-#include "Components/SovereignBioComponent.h"
-#include "Components/SovereignQiComponent.h"
-#include "Components/SovereignElementComponent.h"
-#include "Components/SovereignAttributeComponent.h"
 
 #include "GameplayTagsManager.h"
 
@@ -191,41 +187,7 @@ void ASovereignBaseEntity::BeginPlay()
 
 void ASovereignBaseEntity::OnSovereignHeartbeat()
 {
-    if (SaveDataComponent)
-    {
-        float HeartbeatSeconds = GetWorldTimerManager().GetTimerRate(HeartbeatTimerHandle);
-
-        // 1. BIOLOGICAL GROWTH & CONSUMPTION
-        if (BioComponent)
-        {
-            BioComponent->MaturityProgress += (BioComponent->MaturityRate);
-            BioComponent->UpdateMetabolism(HeartbeatSeconds);
-        }
-
-        // 2. SPIRITUAL FLOW
-        if (QiComponent)
-        {
-            QiComponent->ProcessQiFlow(HeartbeatSeconds, 10); // Wisdom hardcoded for now
-        }
-
-        // 3. EVOLUTION CHECK
-        if (BioComponent && BioComponent->MaturityProgress >= 1.0f)
-        {
-            BioComponent->MaturityProgress = 0.0f;
-            Evolve();
-        }
-
-        //old logic
-        /*
-        // Check for Evolution (Threshold met, move to next growth stage)
-        if (SaveDataComponent->MaturityProgress >= 1.0f)
-        {
-            // Reset progress for the next stage (or keep remainder for overflow)
-            SaveDataComponent->MaturityProgress = 0.0f;
-            Evolve();
-        }
-        */
-    }
+    // Base heartbeat processing for non-living physical/spatial entities
 }
 
 void ASovereignBaseEntity::CheckForEvolution()
@@ -266,20 +228,6 @@ void ASovereignBaseEntity::CheckForEvolution()
 //version 3.2 Updated for Modular Hub
 void ASovereignBaseEntity::Evolve()
 {
-    // Evolution is a massive biological strain
-    if (BioComponent)
-    {
-        // 1. BURN THE ENTIRE PHARMACY
-        BioComponent->NutrientReserves.Empty();
-
-        BioComponent->Hunger = 0.0f;
-        BioComponent->Entropy += 10.0f; // Rapid aging occurs during evolution
-
-        // The Mass is permanently increased (Physical Prestige)
-        BioComponent->MassExperience += 5.0;
-        BioComponent->Mass = FMath::FloorToInt(BioComponent->MassExperience);
-    }
-
     // Trigger the Visual Shift (Mesh/Particle swap)
     CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
     RefreshVisuals();
@@ -377,21 +325,6 @@ void ASovereignBaseEntity::GetOwnedGameplayTags(FGameplayTagContainer& TagContai
 void ASovereignBaseEntity::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-
-    // If Realtime frequency, simulate biology and Qi flow every frame using DeltaTime to prevent biological freeze
-    if (UpdateFrequency == EUpdateFrequency::Realtime)
-    {
-        if (BioComponent)
-        {
-            BioComponent->MaturityProgress += (BioComponent->MaturityRate * DeltaTime);
-            BioComponent->UpdateMetabolism(DeltaTime);
-        }
-
-        if (QiComponent)
-        {
-            QiComponent->ProcessQiFlow(DeltaTime, 10);
-        }
-    }
 }
 
 
@@ -476,12 +409,6 @@ void ASovereignBaseEntity::PostSpawnInitialize(const USovereignSpeciesData* InSp
 	{
 		SaveDataComponent->EntityID = FGuid::NewGuid();
 
-        if (BioComponent)
-        {
-            BioComponent->MotherID = InMotherID;
-            BioComponent->FatherID = InFatherID;
-        }
-
 		if (UWorld* World = GetWorld())
 		{
 			if (UActorRegistry* Registry = World->GetSubsystem<UActorRegistry>())
@@ -507,22 +434,6 @@ void ASovereignBaseEntity::PostSpawnInitialize(const USovereignSpeciesData* InSp
 						{
 							TMap<FString, FString> ChildDNA = USovereignSpawnerUtils::RecombineDNA(MomComp->GetUnknownMetaTags(), DadComp->GetUnknownMetaTags(), 0.05f);
 							SaveDataComponent->ApplyMetaTags(ChildDNA);
-
-							float CurrentTime = World->GetTimeSeconds();
-							
-							// Access LastMatingTimestamp from Bio components instead
-							auto* MomBio = Mother->FindComponentByClass<USovereignBioComponent>();
-							auto* DadBio = Father->FindComponentByClass<USovereignBioComponent>();
-							
-							if (MomBio)
-							{
-								MomBio->LastMatingTimestamp = CurrentTime;
-							}
-							if (DadBio)
-							{
-								DadBio->LastMatingTimestamp = CurrentTime;
-							}
-
 							UE_LOG(LogTemp, Log, TEXT("Sovereign: Hybrid born between %s and %s!"), *Mother->GetName(), *Father->GetName());
 						}
 					}

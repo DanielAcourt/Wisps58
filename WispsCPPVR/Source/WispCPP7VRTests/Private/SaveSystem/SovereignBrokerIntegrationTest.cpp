@@ -149,8 +149,8 @@ bool FSovereignEntityHierarchyModularTest::RunTest(const FString& Parameters)
 
     // Base entity must have SaveDataComponent (Soul Hub) and EntityMesh, but NO default Bio/Attribute subobjects
     TestNotNull(TEXT("Base Entity has SaveDataComponent"), BaseEntity->GetSaveDataComponent());
-    TestNull(TEXT("Base Entity has NO default BioComponent"), BaseEntity->GetBioComponent());
-    TestNull(TEXT("Base Entity has NO default AttributeComponent"), BaseEntity->GetAttributeComponent());
+    TestNull(TEXT("Base Entity has NO default BioComponent"), BaseEntity->FindComponentByClass<USovereignBioComponent>());
+    TestNull(TEXT("Base Entity has NO default AttributeComponent"), BaseEntity->FindComponentByClass<USovereignAttributeComponent>());
 
     // 2. Instantiate Living Entity (Organic creature/plant)
     ASovereignLivingEntity* LivingEntity = NewObject<ASovereignLivingEntity>();
