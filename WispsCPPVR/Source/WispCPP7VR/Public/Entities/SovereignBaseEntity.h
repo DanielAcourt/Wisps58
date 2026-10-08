@@ -95,20 +95,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
 	USovereignSaveableEntityComponent* SaveDataComponent;
 
-	/** The Biological engine: Health, Stamina, Lineage */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
+	/** Optional Biological engine (Instantiated in ASovereignLivingEntity or living subclasses) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignBioComponent* BioComponent;
 
-	/** The Spiritual engine: Magic, Alignment, Qi */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
+	/** Optional Spiritual engine (Instantiated in ASovereignLivingEntity or living subclasses) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignQiComponent* QiComponent;
 
-	/** The Physical nature: Elemental resistances and sockets */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
+	/** Optional Physical nature (Instantiated in ASovereignLivingEntity or living subclasses) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignElementComponent* ElementComponent;
 
-	/** The Attribute engine: Strength, Intelligence, HP */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
+	/** Optional Attribute engine (Instantiated in ASovereignLivingEntity or living subclasses) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignAttributeComponent* AttributeComponent;
 
 	/** Array of 8 meshes representing the growth stages (0-7) */

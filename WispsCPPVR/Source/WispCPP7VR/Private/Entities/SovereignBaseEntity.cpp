@@ -50,12 +50,6 @@ ASovereignBaseEntity::ASovereignBaseEntity()
     // This component handles the GUID and the metadata tags
     SaveDataComponent = CreateDefaultSubobject<USovereignSaveableEntityComponent>(TEXT("SaveDataComponent"));
 
-    // 2b. SPECIALIZED MODULES
-    BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
-    QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
-    ElementComponent = CreateDefaultSubobject<USovereignElementComponent>(TEXT("ElementComponent"));
-    AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
-
     // 3. PHYSICAL MESH
     // We create a StaticMeshComponent to visualize the 8 growth stages (Seed to Tree)
     // Create the "Master" mesh slot

@@ -4,7 +4,10 @@
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignDiagnosticBroker.h"
 #include "Entities/SovereignCultivationBroker.h"
+#include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignLivingEntity.h"
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignBioComponent.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 #include "GameFramework/Actor.h"
@@ -122,6 +125,48 @@ bool FSovereignBrokerIntegrationTest::RunTest(const FString& Parameters)
     TestNotNull(TEXT("Component dynamically instantiated CultivationBroker"), Component->CultivationBroker);
 
     TempActor->Destroy();
+    return true;
+}
+
+// ============================================================================
+// MODULAR BASE vs LIVING ENTITY HIERARCHY TEST - B-047 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignEntityHierarchyModularTest,
+    "Sovereign.Soul.EntityHierarchyModularization",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignEntityHierarchyModularTest::RunTest(const FString& Parameters)
+{
+    // 1. Instantiate Base Entity (Non-living simulation entity like a Rock or Terminal)
+    ASovereignBaseEntity* BaseEntity = NewObject<ASovereignBaseEntity>();
+    if (!BaseEntity)
+    {
+        AddError(TEXT("Failed to instantiate ASovereignBaseEntity"));
+        return false;
+    }
+
+    // Base entity must have SaveDataComponent (Soul Hub) and EntityMesh, but NO default Bio/Attribute subobjects
+    TestNotNull(TEXT("Base Entity has SaveDataComponent"), BaseEntity->GetSaveDataComponent());
+    TestNull(TEXT("Base Entity has NO default BioComponent"), BaseEntity->GetBioComponent());
+    TestNull(TEXT("Base Entity has NO default AttributeComponent"), BaseEntity->GetAttributeComponent());
+
+    // 2. Instantiate Living Entity (Organic creature/plant)
+    ASovereignLivingEntity* LivingEntity = NewObject<ASovereignLivingEntity>();
+    if (!LivingEntity)
+    {
+        AddError(TEXT("Failed to instantiate ASovereignLivingEntity"));
+        return false;
+    }
+
+    // Living entity inherits SaveDataComponent and constructs Bio, Attribute, Qi, Element subobjects by default
+    TestNotNull(TEXT("Living Entity has SaveDataComponent"), LivingEntity->GetSaveDataComponent());
+    TestNotNull(TEXT("Living Entity has default BioComponent"), LivingEntity->GetBioComponent());
+    TestNotNull(TEXT("Living Entity has default AttributeComponent"), LivingEntity->GetAttributeComponent());
+    TestNotNull(TEXT("Living Entity has default QiComponent"), LivingEntity->GetQiComponent());
+    TestNotNull(TEXT("Living Entity has default ElementComponent"), LivingEntity->GetElementComponent());
+
     return true;
 }
 
