@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-08
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -10,13 +11,18 @@
 /**
  * 
  */
+class USovereignTelemetryComponent;
+
 UCLASS()
 class WISPCPP7VR_API ASovereignSaveTerminal : public ASovereignBaseInteractable
 {
 	GENERATED_BODY()
 
 public:
-    // We don't need a constructor here if we are happy with the Parent's mesh!
+    ASovereignSaveTerminal();
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+    USovereignTelemetryComponent* TelemetryComponent;
 
     /** * We "Override" the Parent's interaction.
      * This tells the compiler: "Forget the debug message in the parent, do THIS instead."

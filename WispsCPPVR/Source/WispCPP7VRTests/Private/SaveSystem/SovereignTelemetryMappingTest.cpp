@@ -1,9 +1,10 @@
-// Copyright (c) 2013-2026 Daniel Acourt. All Rights Reserved. Confidential & Proprietary.
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-08
 
 #include "Misc/AutomationTest.h"
 #include "Entities/SovereignBaseInteractable.h"
 #include "Entities/SovereignSaveTerminal.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "Components/SovereignTelemetryComponent.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 #include "GameFramework/Actor.h"
@@ -67,10 +68,15 @@ bool FSovereignTelemetryMappingTest::RunTest(const FString& Parameters)
     // 3. Apply state to the Soul
     Soul->ApplyStateFromJsonObject(TelemetryJson);
 
-    // 4. Verify the Vessel was updated via the Bridge
-    TestEqual(TEXT("Temperature mapped correctly"), Vessel->TemperatureCelsius, 24.5f);
-    TestEqual(TEXT("pH Value mapped correctly"), Vessel->PhValue, 8.2f);
-    TestEqual(TEXT("Water Depth mapped correctly"), Vessel->WaterDepthMM, 450.0f);
+    // 4. Verify the Vessel telemetry component was updated via the Bridge
+    USovereignTelemetryComponent* TelemetryComp = Vessel->FindComponentByClass<USovereignTelemetryComponent>();
+    TestNotNull(TEXT("Vessel has TelemetryComponent"), TelemetryComp);
+    if (TelemetryComp)
+    {
+        TestEqual(TEXT("Temperature mapped correctly"), TelemetryComp->TemperatureCelsius, 24.5f);
+        TestEqual(TEXT("pH Value mapped correctly"), TelemetryComp->PhValue, 8.2f);
+        TestEqual(TEXT("Water Depth mapped correctly"), TelemetryComp->WaterDepthMM, 450.0f);
+    }
 
     // 5. Verify round-trip (Capture)
     TSharedPtr<FJsonObject> CapturedState = Soul->CaptureFullEntityState();

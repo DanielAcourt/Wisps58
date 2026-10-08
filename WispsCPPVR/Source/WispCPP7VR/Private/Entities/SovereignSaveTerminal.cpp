@@ -1,8 +1,15 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-08
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Entities/SovereignSaveTerminal.h"
+#include "Components/SovereignTelemetryComponent.h"
 #include "SaveSystem/SovereignSaveManager.h"
 #include "Kismet/GameplayStatics.h"
+
+ASovereignSaveTerminal::ASovereignSaveTerminal()
+{
+    TelemetryComponent = CreateDefaultSubobject<USovereignTelemetryComponent>(TEXT("TelemetryComponent"));
+}
 
 void ASovereignSaveTerminal::OnInteract_Implementation(AActor* Interactor)
 {

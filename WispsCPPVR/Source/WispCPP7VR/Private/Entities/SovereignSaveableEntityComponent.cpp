@@ -211,7 +211,7 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 		}
 	}
 
-	// 4. OWNER FLAT SAVE DATA (ISovereignSaveInterface)
+	// 4. OWNER & COMPONENT FLAT SAVE DATA (ISovereignSaveInterface)
 	if (AActor* Owner = GetOwner())
 	{
 		if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Owner))
@@ -220,6 +220,23 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 			for (const auto& Elem : SaveData)
 			{
 				RootObj->SetStringField(Elem.Key, Elem.Value);
+			}
+		}
+
+		TArray<UActorComponent*> Comps;
+		Owner->GetComponents(Comps);
+		for (UActorComponent* Comp : Comps)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignSaveInterface::StaticClass()))
+			{
+				if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Comp))
+				{
+					TMap<FString, FString> CompData = SaveInterface->GetSaveData();
+					for (const auto& Elem : CompData)
+					{
+						RootObj->SetStringField(Elem.Key, Elem.Value);
+					}
+				}
 			}
 		}
 	}
@@ -270,29 +287,43 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 		}
 	}
 
-	// 4. RESTORE OWNER FLAT SAVE DATA (ISovereignSaveInterface)
+	// 4. RESTORE OWNER & COMPONENT FLAT SAVE DATA (ISovereignSaveInterface)
 	if (AActor* Owner = GetOwner())
 	{
-		if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Owner))
+		TMap<FString, FString> FlatData;
+		for (const auto& Elem : JsonData->Values)
 		{
-			TMap<FString, FString> FlatData;
-			for (const auto& Elem : JsonData->Values)
+			if (Elem.Value.IsValid())
 			{
-				if (Elem.Value.IsValid())
+				if (Elem.Value->Type == EJson::String)
 				{
-					if (Elem.Value->Type == EJson::String)
-					{
-						FlatData.Add(FString(Elem.Key), Elem.Value->AsString());
-					}
-					else if (Elem.Value->Type == EJson::Number)
-					{
-						FlatData.Add(FString(Elem.Key), FString::SanitizeFloat(Elem.Value->AsNumber()));
-					}
+					FlatData.Add(FString(Elem.Key), Elem.Value->AsString());
+				}
+				else if (Elem.Value->Type == EJson::Number)
+				{
+					FlatData.Add(FString(Elem.Key), FString::SanitizeFloat(Elem.Value->AsNumber()));
 				}
 			}
-			if (FlatData.Num() > 0)
+		}
+
+		if (FlatData.Num() > 0)
+		{
+			if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Owner))
 			{
 				SaveInterface->RestoreSaveData(FlatData);
+			}
+
+			TArray<UActorComponent*> Comps;
+			Owner->GetComponents(Comps);
+			for (UActorComponent* Comp : Comps)
+			{
+				if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignSaveInterface::StaticClass()))
+				{
+					if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Comp))
+					{
+						SaveInterface->RestoreSaveData(FlatData);
+					}
+				}
 			}
 		}
 	}
