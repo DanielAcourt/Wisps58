@@ -8,6 +8,7 @@
 #include "Entities/SovereignLivingEntity.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignBioComponent.h"
+#include "Components/SovereignQiComponent.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 #include "GameFramework/Actor.h"
@@ -125,6 +126,78 @@ bool FSovereignBrokerIntegrationTest::RunTest(const FString& Parameters)
     TestNotNull(TEXT("Component dynamically instantiated CultivationBroker"), Component->CultivationBroker);
 
     TempActor->Destroy();
+    return true;
+}
+
+// ============================================================================
+// DYNAMIC VESSEL INFUSION & RESTORATION TEST - B-049 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignDynamicVesselInfusionTest,
+    "Sovereign.Soul.DynamicVesselInfusion",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignDynamicVesselInfusionTest::RunTest(const FString& Parameters)
+{
+    // Spawn transient actor to host dynamic infusion
+    UWorld* World = nullptr;
+    if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+    {
+        World = GEngine->GetWorldContexts()[0].World();
+    }
+
+    if (!World)
+    {
+        AddError(TEXT("No World context available for dynamic infusion testing"));
+        return false;
+    }
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    AActor* TempRock = World->SpawnActor<AActor>(SpawnParams);
+    if (!TempRock)
+    {
+        AddError(TEXT("Failed to spawn transient rock actor for infusion testing"));
+        return false;
+    }
+
+    USovereignSaveableEntityComponent* Soul = NewObject<USovereignSaveableEntityComponent>(TempRock);
+    TempRock->AddInstanceComponent(Soul);
+    Soul->RegisterComponent();
+
+    // 1. Initial State: Plain Rock without Magic or Life
+    TestNull(TEXT("Rock initially has no QiComponent"), TempRock->FindComponentByClass<USovereignQiComponent>());
+    TestNull(TEXT("Rock initially has no BioComponent"), TempRock->FindComponentByClass<USovereignBioComponent>());
+
+    // 2. Infuse Magic & Life dynamically at runtime
+    USovereignQiComponent* QiComp = Soul->InfuseMagic();
+    USovereignBioComponent* BioComp = Soul->InfuseLife();
+
+    TestNotNull(TEXT("InfuseMagic created USovereignQiComponent"), QiComp);
+    TestNotNull(TEXT("InfuseLife created USovereignBioComponent"), BioComp);
+
+    // 3. Verify state capture includes Sovereign.Magic and Sovereign.Bio
+    TSharedPtr<FJsonObject> InfusedState = Soul->CaptureFullEntityState();
+    TestTrue(TEXT("Infused state has Sovereign.Magic"), InfusedState->HasField(TEXT("Sovereign.Magic")));
+    TestTrue(TEXT("Infused state has Sovereign.Bio"), InfusedState->HasField(TEXT("Sovereign.Bio")));
+
+    // 4. Test Component Extraction
+    bool bMagicExtracted = Soul->ExtractMagic();
+    bool bLifeExtracted = Soul->ExtractLife();
+
+    TestTrue(TEXT("ExtractMagic succeeded"), bMagicExtracted);
+    TestTrue(TEXT("ExtractLife succeeded"), bLifeExtracted);
+    TestNull(TEXT("Rock has no QiComponent after extraction"), TempRock->FindComponentByClass<USovereignQiComponent>());
+    TestNull(TEXT("Rock has no BioComponent after extraction"), TempRock->FindComponentByClass<USovereignBioComponent>());
+
+    // 5. Test Dynamic Component Instantiation on Load
+    Soul->ApplyStateFromJsonObject(InfusedState);
+
+    TestNotNull(TEXT("ApplyStateFromJsonObject dynamically restored USovereignQiComponent on load"), TempRock->FindComponentByClass<USovereignQiComponent>());
+    TestNotNull(TEXT("ApplyStateFromJsonObject dynamically restored USovereignBioComponent on load"), TempRock->FindComponentByClass<USovereignBioComponent>());
+
+    TempRock->Destroy();
     return true;
 }
 

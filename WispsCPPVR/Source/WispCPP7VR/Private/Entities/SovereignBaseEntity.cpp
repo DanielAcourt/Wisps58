@@ -11,6 +11,9 @@
 
 #include "Components/CapsuleComponent.h" // Add this include!
 #include "Components/StaticMeshComponent.h"
+#include "Components/SovereignBioComponent.h"
+#include "Components/SovereignQiComponent.h"
+#include "Components/SovereignAttributeComponent.h"
 
 #include "GameplayTagsManager.h"
 

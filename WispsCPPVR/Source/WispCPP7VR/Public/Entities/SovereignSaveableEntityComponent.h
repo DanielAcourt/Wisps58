@@ -68,6 +68,32 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Sovereign|Architecture")
     void UnregisterBroker(TScriptInterface<ISovereignBrokerInterface> Broker);
 
+    /** --- 2b. DYNAMIC VESSEL INFUSION API (B-049) --- */
+
+    /** Dynamically creates and attaches a USovereignQiComponent to the Owner actor if absent */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Infusion")
+    class USovereignQiComponent* InfuseMagic();
+
+    /** Unregisters and destroys USovereignQiComponent on the Owner actor */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Infusion")
+    bool ExtractMagic();
+
+    /** Dynamically creates and attaches a USovereignBioComponent to the Owner actor if absent */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Infusion")
+    class USovereignBioComponent* InfuseLife();
+
+    /** Unregisters and destroys USovereignBioComponent on the Owner actor */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Infusion")
+    bool ExtractLife();
+
+    /** Dynamically creates and attaches a USovereignAttributeComponent to the Owner actor if absent */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Infusion")
+    class USovereignAttributeComponent* InfuseAttributes();
+
+    /** Unregisters and destroys USovereignAttributeComponent on the Owner actor */
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|Infusion")
+    bool ExtractAttributes();
+
     /** Captures the entire categorized state of the entity for the Bridge/SaveSystem */
     TSharedPtr<FJsonObject> CaptureFullEntityState();
 
