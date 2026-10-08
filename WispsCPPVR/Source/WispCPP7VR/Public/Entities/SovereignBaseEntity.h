@@ -69,6 +69,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
+
 	/** Primary logic for moving from one growth stage to the next */
 	virtual void Evolve();
 

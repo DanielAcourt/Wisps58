@@ -237,6 +237,9 @@ bool FSovereignEntityHierarchyModularTest::RunTest(const FString& Parameters)
         return false;
     }
 
+    TestTrue(TEXT("Living Entity implements IInteractionInterface"), LivingEntity->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()));
+    TestTrue(TEXT("Living Entity can be possessed by default"), IInteractionInterface::Execute_CanBePossessed(LivingEntity));
+
     // Living entity inherits SaveDataComponent and constructs Bio, Attribute, Qi, Element subobjects by default
     TestNotNull(TEXT("Living Entity has SaveDataComponent"), LivingEntity->GetSaveDataComponent());
     TestNotNull(TEXT("Living Entity has default BioComponent"), LivingEntity->GetBioComponent());

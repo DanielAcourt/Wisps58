@@ -213,6 +213,7 @@ void ASovereignPlayerWisp::AttemptPossession()
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);

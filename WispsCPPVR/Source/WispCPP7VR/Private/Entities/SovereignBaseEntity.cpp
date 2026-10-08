@@ -528,6 +528,26 @@ void ASovereignBaseEntity::RequestPossession_Implementation(AController* Request
     UE_LOG(LogTemp, Log, TEXT("Sovereign: Possession requested on %s by %s"), *GetName(), *RequestingController->GetName());
 }
 
+void ASovereignBaseEntity::PossessedBy(AController* NewController)
+{
+    Super::PossessedBy(NewController);
+
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsBeingPossessed = true;
+    }
+}
+
+void ASovereignBaseEntity::UnPossessed()
+{
+    Super::UnPossessed();
+
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsBeingPossessed = false;
+    }
+}
+
 //Put end at the bottem makes sense?
 void ASovereignBaseEntity::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
