@@ -72,6 +72,9 @@ public:
 	/** Overridden to handle 'AttemptPossession' or 'Eject' based on state */
 	virtual void HandlePossessionLifecycle() override;
 
+	/** IInteractionInterface override to identify as a Spirit Entity */
+	virtual bool IsSpiritEntity_Implementation() override { return true; }
+
 protected:
 	/** * INTERACTION LOGIC
 		 * This is the raycast that lets you press 'E' to evolve trees/bees Core raycast logic

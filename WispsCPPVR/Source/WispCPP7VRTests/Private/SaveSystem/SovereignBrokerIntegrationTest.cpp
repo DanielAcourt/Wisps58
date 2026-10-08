@@ -9,6 +9,7 @@
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignQiComponent.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 #include "GameFramework/Actor.h"
