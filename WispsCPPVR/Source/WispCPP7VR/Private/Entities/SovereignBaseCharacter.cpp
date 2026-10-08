@@ -26,6 +26,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 {
 	// 1. CONSTRUCT THE HYBRID STACK
 	// Naming here now matches the header exactly
+	SaveDataComponent = CreateDefaultSubobject<USovereignSaveableEntityComponent>(TEXT("SaveDataComponent"));
 	ElementComponent = CreateDefaultSubobject<USovereignElementComponent>(TEXT("ElementComponent"));
 	ControlComponent = CreateDefaultSubobject<USovereignControllerComponent>(TEXT("ControlComponent"));
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));

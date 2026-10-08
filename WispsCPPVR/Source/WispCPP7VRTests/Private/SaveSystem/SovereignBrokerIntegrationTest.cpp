@@ -4,6 +4,7 @@
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignDiagnosticBroker.h"
 #include "Entities/SovereignCultivationBroker.h"
+#include "Components/SovereignAttributeComponent.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 #include "GameFramework/Actor.h"
@@ -185,6 +186,87 @@ bool FSovereignStateCachingThrottlingTest::RunTest(const FString& Parameters)
     // Since AddUnknownTag calls InvalidateStateCache(), the query MUST return the updated state (40.0)
     FString MutatedState = Soul->GetCategoryStateJson(TEXT("Sovereign.Truth"));
     TestTrue(TEXT("Mutation query returns fresh state"), MutatedState.Contains(TEXT("40.0")));
+
+    return true;
+}
+
+// ============================================================================
+// SOVEREIGN ATTRIBUTE BROKER & REGISTRATION TEST - B-043 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignAttributeRegistrationTest,
+    "Sovereign.Soul.AttributeRegistrationAndSync",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignAttributeRegistrationTest::RunTest(const FString& Parameters)
+{
+    // 1. Create Soul Component and Attribute Component
+    USovereignSaveableEntityComponent* Soul = NewObject<USovereignSaveableEntityComponent>();
+    USovereignAttributeComponent* AttrComp = NewObject<USovereignAttributeComponent>();
+
+    if (!Soul || !AttrComp)
+    {
+        AddError(TEXT("Failed to create components for B-043 testing"));
+        return false;
+    }
+
+    // 2. Test manual & automatic broker registration via Soul authority
+    TScriptInterface<ISovereignBrokerInterface> BrokerInterface(AttrComp);
+    Soul->RegisterBroker(BrokerInterface);
+
+    // 3. Verify custom D&D values & experience accumulators
+    AttrComp->Strength = 18;
+    AttrComp->StrengthExperience = 1250.50;
+    AttrComp->Dexterity = 14;
+    AttrComp->DexterityExperience = 850.25;
+    AttrComp->Constitution = 16;
+    AttrComp->ConstitutionExperience = 990.00;
+    AttrComp->Intelligence = 15;
+    AttrComp->IntelligenceExperience = 450.00;
+    AttrComp->Wisdom = 12;
+    AttrComp->WisdomExperience = 300.00;
+    AttrComp->Charisma = 10;
+    AttrComp->CharismaExperience = 100.00;
+    AttrComp->Luck = 20;
+    AttrComp->LuckExperience = 5000.00;
+
+    AttrComp->ArmourClass = 15;
+    AttrComp->CurrentHealth = 160.0f;
+    AttrComp->MaxHealth = 160.0f;
+    AttrComp->CurrentStamina = 100.0f;
+    AttrComp->MaxStamina = 100.0f;
+
+    AttrComp->PhysicalResistance = 0.2f;
+    AttrComp->MagicalResistance = 0.15f;
+    AttrComp->MentalResistance = 0.10f;
+    AttrComp->PoisonResistance = 0.05f;
+    AttrComp->SlowResistance = 0.0f;
+
+    // 4. Capture state and verify Sovereign.Attributes JSON field
+    TSharedPtr<FJsonObject> State = Soul->CaptureFullEntityState();
+    TestTrue(TEXT("Captured state contains Sovereign.Attributes object"), State->HasField(TEXT("Sovereign.Attributes")));
+
+    TSharedPtr<FJsonObject> AttrObj = State->GetObjectField(TEXT("Sovereign.Attributes"));
+    TestNotNull(TEXT("Sovereign.Attributes object is valid"), AttrObj.Get());
+
+    TestEqual(TEXT("Strength level correct"), AttrObj->GetIntegerField(TEXT("Strength")), 18);
+    TestEqual(TEXT("StrengthExperience correct"), AttrObj->GetNumberField(TEXT("StrengthExperience")), 1250.50);
+    TestEqual(TEXT("Dexterity level correct"), AttrObj->GetIntegerField(TEXT("Dexterity")), 14);
+    TestEqual(TEXT("MaxHealth correct"), AttrObj->GetNumberField(TEXT("MaxHealth")), 160.0);
+    TestEqual(TEXT("PhysicalResistance correct"), AttrObj->GetNumberField(TEXT("PhysicalResistance")), 0.2);
+
+    // 5. Verify round-trip OnLoad restoration
+    USovereignAttributeComponent* RestoredComp = NewObject<USovereignAttributeComponent>();
+    RestoredComp->OnLoad(State);
+
+    TestEqual(TEXT("Restored Strength level matches"), RestoredComp->Strength, 18);
+    TestEqual(TEXT("Restored Strength XP matches"), RestoredComp->StrengthExperience, 1250.50);
+    TestEqual(TEXT("Restored Dexterity level matches"), RestoredComp->Dexterity, 14);
+    TestEqual(TEXT("Restored Luck level matches"), RestoredComp->Luck, 20);
+    TestEqual(TEXT("Restored Luck XP matches"), RestoredComp->LuckExperience, 5000.00);
+    TestEqual(TEXT("Restored MaxHealth matches"), RestoredComp->MaxHealth, 160.0f);
+    TestEqual(TEXT("Restored PhysicalResistance matches"), RestoredComp->PhysicalResistance, 0.2f);
 
     return true;
 }

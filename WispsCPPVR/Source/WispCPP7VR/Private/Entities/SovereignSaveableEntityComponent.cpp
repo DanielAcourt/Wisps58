@@ -72,6 +72,21 @@ void USovereignSaveableEntityComponent::BeginPlay()
 	{
 		BirthTimestamp = FDateTime::Now();
 	}
+
+	// Single Authority Broker Discovery: Auto-scan and register all attached actor components implementing ISovereignBrokerInterface
+	if (AActor* Owner = GetOwner())
+	{
+		TArray<UActorComponent*> AttachedComponents;
+		Owner->GetComponents(AttachedComponents);
+		for (UActorComponent* Comp : AttachedComponents)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignBrokerInterface::StaticClass()))
+			{
+				TScriptInterface<ISovereignBrokerInterface> BrokerInterface(Comp);
+				RegisterBroker(BrokerInterface);
+			}
+		}
+	}
 }
 
 void USovereignSaveableEntityComponent::InitializeSoul()
