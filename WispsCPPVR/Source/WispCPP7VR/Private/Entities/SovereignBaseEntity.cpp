@@ -506,6 +506,11 @@ float ASovereignBaseEntity::GetHeartbeatInterval() const
 }
 
 
+USovereignSaveableEntityComponent* ASovereignBaseEntity::GetSovereignSoul_Implementation() const
+{
+    return SaveDataComponent;
+}
+
 USceneComponent* ASovereignBaseEntity::GetPossessionAttachmentComponent_Implementation()
 {
     return EntityMesh ? Cast<USceneComponent>(EntityMesh) : GetRootComponent();

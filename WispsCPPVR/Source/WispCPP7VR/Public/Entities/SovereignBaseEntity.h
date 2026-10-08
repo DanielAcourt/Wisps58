@@ -34,10 +34,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Soul")
 	USovereignSaveableEntityComponent* GetSaveDataComponent() const { return SaveDataComponent; }
 
-	/** Returns the Sovereign Soul component for this entity */
-	UFUNCTION(BlueprintCallable, Category = "Sovereign|Soul")
-	USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const;
-
 	/** Returns the unique Save System ID for this specific entity */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Entity")
 	FGuid GetSovereignID() const;
@@ -63,7 +59,7 @@ public:
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
 	// --- IInteractionInterface Implementation ---
-	virtual class USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override { return SaveDataComponent; }
+	virtual class USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override;
 	virtual bool CanBePossessed_Implementation() override { return bCanBePossessed; }
 	virtual void RequestPossession_Implementation(AController* RequestingController) override;
 	virtual USceneComponent* GetPossessionAttachmentComponent_Implementation() override;
