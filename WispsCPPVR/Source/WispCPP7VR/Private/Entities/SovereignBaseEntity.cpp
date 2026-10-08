@@ -17,6 +17,8 @@
 #include "Components/SovereignAttributeComponent.h"
 
 #include "GameplayTagsManager.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
 
 #include "Engine/World.h"
 #include "Engine/StreamableManager.h"
@@ -584,6 +586,36 @@ void ASovereignBaseEntity::PossessedBy(AController* NewController)
     if (SaveDataComponent)
     {
         SaveDataComponent->bIsBeingPossessed = true;
+    }
+
+    if (APlayerController* PC = Cast<APlayerController>(NewController))
+    {
+        if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+        {
+            if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+            {
+                Subsystem->ClearAllMappings();
+                if (DefaultMappingContext)
+                {
+                    Subsystem->AddMappingContext(DefaultMappingContext, 0);
+                    UE_LOG(LogTemp, Log, TEXT("Sovereign: Base Entity Input Mapping Context swapped for %s"), *GetName());
+                }
+            }
+        }
+    }
+}
+
+void ASovereignBaseEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        if (PossessAction)
+        {
+            EIC->BindAction(PossessAction, ETriggerEvent::Started, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
+            UE_LOG(LogTemp, Log, TEXT("Sovereign: Possess/Unpossess Action bound on %s"), *GetName());
+        }
     }
 }
 

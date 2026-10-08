@@ -77,6 +77,7 @@ public:
 
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/** Primary logic for moving from one growth stage to the next */
 	virtual void Evolve();
@@ -147,6 +148,13 @@ protected:
 	void RefreshVisuals();
 
 	// --- Internal Logic ---
+
+	/** Input Assets - Assign in Blueprint to bind Eject / Unpossession in C++ */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Input")
+	class UInputMappingContext* DefaultMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Input")
+	class UInputAction* PossessAction;
 
 	/** The recurring timer handle for the heartbeat logic */
 	FTimerHandle HeartbeatTimerHandle;
