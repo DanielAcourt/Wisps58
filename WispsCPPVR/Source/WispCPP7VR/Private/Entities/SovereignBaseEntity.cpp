@@ -723,7 +723,6 @@ void ASovereignBaseEntity::SetupPlayerInputComponent(UInputComponent* PlayerInpu
             if (Act)
             {
                 EIC->BindAction(Act, ETriggerEvent::Started, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
-                EIC->BindAction(Act, ETriggerEvent::Triggered, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
                 UE_LOG(LogTemp, Log, TEXT("Sovereign: Possess/Unpossess Action [%s] bound on %s"), *Act->GetName(), *GetName());
             }
         }

@@ -168,26 +168,26 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		}
 
 		// Handle the Possession lifecycle (F key)
+		TArray<UInputAction*> ActionsToBind;
 		if (PossessAction)
 		{
-			EIC->BindAction(PossessAction, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
-			EIC->BindAction(PossessAction, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+			ActionsToBind.AddUnique(PossessAction);
 		}
 
 		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
 		{
 			if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
 			{
-				if (UInputAction* SpiritPossess = Wisp->GetPossessAction())
-				{
-					EIC->BindAction(SpiritPossess, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
-					EIC->BindAction(SpiritPossess, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
-				}
-				if (UInputAction* SpiritEject = Wisp->GetEjectAction())
-				{
-					EIC->BindAction(SpiritEject, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
-					EIC->BindAction(SpiritEject, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
-				}
+				if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+				if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
+			}
+		}
+
+		for (UInputAction* Act : ActionsToBind)
+		{
+			if (Act)
+			{
+				EIC->BindAction(Act, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
 			}
 		}
 	}
