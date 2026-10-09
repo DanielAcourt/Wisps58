@@ -4,6 +4,9 @@
 #include "Entities/SovereignBrokerInterface.h"
 #include "Entities/SovereignDiagnosticBroker.h"
 #include "Entities/SovereignCultivationBroker.h"
+#include "Components/SovereignQiComponent.h"
+#include "Components/SovereignBioComponent.h"
+#include "Components/SovereignAttributeComponent.h"
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "SaveSystem/SovereignActorRegistry.h"
 #include "Interaction/SovereignSaveInterface.h"
@@ -72,6 +75,21 @@ void USovereignSaveableEntityComponent::BeginPlay()
 	{
 		BirthTimestamp = FDateTime::Now();
 	}
+
+	// Single Authority Broker Discovery: Auto-scan and register all attached actor components implementing ISovereignBrokerInterface
+	if (AActor* Owner = GetOwner())
+	{
+		TArray<UActorComponent*> AttachedComponents;
+		Owner->GetComponents(AttachedComponents);
+		for (UActorComponent* Comp : AttachedComponents)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignBrokerInterface::StaticClass()))
+			{
+				TScriptInterface<ISovereignBrokerInterface> BrokerInterface(Comp);
+				RegisterBroker(BrokerInterface);
+			}
+		}
+	}
 }
 
 void USovereignSaveableEntityComponent::InitializeSoul()
@@ -137,6 +155,123 @@ void USovereignSaveableEntityComponent::RegisterBroker(TScriptInterface<ISoverei
 		InvalidateStateCache();
 		OnStateChanged.Broadcast(this);
 	}
+}
+
+USovereignQiComponent* USovereignSaveableEntityComponent::InfuseMagic()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return nullptr;
+
+	USovereignQiComponent* QiComp = Owner->FindComponentByClass<USovereignQiComponent>();
+	if (!QiComp)
+	{
+		QiComp = NewObject<USovereignQiComponent>(Owner, USovereignQiComponent::StaticClass(), TEXT("InfusedQiComponent"));
+		if (QiComp)
+		{
+			Owner->AddInstanceComponent(QiComp);
+			QiComp->RegisterComponent();
+			TScriptInterface<ISovereignBrokerInterface> Broker(QiComp);
+			RegisterBroker(Broker);
+			UE_LOG(LogTemp, Log, TEXT("Sovereign: Infused Magic into %s"), *Owner->GetName());
+		}
+	}
+	return QiComp;
+}
+
+bool USovereignSaveableEntityComponent::ExtractMagic()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return false;
+
+	USovereignQiComponent* QiComp = Owner->FindComponentByClass<USovereignQiComponent>();
+	if (QiComp)
+	{
+		TScriptInterface<ISovereignBrokerInterface> Broker(QiComp);
+		UnregisterBroker(Broker);
+		Owner->RemoveInstanceComponent(QiComp);
+		QiComp->DestroyComponent();
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: Extracted Magic from %s"), *Owner->GetName());
+		return true;
+	}
+	return false;
+}
+
+USovereignBioComponent* USovereignSaveableEntityComponent::InfuseLife()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return nullptr;
+
+	USovereignBioComponent* BioComp = Owner->FindComponentByClass<USovereignBioComponent>();
+	if (!BioComp)
+	{
+		BioComp = NewObject<USovereignBioComponent>(Owner, USovereignBioComponent::StaticClass(), TEXT("InfusedBioComponent"));
+		if (BioComp)
+		{
+			Owner->AddInstanceComponent(BioComp);
+			BioComp->RegisterComponent();
+			TScriptInterface<ISovereignBrokerInterface> Broker(BioComp);
+			RegisterBroker(Broker);
+			UE_LOG(LogTemp, Log, TEXT("Sovereign: Infused Life into %s"), *Owner->GetName());
+		}
+	}
+	return BioComp;
+}
+
+bool USovereignSaveableEntityComponent::ExtractLife()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return false;
+
+	USovereignBioComponent* BioComp = Owner->FindComponentByClass<USovereignBioComponent>();
+	if (BioComp)
+	{
+		TScriptInterface<ISovereignBrokerInterface> Broker(BioComp);
+		UnregisterBroker(Broker);
+		Owner->RemoveInstanceComponent(BioComp);
+		BioComp->DestroyComponent();
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: Extracted Life from %s"), *Owner->GetName());
+		return true;
+	}
+	return false;
+}
+
+USovereignAttributeComponent* USovereignSaveableEntityComponent::InfuseAttributes()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return nullptr;
+
+	USovereignAttributeComponent* AttrComp = Owner->FindComponentByClass<USovereignAttributeComponent>();
+	if (!AttrComp)
+	{
+		AttrComp = NewObject<USovereignAttributeComponent>(Owner, USovereignAttributeComponent::StaticClass(), TEXT("InfusedAttributeComponent"));
+		if (AttrComp)
+		{
+			Owner->AddInstanceComponent(AttrComp);
+			AttrComp->RegisterComponent();
+			TScriptInterface<ISovereignBrokerInterface> Broker(AttrComp);
+			RegisterBroker(Broker);
+			UE_LOG(LogTemp, Log, TEXT("Sovereign: Infused Attributes into %s"), *Owner->GetName());
+		}
+	}
+	return AttrComp;
+}
+
+bool USovereignSaveableEntityComponent::ExtractAttributes()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return false;
+
+	USovereignAttributeComponent* AttrComp = Owner->FindComponentByClass<USovereignAttributeComponent>();
+	if (AttrComp)
+	{
+		TScriptInterface<ISovereignBrokerInterface> Broker(AttrComp);
+		UnregisterBroker(Broker);
+		Owner->RemoveInstanceComponent(AttrComp);
+		AttrComp->DestroyComponent();
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: Extracted Attributes from %s"), *Owner->GetName());
+		return true;
+	}
+	return false;
 }
 
 void USovereignSaveableEntityComponent::UnregisterBroker(TScriptInterface<ISovereignBrokerInterface> Broker)
@@ -276,6 +411,21 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 		{
 			UnknownMetaTags.Add(FString(Elem.Key), Elem.Value->AsString());
 		}
+	}
+
+	// 2b. DYNAMIC COMPONENT INSTANTIATION ON LOAD (B-049)
+	// If save data contains Sovereign.Magic, Sovereign.Bio, or Sovereign.Attributes JSON blocks, ensure those components exist on the owner
+	if (JsonData->HasField(TEXT("Sovereign.Magic")))
+	{
+		InfuseMagic();
+	}
+	if (JsonData->HasField(TEXT("Sovereign.Bio")))
+	{
+		InfuseLife();
+	}
+	if (JsonData->HasField(TEXT("Sovereign.Attributes")))
+	{
+		InfuseAttributes();
 	}
 
 	// 3. RESTORE MODULES

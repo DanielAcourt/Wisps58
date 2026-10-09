@@ -4,12 +4,12 @@
 **Sprint ID:** `SR_20261026`
 **Start Date:** `07/10/2026`
 **Target End Date:** `21/10/2026` (2-Week Recovery Baseline)
-**Planned Capacity:** 22 Points (Ultra-Light Refactoring & Recovery Iteration)
-**Completed Capacity / Velocity:** 8 Points
+**Planned Capacity:** 35 Points (Ultra-Light Refactoring & Recovery Iteration)
+**Completed Capacity / Velocity:** 18 Points
 
 > 🎯 **Core Sprint Goal:**
-> **"Telemetry Subsystem Decoupling, Entity Registration Hardening, & Bridge Traffic Throttling"**
-> Refactor IoT sensor telemetry (`TemperatureCelsius`, `PhValue`, `WaterDepthMM`) out of `ASovereignBaseInteractable` into a standalone Black Box telemetry component/subsystem (`B-046`), harden entity module registration and attribute sync (`B-043`), implement adaptive bridge mailbox polling (`AD-019`), enforce simulation reality anchor guardrails (`AD-020`), and harden AAS backup verification (`B-027`).
+> **"Telemetry Subsystem Decoupling, Entity Registration Hardening, Base Entity Modularization & Dynamic Vessel Infusion"**
+> Refactor IoT sensor telemetry (`TemperatureCelsius`, `PhValue`, `WaterDepthMM`) out of `ASovereignBaseInteractable` into a standalone Black Box telemetry component/subsystem (`B-046`), harden entity module registration and attribute sync (`B-043`), modularize `ASovereignBaseEntity` component hierarchy (`B-047`), implement dynamic vessel infusion & component attachment pipeline (`B-049`), expand species D&D attribute template mapping (`B-048`), implement adaptive bridge mailbox polling (`AD-019`), enforce simulation reality anchor guardrails (`AD-020`), and harden AAS backup verification (`B-027`).
 
 ## 🏃‍♂️ Active Sprint Tickets
 

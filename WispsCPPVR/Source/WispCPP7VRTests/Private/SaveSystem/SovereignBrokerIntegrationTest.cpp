@@ -4,6 +4,12 @@
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignDiagnosticBroker.h"
 #include "Entities/SovereignCultivationBroker.h"
+#include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignLivingEntity.h"
+#include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignBioComponent.h"
+#include "Components/SovereignQiComponent.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 #include "GameFramework/Actor.h"
@@ -125,6 +131,127 @@ bool FSovereignBrokerIntegrationTest::RunTest(const FString& Parameters)
 }
 
 // ============================================================================
+// DYNAMIC VESSEL INFUSION & RESTORATION TEST - B-049 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignDynamicVesselInfusionTest,
+    "Sovereign.Soul.DynamicVesselInfusion",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignDynamicVesselInfusionTest::RunTest(const FString& Parameters)
+{
+    // Spawn transient actor to host dynamic infusion
+    UWorld* World = nullptr;
+    if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+    {
+        World = GEngine->GetWorldContexts()[0].World();
+    }
+
+    if (!World)
+    {
+        AddError(TEXT("No World context available for dynamic infusion testing"));
+        return false;
+    }
+
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    AActor* TempRock = World->SpawnActor<AActor>(SpawnParams);
+    if (!TempRock)
+    {
+        AddError(TEXT("Failed to spawn transient rock actor for infusion testing"));
+        return false;
+    }
+
+    USovereignSaveableEntityComponent* Soul = NewObject<USovereignSaveableEntityComponent>(TempRock);
+    TempRock->AddInstanceComponent(Soul);
+    Soul->RegisterComponent();
+
+    // 1. Initial State: Plain Rock without Magic or Life
+    TestNull(TEXT("Rock initially has no QiComponent"), TempRock->FindComponentByClass<USovereignQiComponent>());
+    TestNull(TEXT("Rock initially has no BioComponent"), TempRock->FindComponentByClass<USovereignBioComponent>());
+
+    // 2. Infuse Magic & Life dynamically at runtime
+    USovereignQiComponent* QiComp = Soul->InfuseMagic();
+    USovereignBioComponent* BioComp = Soul->InfuseLife();
+
+    TestNotNull(TEXT("InfuseMagic created USovereignQiComponent"), QiComp);
+    TestNotNull(TEXT("InfuseLife created USovereignBioComponent"), BioComp);
+
+    // 3. Verify state capture includes Sovereign.Magic and Sovereign.Bio
+    TSharedPtr<FJsonObject> InfusedState = Soul->CaptureFullEntityState();
+    TestTrue(TEXT("Infused state has Sovereign.Magic"), InfusedState->HasField(TEXT("Sovereign.Magic")));
+    TestTrue(TEXT("Infused state has Sovereign.Bio"), InfusedState->HasField(TEXT("Sovereign.Bio")));
+
+    // 4. Test Component Extraction
+    bool bMagicExtracted = Soul->ExtractMagic();
+    bool bLifeExtracted = Soul->ExtractLife();
+
+    TestTrue(TEXT("ExtractMagic succeeded"), bMagicExtracted);
+    TestTrue(TEXT("ExtractLife succeeded"), bLifeExtracted);
+    TestNull(TEXT("Rock has no QiComponent after extraction"), TempRock->FindComponentByClass<USovereignQiComponent>());
+    TestNull(TEXT("Rock has no BioComponent after extraction"), TempRock->FindComponentByClass<USovereignBioComponent>());
+
+    // 5. Test Dynamic Component Instantiation on Load
+    Soul->ApplyStateFromJsonObject(InfusedState);
+
+    TestNotNull(TEXT("ApplyStateFromJsonObject dynamically restored USovereignQiComponent on load"), TempRock->FindComponentByClass<USovereignQiComponent>());
+    TestNotNull(TEXT("ApplyStateFromJsonObject dynamically restored USovereignBioComponent on load"), TempRock->FindComponentByClass<USovereignBioComponent>());
+
+    TempRock->Destroy();
+    return true;
+}
+
+// ============================================================================
+// MODULAR BASE vs LIVING ENTITY HIERARCHY TEST - B-047 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignEntityHierarchyModularTest,
+    "Sovereign.Soul.EntityHierarchyModularization",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignEntityHierarchyModularTest::RunTest(const FString& Parameters)
+{
+    // 1. Instantiate Base Entity (Non-living simulation entity like a Rock or Terminal)
+    ASovereignBaseEntity* BaseEntity = NewObject<ASovereignBaseEntity>();
+    if (!BaseEntity)
+    {
+        AddError(TEXT("Failed to instantiate ASovereignBaseEntity"));
+        return false;
+    }
+
+    // Base entity must have SaveDataComponent (Soul Hub) and EntityMesh, but NO default Bio/Attribute subobjects
+    TestNotNull(TEXT("Base Entity has SaveDataComponent"), BaseEntity->GetSaveDataComponent());
+    TestNull(TEXT("Base Entity has NO default BioComponent"), BaseEntity->FindComponentByClass<USovereignBioComponent>());
+    TestNull(TEXT("Base Entity has NO default AttributeComponent"), BaseEntity->FindComponentByClass<USovereignAttributeComponent>());
+
+    // Base entity implements IInteractionInterface for possession
+    TestTrue(TEXT("Base Entity implements IInteractionInterface"), BaseEntity->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()));
+    TestTrue(TEXT("Base Entity can be possessed by default"), IInteractionInterface::Execute_CanBePossessed(BaseEntity));
+
+    // 2. Instantiate Living Entity (Organic creature/plant)
+    ASovereignLivingEntity* LivingEntity = NewObject<ASovereignLivingEntity>();
+    if (!LivingEntity)
+    {
+        AddError(TEXT("Failed to instantiate ASovereignLivingEntity"));
+        return false;
+    }
+
+    TestTrue(TEXT("Living Entity implements IInteractionInterface"), LivingEntity->GetClass()->ImplementsInterface(UInteractionInterface::StaticClass()));
+    TestTrue(TEXT("Living Entity can be possessed by default"), IInteractionInterface::Execute_CanBePossessed(LivingEntity));
+
+    // Living entity inherits SaveDataComponent and constructs Bio, Attribute, Qi, Element subobjects by default
+    TestNotNull(TEXT("Living Entity has SaveDataComponent"), LivingEntity->GetSaveDataComponent());
+    TestNotNull(TEXT("Living Entity has default BioComponent"), LivingEntity->GetBioComponent());
+    TestNotNull(TEXT("Living Entity has default AttributeComponent"), LivingEntity->GetAttributeComponent());
+    TestNotNull(TEXT("Living Entity has default QiComponent"), LivingEntity->GetQiComponent());
+    TestNotNull(TEXT("Living Entity has default ElementComponent"), LivingEntity->GetElementComponent());
+
+    return true;
+}
+
+// ============================================================================
 // SOVEREIGN STATE CACHING & THROTTLING TEST - B-042 Verification
 // ============================================================================
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -185,6 +312,87 @@ bool FSovereignStateCachingThrottlingTest::RunTest(const FString& Parameters)
     // Since AddUnknownTag calls InvalidateStateCache(), the query MUST return the updated state (40.0)
     FString MutatedState = Soul->GetCategoryStateJson(TEXT("Sovereign.Truth"));
     TestTrue(TEXT("Mutation query returns fresh state"), MutatedState.Contains(TEXT("40.0")));
+
+    return true;
+}
+
+// ============================================================================
+// SOVEREIGN ATTRIBUTE BROKER & REGISTRATION TEST - B-043 Verification
+// ============================================================================
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+    FSovereignAttributeRegistrationTest,
+    "Sovereign.Soul.AttributeRegistrationAndSync",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignAttributeRegistrationTest::RunTest(const FString& Parameters)
+{
+    // 1. Create Soul Component and Attribute Component
+    USovereignSaveableEntityComponent* Soul = NewObject<USovereignSaveableEntityComponent>();
+    USovereignAttributeComponent* AttrComp = NewObject<USovereignAttributeComponent>();
+
+    if (!Soul || !AttrComp)
+    {
+        AddError(TEXT("Failed to create components for B-043 testing"));
+        return false;
+    }
+
+    // 2. Test manual & automatic broker registration via Soul authority
+    TScriptInterface<ISovereignBrokerInterface> BrokerInterface(AttrComp);
+    Soul->RegisterBroker(BrokerInterface);
+
+    // 3. Verify custom D&D values & experience accumulators
+    AttrComp->Strength = 18;
+    AttrComp->StrengthExperience = 1250.50;
+    AttrComp->Dexterity = 14;
+    AttrComp->DexterityExperience = 850.25;
+    AttrComp->Constitution = 16;
+    AttrComp->ConstitutionExperience = 990.00;
+    AttrComp->Intelligence = 15;
+    AttrComp->IntelligenceExperience = 450.00;
+    AttrComp->Wisdom = 12;
+    AttrComp->WisdomExperience = 300.00;
+    AttrComp->Charisma = 10;
+    AttrComp->CharismaExperience = 100.00;
+    AttrComp->Luck = 20;
+    AttrComp->LuckExperience = 5000.00;
+
+    AttrComp->ArmourClass = 15;
+    AttrComp->CurrentHealth = 160.0f;
+    AttrComp->MaxHealth = 160.0f;
+    AttrComp->CurrentStamina = 100.0f;
+    AttrComp->MaxStamina = 100.0f;
+
+    AttrComp->PhysicalResistance = 0.2f;
+    AttrComp->MagicalResistance = 0.15f;
+    AttrComp->MentalResistance = 0.10f;
+    AttrComp->PoisonResistance = 0.05f;
+    AttrComp->SlowResistance = 0.0f;
+
+    // 4. Capture state and verify Sovereign.Attributes JSON field
+    TSharedPtr<FJsonObject> State = Soul->CaptureFullEntityState();
+    TestTrue(TEXT("Captured state contains Sovereign.Attributes object"), State->HasField(TEXT("Sovereign.Attributes")));
+
+    TSharedPtr<FJsonObject> AttrObj = State->GetObjectField(TEXT("Sovereign.Attributes"));
+    TestNotNull(TEXT("Sovereign.Attributes object is valid"), AttrObj.Get());
+
+    TestEqual(TEXT("Strength level correct"), AttrObj->GetIntegerField(TEXT("Strength")), 18);
+    TestEqual(TEXT("StrengthExperience correct"), AttrObj->GetNumberField(TEXT("StrengthExperience")), 1250.50);
+    TestEqual(TEXT("Dexterity level correct"), AttrObj->GetIntegerField(TEXT("Dexterity")), 14);
+    TestEqual(TEXT("MaxHealth correct"), AttrObj->GetNumberField(TEXT("MaxHealth")), 160.0);
+    TestEqual(TEXT("PhysicalResistance correct"), AttrObj->GetNumberField(TEXT("PhysicalResistance")), 0.2);
+
+    // 5. Verify round-trip OnLoad restoration
+    USovereignAttributeComponent* RestoredComp = NewObject<USovereignAttributeComponent>();
+    RestoredComp->OnLoad(State);
+
+    TestEqual(TEXT("Restored Strength level matches"), RestoredComp->Strength, 18);
+    TestEqual(TEXT("Restored Strength XP matches"), RestoredComp->StrengthExperience, 1250.50);
+    TestEqual(TEXT("Restored Dexterity level matches"), RestoredComp->Dexterity, 14);
+    TestEqual(TEXT("Restored Luck level matches"), RestoredComp->Luck, 20);
+    TestEqual(TEXT("Restored Luck XP matches"), RestoredComp->LuckExperience, 5000.00);
+    TestEqual(TEXT("Restored MaxHealth matches"), RestoredComp->MaxHealth, 160.0f);
+    TestEqual(TEXT("Restored PhysicalResistance matches"), RestoredComp->PhysicalResistance, 0.2f);
 
     return true;
 }

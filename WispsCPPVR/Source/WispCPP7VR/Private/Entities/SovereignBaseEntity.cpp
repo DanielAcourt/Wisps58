@@ -1,6 +1,7 @@
 //SovereignBaseEntity.ccp
 
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "DataTables/SovereignSpeciesData.h" // Essential for accessing GrowthStages
 
 #include "SaveSystem/SovereignActorRegistry.h"
@@ -13,10 +14,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignQiComponent.h"
-#include "Components/SovereignElementComponent.h"
 #include "Components/SovereignAttributeComponent.h"
 
 #include "GameplayTagsManager.h"
+#include "EnhancedInputComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 #include "Engine/World.h"
 #include "Engine/StreamableManager.h"
@@ -49,12 +52,6 @@ ASovereignBaseEntity::ASovereignBaseEntity()
     // 2. THE SOUL (SAVE SYSTEM)
     // This component handles the GUID and the metadata tags
     SaveDataComponent = CreateDefaultSubobject<USovereignSaveableEntityComponent>(TEXT("SaveDataComponent"));
-
-    // 2b. SPECIALIZED MODULES
-    BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
-    QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
-    ElementComponent = CreateDefaultSubobject<USovereignElementComponent>(TEXT("ElementComponent"));
-    AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
 
     // 3. PHYSICAL MESH
     // We create a StaticMeshComponent to visualize the 8 growth stages (Seed to Tree)
@@ -197,41 +194,7 @@ void ASovereignBaseEntity::BeginPlay()
 
 void ASovereignBaseEntity::OnSovereignHeartbeat()
 {
-    if (SaveDataComponent)
-    {
-        float HeartbeatSeconds = GetWorldTimerManager().GetTimerRate(HeartbeatTimerHandle);
-
-        // 1. BIOLOGICAL GROWTH & CONSUMPTION
-        if (BioComponent)
-        {
-            BioComponent->MaturityProgress += (BioComponent->MaturityRate);
-            BioComponent->UpdateMetabolism(HeartbeatSeconds);
-        }
-
-        // 2. SPIRITUAL FLOW
-        if (QiComponent)
-        {
-            QiComponent->ProcessQiFlow(HeartbeatSeconds, 10); // Wisdom hardcoded for now
-        }
-
-        // 3. EVOLUTION CHECK
-        if (BioComponent && BioComponent->MaturityProgress >= 1.0f)
-        {
-            BioComponent->MaturityProgress = 0.0f;
-            Evolve();
-        }
-
-        //old logic
-        /*
-        // Check for Evolution (Threshold met, move to next growth stage)
-        if (SaveDataComponent->MaturityProgress >= 1.0f)
-        {
-            // Reset progress for the next stage (or keep remainder for overflow)
-            SaveDataComponent->MaturityProgress = 0.0f;
-            Evolve();
-        }
-        */
-    }
+    // Base heartbeat processing for non-living physical/spatial entities
 }
 
 void ASovereignBaseEntity::CheckForEvolution()
@@ -272,20 +235,6 @@ void ASovereignBaseEntity::CheckForEvolution()
 //version 3.2 Updated for Modular Hub
 void ASovereignBaseEntity::Evolve()
 {
-    // Evolution is a massive biological strain
-    if (BioComponent)
-    {
-        // 1. BURN THE ENTIRE PHARMACY
-        BioComponent->NutrientReserves.Empty();
-
-        BioComponent->Hunger = 0.0f;
-        BioComponent->Entropy += 10.0f; // Rapid aging occurs during evolution
-
-        // The Mass is permanently increased (Physical Prestige)
-        BioComponent->MassExperience += 5.0;
-        BioComponent->Mass = FMath::FloorToInt(BioComponent->MassExperience);
-    }
-
     // Trigger the Visual Shift (Mesh/Particle swap)
     CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
     RefreshVisuals();
@@ -383,21 +332,6 @@ void ASovereignBaseEntity::GetOwnedGameplayTags(FGameplayTagContainer& TagContai
 void ASovereignBaseEntity::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
-
-    // If Realtime frequency, simulate biology and Qi flow every frame using DeltaTime to prevent biological freeze
-    if (UpdateFrequency == EUpdateFrequency::Realtime)
-    {
-        if (BioComponent)
-        {
-            BioComponent->MaturityProgress += (BioComponent->MaturityRate * DeltaTime);
-            BioComponent->UpdateMetabolism(DeltaTime);
-        }
-
-        if (QiComponent)
-        {
-            QiComponent->ProcessQiFlow(DeltaTime, 10);
-        }
-    }
 }
 
 
@@ -482,12 +416,6 @@ void ASovereignBaseEntity::PostSpawnInitialize(const USovereignSpeciesData* InSp
 	{
 		SaveDataComponent->EntityID = FGuid::NewGuid();
 
-        if (BioComponent)
-        {
-            BioComponent->MotherID = InMotherID;
-            BioComponent->FatherID = InFatherID;
-        }
-
 		if (UWorld* World = GetWorld())
 		{
 			if (UActorRegistry* Registry = World->GetSubsystem<UActorRegistry>())
@@ -513,22 +441,6 @@ void ASovereignBaseEntity::PostSpawnInitialize(const USovereignSpeciesData* InSp
 						{
 							TMap<FString, FString> ChildDNA = USovereignSpawnerUtils::RecombineDNA(MomComp->GetUnknownMetaTags(), DadComp->GetUnknownMetaTags(), 0.05f);
 							SaveDataComponent->ApplyMetaTags(ChildDNA);
-
-							float CurrentTime = World->GetTimeSeconds();
-							
-							// Access LastMatingTimestamp from Bio components instead
-							auto* MomBio = Mother->FindComponentByClass<USovereignBioComponent>();
-							auto* DadBio = Father->FindComponentByClass<USovereignBioComponent>();
-							
-							if (MomBio)
-							{
-								MomBio->LastMatingTimestamp = CurrentTime;
-							}
-							if (DadBio)
-							{
-								DadBio->LastMatingTimestamp = CurrentTime;
-							}
-
 							UE_LOG(LogTemp, Log, TEXT("Sovereign: Hybrid born between %s and %s!"), *Mother->GetName(), *Father->GetName());
 						}
 					}
@@ -597,11 +509,234 @@ float ASovereignBaseEntity::GetHeartbeatInterval() const
     }
 }
 
-UFUNCTION(BlueprintCallable, Category = "Sovereign|Soul")
+
 USovereignSaveableEntityComponent* ASovereignBaseEntity::GetSovereignSoul_Implementation() const
 {
-    // Simply return the component we already have!
     return SaveDataComponent;
+}
+
+USceneComponent* ASovereignBaseEntity::GetPossessionAttachmentComponent_Implementation()
+{
+    return EntityMesh ? Cast<USceneComponent>(EntityMesh) : GetRootComponent();
+}
+
+void ASovereignBaseEntity::RequestPossession_Implementation(AController* RequestingController)
+{
+    if (!RequestingController || !bCanBePossessed) return;
+
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsBeingPossessed = true;
+    }
+
+    if (APlayerController* PC = Cast<APlayerController>(RequestingController))
+    {
+        EnableInput(PC);
+
+        if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+        {
+            if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+            {
+                if (DefaultMappingContext)
+                {
+                    Subsystem->AddMappingContext(DefaultMappingContext, 0);
+                }
+
+                if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+                {
+                    if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Applied Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseCharacter* SpiritChar = Cast<ASovereignBaseCharacter>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritChar->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Applied Spirit Character Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseEntity* SpiritEntity = Cast<ASovereignBaseEntity>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritEntity->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Applied Spirit Entity Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Sovereign: Possession requested on %s by %s"), *GetName(), *RequestingController->GetName());
+}
+
+AActor* ASovereignBaseEntity::GetInhabitingSpirit_Implementation()
+{
+    TArray<AActor*> AttachedActors;
+    GetAttachedActors(AttachedActors, true);
+
+    for (AActor* Actor : AttachedActors)
+    {
+        if (Actor && Actor->Implements<UInteractionInterface>())
+        {
+            if (IInteractionInterface::Execute_IsSpiritEntity(Actor))
+            {
+                return Actor;
+            }
+        }
+    }
+
+    for (AActor* Actor : AttachedActors)
+    {
+        if (Actor && Actor->IsA(ASovereignPlayerWisp::StaticClass()))
+        {
+            return Actor;
+        }
+    }
+    return nullptr;
+}
+
+void ASovereignBaseEntity::RequestSoulEject_Implementation()
+{
+    HandlePossessionLifecycle();
+}
+
+void ASovereignBaseEntity::HandlePossessionLifecycle()
+{
+    AActor* Spirit = IInteractionInterface::Execute_GetInhabitingSpirit(this);
+    if (Spirit)
+    {
+        ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit);
+        if (Wisp)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Sovereign: Soul Eject initiated on %s"), *GetName());
+
+            APlayerController* PC = Cast<APlayerController>(GetController());
+            if (PC)
+            {
+                PC->Possess(Wisp);
+            }
+
+            Wisp->EjectFromHost();
+            return;
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Sovereign: %s has no inhabiting spirit to eject."), *GetName());
+}
+
+void ASovereignBaseEntity::PossessedBy(AController* NewController)
+{
+    Super::PossessedBy(NewController);
+
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsBeingPossessed = true;
+    }
+
+    if (APlayerController* PC = Cast<APlayerController>(NewController))
+    {
+        EnableInput(PC);
+
+        if (InputComponent)
+        {
+            SetupPlayerInputComponent(InputComponent);
+        }
+
+        if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+        {
+            if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+            {
+                if (DefaultMappingContext)
+                {
+                    Subsystem->AddMappingContext(DefaultMappingContext, 0);
+                }
+
+                if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+                {
+                    if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseCharacter* SpiritChar = Cast<ASovereignBaseCharacter>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritChar->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Character Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                    else if (ASovereignBaseEntity* SpiritEntity = Cast<ASovereignBaseEntity>(Spirit))
+                    {
+                        if (UInputMappingContext* SpiritIMC = SpiritEntity->GetDefaultMappingContext())
+                        {
+                            Subsystem->AddMappingContext(SpiritIMC, 1);
+                            UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Entity Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void ASovereignBaseEntity::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+    Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+    if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+    {
+        EIC->ClearActionBindings();
+
+        TArray<UInputAction*> ActionsToBind;
+
+        if (PossessAction)
+        {
+            ActionsToBind.AddUnique(PossessAction);
+        }
+
+        if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+        {
+            if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+            {
+                if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+                if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
+            }
+            else if (ASovereignBaseCharacter* SpiritChar = Cast<ASovereignBaseCharacter>(Spirit))
+            {
+                if (UInputAction* SpiritPossess = SpiritChar->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+            }
+        }
+
+        for (UInputAction* Act : ActionsToBind)
+        {
+            if (Act)
+            {
+                EIC->BindAction(Act, ETriggerEvent::Started, this, &ASovereignBaseEntity::HandlePossessionLifecycle);
+                UE_LOG(LogTemp, Log, TEXT("Sovereign: Possess/Unpossess Action [%s] bound on %s"), *Act->GetName(), *GetName());
+            }
+        }
+    }
+}
+
+void ASovereignBaseEntity::UnPossessed()
+{
+    Super::UnPossessed();
+
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsBeingPossessed = false;
+    }
 }
 
 //Put end at the bottem makes sense?

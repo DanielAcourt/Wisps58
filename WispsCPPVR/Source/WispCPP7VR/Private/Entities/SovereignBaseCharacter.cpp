@@ -20,12 +20,14 @@
 //The ability for characters to receive input
 #include "EnhancedInputComponent.h" //core unreal input libraries
 #include "EnhancedInputSubsystems.h" // You'll likely need this for the Mapping Context too
+#include "InputMappingContext.h"
 
 
 ASovereignBaseCharacter::ASovereignBaseCharacter()
 {
 	// 1. CONSTRUCT THE HYBRID STACK
 	// Naming here now matches the header exactly
+	SaveDataComponent = CreateDefaultSubobject<USovereignSaveableEntityComponent>(TEXT("SaveDataComponent"));
 	ElementComponent = CreateDefaultSubobject<USovereignElementComponent>(TEXT("ElementComponent"));
 	ControlComponent = CreateDefaultSubobject<USovereignControllerComponent>(TEXT("ControlComponent"));
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
@@ -97,6 +99,18 @@ void ASovereignBaseCharacter::PossessedBy(AController* NewController)
 			{
 				UE_LOG(LogTemp, Error, TEXT("Sovereign: %s has NO DefaultMappingContext assigned!"), *GetName());
 			}
+
+			if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+			{
+				if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+				{
+					if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+					{
+						Subsystem->AddMappingContext(SpiritIMC, 1);
+						UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+					}
+				}
+			}
 		}
 
 		if (AttributeComponent)
@@ -154,9 +168,27 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		}
 
 		// Handle the Possession lifecycle (F key)
+		TArray<UInputAction*> ActionsToBind;
 		if (PossessAction)
 		{
-			EIC->BindAction(PossessAction, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+			ActionsToBind.AddUnique(PossessAction);
+		}
+
+		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		{
+			if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+			{
+				if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+				if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
+			}
+		}
+
+		for (UInputAction* Act : ActionsToBind)
+		{
+			if (Act)
+			{
+				EIC->BindAction(Act, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+			}
 		}
 	}
 }

@@ -12,14 +12,11 @@
 #include "GameplayTagAssetInterface.h" 
 
 #include "Interaction/SovereignEntityInterface.h"
+#include "Interaction/SovereignInterfaceMain.h"
 
 #include "SovereignBaseEntity.generated.h"
 
 class USovereignSaveableEntityComponent;
-class USovereignBioComponent;
-class USovereignQiComponent;
-class USovereignElementComponent;
-class USovereignAttributeComponent;
 class USovereignSpeciesData;
 class UStaticMeshComponent;
 
@@ -27,7 +24,7 @@ class UStaticMeshComponent;
  * ASovereignBaseEntity: Base class for all possessable simulation entities.
  */
 UCLASS()
-class WISPCPP7VR_API ASovereignBaseEntity : public APawn, public IGameplayTagAssetInterface, public ISovereignEntityInterface
+class WISPCPP7VR_API ASovereignBaseEntity : public APawn, public IGameplayTagAssetInterface, public ISovereignEntityInterface, public IInteractionInterface
 {
 	GENERATED_BODY()
 
@@ -37,13 +34,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Soul")
 	USovereignSaveableEntityComponent* GetSaveDataComponent() const { return SaveDataComponent; }
 
-	/** Returns the Sovereign Soul component for this entity */
-	UFUNCTION(BlueprintCallable, Category = "Sovereign|Soul")
-	USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const;
-
 	/** Returns the unique Save System ID for this specific entity */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Entity")
 	FGuid GetSovereignID() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetPossessAction() const { return PossessAction; }
 
 	/** The Unique Identity Signature for this class. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Identity")
@@ -65,10 +64,26 @@ public:
 	// --- IGameplayTagAssetInterface Implementation ---
 	virtual void GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const override;
 
+	// --- IInteractionInterface Implementation ---
+	virtual class USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override;
+	virtual bool CanBePossessed_Implementation() override { return bCanBePossessed; }
+	virtual void RequestPossession_Implementation(AController* RequestingController) override;
+	virtual USceneComponent* GetPossessionAttachmentComponent_Implementation() override;
+	virtual AActor* GetInhabitingSpirit_Implementation() override;
+	virtual void RequestSoulEject_Implementation() override;
+
+	/** Handles unpossession/ejection trigger when F / Possession action is pressed on an inhabited vessel */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Possession")
+	virtual void HandlePossessionLifecycle();
+
 	// --- Lifecycle ---
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void UnPossessed() override;
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	/** Primary logic for moving from one growth stage to the next */
 	virtual void Evolve();
@@ -94,22 +109,6 @@ protected:
 	/** The Soul of the Actor: Contains the GUID and Metadata tags */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
 	USovereignSaveableEntityComponent* SaveDataComponent;
-
-	/** The Biological engine: Health, Stamina, Lineage */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
-	USovereignBioComponent* BioComponent;
-
-	/** The Spiritual engine: Magic, Alignment, Qi */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
-	USovereignQiComponent* QiComponent;
-
-	/** The Physical nature: Elemental resistances and sockets */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
-	USovereignElementComponent* ElementComponent;
-
-	/** The Attribute engine: Strength, Intelligence, HP */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
-	USovereignAttributeComponent* AttributeComponent;
 
 	/** Array of 8 meshes representing the growth stages (0-7) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Visuals")
@@ -155,6 +154,13 @@ protected:
 	void RefreshVisuals();
 
 	// --- Internal Logic ---
+
+	/** Input Assets - Assign in Blueprint to bind Eject / Unpossession in C++ */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Input")
+	class UInputMappingContext* DefaultMappingContext;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Input")
+	class UInputAction* PossessAction;
 
 	/** The recurring timer handle for the heartbeat logic */
 	FTimerHandle HeartbeatTimerHandle;
