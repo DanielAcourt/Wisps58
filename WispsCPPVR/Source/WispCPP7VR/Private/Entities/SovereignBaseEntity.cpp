@@ -19,6 +19,7 @@
 #include "GameplayTagsManager.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 #include "Engine/World.h"
 #include "Engine/StreamableManager.h"

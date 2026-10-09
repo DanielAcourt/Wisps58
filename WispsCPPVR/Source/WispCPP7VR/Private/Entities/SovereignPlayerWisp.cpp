@@ -16,6 +16,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
 
 //DO i need these 2 in the wisp aswell?
 #include "Interaction/SovereignInterfaceMain.h"

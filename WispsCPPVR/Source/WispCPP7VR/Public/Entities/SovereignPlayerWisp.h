@@ -75,6 +75,9 @@ public:
 	/** IInteractionInterface override to identify as a Spirit Entity */
 	virtual bool IsSpiritEntity_Implementation() override { return true; }
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetEjectAction() const { return EjectAction; }
+
 protected:
 	/** * INTERACTION LOGIC
 		 * This is the raycast that lets you press 'E' to evolve trees/bees Core raycast logic
@@ -96,9 +99,6 @@ protected:
 	/** The Input Action for Ejecting */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Input")
 	class UInputAction* EjectAction;
-
-	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
-	class UInputAction* GetEjectAction() const { return EjectAction; }
 
 	/** Gameplay Truth: Are we currently acting as a Soul for a Vessel? */
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Sovereign|Possession")

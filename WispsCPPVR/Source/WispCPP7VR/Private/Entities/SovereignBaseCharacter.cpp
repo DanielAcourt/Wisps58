@@ -20,6 +20,7 @@
 //The ability for characters to receive input
 #include "EnhancedInputComponent.h" //core unreal input libraries
 #include "EnhancedInputSubsystems.h" // You'll likely need this for the Mapping Context too
+#include "InputMappingContext.h"
 
 
 ASovereignBaseCharacter::ASovereignBaseCharacter()
