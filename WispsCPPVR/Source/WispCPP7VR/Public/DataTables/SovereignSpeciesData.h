@@ -28,13 +28,25 @@ struct FSovereignGrowthStage
 
     // PHYSICAL ATTRIBUTES (The 'Advanced' data)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-    float BaseStrength = 1.0f;
+    int32 BaseStrength = 10;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-    float BaseConstitution = 1.0f;
+    int32 BaseDexterity = 10;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-    float BaseAgility = 1.0f;
+    int32 BaseConstitution = 10;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+    int32 BaseIntelligence = 10;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+    int32 BaseWisdom = 10;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+    int32 BaseCharisma = 10;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+    int32 BaseLuck = 10;
 
     // How much food/water/energy this stage consumes
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")

@@ -55,29 +55,29 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 	ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner());
 	if (!OwnerEntity) return;
 
-	// Access the SaveDataComponent (The "Soul")
-	USovereignSaveableEntityComponent* SaveComp = OwnerEntity->FindComponentByClass<USovereignSaveableEntityComponent>();
-
-	if (SaveComp)
+	USovereignSpeciesData* SpeciesData = OwnerEntity->GetSpeciesData();
+	if (SpeciesData)
 	{
-		/** * DETERMINISTIC SCALING:
-		 * Here is where you would pull from a Data Table based on SaveComp->SpeciesID.
-		 * For now, we simulate the species-based logic:
-		 */
+		int32 StageIdx = OwnerEntity->GetCurrentGrowthStage();
+		if (SpeciesData->GrowthStages.IsValidIndex(StageIdx))
+		{
+			const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[StageIdx];
+			Strength = Stage.BaseStrength;
+			Dexterity = Stage.BaseDexterity;
+			Constitution = Stage.BaseConstitution;
+			Intelligence = Stage.BaseIntelligence;
+			Wisdom = Stage.BaseWisdom;
+			Charisma = Stage.BaseCharisma;
+			Luck = Stage.BaseLuck;
 
-		 // If we are a plant/tree, we might have high Constitution but 0 Charisma
-		 // If we are Erisis, we have high Intelligence and Wisdom.
-
-		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s is syncing attributes from its Saveable Entity Component."), *GetOwner()->GetName());
-
-
-		//Strength = SaveComp->GetBaseStat("Strength");
-		//dev
-		// etc
-		
-		// In a later step, we will hook these up to your Meta-Tag system!
-		// Example: Strength = SaveComp->GetBaseStat("Strength");
+			UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d"),
+				*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
+				Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck);
+			return;
+		}
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), *GetOwner()->GetName());
 }
 
 float USovereignAttributeComponent::GetMaxHealth() const
