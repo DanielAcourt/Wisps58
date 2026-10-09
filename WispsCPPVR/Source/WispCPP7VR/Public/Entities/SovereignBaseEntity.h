@@ -72,7 +72,7 @@ public:
 
 	// --- IInteractionInterface Implementation ---
 	virtual class USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override;
-	virtual bool CanBePossessed_Implementation() override { return bCanBePossessed; }
+	virtual bool CanBePossessed_Implementation() override;
 	virtual void RequestPossession_Implementation(AController* RequestingController) override;
 	virtual USceneComponent* GetPossessionAttachmentComponent_Implementation() override;
 	virtual AActor* GetInhabitingSpirit_Implementation() override;

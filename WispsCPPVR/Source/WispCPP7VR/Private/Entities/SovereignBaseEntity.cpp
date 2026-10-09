@@ -510,6 +510,11 @@ float ASovereignBaseEntity::GetHeartbeatInterval() const
 }
 
 
+bool ASovereignBaseEntity::CanBePossessed_Implementation()
+{
+    return bCanBePossessed;
+}
+
 USovereignSaveableEntityComponent* ASovereignBaseEntity::GetSovereignSoul_Implementation() const
 {
     return SaveDataComponent;

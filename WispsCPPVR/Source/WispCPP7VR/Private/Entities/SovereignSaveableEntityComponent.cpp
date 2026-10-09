@@ -419,7 +419,7 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 	{
 		InfuseMagic();
 	}
-	if (JsonData->HasField(TEXT("Sovereign.Bio")))
+	if (JsonData->HasField(TEXT("Sovereign.Bio")) || JsonData->HasField(TEXT("Bio")))
 	{
 		InfuseLife();
 	}
