@@ -180,7 +180,7 @@ protected:
 	FString ManualBirthDate = "2017.03.23-16.00.00";
 
 	/** The logic function that runs growth progress and checks for Evolution */
-	void OnSovereignHeartbeat();
+	virtual void OnSovereignHeartbeat();
 
 	//can i evolve?
 	void CheckForEvolution();
