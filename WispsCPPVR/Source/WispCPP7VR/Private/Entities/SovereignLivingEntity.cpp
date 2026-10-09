@@ -24,6 +24,15 @@ void ASovereignLivingEntity::OnSovereignHeartbeat()
 	Super::OnSovereignHeartbeat();
 
 	float HeartbeatSeconds = GetWorldTimerManager().GetTimerRate(HeartbeatTimerHandle);
+	if (HeartbeatSeconds <= 0.0f)
+	{
+		HeartbeatSeconds = GetHeartbeatInterval();
+	}
+	if (HeartbeatSeconds <= 0.0f)
+	{
+		HeartbeatSeconds = 1.0f;
+	}
+
 	int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
 
 	// 1. BIOLOGICAL GROWTH & CONSUMPTION

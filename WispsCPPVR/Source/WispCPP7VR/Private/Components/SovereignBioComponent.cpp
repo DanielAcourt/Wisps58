@@ -72,6 +72,14 @@ void USovereignBioComponent::UpdateMetabolism(float DeltaTime)
 
     WasteLevel += (NetDrain * 0.5f);
 
+    if (AActor* Owner = GetOwner())
+    {
+        if (USovereignSaveableEntityComponent* SoulHub = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
+        {
+            SoulHub->InvalidateStateCache();
+        }
+    }
+
     // B-038 & B-039: Live Gestation Progression with Hybrid Core Enum
     if (bGestationActive)
     {

@@ -122,66 +122,6 @@ void ASovereignBaseEntity::BeginPlay()
 
     if (Interval > 0.0f)
     {
-        GetWorldTimerManager().SetTimer(
-            HeartbeatTimerHandle,
-            this,
-            &ASovereignBaseEntity::OnSovereignHeartbeat,
-            Interval,
-            true
-        );
-    }
-
-    switch (UpdateFrequency)
-    {
-
-    case EUpdateFrequency::Faster:
-
-
-        //Time dilation and slowing world down
-        /*
-        case EUpdateFrequency::Faster: 
-    // 1. High-frequency logic update (Realtime)
-    Interval = 0.0f; 
-
-    // 2. The Time Warp: 
-    // We slow the world down by 5x (0.2), 
-    // but we speed THIS entity up by 5x (5.0) to compensate.
-    // Result: The world looks slow to you, but you move at normal speed.
-    
-    if (UWorld* World = GetWorld())
-    {
-        // Slow down everything else
-        World->GetWorldSettings()->SetTimeDilation(0.2f); 
-        
-        // Overclock only the Sovereign Soul
-        this->CustomTimeDilation = 5.0f; 
-        
-        UE_LOG(LogTemp, Warning, TEXT("Sovereign: Faster Frequency Engaged. Time Dilated."));
-    }
-    break;
-        */
-
-    case EUpdateFrequency::Realtime: Interval = 0.0f; break;   // 0.0 = Every Frame
-
-    case EUpdateFrequency::Standard: Interval = 1.0f; break;   // 1 Second
-
-    case EUpdateFrequency::Slow:     Interval = 10.0f; break;  // 10 Seconds
-
-    case EUpdateFrequency::Slower:   Interval = 30.0f; break;  // 30 Seconds
-
-    case EUpdateFrequency::Slowest:  Interval = 60.0f; break;  // 60 Seconds (1 Minute)
-
-    case EUpdateFrequency::Glacier:  Interval = 360.0f; break; // 360 Seconds (6 Minutes)
-
-    case EUpdateFrequency::Dormant:  Interval = -1.0f; break;  // Disable Heartbeat
-
-    //case EUpdateFrequency::Standard: Interval = 30.0f; break;
-    //case EUpdateFrequency::Faster:     Interval = 60.0f; break;
-    //case EUpdateFrequency::SuperFast:  Interval = 360.0f; break;
-    }
-
-    if (Interval > 0.0f)
-    {
         GetWorldTimerManager().SetTimer(HeartbeatTimerHandle, this, &ASovereignBaseEntity::OnSovereignHeartbeat, Interval, true);
     }
 

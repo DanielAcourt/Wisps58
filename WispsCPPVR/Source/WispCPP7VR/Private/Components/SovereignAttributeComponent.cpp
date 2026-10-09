@@ -52,32 +52,33 @@ void USovereignAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayRea
 
 void USovereignAttributeComponent::SyncStatsFromEntity()
 {
-	ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner());
-	if (!OwnerEntity) return;
+	USovereignSpeciesData* SpeciesData = nullptr;
+	int32 StageIdx = 0;
 
-	USovereignSpeciesData* SpeciesData = OwnerEntity->GetSpeciesData();
-	if (SpeciesData)
+	if (ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner()))
 	{
-		int32 StageIdx = OwnerEntity->GetCurrentGrowthStage();
-		if (SpeciesData->GrowthStages.IsValidIndex(StageIdx))
-		{
-			const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[StageIdx];
-			Strength = Stage.BaseStrength;
-			Dexterity = Stage.BaseDexterity;
-			Constitution = Stage.BaseConstitution;
-			Intelligence = Stage.BaseIntelligence;
-			Wisdom = Stage.BaseWisdom;
-			Charisma = Stage.BaseCharisma;
-			Luck = Stage.BaseLuck;
-
-			UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d"),
-				*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
-				Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck);
-			return;
-		}
+		SpeciesData = OwnerEntity->GetSpeciesData();
+		StageIdx = OwnerEntity->GetCurrentGrowthStage();
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), *GetOwner()->GetName());
+	if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(StageIdx))
+	{
+		const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[StageIdx];
+		Strength = Stage.BaseStrength;
+		Dexterity = Stage.BaseDexterity;
+		Constitution = Stage.BaseConstitution;
+		Intelligence = Stage.BaseIntelligence;
+		Wisdom = Stage.BaseWisdom;
+		Charisma = Stage.BaseCharisma;
+		Luck = Stage.BaseLuck;
+
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d"),
+			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
+			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
 }
 
 float USovereignAttributeComponent::GetMaxHealth() const

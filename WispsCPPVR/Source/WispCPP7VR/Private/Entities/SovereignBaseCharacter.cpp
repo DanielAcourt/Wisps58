@@ -412,6 +412,22 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 
 	// Call this every frame so the Blueprint Event and Log fire constantly
 	GetSensedActor();
+
+	// Process biological metabolism and Qi flow for living character vessels
+	if (AttributeComponent || QiComponent)
+	{
+		UActorComponent* BioComp = FindComponentByClass<USovereignBioComponent>();
+		if (USovereignBioComponent* Bio = Cast<USovereignBioComponent>(BioComp))
+		{
+			Bio->UpdateMetabolism(DeltaTime);
+		}
+
+		if (QiComponent)
+		{
+			int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
+			QiComponent->ProcessQiFlow(DeltaTime, WisdomVal);
+		}
+	}
 }
 
 // Leveling up or evolving both in stats and visuals
