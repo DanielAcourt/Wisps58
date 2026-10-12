@@ -492,6 +492,8 @@ void ASovereignBaseCharacter::RefreshVisuals()
 
 	if (NewMeshPtr.Get() == GetMesh()->GetSkeletalMeshAsset() && !NewMeshPtr.IsNull())
 	{
+		float StageScale = Stage.VisualScale;
+		GetMesh()->SetRelativeScale3D(FVector(StageScale));
 		return;
 	}
 
