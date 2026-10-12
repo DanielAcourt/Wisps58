@@ -5,14 +5,33 @@
 
 echo [07] Iron Officer: Building Chat Vessel Executable...
 
-:: 1. Ensure core dependencies are present
-python -m pip install pyinstaller requests
+:: 1. Resolve Python Launcher Command (Priority: python -> py -> python3)
+set "PY_CMD="
+python --version >nul 2>&1
+if %errorlevel% EQU 0 (set "PY_CMD=python" & goto :FOUND_PY)
+py --version >nul 2>&1
+if %errorlevel% EQU 0 (set "PY_CMD=py" & goto :FOUND_PY)
+python3 --version >nul 2>&1
+if %errorlevel% EQU 0 (set "PY_CMD=python3" & goto :FOUND_PY)
 
-:: 2. Execute PyInstaller Build
+for /d %%D in ("%LocalAppData%\Programs\Python\Python*") do (
+    if exist "%%D\python.exe" (set "PY_CMD="%%D\python.exe"" & goto :FOUND_PY)
+)
+
+echo [07 ERROR] Python not found. Please install Python 3.10+.
+pause
+exit /b
+
+:FOUND_PY
+:: 2. Ensure core dependencies are present
+echo [07] Verifying PyInstaller and Requests dependencies...
+%PY_CMD% -m pip install pyinstaller requests
+
+:: 3. Execute PyInstaller Build
 :: --onefile: Bundles all dependencies into a single binary.
 :: --name: Sets the output identity to 'IronOfficer_Chat'.
 :: --distpath: Forces the binary to output in the current directory for easy access.
-python -m PyInstaller --onefile --name IronOfficer_Chat --distpath . vessel.py
+%PY_CMD% -m PyInstaller --onefile --name IronOfficer_Chat --distpath . vessel.py
 
 :: 3. Post-Build Cleanup (Optional: remove temporary build folders)
 :: rd /s /q build
