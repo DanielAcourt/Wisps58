@@ -27,6 +27,7 @@
 | AD-019 | Adaptive Mailbox Polling & Bridge Traffic Throttling | 3 | Todo | DevOps | Reduce HTTP traffic spikes from QueryMailbox by implementing adaptive polling intervals in USovereignBridgeSubsystem. | Adaptive polling fires every 5.0s during idle gameplay and speeds up to 1.0s only when active messages are queued, reducing traffic by ~70%. |
 | AD-020 | Simulation Reality Anchor & C++ Mutation Disambiguation | 3 | Todo | Research/DevOps | Add strict Reality Anchor prompt guardrails for Unreal_Simulation chats to prevent LLM hallucination of code execution. | LLM clearly differentiates between suggesting C++ code refactors and executing actual file changes. |
 | B-027 | AAS v1.4.0 Hardening | 3 | Todo | DevOps | Refactor hardcoded diligence score to dynamically verify backup files on disk. | Diligence score calculates actual .bak coverage ratios dynamically. |
+| B-054 | Multi-Stage Growth Attribute Schema & CSV Template Design Protocol | 5 | Todo | Research/DevOps | DT_SovereignSpeciesTemplate.csv currently defines only flat base attributes at the species level, missing per-growth-stage attribute progression arrays defined in C++ FSovereignGrowthStage. | Establish a comprehensive design spec and updated CSV schema/GDD protocol mapping per-stage D&D attribute progression for species templates. |
 
 ---
 
