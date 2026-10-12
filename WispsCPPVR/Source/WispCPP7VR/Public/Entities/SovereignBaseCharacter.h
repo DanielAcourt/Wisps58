@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h" 
 #include "Interaction/SovereignInterfaceMain.h"
 #include "Entities/SovereignBaseInteractable.h"
+#include "SaveSystem/SovereignGameData.h"
 
 
 //This means i need a Input SetupPlayerInputComponent
@@ -79,6 +80,14 @@ public:
 	/** Async callback when stage skeletal mesh finishes streaming */
 	void OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh> LoadedMeshPtr);
 
+	/** Calculates the float delay based on the UpdateFrequency enum */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Update")
+	virtual float GetHeartbeatInterval() const;
+
+	/** The logic function that runs biological growth progress, metabolism, and checks for evolution */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Update")
+	virtual void OnSovereignHeartbeat();
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
 
@@ -122,6 +131,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Growth")
 	int32 CurrentGrowthStage = 0;
+
+	/** How often this character processes low-frequency biological logic */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Performance")
+	EUpdateFrequency UpdateFrequency = EUpdateFrequency::Standard;
+
+	/** The recurring timer handle for the heartbeat logic */
+	FTimerHandle HeartbeatTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Possession")
 	bool bCanBePossessed = true;

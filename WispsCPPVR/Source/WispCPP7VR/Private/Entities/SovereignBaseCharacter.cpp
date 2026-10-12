@@ -8,6 +8,8 @@
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignControllerComponent.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignBioComponent.h"
+#include "TimerManager.h"
 
 //Entinty framework to save information
 #include "Entities/SovereignSaveableEntityComponent.h"
@@ -52,6 +54,15 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 void ASovereignBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Start heartbeat timer for low-frequency biological growth & metabolism processing
+	float Interval = GetHeartbeatInterval();
+	if (Interval > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(HeartbeatTimerHandle, this, &ASovereignBaseCharacter::OnSovereignHeartbeat, Interval, true);
+	}
+
+	SetActorTickEnabled(UpdateFrequency == EUpdateFrequency::Realtime);
 
 	// Only run this if we are controlled by a Human (Local Player)
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -419,13 +430,19 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 	// Call this every frame so the Blueprint Event and Log fire constantly
 	GetSensedActor();
 
-	// Process biological metabolism and Qi flow for living character vessels
-	if (AttributeComponent || QiComponent)
+	// Simulate biology and Qi flow every frame strictly if set to Realtime update frequency
+	if (UpdateFrequency == EUpdateFrequency::Realtime)
 	{
-		UActorComponent* BioComp = FindComponentByClass<USovereignBioComponent>();
-		if (USovereignBioComponent* Bio = Cast<USovereignBioComponent>(BioComp))
+		if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
 		{
+			Bio->MaturityProgress += (Bio->MaturityRate * DeltaTime);
 			Bio->UpdateMetabolism(DeltaTime);
+
+			if (Bio->MaturityProgress >= 1.0f)
+			{
+				Bio->MaturityProgress = 0.0f;
+				Evolve();
+			}
 		}
 
 		if (QiComponent)
@@ -433,6 +450,56 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 			int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
 			QiComponent->ProcessQiFlow(DeltaTime, WisdomVal);
 		}
+	}
+}
+
+float ASovereignBaseCharacter::GetHeartbeatInterval() const
+{
+	switch (UpdateFrequency)
+	{
+	case EUpdateFrequency::Realtime: return 0.0f; // Use Tick instead
+	case EUpdateFrequency::Standard: return 1.0f;
+	case EUpdateFrequency::Slow:     return 10.0f;
+	case EUpdateFrequency::Slower:   return 30.0f;
+	case EUpdateFrequency::Slowest:  return 60.0f;
+	case EUpdateFrequency::Glacier:  return 360.0f;
+	case EUpdateFrequency::Dormant:  return -1.0f; // Disable timer
+	default:                         return 1.0f;
+	}
+}
+
+void ASovereignBaseCharacter::OnSovereignHeartbeat()
+{
+	float HeartbeatSeconds = GetWorldTimerManager().GetTimerRate(HeartbeatTimerHandle);
+	if (HeartbeatSeconds <= 0.0f)
+	{
+		HeartbeatSeconds = GetHeartbeatInterval();
+	}
+	if (HeartbeatSeconds <= 0.0f)
+	{
+		HeartbeatSeconds = 1.0f;
+	}
+
+	int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
+
+	// 1. BIOLOGICAL GROWTH & CONSUMPTION
+	if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+	{
+		Bio->MaturityProgress += Bio->MaturityRate;
+		Bio->UpdateMetabolism(HeartbeatSeconds);
+
+		// 2. EVOLUTION CHECK
+		if (Bio->MaturityProgress >= 1.0f)
+		{
+			Bio->MaturityProgress = 0.0f;
+			Evolve();
+		}
+	}
+
+	// 3. SPIRITUAL FLOW
+	if (QiComponent)
+	{
+		QiComponent->ProcessQiFlow(HeartbeatSeconds, WisdomVal);
 	}
 }
 
