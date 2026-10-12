@@ -178,6 +178,11 @@ void ASovereignBaseEntity::Evolve()
     // Trigger the Visual Shift (Mesh/Particle swap)
     CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
     RefreshVisuals();
+
+    if (USovereignAttributeComponent* AttrComp = FindComponentByClass<USovereignAttributeComponent>())
+    {
+        AttrComp->SyncStatsFromEntity();
+    }
 }
 
 //Like growing their is a gestatin state should evolving be locked into a state witha  progress bar this progress needs ot be manipulated by timme it can go upo or down
