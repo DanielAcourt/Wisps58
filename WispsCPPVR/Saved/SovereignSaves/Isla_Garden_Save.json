@@ -1,7 +1,7 @@
 ﻿{
 	"Entities": [
 		{
-			"GUID": "969254444D505359CA22398765F149C6",
+			"GUID": "81EE5C3B4E4EC2AE740B799D41FD03C6",
 			"ObjectName": "MySovereignIronKnightAgent_C_1",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/MySovereignIronKnightAgent.MySovereignIronKnightAgent_C",
@@ -11,7 +11,7 @@
 				"Identity":
 				{
 					"ObjectName": "MySovereignIronKnightAgent_C_1",
-					"BirthTimestamp": "2026.09.28-11.34.51",
+					"BirthTimestamp": "2026.10.09-14.05.07",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -60,92 +60,22 @@
 				{
 					"QiBalance": 0,
 					"CultivationTier": 1
-				},
-				"Bio":
-				{
-					"Hunger": 47.800033569335938,
-					"Hydration": 47.360023498535156,
-					"Fatigue": 0,
-					"Tiredness": 0,
-					"Toxicity": 0,
-					"WasteLevel": 1.1000000238418579,
-					"Mass": 1,
-					"MassExperience": 1,
-					"MaturityProgress": 0.22000002861022949,
-					"Entropy": 0,
-					"bIsFemale": false,
-					"ParentID": "00000000000000000000000000000000",
-					"MotherID": "00000000000000000000000000000000",
-					"FatherID": "00000000000000000000000000000000",
-					"OffspringCount": 0,
-					"bGestationActive": false,
-					"GestationProgress": 0,
-					"GestationRate": 1,
-					"EggState": 0,
-					"bIsNestCreated": false,
-					"NestSpatiotemporalVolume": 0,
-					"EggFertilityState": "None",
-					"MatingHistory": []
-				},
-				"Qi":
-				{
-					"AlignmentSocket": "ESovereignElement::Grey",
-					"AlignmentInfluence": 100,
-					"MagicSocket": "ESovereignElement::None",
-					"MagicInfluence": 0,
-					"CurrentQi": 22,
-					"MaxQiCapacity": 100,
-					"QiPurity": 1,
-					"TotalQiAccumulated": 0,
-					"bIsDomainOwner": false,
-					"DomainRuneTier": "None",
-					"DomainResonanceRadius": 0,
-					"DomainNetworkSaturation": 0,
-					"Resonance":
-					{
-					}
-				},
-				"Elements":
-				{
-					"BodySocket": "ESovereignElement::Nature",
-					"BodyInfluence": 100,
-					"FireAffinity": 0,
-					"EarthAffinity": 0,
-					"WindAffinity": 0,
-					"WaterAffinity": 0
-				},
-				"Attributes":
-				{
-					"Strength": 10,
-					"Dexterity": 10,
-					"Constitution": 10,
-					"Intelligence": 10,
-					"Wisdom": 10,
-					"Charisma": 10,
-					"Luck": 10,
-					"ArmourClass": 10,
-					"CurrentHealth": 100,
-					"PhysicalResistance": 0,
-					"MagicalResistance": 0,
-					"MentalResistance": 0,
-					"PoisonResistance": 0,
-					"SlowResistance": 0
 				}
 			}
 		},
 		{
-			"GUID": "19FB4E6846DF032A6B7046B13655699C",
+			"GUID": "2544C2D249DEF705AD713D80EB2B0BD0",
 			"ObjectName": "BP_SaveTerminal_C_1",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BP_SaveTerminal.BP_SaveTerminal_C",
-			"Transform": "3450.000000,220.000000,40.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "150.000000,-120.000000,10.000000|0.000000,0.000000,-0.000000|0.375000,0.375000,0.375000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
 					"ObjectName": "BP_SaveTerminal_C_1",
-					"BirthTimestamp": "2026.09.28-11.34.51",
-					"bIsBeingPossessed": false,
+					"BirthTimestamp": "2026.10.09-14.05.07",
+					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
 					"ActorName": "BP_SaveTerminal_C_1",
@@ -155,9 +85,9 @@
 				{
 					"Location":
 					{
-						"X": 3450,
-						"Y": 220,
-						"Z": 40
+						"X": 150,
+						"Y": -120,
+						"Z": 10
 					},
 					"Rotation":
 					{
@@ -175,317 +105,13 @@
 					"QiBalance": 0,
 					"CultivationTier": 1
 				},
-				"Bio":
-				{
-					"Hunger": 47.800033569335938,
-					"Hydration": 47.360023498535156,
-					"Fatigue": 0,
-					"Tiredness": 0,
-					"Toxicity": 0,
-					"WasteLevel": 1.1000000238418579,
-					"Mass": 1,
-					"MassExperience": 1,
-					"MaturityProgress": 0.22000002861022949,
-					"Entropy": 0,
-					"bIsFemale": false,
-					"ParentID": "00000000000000000000000000000000",
-					"MotherID": "00000000000000000000000000000000",
-					"FatherID": "00000000000000000000000000000000",
-					"OffspringCount": 0,
-					"bGestationActive": false,
-					"GestationProgress": 0,
-					"GestationRate": 1,
-					"EggState": 0,
-					"bIsNestCreated": false,
-					"NestSpatiotemporalVolume": 0,
-					"EggFertilityState": "None",
-					"MatingHistory": []
-				},
-				"Qi":
-				{
-					"AlignmentSocket": "ESovereignElement::Grey",
-					"AlignmentInfluence": 100,
-					"MagicSocket": "ESovereignElement::None",
-					"MagicInfluence": 0,
-					"CurrentQi": 22,
-					"MaxQiCapacity": 100,
-					"QiPurity": 1,
-					"TotalQiAccumulated": 0,
-					"bIsDomainOwner": false,
-					"DomainRuneTier": "None",
-					"DomainResonanceRadius": 0,
-					"DomainNetworkSaturation": 0,
-					"Resonance":
-					{
-					}
-				},
-				"Elements":
-				{
-					"BodySocket": "ESovereignElement::Nature",
-					"BodyInfluence": 100,
-					"FireAffinity": 0,
-					"EarthAffinity": 0,
-					"WindAffinity": 0,
-					"WaterAffinity": 0
-				},
-				"Attributes":
-				{
-					"Strength": 10,
-					"Dexterity": 10,
-					"Constitution": 10,
-					"Intelligence": 10,
-					"Wisdom": 10,
-					"Charisma": 10,
-					"Luck": 10,
-					"ArmourClass": 10,
-					"CurrentHealth": 100,
-					"PhysicalResistance": 0,
-					"MagicalResistance": 0,
-					"MentalResistance": 0,
-					"PoisonResistance": 0,
-					"SlowResistance": 0
-				},
 				"Telemetry.temp_c": "0.0",
 				"Telemetry.ph_val": "7.0",
 				"Telemetry.water_depth_mm": "0.0"
 			}
 		},
 		{
-			"GUID": "5E94DA0A43BE4B847500F6A707764A15",
-			"ObjectName": "MySovereignBaseInteractableTest1_C_3",
-			"ParentID": "00000000000000000000000000000000",
-			"Class": "/Game/MySovereignBaseInteractableTest1.MySovereignBaseInteractableTest1_C",
-			"Transform": "0.000000,0.000000,318.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
-			"MetaTags": 
-			{
-				"Identity":
-				{
-					"ObjectName": "MySovereignBaseInteractableTest1_C_3",
-					"BirthTimestamp": "2026.09.28-11.34.51",
-					"bIsBeingPossessed": false,
-					"bIsMobile": true,
-					"ParadoxDensity": 0,
-					"ActorName": "MySovereignBaseInteractableTest1_C_3",
-					"Class": "MySovereignBaseInteractableTest1_C"
-				},
-				"SpatialTransform":
-				{
-					"Location":
-					{
-						"X": 0,
-						"Y": 0,
-						"Z": 318
-					},
-					"Rotation":
-					{
-						"Pitch": 0,
-						"Yaw": 0,
-						"Roll": 0
-					}
-				},
-				"Sovereign.Truth":
-				{
-					"VettedBy": ""
-				},
-				"Sovereign.Magic":
-				{
-					"QiBalance": 0,
-					"CultivationTier": 1
-				},
-				"Bio":
-				{
-					"Hunger": 28,
-					"Hydration": 23.599983215332031,
-					"Fatigue": 0,
-					"Tiredness": 0,
-					"Toxicity": 0,
-					"WasteLevel": 11,
-					"Mass": 1,
-					"MassExperience": 1,
-					"MaturityProgress": 0.22000002861022949,
-					"Entropy": 0,
-					"bIsFemale": false,
-					"ParentID": "00000000000000000000000000000000",
-					"MotherID": "00000000000000000000000000000000",
-					"FatherID": "00000000000000000000000000000000",
-					"OffspringCount": 0,
-					"bGestationActive": false,
-					"GestationProgress": 0,
-					"GestationRate": 1,
-					"EggState": 0,
-					"bIsNestCreated": false,
-					"NestSpatiotemporalVolume": 0,
-					"EggFertilityState": "None",
-					"MatingHistory": []
-				},
-				"Qi":
-				{
-					"AlignmentSocket": "ESovereignElement::Grey",
-					"AlignmentInfluence": 100,
-					"MagicSocket": "ESovereignElement::None",
-					"MagicInfluence": 0,
-					"CurrentQi": 22,
-					"MaxQiCapacity": 100,
-					"QiPurity": 1,
-					"TotalQiAccumulated": 0,
-					"bIsDomainOwner": false,
-					"DomainRuneTier": "None",
-					"DomainResonanceRadius": 0,
-					"DomainNetworkSaturation": 0,
-					"Resonance":
-					{
-					}
-				},
-				"Elements":
-				{
-					"BodySocket": "ESovereignElement::Nature",
-					"BodyInfluence": 100,
-					"FireAffinity": 0,
-					"EarthAffinity": 0,
-					"WindAffinity": 0,
-					"WaterAffinity": 0
-				},
-				"Attributes":
-				{
-					"Strength": 10,
-					"Dexterity": 10,
-					"Constitution": 10,
-					"Intelligence": 10,
-					"Wisdom": 10,
-					"Charisma": 10,
-					"Luck": 10,
-					"ArmourClass": 10,
-					"CurrentHealth": 100,
-					"PhysicalResistance": 0,
-					"MagicalResistance": 0,
-					"MentalResistance": 0,
-					"PoisonResistance": 0,
-					"SlowResistance": 0
-				},
-				"Telemetry.temp_c": "0.0",
-				"Telemetry.ph_val": "7.0",
-				"Telemetry.water_depth_mm": "0.0"
-			}
-		},
-		{
-			"GUID": "EBE88C72456CD44886592B822424ED7E",
-			"ObjectName": "MySovereignBaseInteractableTest1_C_0",
-			"ParentID": "00000000000000000000000000000000",
-			"Class": "/Game/MySovereignBaseInteractableTest1.MySovereignBaseInteractableTest1_C",
-			"Transform": "640.000000,10.000000,318.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
-			"MetaTags": 
-			{
-				"Identity":
-				{
-					"ObjectName": "MySovereignBaseInteractableTest1_C_0",
-					"BirthTimestamp": "2026.09.28-11.34.51",
-					"bIsBeingPossessed": false,
-					"bIsMobile": true,
-					"ParadoxDensity": 0,
-					"ActorName": "MySovereignBaseInteractableTest1_C_0",
-					"Class": "MySovereignBaseInteractableTest1_C"
-				},
-				"SpatialTransform":
-				{
-					"Location":
-					{
-						"X": 640,
-						"Y": 10,
-						"Z": 318
-					},
-					"Rotation":
-					{
-						"Pitch": 0,
-						"Yaw": 0,
-						"Roll": 0
-					}
-				},
-				"Sovereign.Truth":
-				{
-					"VettedBy": ""
-				},
-				"Sovereign.Magic":
-				{
-					"QiBalance": 0,
-					"CultivationTier": 1
-				},
-				"Bio":
-				{
-					"Hunger": 49.559989929199219,
-					"Hydration": 49.472038269042969,
-					"Fatigue": 0,
-					"Tiredness": 0,
-					"Toxicity": 0,
-					"WasteLevel": 0.22000002861022949,
-					"Mass": 1,
-					"MassExperience": 1,
-					"MaturityProgress": 0.22000002861022949,
-					"Entropy": 0,
-					"bIsFemale": false,
-					"ParentID": "00000000000000000000000000000000",
-					"MotherID": "00000000000000000000000000000000",
-					"FatherID": "00000000000000000000000000000000",
-					"OffspringCount": 0,
-					"bGestationActive": false,
-					"GestationProgress": 0,
-					"GestationRate": 1,
-					"EggState": 0,
-					"bIsNestCreated": false,
-					"NestSpatiotemporalVolume": 0,
-					"EggFertilityState": "None",
-					"MatingHistory": []
-				},
-				"Qi":
-				{
-					"AlignmentSocket": "ESovereignElement::Grey",
-					"AlignmentInfluence": 100,
-					"MagicSocket": "ESovereignElement::None",
-					"MagicInfluence": 0,
-					"CurrentQi": 22,
-					"MaxQiCapacity": 100,
-					"QiPurity": 1,
-					"TotalQiAccumulated": 0,
-					"bIsDomainOwner": false,
-					"DomainRuneTier": "None",
-					"DomainResonanceRadius": 0,
-					"DomainNetworkSaturation": 0,
-					"Resonance":
-					{
-					}
-				},
-				"Elements":
-				{
-					"BodySocket": "ESovereignElement::Nature",
-					"BodyInfluence": 100,
-					"FireAffinity": 0,
-					"EarthAffinity": 0,
-					"WindAffinity": 0,
-					"WaterAffinity": 0
-				},
-				"Attributes":
-				{
-					"Strength": 10,
-					"Dexterity": 10,
-					"Constitution": 10,
-					"Intelligence": 10,
-					"Wisdom": 10,
-					"Charisma": 10,
-					"Luck": 10,
-					"ArmourClass": 10,
-					"CurrentHealth": 100,
-					"PhysicalResistance": 0,
-					"MagicalResistance": 0,
-					"MentalResistance": 0,
-					"PoisonResistance": 0,
-					"SlowResistance": 0
-				},
-				"Telemetry.temp_c": "0.0",
-				"Telemetry.ph_val": "7.0",
-				"Telemetry.water_depth_mm": "0.0"
-			}
-		},
-		{
-			"GUID": "576E50B443DD6A58C5B3E48BECD75649",
+			"GUID": "7D971C314F2BF1EDB7927789B20B5225",
 			"ObjectName": "BP_Antelope_C_1",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
@@ -495,7 +121,7 @@
 				"Identity":
 				{
 					"ObjectName": "BP_Antelope_C_1",
-					"BirthTimestamp": "2026.09.28-11.34.51",
+					"BirthTimestamp": "2026.10.09-14.05.07",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -535,17 +161,27 @@
 					"WindAffinity": 0,
 					"WaterAffinity": 0
 				},
-				"Attributes":
+				"Sovereign.Attributes":
 				{
 					"Strength": 10,
+					"StrengthExperience": 0,
 					"Dexterity": 10,
+					"DexterityExperience": 0,
 					"Constitution": 10,
+					"ConstitutionExperience": 0,
 					"Intelligence": 10,
+					"IntelligenceExperience": 0,
 					"Wisdom": 10,
+					"WisdomExperience": 0,
 					"Charisma": 10,
+					"CharismaExperience": 0,
 					"Luck": 10,
+					"LuckExperience": 0,
 					"ArmourClass": 10,
 					"CurrentHealth": 100,
+					"MaxHealth": 100,
+					"CurrentStamina": 0,
+					"MaxStamina": 0,
 					"PhysicalResistance": 0,
 					"MagicalResistance": 0,
 					"MentalResistance": 0,
@@ -570,7 +206,7 @@
 					{
 					}
 				},
-				"Bio":
+				"Sovereign.Bio":
 				{
 					"Hunger": 50,
 					"Hydration": 50,
@@ -599,7 +235,7 @@
 			}
 		},
 		{
-			"GUID": "0F536CE946918379C183C8B0EAE66842",
+			"GUID": "AD5739284137245762A7759AE3FC96C7",
 			"ObjectName": "BP_Antelope_C_3",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
@@ -609,7 +245,7 @@
 				"Identity":
 				{
 					"ObjectName": "BP_Antelope_C_3",
-					"BirthTimestamp": "2026.09.28-11.34.51",
+					"BirthTimestamp": "2026.10.09-14.05.07",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -649,17 +285,27 @@
 					"WindAffinity": 0,
 					"WaterAffinity": 0
 				},
-				"Attributes":
+				"Sovereign.Attributes":
 				{
 					"Strength": 10,
+					"StrengthExperience": 0,
 					"Dexterity": 10,
+					"DexterityExperience": 0,
 					"Constitution": 10,
+					"ConstitutionExperience": 0,
 					"Intelligence": 10,
+					"IntelligenceExperience": 0,
 					"Wisdom": 10,
+					"WisdomExperience": 0,
 					"Charisma": 10,
+					"CharismaExperience": 0,
 					"Luck": 10,
+					"LuckExperience": 0,
 					"ArmourClass": 10,
 					"CurrentHealth": 100,
+					"MaxHealth": 100,
+					"CurrentStamina": 0,
+					"MaxStamina": 0,
 					"PhysicalResistance": 0,
 					"MagicalResistance": 0,
 					"MentalResistance": 0,
@@ -684,7 +330,7 @@
 					{
 					}
 				},
-				"Bio":
+				"Sovereign.Bio":
 				{
 					"Hunger": 50,
 					"Hydration": 50,
@@ -713,17 +359,17 @@
 			}
 		},
 		{
-			"GUID": "99BEC060418C8718FA46ECA067D7CDD8",
+			"GUID": "D8E779284496DBBE086CC9B0996B9910",
 			"ObjectName": "BP_Antelope_C_5",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Antelope.BP_Antelope_C",
-			"Transform": "-20480.000000,-3640.000000,-80600.990965|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "-20480.000000,-3640.000000,-27712.834550|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
 					"ObjectName": "BP_Antelope_C_5",
-					"BirthTimestamp": "2026.09.28-11.34.51",
+					"BirthTimestamp": "2026.10.09-14.05.07",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -736,7 +382,7 @@
 					{
 						"X": -20480,
 						"Y": -3640,
-						"Z": -80600.990964500554
+						"Z": -27712.834550252934
 					},
 					"Rotation":
 					{
@@ -763,17 +409,27 @@
 					"WindAffinity": 0,
 					"WaterAffinity": 0
 				},
-				"Attributes":
+				"Sovereign.Attributes":
 				{
 					"Strength": 10,
+					"StrengthExperience": 0,
 					"Dexterity": 10,
+					"DexterityExperience": 0,
 					"Constitution": 10,
+					"ConstitutionExperience": 0,
 					"Intelligence": 10,
+					"IntelligenceExperience": 0,
 					"Wisdom": 10,
+					"WisdomExperience": 0,
 					"Charisma": 10,
+					"CharismaExperience": 0,
 					"Luck": 10,
+					"LuckExperience": 0,
 					"ArmourClass": 10,
 					"CurrentHealth": 100,
+					"MaxHealth": 100,
+					"CurrentStamina": 0,
+					"MaxStamina": 0,
 					"PhysicalResistance": 0,
 					"MagicalResistance": 0,
 					"MentalResistance": 0,
@@ -798,7 +454,7 @@
 					{
 					}
 				},
-				"Bio":
+				"Sovereign.Bio":
 				{
 					"Hunger": 50,
 					"Hydration": 50,
@@ -827,17 +483,185 @@
 			}
 		},
 		{
-			"GUID": "BC83518C4DEA6D72C6D1109105A829A5",
+			"GUID": "9632068F4D88F8D3A436EBA2D7D33C08",
+			"ObjectName": "MySovereignLivingEntity_C_1",
+			"ParentID": "00000000000000000000000000000000",
+			"Class": "/Game/Blueprint/Actors/Living/MySovereignLivingEntity.MySovereignLivingEntity_C",
+			"Transform": "-400.000000,-50.000000,80.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"MetaTags": 
+			{
+				"Identity":
+				{
+					"ObjectName": "MySovereignLivingEntity_C_1",
+					"BirthTimestamp": "2026.10.09-14.05.07",
+					"bIsBeingPossessed": true,
+					"bIsMobile": true,
+					"ParadoxDensity": 0,
+					"ActorName": "MySovereignLivingEntity_C_1",
+					"Class": "MySovereignLivingEntity_C"
+				},
+				"SpatialTransform":
+				{
+					"Location":
+					{
+						"X": -400,
+						"Y": -50,
+						"Z": 80
+					},
+					"Rotation":
+					{
+						"Pitch": 0,
+						"Yaw": 0,
+						"Roll": 0
+					}
+				},
+				"Sovereign.Truth":
+				{
+					"VettedBy": ""
+				},
+				"Sovereign.Magic":
+				{
+					"QiBalance": 0,
+					"CultivationTier": 1
+				},
+				"Sovereign.Bio":
+				{
+					"Hunger": 50,
+					"Hydration": 50,
+					"Fatigue": 0,
+					"Tiredness": 0,
+					"Toxicity": 0,
+					"WasteLevel": 0,
+					"Mass": 1,
+					"MassExperience": 1,
+					"MaturityProgress": 0,
+					"Entropy": 0,
+					"bIsFemale": false,
+					"ParentID": "00000000000000000000000000000000",
+					"MotherID": "00000000000000000000000000000000",
+					"FatherID": "00000000000000000000000000000000",
+					"OffspringCount": 0,
+					"bGestationActive": false,
+					"GestationProgress": 0,
+					"GestationRate": 1,
+					"EggState": 0,
+					"bIsNestCreated": false,
+					"NestSpatiotemporalVolume": 0,
+					"EggFertilityState": "None",
+					"MatingHistory": []
+				},
+				"Qi":
+				{
+					"AlignmentSocket": "ESovereignElement::Grey",
+					"AlignmentInfluence": 100,
+					"MagicSocket": "ESovereignElement::None",
+					"MagicInfluence": 0,
+					"CurrentQi": 0,
+					"MaxQiCapacity": 100,
+					"QiPurity": 1,
+					"TotalQiAccumulated": 0,
+					"bIsDomainOwner": false,
+					"DomainRuneTier": "None",
+					"DomainResonanceRadius": 0,
+					"DomainNetworkSaturation": 0,
+					"Resonance":
+					{
+					}
+				},
+				"Elements":
+				{
+					"BodySocket": "ESovereignElement::Nature",
+					"BodyInfluence": 100,
+					"FireAffinity": 0,
+					"EarthAffinity": 0,
+					"WindAffinity": 0,
+					"WaterAffinity": 0
+				},
+				"Sovereign.Attributes":
+				{
+					"Strength": 10,
+					"StrengthExperience": 0,
+					"Dexterity": 10,
+					"DexterityExperience": 0,
+					"Constitution": 10,
+					"ConstitutionExperience": 0,
+					"Intelligence": 10,
+					"IntelligenceExperience": 0,
+					"Wisdom": 10,
+					"WisdomExperience": 0,
+					"Charisma": 10,
+					"CharismaExperience": 0,
+					"Luck": 10,
+					"LuckExperience": 0,
+					"ArmourClass": 10,
+					"CurrentHealth": 100,
+					"MaxHealth": 100,
+					"CurrentStamina": 0,
+					"MaxStamina": 0,
+					"PhysicalResistance": 0,
+					"MagicalResistance": 0,
+					"MentalResistance": 0,
+					"PoisonResistance": 0,
+					"SlowResistance": 0
+				}
+			}
+		},
+		{
+			"GUID": "7227D36845A4AD0376AC00B6ECBB0064",
+			"ObjectName": "MySovereignBaseEntitytest_C_1",
+			"ParentID": "00000000000000000000000000000000",
+			"Class": "/Game/Blueprint/Actors/Items/MySovereignBaseEntitytest.MySovereignBaseEntitytest_C",
+			"Transform": "-170.000000,-50.000000,90.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"MetaTags": 
+			{
+				"Identity":
+				{
+					"ObjectName": "MySovereignBaseEntitytest_C_1",
+					"BirthTimestamp": "2026.10.09-14.05.07",
+					"bIsBeingPossessed": true,
+					"bIsMobile": true,
+					"ParadoxDensity": 0,
+					"ActorName": "MySovereignBaseEntitytest_C_1",
+					"Class": "MySovereignBaseEntitytest_C"
+				},
+				"SpatialTransform":
+				{
+					"Location":
+					{
+						"X": -170,
+						"Y": -50,
+						"Z": 90
+					},
+					"Rotation":
+					{
+						"Pitch": 0,
+						"Yaw": 0,
+						"Roll": 0
+					}
+				},
+				"Sovereign.Truth":
+				{
+					"VettedBy": ""
+				},
+				"Sovereign.Magic":
+				{
+					"QiBalance": 0,
+					"CultivationTier": 1
+				}
+			}
+		},
+		{
+			"GUID": "AEF803D649474A0E277731B6559F4A2F",
 			"ObjectName": "BP_Dragon_C_1",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/Actors/Living/BP_Dragon.BP_Dragon_C",
-			"Transform": "-900.000000,-10.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "-810.000000,-10.000000,89.650000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
 					"ObjectName": "BP_Dragon_C_1",
-					"BirthTimestamp": "2026.09.28-11.34.51",
+					"BirthTimestamp": "2026.10.09-14.05.07",
 					"bIsBeingPossessed": false,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -848,7 +672,7 @@
 				{
 					"Location":
 					{
-						"X": -900,
+						"X": -810,
 						"Y": -10,
 						"Z": 89.650000095367432
 					},
@@ -877,17 +701,27 @@
 					"WindAffinity": 0,
 					"WaterAffinity": 0
 				},
-				"Attributes":
+				"Sovereign.Attributes":
 				{
 					"Strength": 10,
+					"StrengthExperience": 0,
 					"Dexterity": 10,
+					"DexterityExperience": 0,
 					"Constitution": 10,
+					"ConstitutionExperience": 0,
 					"Intelligence": 10,
+					"IntelligenceExperience": 0,
 					"Wisdom": 10,
+					"WisdomExperience": 0,
 					"Charisma": 10,
+					"CharismaExperience": 0,
 					"Luck": 10,
+					"LuckExperience": 0,
 					"ArmourClass": 10,
 					"CurrentHealth": 100,
+					"MaxHealth": 100,
+					"CurrentStamina": 1,
+					"MaxStamina": 15,
 					"PhysicalResistance": 5,
 					"MagicalResistance": 5,
 					"MentalResistance": 2,
@@ -912,7 +746,7 @@
 					{
 					}
 				},
-				"Bio":
+				"Sovereign.Bio":
 				{
 					"Hunger": 50,
 					"Hydration": 50,
@@ -941,17 +775,17 @@
 			}
 		},
 		{
-			"GUID": "76B2293E42A05AC4190EE4BC9D12DFA6",
+			"GUID": "39A28CE543E467F78262E29F127F5946",
 			"ObjectName": "BP_PlayerWisp_C_0",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C",
-			"Transform": "3229.431788,200.683519,132.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
+			"Transform": "0.000000,0.000000,92.000000|0.000000,0.000000,-0.000000|1.000000,1.000000,1.000000",
 			"MetaTags": 
 			{
 				"Identity":
 				{
 					"ObjectName": "BP_PlayerWisp_C_0",
-					"BirthTimestamp": "2026.09.28-11.34.51",
+					"BirthTimestamp": "2026.10.09-14.05.07",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -962,9 +796,9 @@
 				{
 					"Location":
 					{
-						"X": 3229.4317883203594,
-						"Y": 200.6835185126219,
-						"Z": 132
+						"X": 0,
+						"Y": 0,
+						"Z": 92
 					},
 					"Rotation":
 					{
@@ -991,17 +825,27 @@
 					"WindAffinity": 0,
 					"WaterAffinity": 0
 				},
-				"Attributes":
+				"Sovereign.Attributes":
 				{
 					"Strength": 10,
+					"StrengthExperience": 0,
 					"Dexterity": 10,
+					"DexterityExperience": 0,
 					"Constitution": 10,
+					"ConstitutionExperience": 0,
 					"Intelligence": 10,
+					"IntelligenceExperience": 0,
 					"Wisdom": 10,
+					"WisdomExperience": 0,
 					"Charisma": 10,
+					"CharismaExperience": 0,
 					"Luck": 10,
+					"LuckExperience": 0,
 					"ArmourClass": 10,
 					"CurrentHealth": 100,
+					"MaxHealth": 100,
+					"CurrentStamina": 0,
+					"MaxStamina": 0,
 					"PhysicalResistance": 0,
 					"MagicalResistance": 0,
 					"MentalResistance": 0,
@@ -1014,7 +858,7 @@
 					"AlignmentInfluence": 100,
 					"MagicSocket": "ESovereignElement::None",
 					"MagicInfluence": 0,
-					"CurrentQi": 497.31613159179688,
+					"CurrentQi": 498.9139404296875,
 					"MaxQiCapacity": 500,
 					"QiPurity": 0.80000001192092896,
 					"TotalQiAccumulated": 0,

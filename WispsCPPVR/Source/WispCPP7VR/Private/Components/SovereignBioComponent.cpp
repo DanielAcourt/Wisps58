@@ -72,6 +72,14 @@ void USovereignBioComponent::UpdateMetabolism(float DeltaTime)
 
     WasteLevel += (NetDrain * 0.5f);
 
+    if (AActor* Owner = GetOwner())
+    {
+        if (USovereignSaveableEntityComponent* SoulHub = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
+        {
+            SoulHub->InvalidateStateCache();
+        }
+    }
+
     // B-038 & B-039: Live Gestation Progression with Hybrid Core Enum
     if (bGestationActive)
     {
@@ -142,13 +150,13 @@ void USovereignBioComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
     }
     BioObj->SetArrayField(TEXT("MatingHistory"), MatingArray);
 
-    OutJson->SetObjectField(TEXT("Bio"), BioObj);
+    OutJson->SetObjectField(TEXT("Sovereign.Bio"), BioObj);
 }
 
 void USovereignBioComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 {
-    const TSharedPtr<FJsonObject>* BioObj;
-    if (InJson->TryGetObjectField(TEXT("Bio"), BioObj))
+    const TSharedPtr<FJsonObject>* BioObj = nullptr;
+    if (InJson->TryGetObjectField(TEXT("Sovereign.Bio"), BioObj) || InJson->TryGetObjectField(TEXT("Bio"), BioObj))
     {
         double TempVal;
         if ((*BioObj)->TryGetNumberField(TEXT("Hunger"), TempVal)) Hunger = (float)TempVal;

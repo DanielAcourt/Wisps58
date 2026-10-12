@@ -8,10 +8,18 @@
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignControllerComponent.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignBioComponent.h"
+#include "TimerManager.h"
 
 //Entinty framework to save information
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignPlayerWisp.h" //hard coded reference for now
+#include "DataTables/SovereignSpeciesData.h"
+#include "Engine/StreamableManager.h"
+#include "Engine/AssetManager.h"
+#include "Engine/SkeletalMesh.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "SaveSystem/SovereignActorRegistry.h"
 
 //The ability for Character to move
 #include "GameFramework/Character.h" // 
@@ -20,12 +28,14 @@
 //The ability for characters to receive input
 #include "EnhancedInputComponent.h" //core unreal input libraries
 #include "EnhancedInputSubsystems.h" // You'll likely need this for the Mapping Context too
+#include "InputMappingContext.h"
 
 
 ASovereignBaseCharacter::ASovereignBaseCharacter()
 {
 	// 1. CONSTRUCT THE HYBRID STACK
 	// Naming here now matches the header exactly
+	SaveDataComponent = CreateDefaultSubobject<USovereignSaveableEntityComponent>(TEXT("SaveDataComponent"));
 	ElementComponent = CreateDefaultSubobject<USovereignElementComponent>(TEXT("ElementComponent"));
 	ControlComponent = CreateDefaultSubobject<USovereignControllerComponent>(TEXT("ControlComponent"));
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
@@ -44,6 +54,15 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 void ASovereignBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Start heartbeat timer for low-frequency biological growth & metabolism processing
+	float Interval = GetHeartbeatInterval();
+	if (Interval > 0.0f)
+	{
+		GetWorldTimerManager().SetTimer(HeartbeatTimerHandle, this, &ASovereignBaseCharacter::OnSovereignHeartbeat, Interval, true);
+	}
+
+	SetActorTickEnabled(UpdateFrequency == EUpdateFrequency::Realtime);
 
 	// Only run this if we are controlled by a Human (Local Player)
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -96,6 +115,18 @@ void ASovereignBaseCharacter::PossessedBy(AController* NewController)
 			else
 			{
 				UE_LOG(LogTemp, Error, TEXT("Sovereign: %s has NO DefaultMappingContext assigned!"), *GetName());
+			}
+
+			if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+			{
+				if (ASovereignPlayerWisp* SpiritWisp = Cast<ASovereignPlayerWisp>(Spirit))
+				{
+					if (UInputMappingContext* SpiritIMC = SpiritWisp->GetDefaultMappingContext())
+					{
+						Subsystem->AddMappingContext(SpiritIMC, 1);
+						UE_LOG(LogTemp, Log, TEXT("Sovereign: Added Spirit Wisp Input Mapping Context [%s] to %s"), *SpiritIMC->GetName(), *GetName());
+					}
+				}
 			}
 		}
 
@@ -154,9 +185,27 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		}
 
 		// Handle the Possession lifecycle (F key)
+		TArray<UInputAction*> ActionsToBind;
 		if (PossessAction)
 		{
-			EIC->BindAction(PossessAction, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+			ActionsToBind.AddUnique(PossessAction);
+		}
+
+		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		{
+			if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+			{
+				if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+				if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
+			}
+		}
+
+		for (UInputAction* Act : ActionsToBind)
+		{
+			if (Act)
+			{
+				EIC->BindAction(Act, ETriggerEvent::Started, this, &ASovereignBaseCharacter::HandlePossessionLifecycle);
+			}
 		}
 	}
 }
@@ -380,11 +429,185 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 
 	// Call this every frame so the Blueprint Event and Log fire constantly
 	GetSensedActor();
+
+	// Simulate biology and Qi flow every frame strictly if set to Realtime update frequency
+	if (UpdateFrequency == EUpdateFrequency::Realtime)
+	{
+		if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+		{
+			Bio->MaturityProgress += (Bio->MaturityRate * DeltaTime);
+			Bio->UpdateMetabolism(DeltaTime);
+
+			if (Bio->MaturityProgress >= 1.0f)
+			{
+				Bio->MaturityProgress = 0.0f;
+				Evolve();
+			}
+		}
+
+		if (QiComponent)
+		{
+			int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
+			QiComponent->ProcessQiFlow(DeltaTime, WisdomVal);
+		}
+	}
+}
+
+float ASovereignBaseCharacter::GetHeartbeatInterval() const
+{
+	switch (UpdateFrequency)
+	{
+	case EUpdateFrequency::Realtime: return 0.0f; // Use Tick instead
+	case EUpdateFrequency::Standard: return 1.0f;
+	case EUpdateFrequency::Slow:     return 10.0f;
+	case EUpdateFrequency::Slower:   return 30.0f;
+	case EUpdateFrequency::Slowest:  return 60.0f;
+	case EUpdateFrequency::Glacier:  return 360.0f;
+	case EUpdateFrequency::Dormant:  return -1.0f; // Disable timer
+	default:                         return 1.0f;
+	}
+}
+
+void ASovereignBaseCharacter::OnSovereignHeartbeat()
+{
+	float HeartbeatSeconds = GetWorldTimerManager().GetTimerRate(HeartbeatTimerHandle);
+	if (HeartbeatSeconds <= 0.0f)
+	{
+		HeartbeatSeconds = GetHeartbeatInterval();
+	}
+	if (HeartbeatSeconds <= 0.0f)
+	{
+		HeartbeatSeconds = 1.0f;
+	}
+
+	int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
+
+	// 1. BIOLOGICAL GROWTH & CONSUMPTION
+	if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+	{
+		Bio->MaturityProgress += Bio->MaturityRate;
+		Bio->UpdateMetabolism(HeartbeatSeconds);
+
+		// 2. EVOLUTION CHECK
+		if (Bio->MaturityProgress >= 1.0f)
+		{
+			Bio->MaturityProgress = 0.0f;
+			Evolve();
+		}
+	}
+
+	// 3. SPIRITUAL FLOW
+	if (QiComponent)
+	{
+		QiComponent->ProcessQiFlow(HeartbeatSeconds, WisdomVal);
+	}
 }
 
 // Leveling up or evolving both in stats and visuals
 void ASovereignBaseCharacter::Evolve()
 {
-	// Base character evolution logic (e.g., check for enough Qi)
-	UE_LOG(LogTemp, Log, TEXT("Base Character Evolving..."));
+	CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
+	RefreshVisuals();
+
+	if (AttributeComponent)
+	{
+		AttributeComponent->SyncStatsFromEntity();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Base Character Evolved to Stage %d"), *GetName(), CurrentGrowthStage);
+}
+
+void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData* InData)
+{
+	if (!InData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] InitializeFromSovereignData: No Data Asset provided."), *GetName());
+		return;
+	}
+
+	SpeciesData = InData;
+	RefreshVisuals();
+
+	if (AttributeComponent)
+	{
+		AttributeComponent->SyncStatsFromEntity();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Sovereign Character Initialized successfully."), *GetName());
+}
+
+void ASovereignBaseCharacter::RefreshVisuals()
+{
+	if (!GetMesh() || !SpeciesData) return;
+
+	if (!SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Invalid Growth Stage: %d"), *GetName(), CurrentGrowthStage);
+		return;
+	}
+
+	const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[CurrentGrowthStage];
+	TSoftObjectPtr<USkeletalMesh> NewMeshPtr = Stage.StageSkeletalMesh;
+
+	if (NewMeshPtr.IsNull())
+	{
+		// Scale update if no skeletal mesh soft pointer is set
+		float StageScale = Stage.VisualScale;
+		GetMesh()->SetRelativeScale3D(FVector(StageScale));
+		return;
+	}
+
+	if (NewMeshPtr.Get() == GetMesh()->GetSkeletalMeshAsset() && !NewMeshPtr.IsNull())
+	{
+		float StageScale = Stage.VisualScale;
+		GetMesh()->SetRelativeScale3D(FVector(StageScale));
+		return;
+	}
+
+	if (NewMeshPtr.IsPending())
+	{
+		FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+		StreamableManager.RequestAsyncLoad(NewMeshPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseCharacter::OnSkeletalMeshLoaded, NewMeshPtr));
+	}
+	else
+	{
+		OnSkeletalMeshLoaded(NewMeshPtr);
+	}
+}
+
+void ASovereignBaseCharacter::OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh> LoadedMeshPtr)
+{
+	if (LoadedMeshPtr.IsValid() && GetMesh())
+	{
+		GetMesh()->SetSkeletalMeshAsset(LoadedMeshPtr.Get());
+
+		if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+		{
+			float StageScale = SpeciesData->GrowthStages[CurrentGrowthStage].VisualScale;
+			GetMesh()->SetRelativeScale3D(FVector(StageScale));
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[%s] Character Visuals synced to Stage %d"), *GetName(), CurrentGrowthStage);
+	}
+}
+
+void ASovereignBaseCharacter::PostSpawnInitialize(const USovereignSpeciesData* InSpeciesData, const FGuid& InMotherID, const FGuid& InFatherID)
+{
+	if (InSpeciesData)
+	{
+		InitializeFromSovereignData(const_cast<USovereignSpeciesData*>(InSpeciesData));
+	}
+
+	if (SaveDataComponent)
+	{
+		SaveDataComponent->InitializeSoul();
+
+		if (UWorld* World = GetWorld())
+		{
+			if (UActorRegistry* Registry = World->GetSubsystem<UActorRegistry>())
+			{
+				Registry->RegisterActor(SaveDataComponent->EntityID, this);
+			}
+		}
+	}
 }

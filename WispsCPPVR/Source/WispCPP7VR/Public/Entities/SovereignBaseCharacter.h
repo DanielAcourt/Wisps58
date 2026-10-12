@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h" 
 #include "Interaction/SovereignInterfaceMain.h"
 #include "Entities/SovereignBaseInteractable.h"
+#include "SaveSystem/SovereignGameData.h"
 
 
 //This means i need a Input SetupPlayerInputComponent
@@ -19,6 +20,8 @@ class USovereignControllerComponent;
 class USovereignAttributeComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
+class USovereignSpeciesData;
+class USkeletalMesh;
 class AController ; // <--- MUST ADD THIS FOR POSSESSION
 
 // This creates a custom event node for your Blueprints
@@ -56,6 +59,40 @@ public:
 	// Getter for the current/last interacted actor
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Senses")
 	AActor* GetCurrentInteractedActor() const { return CurrentInteractedActor; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	int32 GetCurrentGrowthStage() const { return CurrentGrowthStage; }
+
+	/** Master template initialization from species data asset */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	virtual void InitializeFromSovereignData(USovereignSpeciesData* InData);
+
+	/** Post-spawn setup for inheritance/mutations */
+	virtual void PostSpawnInitialize(const USovereignSpeciesData* InSpeciesData, const FGuid& InMotherID = FGuid(), const FGuid& InFatherID = FGuid());
+
+	/** Refreshes skeletal mesh visual model and scale for current growth stage */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Growth")
+	virtual void RefreshVisuals();
+
+	/** Async callback when stage skeletal mesh finishes streaming */
+	void OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh> LoadedMeshPtr);
+
+	/** Calculates the float delay based on the UpdateFrequency enum */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Update")
+	virtual float GetHeartbeatInterval() const;
+
+	/** The logic function that runs biological growth progress, metabolism, and checks for evolution */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Update")
+	virtual void OnSovereignHeartbeat();
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetPossessAction() const { return PossessAction; }
 	//Ideally we want a bool stored on the wisp to know if it is possessing anything
 	bool IsPossessing();
 
@@ -88,6 +125,19 @@ protected:
 	/** Every Sovereign Entity needs the Soul Hub */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
 	USovereignSaveableEntityComponent* SaveDataComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Species")
+	USovereignSpeciesData* SpeciesData = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Growth")
+	int32 CurrentGrowthStage = 0;
+
+	/** How often this character processes low-frequency biological logic */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Performance")
+	EUpdateFrequency UpdateFrequency = EUpdateFrequency::Standard;
+
+	/** The recurring timer handle for the heartbeat logic */
+	FTimerHandle HeartbeatTimerHandle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Possession")
 	bool bCanBePossessed = true;

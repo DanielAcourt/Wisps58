@@ -3,6 +3,7 @@
 
 #include "Components/SovereignAttributeComponent.h"
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
 #include "Dom/JsonObject.h"
@@ -37,64 +38,62 @@ void USovereignAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Auto-register with the Soul Hub
-	if (AActor* Owner = GetOwner())
-	{
-		if (USovereignSaveableEntityComponent* SoulHub = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
-		{
-			SoulHub->RegisterBroker(this);
-		}
-	}
-
 	// Automatically sync when the game starts
 	SyncStatsFromEntity();
 
 	// Start the vessel at full health/stamina based on its new stats
 	CurrentHealth = GetMaxHealth();
-
-	//CurrentStamina = GetMaxStamina();
+	MaxHealth = GetMaxHealth();
 }
 
 void USovereignAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (AActor* Owner = GetOwner())
-	{
-		if (USovereignSaveableEntityComponent* SoulHub = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
-		{
-			SoulHub->UnregisterBroker(this);
-		}
-	}
 	Super::EndPlay(EndPlayReason);
 }
 
 void USovereignAttributeComponent::SyncStatsFromEntity()
 {
-	ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner());
-	if (!OwnerEntity) return;
+	USovereignSpeciesData* SpeciesData = nullptr;
+	int32 StageIdx = 0;
 
-	// Access the SaveDataComponent (The "Soul")
-	USovereignSaveableEntityComponent* SaveComp = OwnerEntity->FindComponentByClass<USovereignSaveableEntityComponent>();
-
-	if (SaveComp)
+	if (ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner()))
 	{
-		/** * DETERMINISTIC SCALING:
-		 * Here is where you would pull from a Data Table based on SaveComp->SpeciesID.
-		 * For now, we simulate the species-based logic:
-		 */
-
-		 // If we are a plant/tree, we might have high Constitution but 0 Charisma
-		 // If we are Erisis, we have high Intelligence and Wisdom.
-
-		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s is syncing attributes from its Saveable Entity Component."), *GetOwner()->GetName());
-
-
-		//Strength = SaveComp->GetBaseStat("Strength");
-		//dev
-		// etc
-		
-		// In a later step, we will hook these up to your Meta-Tag system!
-		// Example: Strength = SaveComp->GetBaseStat("Strength");
+		SpeciesData = OwnerEntity->GetSpeciesData();
+		StageIdx = OwnerEntity->GetCurrentGrowthStage();
 	}
+	else if (ASovereignBaseCharacter* OwnerChar = Cast<ASovereignBaseCharacter>(GetOwner()))
+	{
+		SpeciesData = OwnerChar->GetSpeciesData();
+		StageIdx = OwnerChar->GetCurrentGrowthStage();
+	}
+
+	if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(StageIdx))
+	{
+		const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[StageIdx];
+
+		float OldMaxHealth = GetMaxHealth();
+		float HealthRatio = (OldMaxHealth > 0.0f) ? (CurrentHealth / OldMaxHealth) : 1.0f;
+
+		// Preserve accumulated stat experience on top of the new growth stage base stats
+		Strength = Stage.BaseStrength + FMath::FloorToInt(StrengthExperience);
+		Dexterity = Stage.BaseDexterity + FMath::FloorToInt(DexterityExperience);
+		Constitution = Stage.BaseConstitution + FMath::FloorToInt(ConstitutionExperience);
+		Intelligence = Stage.BaseIntelligence + FMath::FloorToInt(IntelligenceExperience);
+		Wisdom = Stage.BaseWisdom + FMath::FloorToInt(WisdomExperience);
+		Charisma = Stage.BaseCharisma + FMath::FloorToInt(CharismaExperience);
+		Luck = Stage.BaseLuck + FMath::FloorToInt(LuckExperience);
+
+		// Recalculate health bounds dynamically based on updated Constitution
+		MaxHealth = GetMaxHealth();
+		CurrentHealth = FMath::Clamp(HealthRatio * MaxHealth, 1.0f, MaxHealth);
+
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
+			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
+			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
 }
 
 float USovereignAttributeComponent::GetMaxHealth() const
@@ -199,15 +198,32 @@ void USovereignAttributeComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 	TSharedPtr<FJsonObject> AttrObj = MakeShareable(new FJsonObject());
 
 	AttrObj->SetNumberField(TEXT("Strength"), Strength);
+	AttrObj->SetNumberField(TEXT("StrengthExperience"), StrengthExperience);
+
 	AttrObj->SetNumberField(TEXT("Dexterity"), Dexterity);
+	AttrObj->SetNumberField(TEXT("DexterityExperience"), DexterityExperience);
+
 	AttrObj->SetNumberField(TEXT("Constitution"), Constitution);
+	AttrObj->SetNumberField(TEXT("ConstitutionExperience"), ConstitutionExperience);
+
 	AttrObj->SetNumberField(TEXT("Intelligence"), Intelligence);
+	AttrObj->SetNumberField(TEXT("IntelligenceExperience"), IntelligenceExperience);
+
 	AttrObj->SetNumberField(TEXT("Wisdom"), Wisdom);
+	AttrObj->SetNumberField(TEXT("WisdomExperience"), WisdomExperience);
+
 	AttrObj->SetNumberField(TEXT("Charisma"), Charisma);
+	AttrObj->SetNumberField(TEXT("CharismaExperience"), CharismaExperience);
+
 	AttrObj->SetNumberField(TEXT("Luck"), Luck);
+	AttrObj->SetNumberField(TEXT("LuckExperience"), LuckExperience);
+
 	AttrObj->SetNumberField(TEXT("ArmourClass"), ArmourClass);
 
 	AttrObj->SetNumberField(TEXT("CurrentHealth"), CurrentHealth);
+	AttrObj->SetNumberField(TEXT("MaxHealth"), MaxHealth);
+	AttrObj->SetNumberField(TEXT("CurrentStamina"), CurrentStamina);
+	AttrObj->SetNumberField(TEXT("MaxStamina"), MaxStamina);
 
 	AttrObj->SetNumberField(TEXT("PhysicalResistance"), PhysicalResistance);
 	AttrObj->SetNumberField(TEXT("MagicalResistance"), MagicalResistance);
@@ -215,25 +231,42 @@ void USovereignAttributeComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 	AttrObj->SetNumberField(TEXT("PoisonResistance"), PoisonResistance);
 	AttrObj->SetNumberField(TEXT("SlowResistance"), SlowResistance);
 
-	OutJson->SetObjectField(TEXT("Attributes"), AttrObj);
+	OutJson->SetObjectField(TEXT("Sovereign.Attributes"), AttrObj);
 }
 
 void USovereignAttributeComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 {
 	const TSharedPtr<FJsonObject>* AttrObj;
-	if (InJson->TryGetObjectField(TEXT("Attributes"), AttrObj))
+	if (InJson->TryGetObjectField(TEXT("Sovereign.Attributes"), AttrObj))
 	{
 		double Val;
 		if ((*AttrObj)->TryGetNumberField(TEXT("Strength"), Val)) Strength = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("StrengthExperience"), Val)) StrengthExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("Dexterity"), Val)) Dexterity = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("DexterityExperience"), Val)) DexterityExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("Constitution"), Val)) Constitution = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("ConstitutionExperience"), Val)) ConstitutionExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("Intelligence"), Val)) Intelligence = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("IntelligenceExperience"), Val)) IntelligenceExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("Wisdom"), Val)) Wisdom = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("WisdomExperience"), Val)) WisdomExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("Charisma"), Val)) Charisma = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("CharismaExperience"), Val)) CharismaExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("Luck"), Val)) Luck = (int32)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("LuckExperience"), Val)) LuckExperience = Val;
+
 		if ((*AttrObj)->TryGetNumberField(TEXT("ArmourClass"), Val)) ArmourClass = (int32)Val;
 
 		if ((*AttrObj)->TryGetNumberField(TEXT("CurrentHealth"), Val)) CurrentHealth = (float)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("MaxHealth"), Val)) MaxHealth = (float)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("CurrentStamina"), Val)) CurrentStamina = (float)Val;
+		if ((*AttrObj)->TryGetNumberField(TEXT("MaxStamina"), Val)) MaxStamina = (float)Val;
 
 		if ((*AttrObj)->TryGetNumberField(TEXT("PhysicalResistance"), Val)) PhysicalResistance = (float)Val;
 		if ((*AttrObj)->TryGetNumberField(TEXT("MagicalResistance"), Val)) MagicalResistance = (float)Val;

@@ -77,8 +77,18 @@ bool FSovereignBioComponentSerializationTest::RunTest(const FString& Parameters)
     BioComp->OnSave(RootObj);
 
     // Verify JSON structure and fields
-    TestTrue(TEXT("Root JSON has Bio object"), RootObj->HasField(TEXT("Bio")));
-    TSharedPtr<FJsonObject> BioObj = RootObj->GetObjectField(TEXT("Bio"));
+    bool bHasBioKey = RootObj->HasField(TEXT("Sovereign.Bio")) || RootObj->HasField(TEXT("Bio"));
+    TestTrue(TEXT("Root JSON has Bio object"), bHasBioKey);
+
+    TSharedPtr<FJsonObject> BioObj;
+    if (RootObj->HasField(TEXT("Sovereign.Bio")))
+    {
+        BioObj = RootObj->GetObjectField(TEXT("Sovereign.Bio"));
+    }
+    else if (RootObj->HasField(TEXT("Bio")))
+    {
+        BioObj = RootObj->GetObjectField(TEXT("Bio"));
+    }
     TestNotNull(TEXT("Bio JSON object is valid"), BioObj.Get());
 
     TestEqual(TEXT("bGestationActive serialized correctly"), BioObj->GetBoolField(TEXT("bGestationActive")), true);
