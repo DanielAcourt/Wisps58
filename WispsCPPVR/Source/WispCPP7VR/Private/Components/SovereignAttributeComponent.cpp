@@ -3,6 +3,7 @@
 
 #include "Components/SovereignAttributeComponent.h"
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
 #include "Dom/JsonObject.h"
@@ -59,6 +60,11 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 	{
 		SpeciesData = OwnerEntity->GetSpeciesData();
 		StageIdx = OwnerEntity->GetCurrentGrowthStage();
+	}
+	else if (ASovereignBaseCharacter* OwnerChar = Cast<ASovereignBaseCharacter>(GetOwner()))
+	{
+		SpeciesData = OwnerChar->GetSpeciesData();
+		StageIdx = OwnerChar->GetCurrentGrowthStage();
 	}
 
 	if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(StageIdx))

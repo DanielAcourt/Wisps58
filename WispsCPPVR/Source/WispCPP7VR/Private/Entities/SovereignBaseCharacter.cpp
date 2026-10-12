@@ -12,6 +12,12 @@
 //Entinty framework to save information
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignPlayerWisp.h" //hard coded reference for now
+#include "DataTables/SovereignSpeciesData.h"
+#include "Engine/StreamableManager.h"
+#include "Engine/AssetManager.h"
+#include "Engine/SkeletalMesh.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "SaveSystem/SovereignActorRegistry.h"
 
 //The ability for Character to move
 #include "GameFramework/Character.h" // 
@@ -433,6 +439,106 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 // Leveling up or evolving both in stats and visuals
 void ASovereignBaseCharacter::Evolve()
 {
-	// Base character evolution logic (e.g., check for enough Qi)
-	UE_LOG(LogTemp, Log, TEXT("Base Character Evolving..."));
+	CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
+	RefreshVisuals();
+
+	if (AttributeComponent)
+	{
+		AttributeComponent->SyncStatsFromEntity();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Base Character Evolved to Stage %d"), *GetName(), CurrentGrowthStage);
+}
+
+void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData* InData)
+{
+	if (!InData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] InitializeFromSovereignData: No Data Asset provided."), *GetName());
+		return;
+	}
+
+	SpeciesData = InData;
+	RefreshVisuals();
+
+	if (AttributeComponent)
+	{
+		AttributeComponent->SyncStatsFromEntity();
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[%s] Sovereign Character Initialized successfully."), *GetName());
+}
+
+void ASovereignBaseCharacter::RefreshVisuals()
+{
+	if (!GetMesh() || !SpeciesData) return;
+
+	if (!SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[%s] Invalid Growth Stage: %d"), *GetName(), CurrentGrowthStage);
+		return;
+	}
+
+	const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[CurrentGrowthStage];
+	TSoftObjectPtr<USkeletalMesh> NewMeshPtr = Stage.StageSkeletalMesh;
+
+	if (NewMeshPtr.IsNull())
+	{
+		// Scale update if no skeletal mesh soft pointer is set
+		float StageScale = Stage.VisualScale;
+		GetMesh()->SetRelativeScale3D(FVector(StageScale));
+		return;
+	}
+
+	if (NewMeshPtr.Get() == GetMesh()->GetSkeletalMeshAsset() && !NewMeshPtr.IsNull())
+	{
+		return;
+	}
+
+	if (NewMeshPtr.IsPending())
+	{
+		FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+		StreamableManager.RequestAsyncLoad(NewMeshPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseCharacter::OnSkeletalMeshLoaded, NewMeshPtr));
+	}
+	else
+	{
+		OnSkeletalMeshLoaded(NewMeshPtr);
+	}
+}
+
+void ASovereignBaseCharacter::OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh> LoadedMeshPtr)
+{
+	if (LoadedMeshPtr.IsValid() && GetMesh())
+	{
+		GetMesh()->SetSkeletalMeshAsset(LoadedMeshPtr.Get());
+
+		if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+		{
+			float StageScale = SpeciesData->GrowthStages[CurrentGrowthStage].VisualScale;
+			GetMesh()->SetRelativeScale3D(FVector(StageScale));
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[%s] Character Visuals synced to Stage %d"), *GetName(), CurrentGrowthStage);
+	}
+}
+
+void ASovereignBaseCharacter::PostSpawnInitialize(const USovereignSpeciesData* InSpeciesData, const FGuid& InMotherID, const FGuid& InFatherID)
+{
+	if (InSpeciesData)
+	{
+		InitializeFromSovereignData(const_cast<USovereignSpeciesData*>(InSpeciesData));
+	}
+
+	if (SaveDataComponent)
+	{
+		SaveDataComponent->InitializeSoul();
+
+		if (UWorld* World = GetWorld())
+		{
+			if (UActorRegistry* Registry = World->GetSubsystem<UActorRegistry>())
+			{
+				Registry->RegisterActor(SaveDataComponent->EntityID, this);
+			}
+		}
+	}
 }

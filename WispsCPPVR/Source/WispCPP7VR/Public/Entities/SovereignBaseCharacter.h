@@ -19,6 +19,8 @@ class USovereignControllerComponent;
 class USovereignAttributeComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
+class USovereignSpeciesData;
+class USkeletalMesh;
 class AController ; // <--- MUST ADD THIS FOR POSSESSION
 
 // This creates a custom event node for your Blueprints
@@ -57,6 +59,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Senses")
 	AActor* GetCurrentInteractedActor() const { return CurrentInteractedActor; }
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	int32 GetCurrentGrowthStage() const { return CurrentGrowthStage; }
+
+	/** Master template initialization from species data asset */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	virtual void InitializeFromSovereignData(USovereignSpeciesData* InData);
+
+	/** Post-spawn setup for inheritance/mutations */
+	virtual void PostSpawnInitialize(const USovereignSpeciesData* InSpeciesData, const FGuid& InMotherID = FGuid(), const FGuid& InFatherID = FGuid());
+
+	/** Refreshes skeletal mesh visual model and scale for current growth stage */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Growth")
+	virtual void RefreshVisuals();
+
+	/** Async callback when stage skeletal mesh finishes streaming */
+	void OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh> LoadedMeshPtr);
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
 
@@ -94,6 +116,12 @@ protected:
 	/** Every Sovereign Entity needs the Soul Hub */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|SaveSystem")
 	USovereignSaveableEntityComponent* SaveDataComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Species")
+	USovereignSpeciesData* SpeciesData = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Growth")
+	int32 CurrentGrowthStage = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Possession")
 	bool bCanBePossessed = true;

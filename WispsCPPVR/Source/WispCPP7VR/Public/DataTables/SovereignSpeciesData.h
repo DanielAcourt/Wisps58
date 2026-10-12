@@ -9,6 +9,7 @@
 #include "SovereignSpeciesData.generated.h"
 
 class ASovereignBaseEntity;
+class USkeletalMesh;
 
 /** * The Unique Tag for this species (e.g., Species.Plant.Oak).
      * This is what the Save System looks for to know which asset to load.
@@ -21,6 +22,10 @@ struct FSovereignGrowthStage
     /** The 3D model for this specific stage */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
     TSoftObjectPtr<UStaticMesh> StageMesh;
+
+    /** Optional Skeletal Mesh for Character entities (e.g. Humanoids, Dragons) */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
+    TSoftObjectPtr<USkeletalMesh> StageSkeletalMesh;
 
     /** NEW: Scaling factor for this stage (1.0 = Default) */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
@@ -118,7 +123,7 @@ public:
 
     /** The Actor Class to spawn for this species. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawning")
-    TSoftClassPtr<class ASovereignBaseEntity> ActorClass;
+    TSoftClassPtr<class AActor> ActorClass;
 
     // Entities are spawned and initialized in the game world using this data asset as a template.
     // The process involves several systems:

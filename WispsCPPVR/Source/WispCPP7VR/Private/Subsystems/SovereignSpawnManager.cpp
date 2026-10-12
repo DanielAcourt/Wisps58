@@ -3,6 +3,7 @@
 
 #include "Subsystems/SovereignSpawnManager.h"
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
 #include "SaveSystem/SovereignActorRegistry.h"
@@ -88,26 +89,33 @@ void USovereignSpawnManager::OnClassLoaded(int32 RequestID)
 		}
 	}
 
-	ASovereignBaseEntity* NewEntity = World->SpawnActor<ASovereignBaseEntity>(ClassToSpawn, Request->Transform);
+	AActor* NewActor = World->SpawnActor<AActor>(ClassToSpawn, Request->Transform);
 
-	if (NewEntity)
+	if (NewActor)
 	{
-		NewEntity->PostSpawnInitialize(SpeciesData, Request->MotherID, Request->FatherID);
-		if (bHasParentFailure)
+		if (ASovereignBaseEntity* NewEntity = Cast<ASovereignBaseEntity>(NewActor))
 		{
-			FGameplayTag PenaltyTag = FGameplayTag::RequestGameplayTag(FName("State.Biological.Penalty"), false);
-			if (PenaltyTag.IsValid())
+			NewEntity->PostSpawnInitialize(SpeciesData, Request->MotherID, Request->FatherID);
+			if (bHasParentFailure)
 			{
-				NewEntity->GameplayTags.AddTag(PenaltyTag);
+				FGameplayTag PenaltyTag = FGameplayTag::RequestGameplayTag(FName("State.Biological.Penalty"), false);
+				if (PenaltyTag.IsValid())
+				{
+					NewEntity->GameplayTags.AddTag(PenaltyTag);
+				}
+			}
+			if (ClassToSpawn == FallbackUnknownClass)
+			{
+				FGameplayTag UnknownTag = FGameplayTag::RequestGameplayTag(FName("Transient.Unknown"), false);
+				if (UnknownTag.IsValid())
+				{
+					NewEntity->GameplayTags.AddTag(UnknownTag);
+				}
 			}
 		}
-		if (ClassToSpawn == FallbackUnknownClass)
+		else if (ASovereignBaseCharacter* NewChar = Cast<ASovereignBaseCharacter>(NewActor))
 		{
-			FGameplayTag UnknownTag = FGameplayTag::RequestGameplayTag(FName("Transient.Unknown"), false);
-			if (UnknownTag.IsValid())
-			{
-				NewEntity->GameplayTags.AddTag(UnknownTag);
-			}
+			NewChar->PostSpawnInitialize(SpeciesData, Request->MotherID, Request->FatherID);
 		}
 	}
 
