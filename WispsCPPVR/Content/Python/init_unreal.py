@@ -22,3 +22,11 @@ try:
     unreal.log("🏛️ Sovereign Framework: Art Sync Tools registered into Python builtins context.")
 except Exception as e:
     unreal.log_warning(f"🏛️ Sovereign Framework: Art Sync pre-load notice: {e}")
+
+try:
+    import import_species_data_assets
+    builtins.import_species_data_assets = import_species_data_assets
+    builtins.import_species = import_species_data_assets.import_species_templates
+    unreal.log("🏛️ Sovereign Framework: Species Primary DataAsset Importer (B-055) registered into Python builtins context.")
+except Exception as e:
+    unreal.log_warning(f"🏛️ Sovereign Framework: Species Importer pre-load notice: {e}")
