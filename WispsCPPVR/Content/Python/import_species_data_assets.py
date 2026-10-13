@@ -168,23 +168,22 @@ def import_species_templates(csv_filepath=None, target_package_path="/Game/Data/
             scale_factor = float(row.get("GrowthScaleFactor", "1.20"))
             species_asset.set_editor_property("growth_scale_factor", scale_factor)
 
-            # Set Stage 0 Base Attributes into GrowthStages[0]
-            stages = species_asset.get_editor_property("growth_stages")
-            if len(stages) == 0:
-                stages.resize(8)
+            # Build 8 growth stage instances
+            new_stages = []
+            for stage_idx in range(8):
+                stg = unreal.SovereignGrowthStage()
+                if stage_idx == 0:
+                    stg.set_editor_property("base_strength", int(float(row.get("BaseStrength", 10))))
+                    stg.set_editor_property("base_dexterity", int(float(row.get("BaseDexterity", 10))))
+                    stg.set_editor_property("base_constitution", int(float(row.get("BaseConstitution", 10))))
+                    stg.set_editor_property("base_intelligence", int(float(row.get("BaseIntelligence", 10))))
+                    stg.set_editor_property("base_wisdom", int(float(row.get("BaseWisdom", 10))))
+                    stg.set_editor_property("base_charisma", int(float(row.get("BaseCharisma", 10))))
+                    stg.set_editor_property("base_luck", int(float(row.get("BaseLuck", 10))))
+                    stg.set_editor_property("metabolic_rate", float(row.get("MetabolicRate", 1.0)))
+                new_stages.append(stg)
 
-            stage0 = stages[0] if len(stages) > 0 else unreal.SovereignGrowthStage()
-            stage0.set_editor_property("base_strength", int(float(row.get("BaseStrength", 10))))
-            stage0.set_editor_property("base_dexterity", int(float(row.get("BaseDexterity", 10))))
-            stage0.set_editor_property("base_constitution", int(float(row.get("BaseConstitution", 10))))
-            stage0.set_editor_property("base_intelligence", int(float(row.get("BaseIntelligence", 10))))
-            stage0.set_editor_property("base_wisdom", int(float(row.get("BaseWisdom", 10))))
-            stage0.set_editor_property("base_charisma", int(float(row.get("BaseCharisma", 10))))
-            stage0.set_editor_property("base_luck", int(float(row.get("BaseLuck", 10))))
-            stage0.set_editor_property("metabolic_rate", float(row.get("MetabolicRate", 1.0)))
-
-            stages[0] = stage0
-            species_asset.set_editor_property("growth_stages", stages)
+            species_asset.set_editor_property("growth_stages", new_stages)
 
             # Trigger C++ UFUNCTION(CallInEditor) void GenerateGrowthStages()
             if hasattr(species_asset, "generate_growth_stages"):
