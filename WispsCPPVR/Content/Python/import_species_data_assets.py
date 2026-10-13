@@ -86,100 +86,114 @@ def import_species_templates(csv_filepath=None, target_package_path="/Game/Data/
     updated_count = 0
 
     for row in species_rows:
-        asset_name = row.get("Name", "").strip()
-        if not asset_name:
-            continue
-
-        asset_path = f"{target_package_path}/{asset_name}"
-        existing_asset = editor_asset_lib.load_asset(asset_path)
-
-        species_data_class = unreal.load_class(None, "/Script/WispCPP7VR.SovereignSpeciesData")
-        if not species_data_class:
-            unreal.log_error("❌ [Sovereign Importer] Could not load USovereignSpeciesData C++ class!")
-            return False
-
-        if existing_asset:
-            species_asset = existing_asset
-            updated_count += 1
-            unreal.log(f"🔄 Updating existing species DataAsset: {asset_name}")
-        else:
-            factory = unreal.DataAssetFactory()
-            factory.set_editor_property("data_asset_class", species_data_class)
-            species_asset = asset_tools.create_asset(asset_name, target_package_path, species_data_class, factory)
-            created_count += 1
-            unreal.log(f"✨ Created new species DataAsset: {asset_name}")
-
-        if not species_asset:
-            unreal.log_error(f"❌ Failed to instantiate species asset: {asset_name}")
-            continue
-
-        # Set Identity properties
-        display_name = row.get("DisplayName", asset_name)
-        species_asset.set_editor_property("species_name", unreal.Text(display_name))
-
-        species_tag_str = row.get("SpeciesTag", "").strip()
-        if species_tag_str:
-            species_asset.set_editor_property("species_tag", unreal.GameplayTag(name=species_tag_str))
-            species_asset.set_editor_property("identity_signature", unreal.GameplayTag(name=species_tag_str))
-
-        # Set Movement & Bio flags
-        species_asset.set_editor_property("b_can_fly", row.get("bCanFly", "false").lower() == "true")
-        species_asset.set_editor_property("b_can_move", row.get("bCanMove", "false").lower() == "true")
-        species_asset.set_editor_property("b_is_biological", row.get("bIsBiological", "false").lower() == "true")
-
-        # Set Soft Actor Class Pointer if specified
-        actor_class_str = row.get("ActorClass", "").strip()
-        if actor_class_str:
-            actor_class = unreal.load_class(None, actor_class_str)
-            if actor_class:
-                species_asset.set_editor_property("actor_class", actor_class)
-
-        # Growth Curve Configuration
-        curve_type_str = row.get("GrowthCurveType", "Exponential").strip()
-        curve_enum_val = CURVE_ENUM_MAP.get(curve_type_str, 1) # Default to Exponential
-
-        # Access C++ Enum for ESovereignGrowthCurve
         try:
-            curve_enum_type = unreal.SovereignGrowthCurve.EXPONENTIAL
-            if curve_type_str == "Linear":
-                curve_enum_type = unreal.SovereignGrowthCurve.LINEAR
-            elif curve_type_str == "FrontLoaded":
-                curve_enum_type = unreal.SovereignGrowthCurve.FRONT_LOADED
-            elif curve_type_str == "Flat":
-                curve_enum_type = unreal.SovereignGrowthCurve.FLAT
+            asset_name = row.get("Name", "").strip()
+            if not asset_name:
+                continue
 
-            species_asset.set_editor_property("growth_curve_type", curve_enum_type)
-        except Exception:
-            pass
+            asset_path = f"{target_package_path}/{asset_name}"
+            existing_asset = editor_asset_lib.load_asset(asset_path)
 
-        scale_factor = float(row.get("GrowthScaleFactor", "1.20"))
-        species_asset.set_editor_property("growth_scale_factor", scale_factor)
+            species_data_class = unreal.load_class(None, "/Script/WispCPP7VR.SovereignSpeciesData")
+            if not species_data_class:
+                unreal.log_error("❌ [Sovereign Importer] Could not load USovereignSpeciesData C++ class!")
+                return False
 
-        # Set Stage 0 Base Attributes into GrowthStages[0]
-        stages = species_asset.get_editor_property("growth_stages")
-        if len(stages) == 0:
-            stages.resize(8)
+            if existing_asset:
+                species_asset = existing_asset
+                updated_count += 1
+                unreal.log(f"🔄 Updating existing species DataAsset: {asset_name}")
+            else:
+                factory = unreal.DataAssetFactory()
+                factory.set_editor_property("data_asset_class", species_data_class)
+                species_asset = asset_tools.create_asset(asset_name, target_package_path, species_data_class, factory)
+                created_count += 1
+                unreal.log(f"✨ Created new species DataAsset: {asset_name}")
 
-        stage0 = stages[0] if len(stages) > 0 else unreal.SovereignGrowthStage()
-        stage0.set_editor_property("base_strength", int(row.get("BaseStrength", 10)))
-        stage0.set_editor_property("base_dexterity", int(row.get("BaseDexterity", 10)))
-        stage0.set_editor_property("base_constitution", int(row.get("BaseConstitution", 10)))
-        stage0.set_editor_property("base_intelligence", int(row.get("BaseIntelligence", 10)))
-        stage0.set_editor_property("base_wisdom", int(row.get("BaseWisdom", 10)))
-        stage0.set_editor_property("base_charisma", int(row.get("BaseCharisma", 10)))
-        stage0.set_editor_property("base_luck", int(row.get("BaseLuck", 10)))
-        stage0.set_editor_property("metabolic_rate", float(row.get("MetabolicRate", 1.0)))
+            if not species_asset:
+                unreal.log_error(f"❌ Failed to instantiate species asset: {asset_name}")
+                continue
 
-        stages[0] = stage0
-        species_asset.set_editor_property("growth_stages", stages)
+            # Set Identity properties
+            display_name = row.get("DisplayName", asset_name)
+            species_asset.set_editor_property("species_name", unreal.Text(display_name))
 
-        # Trigger C++ UFUNCTION(CallInEditor) void GenerateGrowthStages()
-        if hasattr(species_asset, "generate_growth_stages"):
-            species_asset.generate_growth_stages()
-            unreal.log(f"   └─ Executed C++ GenerateGrowthStages() for {asset_name}")
+            species_tag_str = row.get("SpeciesTag", "").strip()
+            if species_tag_str:
+                try:
+                    tag_obj = unreal.GameplayTag(tag_name=species_tag_str)
+                    species_asset.set_editor_property("species_tag", tag_obj)
+                    species_asset.set_editor_property("identity_signature", tag_obj)
+                except Exception:
+                    try:
+                        tag_obj = unreal.GameplayTag()
+                        tag_obj.set_editor_property("tag_name", unreal.Name(species_tag_str))
+                        species_asset.set_editor_property("species_tag", tag_obj)
+                        species_asset.set_editor_property("identity_signature", tag_obj)
+                    except Exception as e_inner:
+                        unreal.log_warning(f"   ⚠️ Could not set gameplay tag [{species_tag_str}]: {e_inner}")
 
-        # Save Asset
-        editor_asset_lib.save_loaded_asset(species_asset)
+            # Set Movement & Bio flags
+            species_asset.set_editor_property("b_can_fly", row.get("bCanFly", "false").lower() == "true")
+            species_asset.set_editor_property("b_can_move", row.get("bCanMove", "false").lower() == "true")
+            species_asset.set_editor_property("b_is_biological", row.get("bIsBiological", "false").lower() == "true")
+
+            # Set Soft Actor Class Pointer if specified
+            actor_class_str = row.get("ActorClass", "").strip()
+            if actor_class_str:
+                try:
+                    actor_class = unreal.load_class(None, actor_class_str)
+                    if actor_class:
+                        species_asset.set_editor_property("actor_class", actor_class)
+                except Exception:
+                    pass
+
+            # Growth Curve Configuration
+            curve_type_str = row.get("GrowthCurveType", "Exponential").strip()
+
+            # Access C++ Enum for ESovereignGrowthCurve
+            try:
+                curve_enum_type = unreal.SovereignGrowthCurve.EXPONENTIAL
+                if curve_type_str == "Linear":
+                    curve_enum_type = unreal.SovereignGrowthCurve.LINEAR
+                elif curve_type_str == "FrontLoaded":
+                    curve_enum_type = unreal.SovereignGrowthCurve.FRONT_LOADED
+                elif curve_type_str == "Flat":
+                    curve_enum_type = unreal.SovereignGrowthCurve.FLAT
+
+                species_asset.set_editor_property("growth_curve_type", curve_enum_type)
+            except Exception:
+                pass
+
+            scale_factor = float(row.get("GrowthScaleFactor", "1.20"))
+            species_asset.set_editor_property("growth_scale_factor", scale_factor)
+
+            # Set Stage 0 Base Attributes into GrowthStages[0]
+            stages = species_asset.get_editor_property("growth_stages")
+            if len(stages) == 0:
+                stages.resize(8)
+
+            stage0 = stages[0] if len(stages) > 0 else unreal.SovereignGrowthStage()
+            stage0.set_editor_property("base_strength", int(float(row.get("BaseStrength", 10))))
+            stage0.set_editor_property("base_dexterity", int(float(row.get("BaseDexterity", 10))))
+            stage0.set_editor_property("base_constitution", int(float(row.get("BaseConstitution", 10))))
+            stage0.set_editor_property("base_intelligence", int(float(row.get("BaseIntelligence", 10))))
+            stage0.set_editor_property("base_wisdom", int(float(row.get("BaseWisdom", 10))))
+            stage0.set_editor_property("base_charisma", int(float(row.get("BaseCharisma", 10))))
+            stage0.set_editor_property("base_luck", int(float(row.get("BaseLuck", 10))))
+            stage0.set_editor_property("metabolic_rate", float(row.get("MetabolicRate", 1.0)))
+
+            stages[0] = stage0
+            species_asset.set_editor_property("growth_stages", stages)
+
+            # Trigger C++ UFUNCTION(CallInEditor) void GenerateGrowthStages()
+            if hasattr(species_asset, "generate_growth_stages"):
+                species_asset.generate_growth_stages()
+
+            # Save Asset
+            editor_asset_lib.save_loaded_asset(species_asset)
+        except Exception as e_row:
+            unreal.log_warning(f"⚠️ [Sovereign Importer] Error processing row [{row.get('Name')}]: {e_row}")
 
     unreal.log(f"✅ [Sovereign Importer] Complete! Created: {created_count} | Updated: {updated_count} species assets in {target_package_path}")
     return True
