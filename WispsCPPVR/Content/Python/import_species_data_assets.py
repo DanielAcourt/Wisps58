@@ -121,22 +121,47 @@ def import_species_templates(csv_filepath=None, target_package_path="/Game/Data/
             species_tag_str = row.get("SpeciesTag", "").strip()
             if species_tag_str:
                 try:
-                    tag_obj = unreal.GameplayTag(tag_name=species_tag_str)
+                    # Preferred UE 5.8 Python API for requesting registered gameplay tags
+                    tag_obj = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(species_tag_str))
                     species_asset.set_editor_property("species_tag", tag_obj)
                     species_asset.set_editor_property("identity_signature", tag_obj)
-                except Exception:
-                    try:
-                        tag_obj = unreal.GameplayTag()
-                        tag_obj.set_editor_property("tag_name", unreal.Name(species_tag_str))
-                        species_asset.set_editor_property("species_tag", tag_obj)
-                        species_asset.set_editor_property("identity_signature", tag_obj)
-                    except Exception as e_inner:
-                        unreal.log_warning(f"   ⚠️ Could not set gameplay tag [{species_tag_str}]: {e_inner}")
+                except Exception as e_tag:
+                    unreal.log_warning(f"   ⚠️ Could not set gameplay tag [{species_tag_str}]: {e_tag}")
 
-            # Set Movement & Bio flags
-            species_asset.set_editor_property("b_can_fly", row.get("bCanFly", "false").lower() == "true")
-            species_asset.set_editor_property("b_can_move", row.get("bCanMove", "false").lower() == "true")
-            species_asset.set_editor_property("b_is_biological", row.get("bIsBiological", "false").lower() == "true")
+            # Set SpeciesTraits tag container if present
+            traits_str = row.get("SpeciesTraits", "").strip()
+            if traits_str:
+                try:
+                    tag_container = unreal.GameplayStatics.make_gameplay_tag_container_from_string(traits_str)
+                    species_asset.set_editor_property("species_traits", tag_container)
+                except Exception as e_traits:
+                    unreal.log_warning(f"   ⚠️ Could not set species traits [{traits_str}]: {e_traits}")
+
+            # Set Movement & Bio flags (checking C++ property reflection names)
+            b_fly = (row.get("bCanFly", "false").lower() == "true")
+            b_move = (row.get("bCanMove", "false").lower() == "true")
+            b_bio = (row.get("bIsBiological", "false").lower() == "true")
+
+            for prop_name in ["can_fly", "b_can_fly"]:
+                try:
+                    species_asset.set_editor_property(prop_name, b_fly)
+                    break
+                except Exception:
+                    pass
+
+            for prop_name in ["can_move", "b_can_move"]:
+                try:
+                    species_asset.set_editor_property(prop_name, b_move)
+                    break
+                except Exception:
+                    pass
+
+            for prop_name in ["is_biological", "b_is_biological"]:
+                try:
+                    species_asset.set_editor_property(prop_name, b_bio)
+                    break
+                except Exception:
+                    pass
 
             # Set Soft Actor Class Pointer if specified
             actor_class_str = row.get("ActorClass", "").strip()
