@@ -137,27 +137,49 @@ def import_csv_to_data_assets(
             species_tag_str = row.get("SpeciesTag", row.get("ItemTag", "")).strip()
             if species_tag_str:
                 try:
-                    tag_obj = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(species_tag_str))
+                    # Unreal Engine Python API construct for GameplayTag
+                    tag_obj = unreal.GameplayTag(tag_name=unreal.Name(species_tag_str))
                     for prop_name in ["species_tag", "identity_signature", "item_tag"]:
                         try:
                             data_asset.set_editor_property(prop_name, tag_obj)
                         except Exception:
                             pass
                 except Exception as e_tag:
-                    unreal.log_warning(f"   ⚠️ Tag assignment warning [{species_tag_str}]: {e_tag}")
+                    try:
+                        # Fallback for direct struct construction
+                        tag_obj = unreal.GameplayTag()
+                        tag_obj.set_editor_property("tag_name", unreal.Name(species_tag_str))
+                        for prop_name in ["species_tag", "identity_signature", "item_tag"]:
+                            try:
+                                data_asset.set_editor_property(prop_name, tag_obj)
+                            except Exception:
+                                pass
+                    except Exception as e_inner:
+                        unreal.log_warning(f"   ⚠️ Tag assignment warning [{species_tag_str}]: {e_inner}")
 
             # 3. Traits Container
             traits_str = row.get("SpeciesTraits", row.get("AdditionalMetadata", "")).strip()
             if traits_str:
                 try:
-                    tag_container = unreal.GameplayStatics.make_gameplay_tag_container_from_string(traits_str)
+                    tag_list = [t.strip() for t in traits_str.split(",") if t.strip()]
+                    tag_container = unreal.GameplayTagContainer()
+                    gameplay_tags = []
+                    for t in tag_list:
+                        try:
+                            gt = unreal.GameplayTag(tag_name=unreal.Name(t))
+                            gameplay_tags.append(gt)
+                        except Exception:
+                            gt = unreal.GameplayTag()
+                            gt.set_editor_property("tag_name", unreal.Name(t))
+                            gameplay_tags.append(gt)
+                    tag_container.set_editor_property("gameplay_tags", gameplay_tags)
                     for prop_name in ["species_traits", "gameplay_tags", "metadata"]:
                         try:
                             data_asset.set_editor_property(prop_name, tag_container)
                         except Exception:
                             pass
-                except Exception:
-                    pass
+                except Exception as e_traits:
+                    unreal.log_warning(f"   ⚠️ Trait container warning [{traits_str}]: {e_traits}")
 
             # 4. Capability Flags
             b_fly = (row.get("bCanFly", "false").lower() == "true")
@@ -248,6 +270,42 @@ def import_species_templates(csv_filepath=None, target_package_path="/Game/Data/
         target_package_path=target_package_path,
         b_overwrite=True
     )
+
+def execute_importer_ui(csv_path="", class_path="/Script/WispCPP7VR.SovereignSpeciesData", output_dir="/Game/Data/SpeciesAssets", b_overwrite=True):
+    """
+    Blueprint / Editor Utility Widget (EUW) Execution Wrapper.
+    Saves dirty packages before import and returns a concise single-line summary string
+    perfect for displaying in an EUW Text Block widget.
+    """
+    try:
+        import unreal
+        unreal.EditorLoadingAndSavingUtils.save_dirty_packages(show_dialog_if_dirty=False, save_map_packages=False)
+    except Exception:
+        pass
+
+    success = import_csv_to_data_assets(
+        csv_filepath=csv_path,
+        data_asset_class_path=class_path,
+        target_package_path=output_dir,
+        b_overwrite=b_overwrite
+    )
+
+    if success:
+        output_msg = f"✅ Successfully imported DataAssets to '{output_dir}'."
+    else:
+        output_msg = f"❌ [ERROR] Import failed for CSV '{csv_path}'."
+
+    print(output_msg)
+    try:
+        import unreal
+        if success:
+            unreal.log(output_msg)
+        else:
+            unreal.log_error(output_msg)
+    except Exception:
+        pass
+
+    return output_msg
 
 if __name__ == "__main__":
     import_species_templates()
