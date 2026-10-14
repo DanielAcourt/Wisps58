@@ -294,9 +294,9 @@ def execute_importer_ui(csv_path="", class_path="/Script/WispCPP7VR.SovereignSpe
     )
 
     if success:
-        output_msg = f"✅ Successfully imported DataAssets to '{output_dir}'."
+        output_msg = f"[SUCCESS] Successfully imported DataAssets to '{output_dir}'."
     else:
-        output_msg = f"❌ [ERROR] Import failed for CSV '{csv_path}'."
+        output_msg = f"[ERROR] Import failed for CSV '{csv_path}'."
 
     print(output_msg)
     try:
