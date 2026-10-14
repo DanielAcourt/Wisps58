@@ -53,7 +53,10 @@ def import_csv_to_data_assets(
     if csv_filepath is None or not str(csv_filepath).strip():
         csv_filepath = resolve_default_csv_path()
 
-    csv_filepath = os.path.abspath(str(csv_filepath).strip())
+    # Sanitize path: strip quotes, normalize Windows backslashes
+    csv_filepath = str(csv_filepath).strip().strip("'").strip('"').replace("\\", "/")
+    if not os.path.isabs(csv_filepath) and not os.path.exists(csv_filepath):
+        csv_filepath = os.path.abspath(csv_filepath)
 
     if not os.path.exists(csv_filepath):
         msg = f"❌ [Sovereign Importer] CSV file not found: {csv_filepath}"
