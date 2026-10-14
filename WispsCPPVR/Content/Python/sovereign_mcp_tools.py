@@ -92,9 +92,28 @@ def sync_local_art_assets(manifest_path: str = "asset_manifest.json") -> str:
         unreal.log_error(f"SovereignMCP: Art Asset Sync Failed: {e}")
         return f"Error: {e}"
 
+def import_csv_data_assets(csv_path: str = "", class_path: str = "/Script/WispCPP7VR.SovereignSpeciesData", output_dir: str = "/Game/Data/SpeciesAssets", b_overwrite: bool = True) -> str:
+    """
+    Agnostic Importer Tool (B-056): Imports any CSV file into target UDataAsset instances in Unreal Editor.
+    """
+    try:
+        import import_species_data_assets
+        res = import_species_data_assets.import_csv_to_data_assets(
+            csv_filepath=csv_path,
+            data_asset_class_path=class_path,
+            target_package_path=output_dir,
+            b_overwrite=b_overwrite
+        )
+        unreal.log(f"SovereignMCP: CSV Importer Execution Result: {res}")
+        return f"Success: {res}"
+    except Exception as e:
+        unreal.log_error(f"SovereignMCP: CSV Importer Execution Failed: {e}")
+        return f"Error: {e}"
+
 class SovereignEditorToolLibrary:
     spawn_actor_with_tags = staticmethod(spawn_actor_with_tags)
     sync_local_art_assets = staticmethod(sync_local_art_assets)
+    import_csv_data_assets = staticmethod(import_csv_data_assets)
 
 def register_sovereign_tools():
     """
