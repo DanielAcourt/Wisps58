@@ -3,6 +3,8 @@
 #include "Components/SovereignQiComponent.h"
 #include "Entities/SovereignBaseEntity.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"
 #include "Dom/JsonObject.h"
 
 USovereignQiComponent::USovereignQiComponent()
@@ -74,6 +76,61 @@ void USovereignQiComponent::ProcessQiFlow(float DeltaTime, int32 WisdomStat)
 	if (CurrentQi < MaxQiCapacity) CurrentQi = FMath::Min(CurrentQi + (RegenRate * DeltaTime), MaxQiCapacity);
 }
 
+void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World || QiAuraRadius <= 0.0f || QiTake <= 0.0f)
+	{
+		return;
+	}
+
+	FVector Origin = OwnerActor->GetActorLocation();
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwnerActor);
+
+	TArray<FOverlapResult> Overlaps;
+	bool bHit = World->OverlapMultiByObjectType(
+		Overlaps,
+		Origin,
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(QiAuraRadius),
+		QueryParams
+	);
+
+	if (!bHit)
+	{
+		return;
+	}
+
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		AActor* OtherActor = Overlap.GetActor();
+		if (!OtherActor)
+		{
+			continue;
+		}
+
+		USovereignQiComponent* OtherQiComp = OtherActor->FindComponentByClass<USovereignQiComponent>();
+		if (OtherQiComp && OtherQiComp->bIsQiSource && OtherQiComp->QiGive > 0.0f)
+		{
+			float Distance = FVector::Dist(Origin, OtherActor->GetActorLocation());
+			float DistanceFactor = FMath::Clamp(1.0f - (Distance / QiAuraRadius), 0.0f, 1.0f);
+			float QiGain = FMath::Min(OtherQiComp->QiGive, QiTake) * DistanceFactor * HeartbeatInterval;
+
+			if (QiGain > 0.0f)
+			{
+				AbsorbQi(QiGain, OtherQiComp->QiPurity);
+			}
+		}
+	}
+}
+
 void USovereignQiComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 {
 	TSharedPtr<FJsonObject> QiObj = MakeShareable(new FJsonObject());
@@ -93,6 +150,12 @@ void USovereignQiComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 	QiObj->SetStringField(TEXT("DomainRuneTier"), DomainRuneTier);
 	QiObj->SetNumberField(TEXT("DomainResonanceRadius"), DomainResonanceRadius);
 	QiObj->SetNumberField(TEXT("DomainNetworkSaturation"), DomainNetworkSaturation);
+
+	// Environmental Qi Aura parameters [B-059]
+	QiObj->SetNumberField(TEXT("QiAuraRadius"), QiAuraRadius);
+	QiObj->SetBoolField(TEXT("bIsQiSource"), bIsQiSource);
+	QiObj->SetNumberField(TEXT("QiGive"), QiGive);
+	QiObj->SetNumberField(TEXT("QiTake"), QiTake);
 
 	TSharedPtr<FJsonObject> ResObj = MakeShareable(new FJsonObject());
 	for (const auto& Elem : ElementalResonance)
@@ -145,6 +208,12 @@ void USovereignQiComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 		(*QiObj)->TryGetStringField(TEXT("DomainRuneTier"), DomainRuneTier);
 		if ((*QiObj)->TryGetNumberField(TEXT("DomainResonanceRadius"), TempVal)) DomainResonanceRadius = (float)TempVal;
 		if ((*QiObj)->TryGetNumberField(TEXT("DomainNetworkSaturation"), TempVal)) DomainNetworkSaturation = (float)TempVal;
+
+		// Environmental Qi Aura parameters [B-059]
+		if ((*QiObj)->TryGetNumberField(TEXT("QiAuraRadius"), TempVal)) QiAuraRadius = (float)TempVal;
+		(*QiObj)->TryGetBoolField(TEXT("bIsQiSource"), bIsQiSource);
+		if ((*QiObj)->TryGetNumberField(TEXT("QiGive"), TempVal)) QiGive = (float)TempVal;
+		if ((*QiObj)->TryGetNumberField(TEXT("QiTake"), TempVal)) QiTake = (float)TempVal;
 
 		const TSharedPtr<FJsonObject>* ResObj;
 		if ((*QiObj)->TryGetObjectField(TEXT("Resonance"), ResObj))

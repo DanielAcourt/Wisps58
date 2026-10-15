@@ -2,6 +2,7 @@
 
 
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "Entities/SovereignBaseEntity.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
@@ -37,6 +38,19 @@ USovereignAttributeComponent::USovereignAttributeComponent()
 void USovereignAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Ensure paired USovereignLevelComponent exists on owner
+	if (AActor* Owner = GetOwner())
+	{
+		if (!Owner->FindComponentByClass<USovereignLevelComponent>())
+		{
+			USovereignLevelComponent* NewLevelComp = NewObject<USovereignLevelComponent>(Owner, USovereignLevelComponent::StaticClass(), TEXT("SovereignLevelComponent"));
+			if (NewLevelComp)
+			{
+				NewLevelComp->RegisterComponent();
+			}
+		}
+	}
 
 	// Automatically sync when the game starts
 	SyncStatsFromEntity();
