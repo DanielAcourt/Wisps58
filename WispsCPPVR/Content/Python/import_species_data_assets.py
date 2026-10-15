@@ -26,6 +26,62 @@ CURVE_ENUM_MAP = {
     "Flat": 3
 }
 
+def ensure_blueprint_and_bind_data_asset(actor_class_str, parent_class_str, species_data_asset, asset_tools, editor_asset_lib):
+    """
+    Automated Blueprint Actor Generation & Primary DataAsset Binding (Ticket B-057).
+    If actor_class_str package does not exist, creates a new Blueprint asset deriving from parent_class_str.
+    Then binds species_data_asset to the Blueprint's Class Default Object (CDO) 'species_data' property.
+    """
+    if not IN_UNREAL or not actor_class_str:
+        return
+
+    # Normalize asset path: e.g. "/Game/Blueprints/Entities/BP_Dragon.BP_Dragon_C" -> package path "/Game/Blueprints/Entities/BP_Dragon"
+    clean_path = actor_class_str.split(".")[0] if "." in actor_class_str else actor_class_str
+    if clean_path.endswith("_C"):
+        clean_path = clean_path[:-2]
+
+    package_path, bp_name = os.path.split(clean_path)
+
+    bp_asset = editor_asset_lib.load_asset(clean_path)
+
+    if not bp_asset:
+        # Blueprint does not exist, create missing Blueprint derived from ParentClass
+        parent_class_path = parent_class_str if parent_class_str else "/Script/WispCPP7VR.SovereignBaseEntity"
+        parent_class = unreal.load_class(None, parent_class_path)
+        if not parent_class:
+            unreal.log_warning(f"⚠️ [B-057 Blueprint Gen] Could not load parent C++ class '{parent_class_path}', falling back to SovereignBaseEntity.")
+            parent_class = unreal.load_class(None, "/Script/WispCPP7VR.SovereignBaseEntity")
+
+        if parent_class:
+            if not editor_asset_lib.does_directory_exist(package_path):
+                editor_asset_lib.make_directory(package_path)
+
+            factory = unreal.BlueprintFactory()
+            factory.set_editor_property("parent_class", parent_class)
+            bp_asset = asset_tools.create_asset(bp_name, package_path, None, factory)
+            if bp_asset:
+                unreal.log(f"✨ [B-057 Blueprint Gen] Automatically created missing Blueprint asset: '{clean_path}' (Parent: {parent_class.get_name()})")
+            else:
+                unreal.log_error(f"❌ [B-057 Blueprint Gen] Failed to create Blueprint asset at '{clean_path}'")
+        else:
+            unreal.log_error(f"❌ [B-057 Blueprint Gen] Unable to resolve parent class for Blueprint '{clean_path}'")
+
+    if bp_asset:
+        # Bind Primary DataAsset to CDO
+        try:
+            cdo = unreal.get_default_object(bp_asset.generated_class)
+            if cdo:
+                for prop in ["species_data", "species_data_asset", "data_asset"]:
+                    try:
+                        cdo.set_editor_property(prop, species_data_asset)
+                        unreal.log(f"🔗 [B-057 Binding] Successfully bound Primary DataAsset '{species_data_asset.get_name()}' to Blueprint CDO '{bp_name}' property '{prop}'.")
+                        editor_asset_lib.save_loaded_asset(bp_asset)
+                        break
+                    except Exception:
+                        pass
+        except Exception as e_bind:
+            unreal.log_warning(f"⚠️ [B-057 Binding] Could not bind Primary DataAsset to CDO of '{bp_name}': {e_bind}")
+
 def resolve_default_csv_path():
     """Locates DT_SovereignSpeciesTemplate.csv relative to project root."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -265,6 +321,16 @@ def import_csv_to_data_assets(
 
             # Save Asset
             editor_asset_lib.save_loaded_asset(data_asset)
+
+            # 9. Automated Blueprint Asset Generation & CDO Primary DataAsset Binding (Ticket B-057)
+            if actor_class_str:
+                ensure_blueprint_and_bind_data_asset(
+                    actor_class_str=actor_class_str,
+                    parent_class_str=row.get("ParentClass", "").strip(),
+                    species_data_asset=data_asset,
+                    asset_tools=asset_tools,
+                    editor_asset_lib=editor_asset_lib
+                )
 
         except Exception as e_row:
             unreal.log_warning(f"⚠️ [Sovereign Importer] Error processing row [{row.get('Name')}]: {e_row}")
