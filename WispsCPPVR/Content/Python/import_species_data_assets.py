@@ -67,18 +67,35 @@ def ensure_blueprint_and_bind_data_asset(actor_class_str, parent_class_str, spec
             unreal.log_error(f"❌ [B-057 Blueprint Gen] Unable to resolve parent class for Blueprint '{clean_path}'")
 
     if bp_asset:
+        # Compile blueprint first to guarantee generated_class and CDO are initialized
+        try:
+            unreal.BlueprintEditorLibrary.compile_blueprint(bp_asset)
+        except Exception as e_comp:
+            unreal.log_warning(f"⚠️ [B-057 Binding] Initial Blueprint compile notice for '{bp_name}': {e_comp}")
+
         # Bind Primary DataAsset to CDO
         try:
-            cdo = unreal.get_default_object(bp_asset.generated_class)
-            if cdo:
-                for prop in ["species_data", "species_data_asset", "data_asset"]:
-                    try:
-                        cdo.set_editor_property(prop, species_data_asset)
-                        unreal.log(f"🔗 [B-057 Binding] Successfully bound Primary DataAsset '{species_data_asset.get_name()}' to Blueprint CDO '{bp_name}' property '{prop}'.")
+            gen_class = bp_asset.generated_class if hasattr(bp_asset, "generated_class") and bp_asset.generated_class else None
+            if not gen_class:
+                gen_class = unreal.load_class(None, f"{clean_path}.{bp_name}_C")
+
+            if gen_class:
+                cdo = unreal.get_default_object(gen_class)
+                if cdo:
+                    b_bound = False
+                    for prop in ["species_data", "species_data_asset", "data_asset"]:
+                        try:
+                            cdo.set_editor_property(prop, species_data_asset)
+                            unreal.log(f"🔗 [B-057 Binding] Successfully bound Primary DataAsset '{species_data_asset.get_name()}' to Blueprint CDO '{bp_name}' property '{prop}'.")
+                            b_bound = True
+                            break
+                        except Exception:
+                            pass
+
+                    if b_bound:
                         editor_asset_lib.save_loaded_asset(bp_asset)
-                        break
-                    except Exception:
-                        pass
+            else:
+                unreal.log_warning(f"⚠️ [B-057 Binding] Could not obtain generated_class for Blueprint '{bp_name}'.")
         except Exception as e_bind:
             unreal.log_warning(f"⚠️ [B-057 Binding] Could not bind Primary DataAsset to CDO of '{bp_name}': {e_bind}")
 
