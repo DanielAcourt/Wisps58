@@ -101,6 +101,9 @@ public:
 	bool SpendQi(float Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi Aura")
+	void SyncQiAuraDefaultsFromEntity();
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi Aura")
 	void ProcessEnvironmentalQiAura(float HeartbeatInterval);
 
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Qi")

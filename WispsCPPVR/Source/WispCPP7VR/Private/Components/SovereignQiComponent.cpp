@@ -2,6 +2,7 @@
 
 #include "Components/SovereignQiComponent.h"
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
@@ -29,6 +30,32 @@ void USovereignQiComponent::BeginPlay()
 		{
 			SoulHub->RegisterBroker(this);
 		}
+
+		SyncQiAuraDefaultsFromEntity();
+	}
+}
+
+void USovereignQiComponent::SyncQiAuraDefaultsFromEntity()
+{
+	USovereignSpeciesData* SpeciesData = nullptr;
+
+	if (ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner()))
+	{
+		SpeciesData = OwnerEntity->GetSpeciesData();
+	}
+	else if (ASovereignBaseCharacter* OwnerChar = Cast<ASovereignBaseCharacter>(GetOwner()))
+	{
+		SpeciesData = OwnerChar->GetSpeciesData();
+	}
+
+	if (SpeciesData)
+	{
+		QiGive = SpeciesData->QiGive;
+		QiTake = SpeciesData->QiTake;
+		QiAuraRadius = SpeciesData->QiAuraRadius;
+
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced Qi Aura defaults from Species %s -> Give: %.1f | Take: %.1f | Radius: %.1f"),
+			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), QiGive, QiTake, QiAuraRadius);
 	}
 }
 

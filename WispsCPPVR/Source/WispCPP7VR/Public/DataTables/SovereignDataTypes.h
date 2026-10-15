@@ -129,6 +129,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
 	FGameplayTagContainer SpeciesTraits;
 
+	// --- SPIRITUAL & QI AURA FOOTPRINT [B-059] ---
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiGive = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiTake = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiAuraRadius = 500.0f;
+
 	// --- ITEM / ACTION XP GAINS ---
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")

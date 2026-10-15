@@ -301,6 +301,22 @@ def import_csv_to_data_assets(
                 except Exception:
                     pass
 
+            # 4c. Qi Aura Footprint (B-059)
+            try:
+                data_asset.set_editor_property("qi_give", float(row.get("QiGive", row.get("QIGIVE", "5.0"))))
+            except Exception:
+                pass
+
+            try:
+                data_asset.set_editor_property("qi_take", float(row.get("QiTake", row.get("QITAKE", "5.0"))))
+            except Exception:
+                pass
+
+            try:
+                data_asset.set_editor_property("qi_aura_radius", float(row.get("QiAuraRadius", row.get("QIAURARADIUS", "500.0"))))
+            except Exception:
+                pass
+
             # 5. Soft Actor Class Pointer
             actor_class_str = row.get("ActorClass", "").strip()
             if actor_class_str:
