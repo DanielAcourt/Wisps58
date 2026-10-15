@@ -75,11 +75,19 @@ def ensure_blueprint_and_bind_data_asset(actor_class_str, parent_class_str, spec
 
         # Bind Primary DataAsset to CDO
         try:
-            gen_class = bp_asset.generated_class if hasattr(bp_asset, "generated_class") and bp_asset.generated_class else None
+            gen_class = None
+            if hasattr(bp_asset, "generated_class"):
+                gc = getattr(bp_asset, "generated_class")
+                gen_class = gc() if callable(gc) else gc
+            if not gen_class:
+                try:
+                    gen_class = bp_asset.get_editor_property("generated_class")
+                except Exception:
+                    pass
             if not gen_class:
                 gen_class = unreal.load_class(None, f"{clean_path}.{bp_name}_C")
 
-            if gen_class:
+            if gen_class and isinstance(gen_class, unreal.Class):
                 cdo = unreal.get_default_object(gen_class)
                 if cdo:
                     b_bound = False
@@ -213,8 +221,7 @@ def import_csv_to_data_assets(
             species_tag_str = row.get("SpeciesTag", row.get("ItemTag", "")).strip()
             if species_tag_str:
                 try:
-                    # Unreal Engine Python API construct for GameplayTag
-                    tag_obj = unreal.GameplayTag(tag_name=unreal.Name(species_tag_str))
+                    tag_obj = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(species_tag_str))
                     for prop_name in ["species_tag", "identity_signature", "item_tag"]:
                         try:
                             data_asset.set_editor_property(prop_name, tag_obj)
@@ -222,9 +229,7 @@ def import_csv_to_data_assets(
                             pass
                 except Exception as e_tag:
                     try:
-                        # Fallback for direct struct construction
-                        tag_obj = unreal.GameplayTag()
-                        tag_obj.set_editor_property("tag_name", unreal.Name(species_tag_str))
+                        tag_obj = unreal.GameplayTag(tag_name=unreal.Name(species_tag_str))
                         for prop_name in ["species_tag", "identity_signature", "item_tag"]:
                             try:
                                 data_asset.set_editor_property(prop_name, tag_obj)
@@ -242,12 +247,14 @@ def import_csv_to_data_assets(
                     gameplay_tags = []
                     for t in tag_list:
                         try:
-                            gt = unreal.GameplayTag(tag_name=unreal.Name(t))
+                            gt = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(t))
                             gameplay_tags.append(gt)
                         except Exception:
-                            gt = unreal.GameplayTag()
-                            gt.set_editor_property("tag_name", unreal.Name(t))
-                            gameplay_tags.append(gt)
+                            try:
+                                gt = unreal.GameplayTag(tag_name=unreal.Name(t))
+                                gameplay_tags.append(gt)
+                            except Exception:
+                                pass
                     tag_container.set_editor_property("gameplay_tags", gameplay_tags)
                     for prop_name in ["species_traits", "gameplay_tags", "metadata"]:
                         try:
