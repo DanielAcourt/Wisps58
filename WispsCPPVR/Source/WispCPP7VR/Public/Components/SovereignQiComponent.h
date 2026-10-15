@@ -87,6 +87,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
 	float QiTake = 5.0f;
 
+	/** Calculated aggregate Qi gain rate per second from surrounding environmental sources */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Qi Aura")
+	float EnvironmentalQiRegenBonus = 0.0f;
+
 
 	/** --- 5. LOGIC --- */
 
@@ -98,6 +102,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi Aura")
 	void ProcessEnvironmentalQiAura(float HeartbeatInterval);
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Qi")
+	float GetTotalQiRegenRate(int32 WisdomStat) const;
 
 	/** ISovereignBrokerInterface Implementation */
 	virtual void OnSave(TSharedPtr<FJsonObject>& OutJson) override;

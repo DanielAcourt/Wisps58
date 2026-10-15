@@ -69,11 +69,17 @@ bool USovereignQiComponent::SpendQi(float Amount)
 	return false;
 }
 
+float USovereignQiComponent::GetTotalQiRegenRate(int32 WisdomStat) const
+{
+	float BaseRegen = (static_cast<float>(WisdomStat) * 0.1f) * QiPurity;
+	return BaseRegen + EnvironmentalQiRegenBonus;
+}
+
 void USovereignQiComponent::ProcessQiFlow(float DeltaTime, int32 WisdomStat)
 {
 	if (QiPurity < 1.0f) QiPurity += 0.00001f * DeltaTime;
-	float RegenRate = (static_cast<float>(WisdomStat) * 0.1f) * QiPurity;
-	if (CurrentQi < MaxQiCapacity) CurrentQi = FMath::Min(CurrentQi + (RegenRate * DeltaTime), MaxQiCapacity);
+	float TotalRegenRate = GetTotalQiRegenRate(WisdomStat);
+	if (CurrentQi < MaxQiCapacity) CurrentQi = FMath::Min(CurrentQi + (TotalRegenRate * DeltaTime), MaxQiCapacity);
 }
 
 void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
@@ -82,6 +88,7 @@ void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
 	UWorld* World = GetWorld();
 	if (!OwnerActor || !World || QiAuraRadius <= 0.0f || QiTake <= 0.0f)
 	{
+		EnvironmentalQiRegenBonus = 0.0f;
 		return;
 	}
 
@@ -105,30 +112,34 @@ void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
 
 	if (!bHit)
 	{
+		EnvironmentalQiRegenBonus = 0.0f;
 		return;
 	}
+
+	float TotalRatePerSecond = 0.0f;
+	TSet<AActor*> ProcessedActors;
 
 	for (const FOverlapResult& Overlap : Overlaps)
 	{
 		AActor* OtherActor = Overlap.GetActor();
-		if (!OtherActor)
+		if (!OtherActor || ProcessedActors.Contains(OtherActor))
 		{
 			continue;
 		}
+
+		ProcessedActors.Add(OtherActor);
 
 		USovereignQiComponent* OtherQiComp = OtherActor->FindComponentByClass<USovereignQiComponent>();
 		if (OtherQiComp && OtherQiComp->bIsQiSource && OtherQiComp->QiGive > 0.0f)
 		{
 			float Distance = FVector::Dist(Origin, OtherActor->GetActorLocation());
 			float DistanceFactor = FMath::Clamp(1.0f - (Distance / QiAuraRadius), 0.0f, 1.0f);
-			float QiGain = FMath::Min(OtherQiComp->QiGive, QiTake) * DistanceFactor * HeartbeatInterval;
-
-			if (QiGain > 0.0f)
-			{
-				AbsorbQi(QiGain, OtherQiComp->QiPurity);
-			}
+			float RateFromSource = FMath::Min(OtherQiComp->QiGive, QiTake) * DistanceFactor;
+			TotalRatePerSecond += RateFromSource;
 		}
 	}
+
+	EnvironmentalQiRegenBonus = TotalRatePerSecond;
 }
 
 void USovereignQiComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
