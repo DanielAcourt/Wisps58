@@ -67,27 +67,24 @@ def ensure_blueprint_and_bind_data_asset(actor_class_str, parent_class_str, spec
             unreal.log_error(f"❌ [B-057 Blueprint Gen] Unable to resolve parent class for Blueprint '{clean_path}'")
 
     if bp_asset:
-        # Compile blueprint first to guarantee generated_class and CDO are initialized
         try:
-            unreal.BlueprintEditorLibrary.compile_blueprint(bp_asset)
-        except Exception as e_comp:
-            unreal.log_warning(f"⚠️ [B-057 Binding] Initial Blueprint compile notice for '{bp_name}': {e_comp}")
+            # 1. Initial compile to guarantee generated class and CDO are created
+            try:
+                unreal.BlueprintEditorLibrary.compile_blueprint(bp_asset)
+            except Exception as e_comp1:
+                unreal.log_warning(f"⚠️ [B-057 Binding] Initial compile notice for '{bp_name}': {e_comp1}")
 
-        # Bind Primary DataAsset to CDO
-        try:
-            gen_class = None
-            if hasattr(bp_asset, "generated_class"):
-                gc = getattr(bp_asset, "generated_class")
-                gen_class = gc() if callable(gc) else gc
-            if not gen_class:
+            # 2. Resolve generated class safely
+            gen_class = unreal.load_class(None, f"{clean_path}.{bp_name}_C")
+            if not gen_class and hasattr(bp_asset, "generated_class"):
                 try:
-                    gen_class = bp_asset.get_editor_property("generated_class")
+                    gc = bp_asset.generated_class
+                    if isinstance(gc, unreal.Class):
+                        gen_class = gc
                 except Exception:
                     pass
-            if not gen_class:
-                gen_class = unreal.load_class(None, f"{clean_path}.{bp_name}_C")
 
-            if gen_class and isinstance(gen_class, unreal.Class):
+            if gen_class:
                 cdo = unreal.get_default_object(gen_class)
                 if cdo:
                     b_bound = False
@@ -101,11 +98,25 @@ def ensure_blueprint_and_bind_data_asset(actor_class_str, parent_class_str, spec
                             pass
 
                     if b_bound:
+                        try:
+                            cdo.modify()
+                            bp_asset.modify()
+                        except Exception:
+                            pass
+
+                        try:
+                            unreal.BlueprintEditorLibrary.compile_blueprint(bp_asset)
+                        except Exception as e_comp2:
+                            unreal.log_warning(f"⚠️ [B-057 Binding] Post-bind compile notice for '{bp_name}': {e_comp2}")
+
                         editor_asset_lib.save_loaded_asset(bp_asset)
+                    else:
+                        unreal.log_warning(f"⚠️ [B-057 Binding] Property 'species_data' could not be set on CDO of '{bp_name}'.")
             else:
-                unreal.log_warning(f"⚠️ [B-057 Binding] Could not obtain generated_class for Blueprint '{bp_name}'.")
+                unreal.log_warning(f"⚠️ [B-057 Binding] Could not resolve generated class for '{bp_name}'.")
+
         except Exception as e_bind:
-            unreal.log_warning(f"⚠️ [B-057 Binding] Could not bind Primary DataAsset to CDO of '{bp_name}': {e_bind}")
+            unreal.log_warning(f"⚠️ [B-057 Binding] Error during CDO binding for '{bp_name}': {e_bind}")
 
 def resolve_default_csv_path():
     """Locates DT_SovereignSpeciesTemplate.csv relative to project root."""
