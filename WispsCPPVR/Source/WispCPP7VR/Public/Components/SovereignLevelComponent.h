@@ -60,6 +60,9 @@ public:
 	void SetTrainingFocus(ESovereignTrainingFocus NewFocus);
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Leveling")
+	void DetermineDefaultTrainingFocus();
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Leveling")
 	void AddAttributeXP(ESovereignTrainingFocus AttributeFocus, double Amount);
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Leveling")

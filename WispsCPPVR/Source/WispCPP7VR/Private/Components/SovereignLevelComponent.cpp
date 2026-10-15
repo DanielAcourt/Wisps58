@@ -32,11 +32,75 @@ void USovereignLevelComponent::BeginPlay()
 			SoulHub->RegisterBroker(this);
 		}
 	}
+
+	DetermineDefaultTrainingFocus();
 }
 
 void USovereignLevelComponent::SetTrainingFocus(ESovereignTrainingFocus NewFocus)
 {
 	ActiveTrainingFocus = NewFocus;
+}
+
+void USovereignLevelComponent::DetermineDefaultTrainingFocus()
+{
+	if (ActiveTrainingFocus != ESovereignTrainingFocus::None)
+	{
+		return;
+	}
+
+	AActor* OwnerActor = GetOwner();
+	if (!OwnerActor)
+	{
+		return;
+	}
+
+	USovereignAttributeComponent* AttrComp = OwnerActor->FindComponentByClass<USovereignAttributeComponent>();
+	if (!AttrComp)
+	{
+		return;
+	}
+
+	struct FStatFocusPair
+	{
+		ESovereignTrainingFocus Focus;
+		int32 Value;
+	};
+
+	TArray<FStatFocusPair> StatPairs = {
+		{ ESovereignTrainingFocus::Strength, AttrComp->Strength },
+		{ ESovereignTrainingFocus::Dexterity, AttrComp->Dexterity },
+		{ ESovereignTrainingFocus::Constitution, AttrComp->Constitution },
+		{ ESovereignTrainingFocus::Intelligence, AttrComp->Intelligence },
+		{ ESovereignTrainingFocus::Wisdom, AttrComp->Wisdom },
+		{ ESovereignTrainingFocus::Charisma, AttrComp->Charisma },
+		{ ESovereignTrainingFocus::Luck, AttrComp->Luck }
+	};
+
+	int32 MaxStatVal = -9999;
+	for (const FStatFocusPair& Pair : StatPairs)
+	{
+		if (Pair.Value > MaxStatVal)
+		{
+			MaxStatVal = Pair.Value;
+		}
+	}
+
+	TArray<ESovereignTrainingFocus> HighestCandidates;
+	for (const FStatFocusPair& Pair : StatPairs)
+	{
+		if (Pair.Value == MaxStatVal)
+		{
+			HighestCandidates.Add(Pair.Focus);
+		}
+	}
+
+	if (HighestCandidates.Num() > 0)
+	{
+		int32 RandomIdx = FMath::RandRange(0, HighestCandidates.Num() - 1);
+		ActiveTrainingFocus = HighestCandidates[RandomIdx];
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s determined default training focus %d (Highest Base Stat Value: %d, Candidates: %d)"),
+			*OwnerActor->GetName(), static_cast<uint8>(ActiveTrainingFocus), MaxStatVal, HighestCandidates.Num());
+	}
 }
 
 void USovereignLevelComponent::AddAttributeXP(ESovereignTrainingFocus AttributeFocus, double Amount)
