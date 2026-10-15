@@ -5,12 +5,13 @@
 
 void USovereignSpeciesData::GenerateGrowthStages()
 {
-    if (GrowthStages.Num() == 0)
-    {
-        GrowthStages.SetNum(8);
-    }
+    // Clamp target stage count between 1 and 16
+    GrowthStageCount = FMath::Clamp(GrowthStageCount, 1, 16);
 
-    FSovereignGrowthStage Stage0 = GrowthStages[0];
+    FSovereignGrowthStage Stage0 = (GrowthStages.Num() > 0) ? GrowthStages[0] : FSovereignGrowthStage();
+
+    GrowthStages.SetNum(GrowthStageCount);
+    GrowthStages[0] = Stage0;
 
     for (int32 StageIdx = 0; StageIdx < GrowthStages.Num(); ++StageIdx)
     {
@@ -59,7 +60,8 @@ void USovereignSpeciesData::PostEditChangeProperty(FPropertyChangedEvent& Proper
     FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
 
     if (PropertyName == GET_MEMBER_NAME_CHECKED(USovereignSpeciesData, GrowthCurveType) ||
-        PropertyName == GET_MEMBER_NAME_CHECKED(USovereignSpeciesData, GrowthScaleFactor))
+        PropertyName == GET_MEMBER_NAME_CHECKED(USovereignSpeciesData, GrowthScaleFactor) ||
+        PropertyName == GET_MEMBER_NAME_CHECKED(USovereignSpeciesData, GrowthStageCount))
     {
         GenerateGrowthStages();
     }

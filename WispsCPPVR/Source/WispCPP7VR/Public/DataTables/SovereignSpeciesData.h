@@ -111,7 +111,11 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Evolution")
     float GrowthScaleFactor = 1.20f;
 
-    /** The 8 growth stages (or however many you need) */
+    /** Target number of growth stages for this species (1 to 16, default 1) */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Evolution", meta = (ClampMin = "1", ClampMax = "16"))
+    int32 GrowthStageCount = 1;
+
+    /** The growth stages array allocated dynamically based on GrowthStageCount */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Evolution")
     TArray<FSovereignGrowthStage> GrowthStages;
 

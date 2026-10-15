@@ -232,10 +232,17 @@ def import_csv_to_data_assets(
             except Exception:
                 pass
 
-            # 7. Growth Stages Construction
+            # 7. Dynamic Growth Stage Count Construction (Default 1, clamped 1-16)
+            stage_count = int(float(row.get("GrowthStageCount", "1")))
+            stage_count = max(1, min(16, stage_count))
+            try:
+                data_asset.set_editor_property("growth_stage_count", stage_count)
+            except Exception:
+                pass
+
             try:
                 new_stages = []
-                for stage_idx in range(8):
+                for stage_idx in range(stage_count):
                     stg = unreal.SovereignGrowthStage()
                     if stage_idx == 0:
                         stg.set_editor_property("base_strength", int(float(row.get("BaseStrength", 10))))

@@ -104,6 +104,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Growth")
 	float GrowthScaleFactor = 1.20f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Growth")
+	int32 GrowthStageCount = 1;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
 	FGameplayTagContainer SpeciesTraits;
 
