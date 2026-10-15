@@ -11,6 +11,16 @@
 class ASovereignBaseEntity;
 class USkeletalMesh;
 
+/** Curve type used to generate 8-stage D&D attribute scaling curves from Stage 0 defaults. */
+UENUM(BlueprintType)
+enum class ESovereignGrowthCurve : uint8
+{
+    Linear          UMETA(DisplayName = "Linear"),
+    Exponential     UMETA(DisplayName = "Exponential"),
+    FrontLoaded     UMETA(DisplayName = "Front-Loaded (S-Curve)"),
+    Flat            UMETA(DisplayName = "Flat (Static)")
+};
+
 /** * The Unique Tag for this species (e.g., Species.Plant.Oak).
      * This is what the Save System looks for to know which asset to load.
      */
@@ -93,13 +103,33 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Identity|Metadata")
     TMap<FGameplayTag, float> DynamicAttributes;
 
-    /** The 8 growth stages (or however many you need) */
+    /** Growth curve model for generating growth stage stats */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Evolution")
+    ESovereignGrowthCurve GrowthCurveType = ESovereignGrowthCurve::Exponential;
+
+    /** Scale multiplier applied per growth stage (e.g., 1.20 = 20% increase per stage) */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Evolution")
+    float GrowthScaleFactor = 1.20f;
+
+    /** Target number of growth stages for this species (1 to 16, default 1) */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Evolution", meta = (ClampMin = "1", ClampMax = "16"))
+    int32 GrowthStageCount = 1;
+
+    /** The growth stages array allocated dynamically based on GrowthStageCount */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Evolution")
     TArray<FSovereignGrowthStage> GrowthStages;
 
     /** The 8 growth stages (or however many you need) */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Evolution")
     TArray<FSovereignGrowthStage> MaxGrowthStages;
+
+    /** Generates or recalculates the 8 growth stages based on Stage 0 attributes and GrowthCurveType */
+    UFUNCTION(CallInEditor, Category = "Evolution")
+    void GenerateGrowthStages();
+
+#if WITH_EDITOR
+    virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
     //Identity
     /** The Unique Identity Signature for this species. */

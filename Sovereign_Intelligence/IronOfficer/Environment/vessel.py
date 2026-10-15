@@ -48,7 +48,7 @@ class ChatVessel:
         Mandatory step to ensure AAS arbitration protocols are aligned.
         """
         try:
-            response = requests.get(f"{BRIDGE_URL}/", timeout=2)
+            response = requests.get(f"{BRIDGE_URL}/", timeout=3)
             if response.status_code == 200:
                 data = response.json()
                 self.user_name = data.get("user", "Dan")
@@ -57,7 +57,7 @@ class ChatVessel:
 
                 print(f"[07] Connected to {self.identity} (Bridge v{self.bridge_version})")
 
-                if "36.4.7" not in self.bridge_version:
+                if "36.4.7" not in self.bridge_version and "37." not in self.bridge_version:
                     print("\n" + "!"*60)
                     print(f"[07 WARNING] Version Mismatch Detected!")
                     print(f"Vessel: {VESSEL_VERSION} | Bridge: {self.bridge_version}")
@@ -67,7 +67,9 @@ class ChatVessel:
                 print(f"[07 WARNING] Bridge returned status {response.status_code}")
         except Exception as e:
             print(f"[07 ERROR] Could not connect to Iron Officer Bridge at {BRIDGE_URL}")
-            print("[07] Ensure 'run_bridge.bat' is active.")
+            print(f"[07 Details] {e}")
+            print("[07] Ensure 'run_bridge.bat' is active and listening on port 8000.")
+            input("\nPress Enter to exit...")
             sys.exit(1)
 
     def print_header(self):
