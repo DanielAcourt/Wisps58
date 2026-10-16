@@ -39,7 +39,14 @@ void USovereignAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Ensure paired USovereignLevelComponent exists on owner
+	// Automatically sync species stats when the game starts
+	SyncStatsFromEntity();
+
+	// Start the vessel at full health/stamina based on its new stats
+	CurrentHealth = GetMaxHealth();
+	MaxHealth = GetMaxHealth();
+
+	// Ensure paired USovereignLevelComponent exists on owner (which determines default training focus using synced stats)
 	if (AActor* Owner = GetOwner())
 	{
 		if (!Owner->FindComponentByClass<USovereignLevelComponent>())
@@ -51,13 +58,6 @@ void USovereignAttributeComponent::BeginPlay()
 			}
 		}
 	}
-
-	// Automatically sync when the game starts
-	SyncStatsFromEntity();
-
-	// Start the vessel at full health/stamina based on its new stats
-	CurrentHealth = GetMaxHealth();
-	MaxHealth = GetMaxHealth();
 }
 
 void USovereignAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

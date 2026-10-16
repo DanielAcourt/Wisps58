@@ -120,17 +120,21 @@ void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
 		return;
 	}
 
-	// Gate spatial aura sweeps strictly to entities actively training in Qi, Wisdom, or Intelligence stances
-	if (USovereignLevelComponent* LevelComp = OwnerActor->FindComponentByClass<USovereignLevelComponent>())
+	// Gate spatial aura sweeps strictly to entities with a USovereignLevelComponent actively training in Qi, Wisdom, or Intelligence stances
+	USovereignLevelComponent* LevelComp = OwnerActor->FindComponentByClass<USovereignLevelComponent>();
+	if (!LevelComp)
 	{
-		ESovereignTrainingFocus Focus = LevelComp->ActiveTrainingFocus;
-		if (Focus != ESovereignTrainingFocus::Qi &&
-			Focus != ESovereignTrainingFocus::Wisdom &&
-			Focus != ESovereignTrainingFocus::Intelligence)
-		{
-			EnvironmentalQiRegenBonus = 0.0f;
-			return;
-		}
+		EnvironmentalQiRegenBonus = 0.0f;
+		return;
+	}
+
+	ESovereignTrainingFocus Focus = LevelComp->ActiveTrainingFocus;
+	if (Focus != ESovereignTrainingFocus::Qi &&
+		Focus != ESovereignTrainingFocus::Wisdom &&
+		Focus != ESovereignTrainingFocus::Intelligence)
+	{
+		EnvironmentalQiRegenBonus = 0.0f;
+		return;
 	}
 
 	FVector Origin = OwnerActor->GetActorLocation();
