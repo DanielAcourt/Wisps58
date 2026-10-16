@@ -1,6 +1,7 @@
 // Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-06-28
 
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "Entities/SovereignBaseEntity.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
@@ -117,6 +118,19 @@ void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
 	{
 		EnvironmentalQiRegenBonus = 0.0f;
 		return;
+	}
+
+	// Gate spatial aura sweeps strictly to entities actively training in Qi, Wisdom, or Intelligence stances
+	if (USovereignLevelComponent* LevelComp = OwnerActor->FindComponentByClass<USovereignLevelComponent>())
+	{
+		ESovereignTrainingFocus Focus = LevelComp->ActiveTrainingFocus;
+		if (Focus != ESovereignTrainingFocus::Qi &&
+			Focus != ESovereignTrainingFocus::Wisdom &&
+			Focus != ESovereignTrainingFocus::Intelligence)
+		{
+			EnvironmentalQiRegenBonus = 0.0f;
+			return;
+		}
 	}
 
 	FVector Origin = OwnerActor->GetActorLocation();
