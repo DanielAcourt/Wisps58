@@ -96,6 +96,15 @@ public:
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetMoveAction() const { return MoveAction; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetLookAction() const { return LookAction; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetInteractAction() const { return InteractAction; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputAction* GetPossessAction() const { return PossessAction; }
 	//Ideally we want a bool stored on the wisp to know if it is possessing anything
 	bool IsPossessing();

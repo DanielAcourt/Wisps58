@@ -176,14 +176,24 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 	if (UEnhancedInputComponent* EIC = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		ASovereignPlayerWisp* Wisp = nullptr;
+		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		{
+			Wisp = Cast<ASovereignPlayerWisp>(Spirit);
+		}
+
+		UInputAction* EffectiveMove = MoveAction ? MoveAction : (Wisp ? Wisp->GetMoveAction() : nullptr);
+		UInputAction* EffectiveLook = LookAction ? LookAction : (Wisp ? Wisp->GetLookAction() : nullptr);
+		UInputAction* EffectiveInteract = InteractAction ? InteractAction : (Wisp ? Wisp->GetInteractAction() : nullptr);
+
 		// Move & Look: Keep these as 'Triggered' for smooth continuous movement
-		if (MoveAction) EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Move);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Look);
+		if (EffectiveMove) EIC->BindAction(EffectiveMove, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Move);
+		if (EffectiveLook) EIC->BindAction(EffectiveLook, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Look);
 
 		// Interact: Use 'Started' to ensure the Eject/Possess happens exactly ONCE per tap
-		if (InteractAction)
+		if (EffectiveInteract)
 		{
-			EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &ASovereignBaseCharacter::Interact);
+			EIC->BindAction(EffectiveInteract, ETriggerEvent::Started, this, &ASovereignBaseCharacter::Interact);
 		}
 
 		// Handle the Possession lifecycle (F key)
@@ -193,13 +203,10 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 			ActionsToBind.AddUnique(PossessAction);
 		}
 
-		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		if (Wisp)
 		{
-			if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
-			{
-				if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
-				if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
-			}
+			if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+			if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
 		}
 
 		for (UInputAction* Act : ActionsToBind)
