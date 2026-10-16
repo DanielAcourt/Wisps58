@@ -17,7 +17,7 @@ public:
 	USovereignBaseComponent();
 
 	/** Optional custom UMG UserWidget class for specialized component inspection rendering */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Inspector", meta = (AdvancedDisplay))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|UI Inspection")
 	TSubclassOf<UUserWidget> InspectorWidgetClass;
 
 protected:
