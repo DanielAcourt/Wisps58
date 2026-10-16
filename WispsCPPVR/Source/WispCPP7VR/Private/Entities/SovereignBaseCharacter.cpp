@@ -9,6 +9,7 @@
 #include "Components/SovereignControllerComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignBioComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "TimerManager.h"
 
 //Entinty framework to save information
@@ -40,6 +41,8 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	ControlComponent = CreateDefaultSubobject<USovereignControllerComponent>(TEXT("ControlComponent"));
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
 	QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
+	LevelComponent = CreateDefaultSubobject<USovereignLevelComponent>(TEXT("LevelComponent"));
+	BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
@@ -174,14 +177,24 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 	if (UEnhancedInputComponent* EIC = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		ASovereignPlayerWisp* Wisp = nullptr;
+		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		{
+			Wisp = Cast<ASovereignPlayerWisp>(Spirit);
+		}
+
+		UInputAction* EffectiveMove = MoveAction ? MoveAction : (Wisp ? Wisp->GetMoveAction() : nullptr);
+		UInputAction* EffectiveLook = LookAction ? LookAction : (Wisp ? Wisp->GetLookAction() : nullptr);
+		UInputAction* EffectiveInteract = InteractAction ? InteractAction : (Wisp ? Wisp->GetInteractAction() : nullptr);
+
 		// Move & Look: Keep these as 'Triggered' for smooth continuous movement
-		if (MoveAction) EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Move);
-		if (LookAction) EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Look);
+		if (EffectiveMove) EIC->BindAction(EffectiveMove, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Move);
+		if (EffectiveLook) EIC->BindAction(EffectiveLook, ETriggerEvent::Triggered, this, &ASovereignBaseCharacter::Look);
 
 		// Interact: Use 'Started' to ensure the Eject/Possess happens exactly ONCE per tap
-		if (InteractAction)
+		if (EffectiveInteract)
 		{
-			EIC->BindAction(InteractAction, ETriggerEvent::Started, this, &ASovereignBaseCharacter::Interact);
+			EIC->BindAction(EffectiveInteract, ETriggerEvent::Started, this, &ASovereignBaseCharacter::Interact);
 		}
 
 		// Handle the Possession lifecycle (F key)
@@ -191,13 +204,10 @@ void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 			ActionsToBind.AddUnique(PossessAction);
 		}
 
-		if (AActor* Spirit = GetInhabitingSpirit_Implementation())
+		if (Wisp)
 		{
-			if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
-			{
-				if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
-				if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
-			}
+			if (UInputAction* SpiritPossess = Wisp->GetPossessAction()) ActionsToBind.AddUnique(SpiritPossess);
+			if (UInputAction* SpiritEject = Wisp->GetEjectAction()) ActionsToBind.AddUnique(SpiritEject);
 		}
 
 		for (UInputAction* Act : ActionsToBind)
@@ -433,14 +443,14 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 	// Simulate biology and Qi flow every frame strictly if set to Realtime update frequency
 	if (UpdateFrequency == EUpdateFrequency::Realtime)
 	{
-		if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+		if (BioComponent)
 		{
-			Bio->MaturityProgress += (Bio->MaturityRate * DeltaTime);
-			Bio->UpdateMetabolism(DeltaTime);
+			BioComponent->MaturityProgress += (BioComponent->MaturityRate * DeltaTime);
+			BioComponent->UpdateMetabolism(DeltaTime);
 
-			if (Bio->MaturityProgress >= 1.0f)
+			if (BioComponent->MaturityProgress >= 1.0f)
 			{
-				Bio->MaturityProgress = 0.0f;
+				BioComponent->MaturityProgress = 0.0f;
 				Evolve();
 			}
 		}
@@ -483,23 +493,29 @@ void ASovereignBaseCharacter::OnSovereignHeartbeat()
 	int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
 
 	// 1. BIOLOGICAL GROWTH & CONSUMPTION
-	if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+	if (BioComponent)
 	{
-		Bio->MaturityProgress += Bio->MaturityRate;
-		Bio->UpdateMetabolism(HeartbeatSeconds);
+		BioComponent->MaturityProgress += BioComponent->MaturityRate;
+		BioComponent->UpdateMetabolism(HeartbeatSeconds);
 
 		// 2. EVOLUTION CHECK
-		if (Bio->MaturityProgress >= 1.0f)
+		if (BioComponent->MaturityProgress >= 1.0f)
 		{
-			Bio->MaturityProgress = 0.0f;
+			BioComponent->MaturityProgress = 0.0f;
 			Evolve();
 		}
 	}
 
-	// 3. SPIRITUAL FLOW
+	// 3. SPIRITUAL FLOW & LEVEL TRAINING
 	if (QiComponent)
 	{
+		QiComponent->ProcessEnvironmentalQiAura(HeartbeatSeconds);
 		QiComponent->ProcessQiFlow(HeartbeatSeconds, WisdomVal);
+	}
+
+	if (LevelComponent)
+	{
+		LevelComponent->ProcessTrainingProgress(HeartbeatSeconds);
 	}
 }
 
@@ -531,6 +547,12 @@ void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData*
 	if (AttributeComponent)
 	{
 		AttributeComponent->SyncStatsFromEntity();
+	}
+
+	if (BioComponent && SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+	{
+		const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[CurrentGrowthStage];
+		BioComponent->MetabolicDrainRate = Stage.MetabolicRate;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] Sovereign Character Initialized successfully."), *GetName());
