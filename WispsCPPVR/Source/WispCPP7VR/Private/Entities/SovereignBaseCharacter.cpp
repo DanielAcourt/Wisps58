@@ -9,6 +9,7 @@
 #include "Components/SovereignControllerComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignBioComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "TimerManager.h"
 
 //Entinty framework to save information
@@ -40,6 +41,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	ControlComponent = CreateDefaultSubobject<USovereignControllerComponent>(TEXT("ControlComponent"));
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
 	QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
+	LevelComponent = CreateDefaultSubobject<USovereignLevelComponent>(TEXT("LevelComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
@@ -496,10 +498,16 @@ void ASovereignBaseCharacter::OnSovereignHeartbeat()
 		}
 	}
 
-	// 3. SPIRITUAL FLOW
+	// 3. SPIRITUAL FLOW & LEVEL TRAINING
 	if (QiComponent)
 	{
+		QiComponent->ProcessEnvironmentalQiAura(HeartbeatSeconds);
 		QiComponent->ProcessQiFlow(HeartbeatSeconds, WisdomVal);
+	}
+
+	if (LevelComponent)
+	{
+		LevelComponent->ProcessTrainingProgress(HeartbeatSeconds);
 	}
 }
 

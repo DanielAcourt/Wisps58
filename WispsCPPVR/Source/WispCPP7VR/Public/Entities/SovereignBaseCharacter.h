@@ -18,6 +18,7 @@
 class USovereignElementComponent;
 class USovereignControllerComponent;
 class USovereignAttributeComponent;
+class USovereignLevelComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -59,6 +60,9 @@ public:
 	// Getter for the current/last interacted actor
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Senses")
 	AActor* GetCurrentInteractedActor() const { return CurrentInteractedActor; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignLevelComponent* GetLevelComponent() const { return LevelComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }
@@ -153,6 +157,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignControllerComponent* ControlComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignLevelComponent* LevelComponent;
 
 	/** Performs a sphere trace to find the actor the player is looking at this is the i think wrong way to do this Blueprint callable */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Components")

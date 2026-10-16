@@ -45,19 +45,6 @@ void USovereignAttributeComponent::BeginPlay()
 	// Start the vessel at full health/stamina based on its new stats
 	CurrentHealth = GetMaxHealth();
 	MaxHealth = GetMaxHealth();
-
-	// Ensure paired USovereignLevelComponent exists on owner (which determines default training focus using synced stats)
-	if (AActor* Owner = GetOwner())
-	{
-		if (!Owner->FindComponentByClass<USovereignLevelComponent>())
-		{
-			USovereignLevelComponent* NewLevelComp = NewObject<USovereignLevelComponent>(Owner, USovereignLevelComponent::StaticClass(), TEXT("SovereignLevelComponent"));
-			if (NewLevelComp)
-			{
-				NewLevelComp->RegisterComponent();
-			}
-		}
-	}
 }
 
 void USovereignAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -104,10 +91,16 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
 			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
 			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
-		return;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
+	if (USovereignLevelComponent* LevelComp = GetOwner() ? GetOwner()->FindComponentByClass<USovereignLevelComponent>() : nullptr)
+	{
+		LevelComp->DetermineDefaultTrainingFocus();
+	}
 }
 
 float USovereignAttributeComponent::GetMaxHealth() const
