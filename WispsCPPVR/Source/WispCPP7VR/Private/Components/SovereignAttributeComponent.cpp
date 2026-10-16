@@ -7,12 +7,20 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
 #include "GameFramework/Actor.h"
 
 USovereignAttributeComponent::USovereignAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> AttrWidgetFinder(TEXT("/Game/Assets/UI/WBP_Attributes.WBP_Attributes_C"));
+	if (AttrWidgetFinder.Succeeded())
+	{
+		InspectorWidgetClass = AttrWidgetFinder.Class;
+	}
 
 	// Default internal values to prevent crashes before sync
 	Strength = 10;

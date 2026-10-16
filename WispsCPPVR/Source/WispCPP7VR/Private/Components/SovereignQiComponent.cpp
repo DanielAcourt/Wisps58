@@ -7,6 +7,8 @@
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
 
 USovereignQiComponent::USovereignQiComponent()
@@ -19,6 +21,12 @@ USovereignQiComponent::USovereignQiComponent()
 	AlignmentSocket = ESovereignElement::Grey;
 	MagicSocket = ESovereignElement::None;
 	PrimaryComponentTick.TickInterval = 0.1f;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> QiWidgetFinder(TEXT("/Game/Assets/UI/WBP_QI.WBP_QI_C"));
+	if (QiWidgetFinder.Succeeded())
+	{
+		InspectorWidgetClass = QiWidgetFinder.Class;
+	}
 }
 
 void USovereignQiComponent::BeginPlay()
