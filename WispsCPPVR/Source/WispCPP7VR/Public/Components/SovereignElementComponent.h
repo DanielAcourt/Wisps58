@@ -20,6 +20,10 @@ class WISPCPP7VR_API USovereignElementComponent : public USovereignBaseComponent
 public:	
 	USovereignElementComponent();
 
+	/** Custom UI Inspector UserWidget for Elemental Nature inspection */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Genetics")
+	TSubclassOf<UUserWidget> InspectorWidgetClass;
+
 	/** --- 1. THE TRIPLE-AXIS (PHYSICAL LAYER) --- */
 
 	/** The primary physical element (Nature, Fire, Water, Earth, Air) */

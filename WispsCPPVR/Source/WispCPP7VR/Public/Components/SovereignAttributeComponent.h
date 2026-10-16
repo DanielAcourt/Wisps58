@@ -24,6 +24,10 @@ public:
 	// Sets default values for this component's properties
 	USovereignAttributeComponent();
 
+	/** Custom UI Inspector UserWidget for Attribute inspection */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Core Attributes")
+	TSubclassOf<UUserWidget> InspectorWidgetClass;
+
 	// --- 1. CORE ATTRIBUTES (Infinite Accumulator Logic) ---
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")

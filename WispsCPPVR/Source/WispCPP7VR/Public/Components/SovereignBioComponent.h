@@ -40,6 +40,10 @@ class WISPCPP7VR_API USovereignBioComponent : public USovereignBaseComponent, pu
 public:
     USovereignBioComponent();
 
+    /** Custom UI Inspector UserWidget for Biological Vitals inspection */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Bio Vitals")
+    TSubclassOf<UUserWidget> InspectorWidgetClass;
+
     /** --- 1. VITALS --- */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Bio Vitals")
     TMap<ESovereignNutrient, float> NutrientReserves;
