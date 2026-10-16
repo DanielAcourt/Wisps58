@@ -19,10 +19,6 @@ class WISPCPP7VR_API USovereignTelemetryComponent : public USovereignBaseCompone
 public:
 	USovereignTelemetryComponent();
 
-	/** Custom UI Inspector UserWidget for IoT Telemetry inspection */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Telemetry")
-	TSubclassOf<UUserWidget> InspectorWidgetClass;
-
 	/** Temperature reading in Celsius */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Telemetry")
 	float TemperatureCelsius = 0.0f;

@@ -23,10 +23,6 @@ class WISPCPP7VR_API USovereignLevelComponent : public USovereignBaseComponent, 
 public:
 	USovereignLevelComponent();
 
-	/** Custom UI Inspector UserWidget for Leveling/Training inspection */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Leveling")
-	TSubclassOf<UUserWidget> InspectorWidgetClass;
-
 	/** --- 1. TRAINING FOCUS & RATES --- */
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Leveling")

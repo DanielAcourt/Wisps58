@@ -39,10 +39,6 @@ public:
 	float MagicInfluence = 0.0f;
 
 
-	/** Custom UI Inspector UserWidget for Qi inspection */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi")
-	TSubclassOf<UUserWidget> InspectorWidgetClass;
-
 	/** --- 2. QI POOL --- */
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Qi")
