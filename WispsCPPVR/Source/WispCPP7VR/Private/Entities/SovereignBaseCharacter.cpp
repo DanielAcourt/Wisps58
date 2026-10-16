@@ -42,6 +42,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
 	QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
 	LevelComponent = CreateDefaultSubobject<USovereignLevelComponent>(TEXT("LevelComponent"));
+	BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
@@ -442,14 +443,14 @@ void ASovereignBaseCharacter::Tick(float DeltaTime)
 	// Simulate biology and Qi flow every frame strictly if set to Realtime update frequency
 	if (UpdateFrequency == EUpdateFrequency::Realtime)
 	{
-		if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+		if (BioComponent)
 		{
-			Bio->MaturityProgress += (Bio->MaturityRate * DeltaTime);
-			Bio->UpdateMetabolism(DeltaTime);
+			BioComponent->MaturityProgress += (BioComponent->MaturityRate * DeltaTime);
+			BioComponent->UpdateMetabolism(DeltaTime);
 
-			if (Bio->MaturityProgress >= 1.0f)
+			if (BioComponent->MaturityProgress >= 1.0f)
 			{
-				Bio->MaturityProgress = 0.0f;
+				BioComponent->MaturityProgress = 0.0f;
 				Evolve();
 			}
 		}
@@ -492,15 +493,15 @@ void ASovereignBaseCharacter::OnSovereignHeartbeat()
 	int32 WisdomVal = AttributeComponent ? AttributeComponent->Wisdom : 10;
 
 	// 1. BIOLOGICAL GROWTH & CONSUMPTION
-	if (USovereignBioComponent* Bio = FindComponentByClass<USovereignBioComponent>())
+	if (BioComponent)
 	{
-		Bio->MaturityProgress += Bio->MaturityRate;
-		Bio->UpdateMetabolism(HeartbeatSeconds);
+		BioComponent->MaturityProgress += BioComponent->MaturityRate;
+		BioComponent->UpdateMetabolism(HeartbeatSeconds);
 
 		// 2. EVOLUTION CHECK
-		if (Bio->MaturityProgress >= 1.0f)
+		if (BioComponent->MaturityProgress >= 1.0f)
 		{
-			Bio->MaturityProgress = 0.0f;
+			BioComponent->MaturityProgress = 0.0f;
 			Evolve();
 		}
 	}
@@ -546,6 +547,12 @@ void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData*
 	if (AttributeComponent)
 	{
 		AttributeComponent->SyncStatsFromEntity();
+	}
+
+	if (BioComponent && SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+	{
+		const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[CurrentGrowthStage];
+		BioComponent->MetabolicDrainRate = Stage.MetabolicRate;
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[%s] Sovereign Character Initialized successfully."), *GetName());
