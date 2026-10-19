@@ -292,6 +292,31 @@ def import_csv_to_data_assets(
                 try: data_asset.set_editor_property(prop, b_bio); break
                 except Exception: pass
 
+            # 4b. Item / Action XP Gains (B-059)
+            for xp_field in ["strength_xp", "dexterity_xp", "constitution_xp", "intelligence_xp", "wisdom_xp", "charisma_xp", "luck_xp"]:
+                csv_col = xp_field.replace("_", "").upper()  # STRENGTHXP
+                val_str = row.get(csv_col, row.get(xp_field, row.get(f"{xp_field.split('_')[0].capitalize()}XP", "0.0")))
+                try:
+                    data_asset.set_editor_property(xp_field, float(val_str))
+                except Exception:
+                    pass
+
+            # 4c. Qi Aura Footprint (B-059)
+            try:
+                data_asset.set_editor_property("qi_give", float(row.get("QiGive", row.get("QIGIVE", "5.0"))))
+            except Exception:
+                pass
+
+            try:
+                data_asset.set_editor_property("qi_take", float(row.get("QiTake", row.get("QITAKE", "5.0"))))
+            except Exception:
+                pass
+
+            try:
+                data_asset.set_editor_property("qi_aura_radius", float(row.get("QiAuraRadius", row.get("QIAURARADIUS", "500.0"))))
+            except Exception:
+                pass
+
             # 5. Soft Actor Class Pointer
             actor_class_str = row.get("ActorClass", "").strip()
             if actor_class_str:

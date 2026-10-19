@@ -2,16 +2,25 @@
 
 
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "Entities/SovereignBaseEntity.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
 #include "GameFramework/Actor.h"
 
 USovereignAttributeComponent::USovereignAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> AttrWidgetFinder(TEXT("/Game/Assets/UI/WBP_Attributes.WBP_Attributes_C"));
+	if (AttrWidgetFinder.Succeeded())
+	{
+		InspectorWidgetClass = AttrWidgetFinder.Class;
+	}
 
 	// Default internal values to prevent crashes before sync
 	Strength = 10;
@@ -38,7 +47,7 @@ void USovereignAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Automatically sync when the game starts
+	// Automatically sync species stats when the game starts
 	SyncStatsFromEntity();
 
 	// Start the vessel at full health/stamina based on its new stats
@@ -90,10 +99,16 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
 			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
 			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
-		return;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
+	if (USovereignLevelComponent* LevelComp = GetOwner() ? GetOwner()->FindComponentByClass<USovereignLevelComponent>() : nullptr)
+	{
+		LevelComp->DetermineDefaultTrainingFocus();
+	}
 }
 
 float USovereignAttributeComponent::GetMaxHealth() const

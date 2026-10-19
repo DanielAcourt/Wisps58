@@ -151,6 +151,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
     bool bIsBiological = false;
 
+    // --- SPIRITUAL & QI AURA FOOTPRINT [B-059] ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Qi Aura")
+    float QiGive = 5.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Qi Aura")
+    float QiTake = 5.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Qi Aura")
+    float QiAuraRadius = 500.0f;
+
     /** The Actor Class to spawn for this species. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawning")
     TSoftClassPtr<class AActor> ActorClass;

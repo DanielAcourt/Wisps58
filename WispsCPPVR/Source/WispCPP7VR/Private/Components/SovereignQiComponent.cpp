@@ -1,8 +1,14 @@
 // Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-06-28
 
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
 
 USovereignQiComponent::USovereignQiComponent()
@@ -15,6 +21,12 @@ USovereignQiComponent::USovereignQiComponent()
 	AlignmentSocket = ESovereignElement::Grey;
 	MagicSocket = ESovereignElement::None;
 	PrimaryComponentTick.TickInterval = 0.1f;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> QiWidgetFinder(TEXT("/Game/Assets/UI/WBP_QI.WBP_QI_C"));
+	if (QiWidgetFinder.Succeeded())
+	{
+		InspectorWidgetClass = QiWidgetFinder.Class;
+	}
 }
 
 void USovereignQiComponent::BeginPlay()
@@ -27,6 +39,32 @@ void USovereignQiComponent::BeginPlay()
 		{
 			SoulHub->RegisterBroker(this);
 		}
+
+		SyncQiAuraDefaultsFromEntity();
+	}
+}
+
+void USovereignQiComponent::SyncQiAuraDefaultsFromEntity()
+{
+	USovereignSpeciesData* SpeciesData = nullptr;
+
+	if (ASovereignBaseEntity* OwnerEntity = Cast<ASovereignBaseEntity>(GetOwner()))
+	{
+		SpeciesData = OwnerEntity->GetSpeciesData();
+	}
+	else if (ASovereignBaseCharacter* OwnerChar = Cast<ASovereignBaseCharacter>(GetOwner()))
+	{
+		SpeciesData = OwnerChar->GetSpeciesData();
+	}
+
+	if (SpeciesData)
+	{
+		QiGive = SpeciesData->QiGive;
+		QiTake = SpeciesData->QiTake;
+		QiAuraRadius = SpeciesData->QiAuraRadius;
+
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced Qi Aura defaults from Species %s -> Give: %.1f | Take: %.1f | Radius: %.1f"),
+			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), QiGive, QiTake, QiAuraRadius);
 	}
 }
 
@@ -67,11 +105,94 @@ bool USovereignQiComponent::SpendQi(float Amount)
 	return false;
 }
 
+float USovereignQiComponent::GetTotalQiRegenRate(int32 WisdomStat) const
+{
+	float BaseRegen = (static_cast<float>(WisdomStat) * 0.1f) * QiPurity;
+	return BaseRegen + EnvironmentalQiRegenBonus;
+}
+
 void USovereignQiComponent::ProcessQiFlow(float DeltaTime, int32 WisdomStat)
 {
 	if (QiPurity < 1.0f) QiPurity += 0.00001f * DeltaTime;
-	float RegenRate = (static_cast<float>(WisdomStat) * 0.1f) * QiPurity;
-	if (CurrentQi < MaxQiCapacity) CurrentQi = FMath::Min(CurrentQi + (RegenRate * DeltaTime), MaxQiCapacity);
+	float TotalRegenRate = GetTotalQiRegenRate(WisdomStat);
+	if (CurrentQi < MaxQiCapacity) CurrentQi = FMath::Min(CurrentQi + (TotalRegenRate * DeltaTime), MaxQiCapacity);
+}
+
+void USovereignQiComponent::ProcessEnvironmentalQiAura(float HeartbeatInterval)
+{
+	AActor* OwnerActor = GetOwner();
+	UWorld* World = GetWorld();
+	if (!OwnerActor || !World || QiAuraRadius <= 0.0f || QiTake <= 0.0f)
+	{
+		EnvironmentalQiRegenBonus = 0.0f;
+		return;
+	}
+
+	// Gate spatial aura sweeps strictly to entities with a USovereignLevelComponent actively training in Qi, Wisdom, or Intelligence stances
+	USovereignLevelComponent* LevelComp = OwnerActor->FindComponentByClass<USovereignLevelComponent>();
+	if (!LevelComp)
+	{
+		EnvironmentalQiRegenBonus = 0.0f;
+		return;
+	}
+
+	ESovereignTrainingFocus Focus = LevelComp->ActiveTrainingFocus;
+	if (Focus != ESovereignTrainingFocus::Qi &&
+		Focus != ESovereignTrainingFocus::Wisdom &&
+		Focus != ESovereignTrainingFocus::Intelligence)
+	{
+		EnvironmentalQiRegenBonus = 0.0f;
+		return;
+	}
+
+	FVector Origin = OwnerActor->GetActorLocation();
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwnerActor);
+
+	TArray<FOverlapResult> Overlaps;
+	bool bHit = World->OverlapMultiByObjectType(
+		Overlaps,
+		Origin,
+		FQuat::Identity,
+		ObjectQueryParams,
+		FCollisionShape::MakeSphere(QiAuraRadius),
+		QueryParams
+	);
+
+	if (!bHit)
+	{
+		EnvironmentalQiRegenBonus = 0.0f;
+		return;
+	}
+
+	float TotalRatePerSecond = 0.0f;
+	TSet<AActor*> ProcessedActors;
+
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		AActor* OtherActor = Overlap.GetActor();
+		if (!OtherActor || ProcessedActors.Contains(OtherActor))
+		{
+			continue;
+		}
+
+		ProcessedActors.Add(OtherActor);
+
+		USovereignQiComponent* OtherQiComp = OtherActor->FindComponentByClass<USovereignQiComponent>();
+		if (OtherQiComp && OtherQiComp->bIsQiSource && OtherQiComp->QiGive > 0.0f)
+		{
+			float Distance = FVector::Dist(Origin, OtherActor->GetActorLocation());
+			float DistanceFactor = FMath::Clamp(1.0f - (Distance / QiAuraRadius), 0.0f, 1.0f);
+			float RateFromSource = FMath::Min(OtherQiComp->QiGive, QiTake) * DistanceFactor;
+			TotalRatePerSecond += RateFromSource;
+		}
+	}
+
+	EnvironmentalQiRegenBonus = TotalRatePerSecond;
 }
 
 void USovereignQiComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
@@ -93,6 +214,12 @@ void USovereignQiComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 	QiObj->SetStringField(TEXT("DomainRuneTier"), DomainRuneTier);
 	QiObj->SetNumberField(TEXT("DomainResonanceRadius"), DomainResonanceRadius);
 	QiObj->SetNumberField(TEXT("DomainNetworkSaturation"), DomainNetworkSaturation);
+
+	// Environmental Qi Aura parameters [B-059]
+	QiObj->SetNumberField(TEXT("QiAuraRadius"), QiAuraRadius);
+	QiObj->SetBoolField(TEXT("bIsQiSource"), bIsQiSource);
+	QiObj->SetNumberField(TEXT("QiGive"), QiGive);
+	QiObj->SetNumberField(TEXT("QiTake"), QiTake);
 
 	TSharedPtr<FJsonObject> ResObj = MakeShareable(new FJsonObject());
 	for (const auto& Elem : ElementalResonance)
@@ -145,6 +272,12 @@ void USovereignQiComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 		(*QiObj)->TryGetStringField(TEXT("DomainRuneTier"), DomainRuneTier);
 		if ((*QiObj)->TryGetNumberField(TEXT("DomainResonanceRadius"), TempVal)) DomainResonanceRadius = (float)TempVal;
 		if ((*QiObj)->TryGetNumberField(TEXT("DomainNetworkSaturation"), TempVal)) DomainNetworkSaturation = (float)TempVal;
+
+		// Environmental Qi Aura parameters [B-059]
+		if ((*QiObj)->TryGetNumberField(TEXT("QiAuraRadius"), TempVal)) QiAuraRadius = (float)TempVal;
+		(*QiObj)->TryGetBoolField(TEXT("bIsQiSource"), bIsQiSource);
+		if ((*QiObj)->TryGetNumberField(TEXT("QiGive"), TempVal)) QiGive = (float)TempVal;
+		if ((*QiObj)->TryGetNumberField(TEXT("QiTake"), TempVal)) QiTake = (float)TempVal;
 
 		const TSharedPtr<FJsonObject>* ResObj;
 		if ((*QiObj)->TryGetObjectField(TEXT("Resonance"), ResObj))

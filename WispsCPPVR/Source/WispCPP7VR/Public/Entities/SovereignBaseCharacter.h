@@ -18,6 +18,8 @@
 class USovereignElementComponent;
 class USovereignControllerComponent;
 class USovereignAttributeComponent;
+class USovereignLevelComponent;
+class USovereignBioComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -60,6 +62,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Senses")
 	AActor* GetCurrentInteractedActor() const { return CurrentInteractedActor; }
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignLevelComponent* GetLevelComponent() const { return LevelComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }
 
@@ -90,6 +98,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetMoveAction() const { return MoveAction; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetLookAction() const { return LookAction; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	class UInputAction* GetInteractAction() const { return InteractAction; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputAction* GetPossessAction() const { return PossessAction; }
@@ -153,6 +170,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignControllerComponent* ControlComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignLevelComponent* LevelComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignBioComponent* BioComponent;
 
 	/** Performs a sphere trace to find the actor the player is looking at this is the i think wrong way to do this Blueprint callable */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Components")

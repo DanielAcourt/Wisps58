@@ -73,13 +73,41 @@ public:
 	float DomainNetworkSaturation = 0.0f;
 
 
-	/** --- 4. LOGIC --- */
+	/** --- 4. ENVIRONMENTAL QI AURA [B-059] --- */
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiAuraRadius = 500.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	bool bIsQiSource = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiGive = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiTake = 5.0f;
+
+	/** Calculated aggregate Qi gain rate per second from surrounding environmental sources */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Qi Aura")
+	float EnvironmentalQiRegenBonus = 0.0f;
+
+
+	/** --- 5. LOGIC --- */
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi")
 	void AbsorbQi(float Amount, float SourcePurity);
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi")
 	bool SpendQi(float Amount);
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi Aura")
+	void SyncQiAuraDefaultsFromEntity();
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Qi Aura")
+	void ProcessEnvironmentalQiAura(float HeartbeatInterval);
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Qi")
+	float GetTotalQiRegenRate(int32 WisdomStat) const;
 
 	/** ISovereignBrokerInterface Implementation */
 	virtual void OnSave(TSharedPtr<FJsonObject>& OutJson) override;
