@@ -3,6 +3,7 @@
 
 #include "Components/SovereignAttributeComponent.h"
 #include "Entities/SovereignBaseEntity.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
 #include "Dom/JsonObject.h"
@@ -60,21 +61,35 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 		SpeciesData = OwnerEntity->GetSpeciesData();
 		StageIdx = OwnerEntity->GetCurrentGrowthStage();
 	}
+	else if (ASovereignBaseCharacter* OwnerChar = Cast<ASovereignBaseCharacter>(GetOwner()))
+	{
+		SpeciesData = OwnerChar->GetSpeciesData();
+		StageIdx = OwnerChar->GetCurrentGrowthStage();
+	}
 
 	if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(StageIdx))
 	{
 		const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[StageIdx];
-		Strength = Stage.BaseStrength;
-		Dexterity = Stage.BaseDexterity;
-		Constitution = Stage.BaseConstitution;
-		Intelligence = Stage.BaseIntelligence;
-		Wisdom = Stage.BaseWisdom;
-		Charisma = Stage.BaseCharisma;
-		Luck = Stage.BaseLuck;
 
-		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d"),
+		float OldMaxHealth = GetMaxHealth();
+		float HealthRatio = (OldMaxHealth > 0.0f) ? (CurrentHealth / OldMaxHealth) : 1.0f;
+
+		// Preserve accumulated stat experience on top of the new growth stage base stats
+		Strength = Stage.BaseStrength + FMath::FloorToInt(StrengthExperience);
+		Dexterity = Stage.BaseDexterity + FMath::FloorToInt(DexterityExperience);
+		Constitution = Stage.BaseConstitution + FMath::FloorToInt(ConstitutionExperience);
+		Intelligence = Stage.BaseIntelligence + FMath::FloorToInt(IntelligenceExperience);
+		Wisdom = Stage.BaseWisdom + FMath::FloorToInt(WisdomExperience);
+		Charisma = Stage.BaseCharisma + FMath::FloorToInt(CharismaExperience);
+		Luck = Stage.BaseLuck + FMath::FloorToInt(LuckExperience);
+
+		// Recalculate health bounds dynamically based on updated Constitution
+		MaxHealth = GetMaxHealth();
+		CurrentHealth = FMath::Clamp(HealthRatio * MaxHealth, 1.0f, MaxHealth);
+
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
 			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
-			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck);
+			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
 		return;
 	}
 
