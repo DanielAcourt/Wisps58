@@ -147,10 +147,10 @@ void ASovereignBaseEntity::CheckForEvolution()
     if (!AttrComp) return;
 
     // 2. THE COMPOSITE POWER CALCULATION
-    // We use the prestige Level (int32) + the scientific Experience (double)
-    double TotalPower = (double)AttrComp->Strength + AttrComp->StrengthExperience +
-        (double)AttrComp->Intelligence + AttrComp->IntelligenceExperience +
-        (double)AttrComp->Wisdom + AttrComp->WisdomExperience;
+    // We use the prestige Level (int32)
+    double TotalPower = (double)AttrComp->Strength +
+        (double)AttrComp->Intelligence +
+        (double)AttrComp->Wisdom;
 
     //Can we do this smarter like in an array, SO that the training matches the stored experience? in an enum + douuble?
 

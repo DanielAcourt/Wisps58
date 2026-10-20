@@ -83,14 +83,13 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 		float OldMaxHealth = GetMaxHealth();
 		float HealthRatio = (OldMaxHealth > 0.0f) ? (CurrentHealth / OldMaxHealth) : 1.0f;
 
-		// Preserve accumulated stat experience on top of the new growth stage base stats
-		Strength = Stage.BaseStrength + FMath::FloorToInt(StrengthExperience);
-		Dexterity = Stage.BaseDexterity + FMath::FloorToInt(DexterityExperience);
-		Constitution = Stage.BaseConstitution + FMath::FloorToInt(ConstitutionExperience);
-		Intelligence = Stage.BaseIntelligence + FMath::FloorToInt(IntelligenceExperience);
-		Wisdom = Stage.BaseWisdom + FMath::FloorToInt(WisdomExperience);
-		Charisma = Stage.BaseCharisma + FMath::FloorToInt(CharismaExperience);
-		Luck = Stage.BaseLuck + FMath::FloorToInt(LuckExperience);
+		Strength = Stage.BaseStrength;
+		Dexterity = Stage.BaseDexterity;
+		Constitution = Stage.BaseConstitution;
+		Intelligence = Stage.BaseIntelligence;
+		Wisdom = Stage.BaseWisdom;
+		Charisma = Stage.BaseCharisma;
+		Luck = Stage.BaseLuck;
 
 		// Recalculate health bounds dynamically based on updated Constitution
 		MaxHealth = GetMaxHealth();
@@ -213,25 +212,12 @@ void USovereignAttributeComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 	TSharedPtr<FJsonObject> AttrObj = MakeShareable(new FJsonObject());
 
 	AttrObj->SetNumberField(TEXT("Strength"), Strength);
-	AttrObj->SetNumberField(TEXT("StrengthExperience"), StrengthExperience);
-
 	AttrObj->SetNumberField(TEXT("Dexterity"), Dexterity);
-	AttrObj->SetNumberField(TEXT("DexterityExperience"), DexterityExperience);
-
 	AttrObj->SetNumberField(TEXT("Constitution"), Constitution);
-	AttrObj->SetNumberField(TEXT("ConstitutionExperience"), ConstitutionExperience);
-
 	AttrObj->SetNumberField(TEXT("Intelligence"), Intelligence);
-	AttrObj->SetNumberField(TEXT("IntelligenceExperience"), IntelligenceExperience);
-
 	AttrObj->SetNumberField(TEXT("Wisdom"), Wisdom);
-	AttrObj->SetNumberField(TEXT("WisdomExperience"), WisdomExperience);
-
 	AttrObj->SetNumberField(TEXT("Charisma"), Charisma);
-	AttrObj->SetNumberField(TEXT("CharismaExperience"), CharismaExperience);
-
 	AttrObj->SetNumberField(TEXT("Luck"), Luck);
-	AttrObj->SetNumberField(TEXT("LuckExperience"), LuckExperience);
 
 	AttrObj->SetNumberField(TEXT("ArmourClass"), ArmourClass);
 
@@ -256,25 +242,12 @@ void USovereignAttributeComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 	{
 		double Val;
 		if ((*AttrObj)->TryGetNumberField(TEXT("Strength"), Val)) Strength = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("StrengthExperience"), Val)) StrengthExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Dexterity"), Val)) Dexterity = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("DexterityExperience"), Val)) DexterityExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Constitution"), Val)) Constitution = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("ConstitutionExperience"), Val)) ConstitutionExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Intelligence"), Val)) Intelligence = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("IntelligenceExperience"), Val)) IntelligenceExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Wisdom"), Val)) Wisdom = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("WisdomExperience"), Val)) WisdomExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Charisma"), Val)) Charisma = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("CharismaExperience"), Val)) CharismaExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Luck"), Val)) Luck = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("LuckExperience"), Val)) LuckExperience = Val;
 
 		if ((*AttrObj)->TryGetNumberField(TEXT("ArmourClass"), Val)) ArmourClass = (int32)Val;
 
