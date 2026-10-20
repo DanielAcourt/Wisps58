@@ -37,6 +37,10 @@ struct FSovereignGrowthStage
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
     TSoftObjectPtr<USkeletalMesh> StageSkeletalMesh;
 
+    /** Optional Material override for this growth stage */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
+    TSoftObjectPtr<UMaterialInterface> StageMaterial;
+
     /** NEW: Scaling factor for this stage (1.0 = Default) */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
     float VisualScale = 1.0f;

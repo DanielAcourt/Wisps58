@@ -570,30 +570,37 @@ void ASovereignBaseCharacter::RefreshVisuals()
 
 	const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[CurrentGrowthStage];
 	TSoftObjectPtr<USkeletalMesh> NewMeshPtr = Stage.StageSkeletalMesh;
+	TSoftObjectPtr<UMaterialInterface> NewMaterialPtr = Stage.StageMaterial;
 
-	if (NewMeshPtr.IsNull())
+	if (!NewMeshPtr.IsNull())
 	{
-		// Scale update if no skeletal mesh soft pointer is set
-		float StageScale = Stage.VisualScale;
-		GetMesh()->SetRelativeScale3D(FVector(StageScale));
-		return;
-	}
-
-	if (NewMeshPtr.Get() == GetMesh()->GetSkeletalMeshAsset() && !NewMeshPtr.IsNull())
-	{
-		float StageScale = Stage.VisualScale;
-		GetMesh()->SetRelativeScale3D(FVector(StageScale));
-		return;
-	}
-
-	if (NewMeshPtr.IsPending())
-	{
-		FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
-		StreamableManager.RequestAsyncLoad(NewMeshPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseCharacter::OnSkeletalMeshLoaded, NewMeshPtr));
+		if (NewMeshPtr.IsPending())
+		{
+			FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+			StreamableManager.RequestAsyncLoad(NewMeshPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseCharacter::OnSkeletalMeshLoaded, NewMeshPtr));
+		}
+		else
+		{
+			OnSkeletalMeshLoaded(NewMeshPtr);
+		}
 	}
 	else
 	{
-		OnSkeletalMeshLoaded(NewMeshPtr);
+		float StageScale = Stage.VisualScale;
+		GetMesh()->SetRelativeScale3D(FVector(StageScale));
+	}
+
+	if (!NewMaterialPtr.IsNull())
+	{
+		if (NewMaterialPtr.IsPending())
+		{
+			FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+			StreamableManager.RequestAsyncLoad(NewMaterialPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseCharacter::OnMaterialLoaded, NewMaterialPtr));
+		}
+		else
+		{
+			OnMaterialLoaded(NewMaterialPtr);
+		}
 	}
 }
 
@@ -610,6 +617,15 @@ void ASovereignBaseCharacter::OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh>
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("[%s] Character Visuals synced to Stage %d"), *GetName(), CurrentGrowthStage);
+	}
+}
+
+void ASovereignBaseCharacter::OnMaterialLoaded(TSoftObjectPtr<UMaterialInterface> LoadedMaterialPtr)
+{
+	if (LoadedMaterialPtr.IsValid() && GetMesh())
+	{
+		GetMesh()->SetMaterial(0, LoadedMaterialPtr.Get());
+		UE_LOG(LogTemp, Log, TEXT("[%s] Character Material synced to Stage %d"), *GetName(), CurrentGrowthStage);
 	}
 }
 

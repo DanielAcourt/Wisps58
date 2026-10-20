@@ -187,4 +187,7 @@ protected:
 
 	/** Callback function for when a mesh has been asynchronously loaded. */
 	void OnMeshLoaded(TSoftObjectPtr<UStaticMesh> LoadedMeshPtr);
+
+	/** Callback function for when a material has been asynchronously loaded. */
+	void OnMaterialLoaded(TSoftObjectPtr<UMaterialInterface> LoadedMaterialPtr);
 };
