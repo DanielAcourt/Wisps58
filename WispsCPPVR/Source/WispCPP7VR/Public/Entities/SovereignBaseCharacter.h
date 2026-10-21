@@ -88,9 +88,6 @@ public:
 	/** Async callback when stage skeletal mesh finishes streaming */
 	void OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh> LoadedMeshPtr);
 
-	/** Async callback when stage material finishes streaming */
-	void OnMaterialLoaded(TSoftObjectPtr<UMaterialInterface> LoadedMaterialPtr);
-
 	/** Calculates the float delay based on the UpdateFrequency enum */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Update")
 	virtual float GetHeartbeatInterval() const;
