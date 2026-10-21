@@ -312,26 +312,43 @@ void ASovereignBaseEntity::RefreshVisuals()
         return;
     }
 
-    // 3. Get the Soft Pointer to the mesh
-    TSoftObjectPtr<UStaticMesh> NewMeshPtr = SpeciesData->GrowthStages[CurrentGrowthStage].StageMesh;
+    const FSovereignGrowthStage& Stage = SpeciesData->GrowthStages[CurrentGrowthStage];
 
-    // 4. Optimization: Check if the mesh is already loaded and set
-    // This prevents redundant logic if Evolve() is called multiple times
-    if (NewMeshPtr.Get() == EntityMesh->GetStaticMesh() && !NewMeshPtr.IsNull())
-    {
-        return;
-    }
+    // 3. Get the Soft Pointer to the mesh & material (with fallback to SpeciesMaterial)
+    TSoftObjectPtr<UStaticMesh> NewMeshPtr = Stage.StageMesh;
+    TSoftObjectPtr<UMaterialInterface> NewMaterialPtr = !Stage.StageMaterial.IsNull() ? Stage.StageMaterial : SpeciesData->SpeciesMaterial;
 
-    // 5. The "Sovereign" Load Strategy: Asynchronous Loading
-    if (NewMeshPtr.IsPending())
+    // 4. Mesh Load Strategy
+    if (!NewMeshPtr.IsNull())
     {
-        FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
-        StreamableManager.RequestAsyncLoad(NewMeshPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseEntity::OnMeshLoaded, NewMeshPtr));
+        if (NewMeshPtr.IsPending())
+        {
+            FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+            StreamableManager.RequestAsyncLoad(NewMeshPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseEntity::OnMeshLoaded, NewMeshPtr));
+        }
+        else
+        {
+            OnMeshLoaded(NewMeshPtr);
+        }
     }
     else
     {
-        // Mesh is already loaded, so just apply it.
-        OnMeshLoaded(NewMeshPtr);
+        float StageScale = Stage.VisualScale;
+        EntityMesh->SetRelativeScale3D(FVector(StageScale));
+    }
+
+    // 5. Material Load Strategy
+    if (!NewMaterialPtr.IsNull())
+    {
+        if (NewMaterialPtr.IsPending())
+        {
+            FStreamableManager& StreamableManager = UAssetManager::Get().GetStreamableManager();
+            StreamableManager.RequestAsyncLoad(NewMaterialPtr.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ASovereignBaseEntity::OnMaterialLoaded, NewMaterialPtr));
+        }
+        else
+        {
+            OnMaterialLoaded(NewMaterialPtr);
+        }
     }
 }
 
@@ -342,11 +359,22 @@ void ASovereignBaseEntity::OnMeshLoaded(TSoftObjectPtr<UStaticMesh> LoadedMeshPt
         EntityMesh->SetStaticMesh(LoadedMeshPtr.Get());
 
         // 6. Scale/Physical Logic (The "Symmetry" adjustment)
-        // Adjust the scale based on the growth stage defined in the data asset
-        float StageScale = SpeciesData->GrowthStages[CurrentGrowthStage].VisualScale;
-        EntityMesh->SetRelativeScale3D(FVector(StageScale));
+        if (SpeciesData && SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
+        {
+            float StageScale = SpeciesData->GrowthStages[CurrentGrowthStage].VisualScale;
+            EntityMesh->SetRelativeScale3D(FVector(StageScale));
+        }
 
         UE_LOG(LogTemp, Log, TEXT("[%s] Visuals synced to Stage %d"), *GetName(), CurrentGrowthStage);
+    }
+}
+
+void ASovereignBaseEntity::OnMaterialLoaded(TSoftObjectPtr<UMaterialInterface> LoadedMaterialPtr)
+{
+    if (LoadedMaterialPtr.IsValid() && EntityMesh)
+    {
+        EntityMesh->SetMaterial(0, LoadedMaterialPtr.Get());
+        UE_LOG(LogTemp, Log, TEXT("[%s] Material synced to Stage %d"), *GetName(), CurrentGrowthStage);
     }
 }
 

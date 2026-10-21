@@ -398,6 +398,33 @@ def import_csv_to_data_assets(
                 except Exception:
                     pass
 
+            # 5b. Default Species Material Discovery
+            if b_auto_bind_art:
+                search_dirs = [
+                    "/Game/Assets/External",
+                    "/Game/Assets/External/Materials",
+                    f"/Game/Assets/External/{asset_name}",
+                    "/Game/ArtVault",
+                    "/Game/ArtVault/Materials",
+                    "/Game/ArtVault/Textures",
+                    f"/Game/ArtVault/{asset_name}",
+                    "/Game/Assets"
+                ]
+                clean_name = asset_name.replace(" ", "").replace("_", "")
+                for sdir in search_dirs:
+                    for name_var in [asset_name, clean_name]:
+                        for prefix in ["MI_", "M_"]:
+                            mat_path = f"{sdir}/{prefix}{name_var}"
+                            if editor_asset_lib.does_asset_exist(mat_path):
+                                mat_asset = editor_asset_lib.load_asset(mat_path)
+                                if mat_asset and isinstance(mat_asset, unreal.MaterialInterface):
+                                    try:
+                                        data_asset.set_editor_property("species_material", mat_asset)
+                                        unreal.log(f"🎨 [B-064 Auto-Art] Bound default SpeciesMaterial '{mat_path}' to {asset_name}")
+                                        break
+                                    except Exception:
+                                        pass
+
             # 6. Growth Curve Configuration (Specialized for SovereignSpeciesData)
             curve_type_str = row.get("GrowthCurveType", "Exponential").strip()
             try:
