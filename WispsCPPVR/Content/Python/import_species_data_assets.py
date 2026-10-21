@@ -148,6 +148,11 @@ def discover_and_bind_stage_art(species_name, stage_idx, stg_obj, editor_asset_l
             "/Game/Assets/External/Meshes",
             "/Game/Assets/External/Materials",
             f"/Game/Assets/External/{species_name}",
+            "/Game/ArtVault",
+            "/Game/ArtVault/Meshes",
+            "/Game/ArtVault/Textures",
+            "/Game/ArtVault/Materials",
+            f"/Game/ArtVault/{species_name}",
             "/Game/Assets"
         ]
 
