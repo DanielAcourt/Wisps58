@@ -156,12 +156,16 @@ def discover_and_bind_stage_art(species_name, stage_idx, stg_obj, editor_asset_l
             "/Game/Assets"
         ]
 
-    # Clean species name for searching (e.g. "AppleTree")
+    # Name variants for searching (e.g., "Species_AppleTree" -> ["Species_AppleTree", "AppleTree", "SpeciesAppleTree", "AppleTree"])
+    stripped_name = species_name.replace("Species_", "").replace("Object_", "")
     clean_name = species_name.replace(" ", "").replace("_", "")
+    clean_stripped = stripped_name.replace(" ", "").replace("_", "")
+
+    name_variants = list(dict.fromkeys([species_name, stripped_name, clean_name, clean_stripped]))
 
     # 1. Static Mesh (SM_<Species>_<StageIdx>)
     for sdir in search_dirs:
-        for name_variant in [species_name, clean_name]:
+        for name_variant in name_variants:
             sm_path = f"{sdir}/SM_{name_variant}_{stage_idx}"
             if editor_asset_lib.does_asset_exist(sm_path):
                 mesh_asset = editor_asset_lib.load_asset(sm_path)
@@ -175,7 +179,7 @@ def discover_and_bind_stage_art(species_name, stage_idx, stg_obj, editor_asset_l
 
     # 2. Skeletal Mesh (SK_<Species>_<StageIdx>)
     for sdir in search_dirs:
-        for name_variant in [species_name, clean_name]:
+        for name_variant in name_variants:
             sk_path = f"{sdir}/SK_{name_variant}_{stage_idx}"
             if editor_asset_lib.does_asset_exist(sk_path):
                 sk_asset = editor_asset_lib.load_asset(sk_path)
@@ -189,7 +193,7 @@ def discover_and_bind_stage_art(species_name, stage_idx, stg_obj, editor_asset_l
 
     # 3. Material Instance / Material (MI_<Species>_<StageIdx> or M_<Species>_<StageIdx>)
     for sdir in search_dirs:
-        for name_variant in [species_name, clean_name]:
+        for name_variant in name_variants:
             for prefix in ["MI_", "M_"]:
                 mat_path = f"{sdir}/{prefix}{name_variant}_{stage_idx}"
                 if editor_asset_lib.does_asset_exist(mat_path):
@@ -410,9 +414,13 @@ def import_csv_to_data_assets(
                     f"/Game/ArtVault/{asset_name}",
                     "/Game/Assets"
                 ]
+                stripped_name = asset_name.replace("Species_", "").replace("Object_", "")
                 clean_name = asset_name.replace(" ", "").replace("_", "")
+                clean_stripped = stripped_name.replace(" ", "").replace("_", "")
+                name_vars = list(dict.fromkeys([asset_name, stripped_name, clean_name, clean_stripped]))
+
                 for sdir in search_dirs:
-                    for name_var in [asset_name, clean_name]:
+                    for name_var in name_vars:
                         for prefix in ["MI_", "M_"]:
                             mat_path = f"{sdir}/{prefix}{name_var}"
                             if editor_asset_lib.does_asset_exist(mat_path):
