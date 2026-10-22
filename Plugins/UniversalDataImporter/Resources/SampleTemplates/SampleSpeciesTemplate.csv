@@ -1,3 +1,3 @@
-Name,Tag,Traits,ParentClass,ActorClass,BaseStrength,BaseConstitution
-Sample_Entity_01,Species.Sample.Fauna,"Trait.Aggressive,Trait.Fast",/Script/Engine.Actor,/Game/Blueprints/BP_SampleEntity,12,14
-Sample_Entity_02,Species.Sample.Flora,"Trait.Static,Trait.Medicinal",/Script/Engine.Actor,/Game/Blueprints/BP_SampleFlora,5,8
+Name,Tag,Traits,ParentClass,ActorClass,Health
+Sample_Entity_01,Sample.Fauna,"Trait.Aggressive,Trait.Fast",/Script/Engine.Actor,/Game/Blueprints/BP_SampleEntity,120
+Sample_Entity_02,Sample.Flora,"Trait.Static,Trait.Medicinal",/Script/Engine.Actor,/Game/Blueprints/BP_SampleFlora,50

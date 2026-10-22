@@ -1,7 +1,7 @@
 {
   "SchemaVersion": "1.0.0",
   "PluginName": "UniversalDataImporter",
-  "TargetDataAssetClass": "/Script/Engine.DataAsset",
+  "TargetDataAssetClass": "/Script/UniversalDataImporter.UniversalDataAsset",
   "TargetPackageDirectory": "/Game/Data/GeneratedAssets",
   "AutoBindArtAssets": true,
   "ArtSearchDirectories": [
@@ -12,7 +12,7 @@
   "ColumnToPropertyMap": [
     {
       "CSVColumn": "Name",
-      "TargetProperty": "AssetDisplayName",
+      "TargetProperty": "DisplayName",
       "PropertyType": "Text",
       "FallbackValue": "Unnamed_Asset"
     },
@@ -24,27 +24,27 @@
     },
     {
       "CSVColumn": "Traits",
-      "TargetProperty": "GameplayTraits",
+      "TargetProperty": "Tags",
       "PropertyType": "GameplayTagContainer",
       "Delimiter": ","
     },
     {
       "CSVColumn": "ActorClass",
-      "TargetProperty": "TargetActorClass",
+      "TargetProperty": "ActorClass",
       "PropertyType": "SoftClassPath"
+    },
+    {
+      "CSVColumn": "Health",
+      "TargetProperty": "Health",
+      "PropertyType": "Int32",
+      "FallbackValue": "100"
     }
   ],
   "NestedComponentPropertyMap": [
     {
       "ComponentClass": "/Script/Engine.ActorComponent",
-      "CSVColumn": "BaseStrength",
-      "TargetProperty": "Strength",
-      "PropertyType": "Int32"
-    },
-    {
-      "ComponentClass": "/Script/Engine.ActorComponent",
-      "CSVColumn": "BaseConstitution",
-      "TargetProperty": "Constitution",
+      "CSVColumn": "Health",
+      "TargetProperty": "Health",
       "PropertyType": "Int32"
     }
   ],
@@ -53,6 +53,6 @@
     "DefaultParentClass": "/Script/Engine.Actor",
     "ParentClassColumn": "ParentClass",
     "CDOBindingProperty": "DataAssetRef",
-    "DefaultInputMappingContext": "/Game/Input/IMC_Default"
+    "DefaultInputMappingContext": ""
   }
 }
