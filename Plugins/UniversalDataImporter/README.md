@@ -7,27 +7,29 @@
 ## Overview
 The **Universal Data Importer & Blueprint Synthesizer** is an agnostic editor plugin designed to parse CSV datasets, auto-generate or update `UDataAsset` instances, synthesize missing Blueprint actor assets derived from C++ / Blueprint base classes, and bind soft object references (Meshes, Materials, IMC Input Mapping Contexts) via Unreal reflection.
 
-Out-of-the-box, the plugin includes `UUniversalDataAsset` (a default C++ Primary DataAsset with `DisplayName`, `IdentityTag`, `Tags`, `ActorClass`, `Icon`, `Description`, and `Health`).
+## Out-Of-The-Box C++ Classes
+1. **`UUniversalDataAsset`:** Primary DataAsset containing `DisplayName`, `IdentityTag`, `Tags`, `ActorClass`, `Mesh`, `SkeletalMesh`, `Material`, `Icon`, `Description`, and `Health`.
+2. **`AUniversalActor`:** Base Actor class with a root `UStaticMeshComponent` and `DataAssetRef` variable. Automatically loads and renders `DataAssetRef->Mesh` and `DataAssetRef->Material` synchronously inside `OnConstruction` and `BeginPlay` so 3D models display immediately in the Editor Viewport and at runtime!
 
 ## Key Features
-1. **Default C++ Base Class (`UUniversalDataAsset`):** Ships with a clean, extensible C++ Primary DataAsset ready for immediate use.
-2. **Agnostic JSON Schema Mapping:** Decouples CSV column headers from C++ property names.
-3. **Reverse Class Exporter (`export_csv_template`):** Reflects ANY user `UClass` (DataAsset, Actor, or Component) and exports a sample CSV template with headers and a matching JSON mapping schema.
-4. **Reflective Component Injection:** Dynamically traverses sub-components attached to Blueprint CDOs without requiring specific C++ base classes.
+1. **Default C++ Base Classes (`UUniversalDataAsset` & `AUniversalActor`):** Ships with clean, extensible C++ classes ready for immediate use.
+2. **Automatic 3D Mesh Rendering:** Synthesized Blueprints inheriting from `AUniversalActor` render their assigned 3D static mesh and material directly in the Editor Viewport.
+3. **Agnostic JSON Schema Mapping:** Decouples CSV column headers from C++ property names.
+4. **Reverse Class Exporter (`export_csv_template`):** Reflects ANY user `UClass` (DataAsset, Actor, or Component) and exports a sample CSV template with headers and a matching JSON mapping schema.
+5. **Injective Component Attribute Reflection:** Traverses attached CDO sub-components and updates matching properties.
 
 ## Quick Start Guide (Standalone Project)
 
-### Option A: Using Python Builtin Commands
+### Option A: 0-Parameter Execution (Smart Defaults)
 
-1. **Generate Template & Schema from Any Class:**
+1. **Generate Starter CSV & Schema:**
    ```python
-   # Defaults to UUniversalDataAsset out-of-the-box
-   export_csv_template("/Script/UniversalDataImporter.UniversalDataAsset", "C:/MyProject/Data/MyTemplate.csv", "C:/MyProject/Data/MySchema.json")
+   export_csv_template()
    ```
 
-2. **Import CSV Data & Synthesize Blueprints:**
+2. **Import CSV Data & Auto-Render 3D Actors:**
    ```python
-   universal_import_csv("C:/MyProject/Data/MyTemplate.csv", "C:/MyProject/Data/MySchema.json")
+   universal_import_csv()
    ```
 
 ### Option B: Using Editor Utility Widget (EUW Bridge)

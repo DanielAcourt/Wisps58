@@ -72,7 +72,7 @@
   ],
   "BlueprintSynthesisRules": {
     "bCreateMissingBlueprints": true,
-    "DefaultParentClass": "/Script/Engine.Actor",
+    "DefaultParentClass": "/Script/UniversalDataImporter.UniversalActor",
     "ParentClassColumn": "ParentClass",
     "CDOBindingProperty": "DataAssetRef",
     "DefaultInputMappingContext": ""

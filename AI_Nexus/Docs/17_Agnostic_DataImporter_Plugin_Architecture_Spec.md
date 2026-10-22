@@ -196,3 +196,13 @@ To ensure any user can quickly onboard without manually writing CSV headers or J
 3. **Artifact Generation:**
    - Auto-generates a clean sample CSV template (`SampleTemplate.csv`) with corresponding column headers.
    - Auto-generates a 1-to-1 matching JSON mapping schema (`GeneratedSchema.json`).
+
+---
+
+## 10. Automatic 3D Mesh Viewport Synchronization (`AUniversalActor`)
+
+To guarantee 3D static meshes and material overrides render instantly inside the Unreal Editor Viewport upon asset synthesis without requiring custom Blueprint Construction Script wiring:
+
+1. **`AUniversalActor` C++ Base Class:** Provides a default root `UStaticMeshComponent` (`MeshComponent`) and `UUniversalDataAsset*` property (`DataAssetRef`).
+2. **Editor Construction Sync:** Implements `OnConstruction(const FTransform& Transform)` and `BeginPlay()` to synchronously load `DataAssetRef->Mesh` and `DataAssetRef->Material` onto `MeshComponent`.
+3. **Synthesis Default:** Missing Blueprint actors synthesized from CSV templates default to deriving from `/Script/UniversalDataImporter.UniversalActor`, enabling instant 3D mesh rendering in the Viewport.

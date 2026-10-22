@@ -1,4 +1,4 @@
 Name,Tag,Traits,ParentClass,ActorClass,Mesh,SkeletalMesh,Material,Health
-Sample_Entity_01,Sample.Fauna,"Trait.Aggressive,Trait.Fast",/Script/Engine.Actor,/Game/Blueprints/BP_SampleEntity,/Game/Art/Meshes/SM_SampleEntity,,/Game/Art/Materials/MI_SampleEntity,120
-Sample_Entity_02,Sample.Flora,"Trait.Static,Trait.Medicinal",/Script/Engine.Actor,/Game/Blueprints/BP_SampleFlora,/Game/Art/Meshes/SM_SampleFlora,,/Game/Art/Materials/MI_SampleFlora,50
-OakTree,Sample.Flora.Tree,"Trait.Static,Trait.Wood",/Script/Engine.Actor,/Game/Blueprints/BP_OakTree,/Game/Art/Meshes/SM_OakTree,,/Game/Art/Materials/MI_OakTree,250
+Sample_Entity_01,Sample.Fauna,"Trait.Aggressive,Trait.Fast",/Script/UniversalDataImporter.UniversalActor,/Game/Blueprints/BP_SampleEntity,/Game/Art/Meshes/SM_SampleEntity,,/Game/Art/Materials/MI_SampleEntity,120
+Sample_Entity_02,Sample.Flora,"Trait.Static,Trait.Medicinal",/Script/UniversalDataImporter.UniversalActor,/Game/Blueprints/BP_SampleFlora,/Game/Art/Meshes/SM_SampleFlora,,/Game/Art/Materials/MI_SampleFlora,50
+OakTree,Sample.Flora.Tree,"Trait.Static,Trait.Wood",/Script/UniversalDataImporter.UniversalActor,/Game/Blueprints/BP_OakTree,/Game/Art/Meshes/SM_OakTree,,/Game/Art/Materials/MI_OakTree,250
