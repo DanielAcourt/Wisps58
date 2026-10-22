@@ -1,0 +1,58 @@
+{
+  "SchemaVersion": "1.0.0",
+  "PluginName": "UniversalDataImporter",
+  "TargetDataAssetClass": "/Script/Engine.DataAsset",
+  "TargetPackageDirectory": "/Game/Data/GeneratedAssets",
+  "AutoBindArtAssets": true,
+  "ArtSearchDirectories": [
+    "/Game/Assets/External",
+    "/Game/ArtVault",
+    "/Game/Assets"
+  ],
+  "ColumnToPropertyMap": [
+    {
+      "CSVColumn": "Name",
+      "TargetProperty": "AssetDisplayName",
+      "PropertyType": "Text",
+      "FallbackValue": "Unnamed_Asset"
+    },
+    {
+      "CSVColumn": "Tag",
+      "TargetProperty": "IdentityTag",
+      "PropertyType": "GameplayTag",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "Traits",
+      "TargetProperty": "GameplayTraits",
+      "PropertyType": "GameplayTagContainer",
+      "Delimiter": ","
+    },
+    {
+      "CSVColumn": "ActorClass",
+      "TargetProperty": "TargetActorClass",
+      "PropertyType": "SoftClassPath"
+    }
+  ],
+  "NestedComponentPropertyMap": [
+    {
+      "ComponentClass": "/Script/Engine.ActorComponent",
+      "CSVColumn": "BaseStrength",
+      "TargetProperty": "Strength",
+      "PropertyType": "Int32"
+    },
+    {
+      "ComponentClass": "/Script/Engine.ActorComponent",
+      "CSVColumn": "BaseConstitution",
+      "TargetProperty": "Constitution",
+      "PropertyType": "Int32"
+    }
+  ],
+  "BlueprintSynthesisRules": {
+    "bCreateMissingBlueprints": true,
+    "DefaultParentClass": "/Script/Engine.Actor",
+    "ParentClassColumn": "ParentClass",
+    "CDOBindingProperty": "DataAssetRef",
+    "DefaultInputMappingContext": "/Game/Input/IMC_Default"
+  }
+}
