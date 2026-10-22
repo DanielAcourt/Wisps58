@@ -260,18 +260,34 @@ def export_csv_template_from_class(class_path="/Script/UniversalDataImporter.Uni
     return True
 
 
-def import_csv_with_schema(csv_path, schema_path="", b_overwrite=True, b_auto_bind_art=True):
+def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto_bind_art=True):
     """
     Main Agnostic Import Engine:
     Reads any CSV dataset using a JSON schema mapping, creating DataAssets and synthesizing Blueprints.
     """
-    if not schema_path:
-        schema_path = os.path.join(current_dir, "..", "Resources", "Schemas", "DefaultMappingSchema.json")
+    # Auto-resolve CSV path if empty or invalid
+    if not csv_path or not str(csv_path).strip() or not os.path.exists(str(csv_path).strip()):
+        gen_csv = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
+        sample_csv = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "SampleSpeciesTemplate.csv"))
+        if os.path.exists(gen_csv):
+            csv_path = gen_csv
+        elif os.path.exists(sample_csv):
+            csv_path = sample_csv
+
+    # Auto-resolve Schema path if empty or invalid
+    if not schema_path or not str(schema_path).strip() or not os.path.exists(str(schema_path).strip()):
+        gen_schema = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "GeneratedSchema.json"))
+        default_schema = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "DefaultMappingSchema.json"))
+        if os.path.exists(gen_schema):
+            schema_path = gen_schema
+        elif os.path.exists(default_schema):
+            schema_path = default_schema
 
     schema = schema_parser.ImporterSchema.load_from_json(schema_path)
 
+    csv_path = str(csv_path).strip().strip("'").strip('"').replace("\\", "/")
     if not csv_path or not os.path.exists(csv_path):
-        msg = f"❌ CSV file not found at path: {csv_path}"
+        msg = f"❌ CSV file not found at path: '{csv_path}'. Run export_csv_template() first or pass a valid CSV path."
         if IN_UNREAL: unreal.log_error(msg)
         else: print(msg)
         return False
