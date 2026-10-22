@@ -145,8 +145,8 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
 def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_lib):
     """
     Automated Art Asset Discovery & Soft Pointer Auto-Binding.
-    Scans schema.art_search_directories for StaticMesh (SM_*), SkeletalMesh (SK_*),
-    MaterialInterface (MI_* / M_*), and Texture2D (T_* / UI_*), binding soft object pointers.
+    Scans schema.art_search_directories AND queries AssetRegistry globally for StaticMesh (SM_*),
+    SkeletalMesh (SK_*), MaterialInterface (MI_* / M_*), and Texture2D (T_* / UI_*), binding soft object pointers.
     """
     if not IN_UNREAL or not data_asset or not schema.auto_bind_art_assets:
         return
@@ -158,51 +158,85 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
 
     search_dirs = schema.art_search_directories
 
-    # 1. Static Mesh (SM_<Variant>)
+    # 1. Static Mesh (SM_<Variant> or <Variant>)
     b_found = False
     for sdir in search_dirs:
         if b_found: break
         for name_var in name_variants:
             if b_found: break
-            sm_path = f"{sdir}/SM_{name_var}"
-            if editor_asset_lib.does_asset_exist(sm_path):
-                sm_asset = editor_asset_lib.load_asset(sm_path)
-                if sm_asset and isinstance(sm_asset, unreal.StaticMesh):
-                    for prop in ["mesh", "static_mesh", "stage_mesh"]:
-                        try:
-                            data_asset.set_editor_property(prop, sm_asset)
-                            unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound StaticMesh '{sm_path}' to property '{prop}' on '{asset_name}'")
-                            b_found = True
-                            break
-                        except Exception:
-                            pass
+            for prefix in ["SM_", ""]:
+                if b_found: break
+                sm_path = f"{sdir}/{prefix}{name_var}"
+                if editor_asset_lib.does_asset_exist(sm_path):
+                    sm_asset = editor_asset_lib.load_asset(sm_path)
+                    if sm_asset and isinstance(sm_asset, unreal.StaticMesh):
+                        for prop in ["mesh", "static_mesh", "stage_mesh"]:
+                            try:
+                                data_asset.set_editor_property(prop, sm_asset)
+                                unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound StaticMesh '{sm_path}' to property '{prop}' on '{asset_name}'")
+                                b_found = True
+                                break
+                            except Exception:
+                                pass
 
-    # 2. Skeletal Mesh (SK_<Variant>)
-    b_found = False
-    for sdir in search_dirs:
-        if b_found: break
-        for name_var in name_variants:
-            if b_found: break
-            sk_path = f"{sdir}/SK_{name_var}"
-            if editor_asset_lib.does_asset_exist(sk_path):
-                sk_asset = editor_asset_lib.load_asset(sk_path)
-                if sk_asset and isinstance(sk_asset, unreal.SkeletalMesh):
-                    for prop in ["skeletal_mesh", "stage_skeletal_mesh"]:
-                        try:
-                            data_asset.set_editor_property(prop, sk_asset)
-                            unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound SkeletalMesh '{sk_path}' to property '{prop}' on '{asset_name}'")
-                            b_found = True
-                            break
-                        except Exception:
-                            pass
+    # AssetRegistry Global Search Fallback for StaticMesh
+    if not b_found:
+        try:
+            ar = unreal.AssetRegistryHelpers.get_asset_registry()
+            try:
+                class_path = unreal.TopLevelAssetPath("/Script/Engine", "StaticMesh")
+                assets = ar.get_assets_by_class(class_path, True)
+            except Exception:
+                try:
+                    assets = ar.get_assets_by_class_name(unreal.Name("StaticMesh"), True)
+                except Exception:
+                    assets = ar.get_assets_by_class(unreal.Name("StaticMesh"), True)
 
-    # 3. Material (MI_<Variant> or M_<Variant>)
+            for asset_data in assets:
+                aname = str(asset_data.asset_name)
+                if any(aname == f"SM_{v}" or aname == v for v in name_variants):
+                    sm_obj = editor_asset_lib.load_asset(str(asset_data.package_name))
+                    if sm_obj and isinstance(sm_obj, unreal.StaticMesh):
+                        for prop in ["mesh", "static_mesh", "stage_mesh"]:
+                            try:
+                                data_asset.set_editor_property(prop, sm_obj)
+                                unreal.log(f"🎨 [UniversalImporter AssetRegistry] Found & Bound StaticMesh '{asset_data.package_name}' to property '{prop}' on '{asset_name}'")
+                                b_found = True
+                                break
+                            except Exception:
+                                pass
+                        if b_found: break
+        except Exception as e_ar:
+            pass
+
+    # 2. Skeletal Mesh (SK_<Variant> or <Variant>)
     b_found = False
     for sdir in search_dirs:
         if b_found: break
         for name_var in name_variants:
             if b_found: break
-            for prefix in ["MI_", "M_"]:
+            for prefix in ["SK_", ""]:
+                if b_found: break
+                sk_path = f"{sdir}/{prefix}{name_var}"
+                if editor_asset_lib.does_asset_exist(sk_path):
+                    sk_asset = editor_asset_lib.load_asset(sk_path)
+                    if sk_asset and isinstance(sk_asset, unreal.SkeletalMesh):
+                        for prop in ["skeletal_mesh", "stage_skeletal_mesh"]:
+                            try:
+                                data_asset.set_editor_property(prop, sk_asset)
+                                unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound SkeletalMesh '{sk_path}' to property '{prop}' on '{asset_name}'")
+                                b_found = True
+                                break
+                            except Exception:
+                                pass
+
+    # 3. Material (MI_<Variant> or M_<Variant> or <Variant>)
+    b_found = False
+    for sdir in search_dirs:
+        if b_found: break
+        for name_var in name_variants:
+            if b_found: break
+            for prefix in ["MI_", "M_", ""]:
                 if b_found: break
                 mat_path = f"{sdir}/{prefix}{name_var}"
                 if editor_asset_lib.does_asset_exist(mat_path):
@@ -217,13 +251,46 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                             except Exception:
                                 pass
 
-    # 4. Texture / Icon (T_<Variant> or UI_<Variant>)
+    # AssetRegistry Global Search Fallback for Material
+    if not b_found:
+        try:
+            ar = unreal.AssetRegistryHelpers.get_asset_registry()
+            try:
+                class_path = unreal.TopLevelAssetPath("/Script/Engine", "MaterialInstanceConstant")
+                assets = ar.get_assets_by_class(class_path, True)
+                if not assets:
+                    class_path = unreal.TopLevelAssetPath("/Script/Engine", "Material")
+                    assets = ar.get_assets_by_class(class_path, True)
+            except Exception:
+                try:
+                    assets = ar.get_assets_by_class_name(unreal.Name("MaterialInstanceConstant"), True)
+                except Exception:
+                    assets = ar.get_assets_by_class(unreal.Name("MaterialInstanceConstant"), True)
+
+            for asset_data in assets:
+                aname = str(asset_data.asset_name)
+                if any(aname == f"MI_{v}" or aname == f"M_{v}" or aname == v for v in name_variants):
+                    mat_obj = editor_asset_lib.load_asset(str(asset_data.package_name))
+                    if mat_obj and isinstance(mat_obj, unreal.MaterialInterface):
+                        for prop in ["material", "species_material", "stage_material"]:
+                            try:
+                                data_asset.set_editor_property(prop, mat_obj)
+                                unreal.log(f"🎨 [UniversalImporter AssetRegistry] Found & Bound Material '{asset_data.package_name}' to property '{prop}' on '{asset_name}'")
+                                b_found = True
+                                break
+                            except Exception:
+                                pass
+                        if b_found: break
+        except Exception:
+            pass
+
+    # 4. Texture / Icon (T_<Variant> or UI_<Variant> or <Variant>)
     b_found = False
     for sdir in search_dirs:
         if b_found: break
         for name_var in name_variants:
             if b_found: break
-            for prefix in ["T_", "UI_"]:
+            for prefix in ["T_", "UI_", ""]:
                 if b_found: break
                 tex_path = f"{sdir}/{prefix}{name_var}"
                 if editor_asset_lib.does_asset_exist(tex_path):
