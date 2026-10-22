@@ -6,6 +6,9 @@
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
 #include "Engine/Texture2D.h"
+#include "Engine/StaticMesh.h"
+#include "Engine/SkeletalMesh.h"
+#include "Materials/MaterialInterface.h"
 #include "GameFramework/Actor.h"
 #include "UniversalDataAsset.generated.h"
 
@@ -38,8 +41,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Universal Data")
 	TSoftClassPtr<AActor> ActorClass;
 
+	/** Soft Static Mesh visual reference */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Universal Data|Art Assets")
+	TSoftObjectPtr<UStaticMesh> Mesh;
+
+	/** Soft Skeletal Mesh visual reference */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Universal Data|Art Assets")
+	TSoftObjectPtr<USkeletalMesh> SkeletalMesh;
+
+	/** Soft Material / Material Instance override reference */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Universal Data|Art Assets")
+	TSoftObjectPtr<UMaterialInterface> Material;
+
 	/** Soft Texture2D icon pointer */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Universal Data")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Universal Data|Art Assets")
 	TSoftObjectPtr<UTexture2D> Icon;
 
 	/** Detailed description text */

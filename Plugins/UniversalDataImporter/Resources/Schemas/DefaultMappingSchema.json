@@ -41,6 +41,21 @@
       "PropertyType": "SoftClassPath"
     },
     {
+      "CSVColumn": "Mesh",
+      "TargetProperty": "Mesh",
+      "PropertyType": "StaticMesh"
+    },
+    {
+      "CSVColumn": "SkeletalMesh",
+      "TargetProperty": "SkeletalMesh",
+      "PropertyType": "SkeletalMesh"
+    },
+    {
+      "CSVColumn": "Material",
+      "TargetProperty": "Material",
+      "PropertyType": "MaterialInterface"
+    },
+    {
       "CSVColumn": "Health",
       "TargetProperty": "Health",
       "PropertyType": "Int32",

@@ -88,6 +88,34 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
                     target_obj.set_editor_property(prop_name, loaded_cls)
                     return True
 
+        elif prop_type.lower() in ["staticmesh", "mesh"]:
+            if val_str:
+                mesh_obj = unreal.EditorAssetLibrary.load_asset(val_str)
+                if mesh_obj and isinstance(mesh_obj, unreal.StaticMesh):
+                    target_obj.set_editor_property(prop_name, mesh_obj)
+                    return True
+
+        elif prop_type.lower() in ["skeletalmesh"]:
+            if val_str:
+                sk_obj = unreal.EditorAssetLibrary.load_asset(val_str)
+                if sk_obj and isinstance(sk_obj, unreal.SkeletalMesh):
+                    target_obj.set_editor_property(prop_name, sk_obj)
+                    return True
+
+        elif prop_type.lower() in ["material", "materialinterface"]:
+            if val_str:
+                mat_obj = unreal.EditorAssetLibrary.load_asset(val_str)
+                if mat_obj and isinstance(mat_obj, unreal.MaterialInterface):
+                    target_obj.set_editor_property(prop_name, mat_obj)
+                    return True
+
+        elif prop_type.lower() in ["texture", "texture2D"]:
+            if val_str:
+                tex_obj = unreal.EditorAssetLibrary.load_asset(val_str)
+                if tex_obj and isinstance(tex_obj, unreal.Texture2D):
+                    target_obj.set_editor_property(prop_name, tex_obj)
+                    return True
+
         elif prop_type.lower() in ["softobjectpath", "object"]:
             if val_str:
                 loaded_obj = unreal.EditorAssetLibrary.load_asset(val_str)
@@ -102,6 +130,89 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
             print(f"⚠️ [UniversalImporter] Reflection assignment warning for property '{prop_name}': {e}")
 
     return False
+
+
+def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_lib):
+    """
+    Automated Art Asset Discovery & Soft Pointer Auto-Binding.
+    Scans schema.art_search_directories for StaticMesh (SM_*), SkeletalMesh (SK_*),
+    MaterialInterface (MI_* / M_*), and Texture2D (T_* / UI_*), binding soft object pointers.
+    """
+    if not IN_UNREAL or not data_asset or not schema.auto_bind_art_assets:
+        return
+
+    stripped_name = asset_name.replace("Sample_", "").replace("BP_", "").replace("Item_", "").replace("Species_", "").replace("Object_", "")
+    clean_name = asset_name.replace(" ", "").replace("_", "")
+    clean_stripped = stripped_name.replace(" ", "").replace("_", "")
+    name_variants = list(dict.fromkeys([asset_name, stripped_name, clean_name, clean_stripped]))
+
+    search_dirs = schema.art_search_directories
+
+    # 1. Static Mesh (SM_<Variant>)
+    for sdir in search_dirs:
+        for name_var in name_variants:
+            sm_path = f"{sdir}/SM_{name_var}"
+            if editor_asset_lib.does_asset_exist(sm_path):
+                sm_asset = editor_asset_lib.load_asset(sm_path)
+                if sm_asset and isinstance(sm_asset, unreal.StaticMesh):
+                    for prop in ["mesh", "static_mesh", "stage_mesh"]:
+                        try:
+                            data_asset.set_editor_property(prop, sm_asset)
+                            unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound StaticMesh '{sm_path}' to property '{prop}' on '{asset_name}'")
+                            break
+                        except Exception:
+                            pass
+                    break
+
+    # 2. Skeletal Mesh (SK_<Variant>)
+    for sdir in search_dirs:
+        for name_var in name_variants:
+            sk_path = f"{sdir}/SK_{name_var}"
+            if editor_asset_lib.does_asset_exist(sk_path):
+                sk_asset = editor_asset_lib.load_asset(sk_path)
+                if sk_asset and isinstance(sk_asset, unreal.SkeletalMesh):
+                    for prop in ["skeletal_mesh", "stage_skeletal_mesh"]:
+                        try:
+                            data_asset.set_editor_property(prop, sk_asset)
+                            unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound SkeletalMesh '{sk_path}' to property '{prop}' on '{asset_name}'")
+                            break
+                        except Exception:
+                            pass
+                    break
+
+    # 3. Material (MI_<Variant> or M_<Variant>)
+    for sdir in search_dirs:
+        for name_var in name_variants:
+            for prefix in ["MI_", "M_"]:
+                mat_path = f"{sdir}/{prefix}{name_var}"
+                if editor_asset_lib.does_asset_exist(mat_path):
+                    mat_asset = editor_asset_lib.load_asset(mat_path)
+                    if mat_asset and isinstance(mat_asset, unreal.MaterialInterface):
+                        for prop in ["material", "species_material", "stage_material"]:
+                            try:
+                                data_asset.set_editor_property(prop, mat_asset)
+                                unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound Material '{mat_path}' to property '{prop}' on '{asset_name}'")
+                                break
+                            except Exception:
+                                pass
+                        break
+
+    # 4. Texture / Icon (T_<Variant> or UI_<Variant>)
+    for sdir in search_dirs:
+        for name_var in name_variants:
+            for prefix in ["T_", "UI_"]:
+                tex_path = f"{sdir}/{prefix}{name_var}"
+                if editor_asset_lib.does_asset_exist(tex_path):
+                    tex_asset = editor_asset_lib.load_asset(tex_path)
+                    if tex_asset and isinstance(tex_asset, unreal.Texture2D):
+                        for prop in ["icon", "texture", "icon_texture"]:
+                            try:
+                                data_asset.set_editor_property(prop, tex_asset)
+                                unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound Texture2D '{tex_path}' to property '{prop}' on '{asset_name}'")
+                                break
+                            except Exception:
+                                pass
+                        break
 
 
 def synthesize_blueprint_actor(actor_class_str, parent_class_str, schema, data_asset, asset_tools, editor_asset_lib):
@@ -239,7 +350,18 @@ def export_csv_template_from_class(class_path="/Script/UniversalDataImporter.Uni
         "TargetDataAssetClass": class_path,
         "TargetPackageDirectory": "/Game/Data/GeneratedAssets",
         "AutoBindArtAssets": True,
-        "ArtSearchDirectories": ["/Game/Assets/External", "/Game/Assets"],
+        "ArtSearchDirectories": [
+            "/Game/Art/Meshes",
+            "/Game/Art/SkeletalMeshes",
+            "/Game/Art/Materials",
+            "/Game/Art/Textures",
+            "/Game/Art",
+            "/UniversalDataImporter/Art/Meshes",
+            "/UniversalDataImporter/Art/Materials",
+            "/UniversalDataImporter/Art/Textures",
+            "/Game/Assets/External",
+            "/Game/Assets"
+        ],
         "ColumnToPropertyMap": schema_rules,
         "NestedComponentPropertyMap": [],
         "BlueprintSynthesisRules": {
@@ -347,6 +469,15 @@ def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto
             val = row.get(rule.csv_column, rule.fallback_value)
             if val is not None:
                 apply_property_value(data_asset, rule.target_property, val, rule.property_type, rule.delimiter)
+
+        # 1b. Auto-bind Mesh, Material, and Texture Soft Pointers
+        if b_auto_bind_art and schema.auto_bind_art_assets:
+            discover_and_bind_art_assets(
+                data_asset=data_asset,
+                asset_name=asset_name,
+                schema=schema,
+                editor_asset_lib=editor_asset_lib
+            )
 
         editor_asset_lib.save_loaded_asset(data_asset)
 
