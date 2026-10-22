@@ -76,19 +76,18 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
         elif prop_type.lower() in ["gameplaytagcontainer", "tagcontainer"]:
             if val_str:
                 tags = [t.strip() for t in val_str.split(delimiter) if t.strip()]
-                gt_list = []
+                tag_container = unreal.GameplayTagContainer()
                 for t in tags:
                     try:
                         gt = unreal.GameplayTagsManager.get_gameplay_tags_manager().request_gameplay_tag(unreal.Name(t))
-                        gt_list.append(gt)
+                        tag_container.add_tag(gt)
                     except Exception:
                         try:
                             gt = unreal.GameplayTag()
-                            gt_list.append(gt)
+                            tag_container.add_tag(gt)
                         except Exception:
                             pass
 
-                tag_container = unreal.GameplayTagContainer(gameplay_tags=gt_list)
                 target_obj.set_editor_property(prop_name, tag_container)
                 return True
 
@@ -100,35 +99,35 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
                     return True
 
         elif prop_type.lower() in ["staticmesh", "mesh"]:
-            if val_str:
+            if val_str and IN_UNREAL and unreal.EditorAssetLibrary.does_asset_exist(val_str):
                 mesh_obj = unreal.EditorAssetLibrary.load_asset(val_str)
                 if mesh_obj and isinstance(mesh_obj, unreal.StaticMesh):
                     target_obj.set_editor_property(prop_name, mesh_obj)
                     return True
 
         elif prop_type.lower() in ["skeletalmesh"]:
-            if val_str:
+            if val_str and IN_UNREAL and unreal.EditorAssetLibrary.does_asset_exist(val_str):
                 sk_obj = unreal.EditorAssetLibrary.load_asset(val_str)
                 if sk_obj and isinstance(sk_obj, unreal.SkeletalMesh):
                     target_obj.set_editor_property(prop_name, sk_obj)
                     return True
 
         elif prop_type.lower() in ["material", "materialinterface"]:
-            if val_str:
+            if val_str and IN_UNREAL and unreal.EditorAssetLibrary.does_asset_exist(val_str):
                 mat_obj = unreal.EditorAssetLibrary.load_asset(val_str)
                 if mat_obj and isinstance(mat_obj, unreal.MaterialInterface):
                     target_obj.set_editor_property(prop_name, mat_obj)
                     return True
 
         elif prop_type.lower() in ["texture", "texture2D"]:
-            if val_str:
+            if val_str and IN_UNREAL and unreal.EditorAssetLibrary.does_asset_exist(val_str):
                 tex_obj = unreal.EditorAssetLibrary.load_asset(val_str)
                 if tex_obj and isinstance(tex_obj, unreal.Texture2D):
                     target_obj.set_editor_property(prop_name, tex_obj)
                     return True
 
         elif prop_type.lower() in ["softobjectpath", "object"]:
-            if val_str:
+            if val_str and IN_UNREAL and unreal.EditorAssetLibrary.does_asset_exist(val_str):
                 loaded_obj = unreal.EditorAssetLibrary.load_asset(val_str)
                 if loaded_obj:
                     target_obj.set_editor_property(prop_name, loaded_obj)
@@ -160,8 +159,11 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
     search_dirs = schema.art_search_directories
 
     # 1. Static Mesh (SM_<Variant>)
+    b_found = False
     for sdir in search_dirs:
+        if b_found: break
         for name_var in name_variants:
+            if b_found: break
             sm_path = f"{sdir}/SM_{name_var}"
             if editor_asset_lib.does_asset_exist(sm_path):
                 sm_asset = editor_asset_lib.load_asset(sm_path)
@@ -170,14 +172,17 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                         try:
                             data_asset.set_editor_property(prop, sm_asset)
                             unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound StaticMesh '{sm_path}' to property '{prop}' on '{asset_name}'")
+                            b_found = True
                             break
                         except Exception:
                             pass
-                    break
 
     # 2. Skeletal Mesh (SK_<Variant>)
+    b_found = False
     for sdir in search_dirs:
+        if b_found: break
         for name_var in name_variants:
+            if b_found: break
             sk_path = f"{sdir}/SK_{name_var}"
             if editor_asset_lib.does_asset_exist(sk_path):
                 sk_asset = editor_asset_lib.load_asset(sk_path)
@@ -186,15 +191,19 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                         try:
                             data_asset.set_editor_property(prop, sk_asset)
                             unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound SkeletalMesh '{sk_path}' to property '{prop}' on '{asset_name}'")
+                            b_found = True
                             break
                         except Exception:
                             pass
-                    break
 
     # 3. Material (MI_<Variant> or M_<Variant>)
+    b_found = False
     for sdir in search_dirs:
+        if b_found: break
         for name_var in name_variants:
+            if b_found: break
             for prefix in ["MI_", "M_"]:
+                if b_found: break
                 mat_path = f"{sdir}/{prefix}{name_var}"
                 if editor_asset_lib.does_asset_exist(mat_path):
                     mat_asset = editor_asset_lib.load_asset(mat_path)
@@ -203,15 +212,19 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                             try:
                                 data_asset.set_editor_property(prop, mat_asset)
                                 unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound Material '{mat_path}' to property '{prop}' on '{asset_name}'")
+                                b_found = True
                                 break
                             except Exception:
                                 pass
-                        break
 
     # 4. Texture / Icon (T_<Variant> or UI_<Variant>)
+    b_found = False
     for sdir in search_dirs:
+        if b_found: break
         for name_var in name_variants:
+            if b_found: break
             for prefix in ["T_", "UI_"]:
+                if b_found: break
                 tex_path = f"{sdir}/{prefix}{name_var}"
                 if editor_asset_lib.does_asset_exist(tex_path):
                     tex_asset = editor_asset_lib.load_asset(tex_path)
@@ -220,10 +233,10 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                             try:
                                 data_asset.set_editor_property(prop, tex_asset)
                                 unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound Texture2D '{tex_path}' to property '{prop}' on '{asset_name}'")
+                                b_found = True
                                 break
                             except Exception:
                                 pass
-                        break
 
 
 def apply_component_properties(cdo, row, schema):
@@ -263,7 +276,7 @@ def synthesize_blueprint_actor(actor_class_str, parent_class_str, schema, data_a
         clean_path = clean_path[:-2]
 
     package_path, bp_name = os.path.split(clean_path)
-    bp_asset = editor_asset_lib.load_asset(clean_path)
+    bp_asset = editor_asset_lib.load_asset(clean_path) if editor_asset_lib.does_asset_exist(clean_path) else None
 
     if not bp_asset and schema.b_create_missing_blueprints:
         parent_path = parent_class_str if parent_class_str else schema.default_parent_class
@@ -489,7 +502,7 @@ def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto
             continue
 
         asset_path = f"{target_dir}/{asset_name}"
-        existing_asset = editor_asset_lib.load_asset(asset_path)
+        existing_asset = editor_asset_lib.load_asset(asset_path) if editor_asset_lib.does_asset_exist(asset_path) else None
 
         if existing_asset:
             if not b_overwrite:
