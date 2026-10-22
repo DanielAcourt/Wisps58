@@ -76,18 +76,19 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
         elif prop_type.lower() in ["gameplaytagcontainer", "tagcontainer"]:
             if val_str:
                 tags = [t.strip() for t in val_str.split(delimiter) if t.strip()]
-                tag_container = unreal.GameplayTagContainer()
+                gt_list = []
                 for t in tags:
                     try:
                         gt = unreal.GameplayTagsManager.get_gameplay_tags_manager().request_gameplay_tag(unreal.Name(t))
-                        tag_container.add_tag(gt)
+                        gt_list.append(gt)
                     except Exception:
                         try:
                             gt = unreal.GameplayTag()
-                            tag_container.add_tag(gt)
+                            gt_list.append(gt)
                         except Exception:
                             pass
 
+                tag_container = unreal.GameplayTagContainer(gameplay_tags=gt_list)
                 target_obj.set_editor_property(prop_name, tag_container)
                 return True
 
@@ -206,7 +207,7 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                             except Exception:
                                 pass
                         if b_found: break
-        except Exception as e_ar:
+        except Exception:
             pass
 
     # 2. Skeletal Mesh (SK_<Variant> or <Variant>)
@@ -230,57 +231,70 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                             except Exception:
                                 pass
 
-    # 3. Material (MI_<Variant> or M_<Variant> or <Variant>)
+    # 3. Material (MI_<Variant> or M_<Variant> or <Variant> or <Variant>_Mat or <Variant>_MI)
     b_found = False
+    prefixes = ["MI_", "M_", "mi_", "m_", ""]
+    suffixes = ["", "_MI", "_mi", "_Mat", "_mat", "_Material", "_material"]
     for sdir in search_dirs:
         if b_found: break
         for name_var in name_variants:
             if b_found: break
-            for prefix in ["MI_", "M_", ""]:
+            for p in prefixes:
                 if b_found: break
-                mat_path = f"{sdir}/{prefix}{name_var}"
-                if editor_asset_lib.does_asset_exist(mat_path):
-                    mat_asset = editor_asset_lib.load_asset(mat_path)
-                    if mat_asset and isinstance(mat_asset, unreal.MaterialInterface):
-                        for prop in ["material", "species_material", "stage_material"]:
-                            try:
-                                data_asset.set_editor_property(prop, mat_asset)
-                                unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound Material '{mat_path}' to property '{prop}' on '{asset_name}'")
-                                b_found = True
-                                break
-                            except Exception:
-                                pass
+                for s in suffixes:
+                    if b_found: break
+                    mat_path = f"{sdir}/{p}{name_var}{s}"
+                    if editor_asset_lib.does_asset_exist(mat_path):
+                        mat_asset = editor_asset_lib.load_asset(mat_path)
+                        if mat_asset and isinstance(mat_asset, unreal.MaterialInterface):
+                            for prop in ["material", "species_material", "stage_material"]:
+                                try:
+                                    data_asset.set_editor_property(prop, mat_asset)
+                                    unreal.log(f"🎨 [UniversalImporter Auto-Art] Bound Material '{mat_path}' to property '{prop}' on '{asset_name}'")
+                                    b_found = True
+                                    break
+                                except Exception:
+                                    pass
 
     # AssetRegistry Global Search Fallback for Material
     if not b_found:
         try:
             ar = unreal.AssetRegistryHelpers.get_asset_registry()
-            try:
-                class_path = unreal.TopLevelAssetPath("/Script/Engine", "MaterialInstanceConstant")
-                assets = ar.get_assets_by_class(class_path, True)
-                if not assets:
-                    class_path = unreal.TopLevelAssetPath("/Script/Engine", "Material")
-                    assets = ar.get_assets_by_class(class_path, True)
-            except Exception:
+            assets = []
+            for cls_name in ["MaterialInstanceConstant", "MaterialInstanceDynamic", "Material"]:
                 try:
-                    assets = ar.get_assets_by_class_name(unreal.Name("MaterialInstanceConstant"), True)
+                    class_path = unreal.TopLevelAssetPath("/Script/Engine", cls_name)
+                    res = ar.get_assets_by_class(class_path, True)
+                    if res: assets.extend(res)
                 except Exception:
-                    assets = ar.get_assets_by_class(unreal.Name("MaterialInstanceConstant"), True)
+                    try:
+                        res = ar.get_assets_by_class_name(unreal.Name(cls_name), True)
+                        if res: assets.extend(res)
+                    except Exception:
+                        pass
 
             for asset_data in assets:
-                aname = str(asset_data.asset_name)
-                if any(aname == f"MI_{v}" or aname == f"M_{v}" or aname == v for v in name_variants):
-                    mat_obj = editor_asset_lib.load_asset(str(asset_data.package_name))
-                    if mat_obj and isinstance(mat_obj, unreal.MaterialInterface):
-                        for prop in ["material", "species_material", "stage_material"]:
-                            try:
-                                data_asset.set_editor_property(prop, mat_obj)
-                                unreal.log(f"🎨 [UniversalImporter AssetRegistry] Found & Bound Material '{asset_data.package_name}' to property '{prop}' on '{asset_name}'")
-                                b_found = True
-                                break
-                            except Exception:
-                                pass
-                        if b_found: break
+                aname = str(asset_data.asset_name).lower()
+                for v in name_variants:
+                    v_lower = v.lower()
+                    if (aname == v_lower or
+                        aname == f"mi_{v_lower}" or
+                        aname == f"m_{v_lower}" or
+                        aname == f"{v_lower}_mi" or
+                        aname == f"{v_lower}_mat" or
+                        aname == f"{v_lower}_material"):
+                        mat_obj = editor_asset_lib.load_asset(str(asset_data.package_name))
+                        if mat_obj and isinstance(mat_obj, unreal.MaterialInterface):
+                            for prop in ["material", "species_material", "stage_material"]:
+                                try:
+                                    data_asset.set_editor_property(prop, mat_obj)
+                                    unreal.log(f"🎨 [UniversalImporter AssetRegistry] Found & Bound Material '{asset_data.package_name}' to property '{prop}' on '{asset_name}'")
+                                    b_found = True
+                                    break
+                                except Exception:
+                                    pass
+                            if b_found: break
+                if b_found: break
         except Exception:
             pass
 
