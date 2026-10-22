@@ -40,7 +40,11 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
             return True
 
         elif prop_type.lower() in ["text"]:
-            target_obj.set_editor_property(prop_name, unreal.Text(val_str))
+            # In Unreal Python API, set_editor_property accepts string directly for FText
+            try:
+                target_obj.set_editor_property(prop_name, unreal.TextLibrary.conv_string_to_text(val_str))
+            except Exception:
+                target_obj.set_editor_property(prop_name, val_str)
             return True
 
         elif prop_type.lower() in ["int", "int32", "integer"]:
@@ -57,27 +61,34 @@ def apply_property_value(target_obj, prop_name, raw_val, prop_type="String", del
 
         elif prop_type.lower() in ["gameplaytag", "tag"]:
             if val_str and val_str.lower() != "none":
+                gt = None
                 try:
-                    gt = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(val_str))
+                    gt = unreal.GameplayTagsManager.get_gameplay_tags_manager().request_gameplay_tag(unreal.Name(val_str))
                 except Exception:
-                    gt = unreal.GameplayTag(tag_name=unreal.Name(val_str))
-                target_obj.set_editor_property(prop_name, gt)
-                return True
+                    try:
+                        gt = unreal.GameplayTag()
+                    except Exception:
+                        pass
+                if gt:
+                    target_obj.set_editor_property(prop_name, gt)
+                    return True
 
         elif prop_type.lower() in ["gameplaytagcontainer", "tagcontainer"]:
             if val_str:
                 tags = [t.strip() for t in val_str.split(delimiter) if t.strip()]
-                tag_container = unreal.GameplayTagContainer()
                 gt_list = []
                 for t in tags:
                     try:
-                        gt_list.append(unreal.GameplayStatics.request_gameplay_tag(unreal.Name(t)))
+                        gt = unreal.GameplayTagsManager.get_gameplay_tags_manager().request_gameplay_tag(unreal.Name(t))
+                        gt_list.append(gt)
                     except Exception:
                         try:
-                            gt_list.append(unreal.GameplayTag(tag_name=unreal.Name(t)))
+                            gt = unreal.GameplayTag()
+                            gt_list.append(gt)
                         except Exception:
                             pass
-                tag_container.set_editor_property("gameplay_tags", gt_list)
+
+                tag_container = unreal.GameplayTagContainer(gameplay_tags=gt_list)
                 target_obj.set_editor_property(prop_name, tag_container)
                 return True
 
@@ -215,10 +226,34 @@ def discover_and_bind_art_assets(data_asset, asset_name, schema, editor_asset_li
                         break
 
 
-def synthesize_blueprint_actor(actor_class_str, parent_class_str, schema, data_asset, asset_tools, editor_asset_lib):
+def apply_component_properties(cdo, row, schema):
+    """
+    Reflectively traverses attached components on CDO and applies matching ComponentPropertyRules.
+    """
+    if not IN_UNREAL or not cdo or not schema.nested_component_property_map:
+        return
+
+    for rule in schema.nested_component_property_map:
+        val = row.get(rule.csv_column, rule.fallback_value)
+        if val is None:
+            continue
+
+        comp_cls = unreal.load_class(None, rule.component_class) if rule.component_class else None
+        if not comp_cls:
+            comp_cls = unreal.ActorComponent
+
+        try:
+            comps = cdo.get_components_by_class(comp_cls)
+            for comp in comps:
+                apply_property_value(comp, rule.target_property, val, rule.property_type)
+        except Exception:
+            pass
+
+
+def synthesize_blueprint_actor(actor_class_str, parent_class_str, schema, data_asset, row, asset_tools, editor_asset_lib):
     """
     Synthesizes missing Blueprint actor asset if actor_class_str does not exist,
-    and binds the synthesized data_asset to the CDO.
+    binds the synthesized data_asset to the CDO, and injects component properties.
     """
     if not IN_UNREAL or not actor_class_str:
         return
@@ -252,12 +287,18 @@ def synthesize_blueprint_actor(actor_class_str, parent_class_str, schema, data_a
             gen_class = unreal.load_class(None, f"{clean_path}.{bp_name}_C")
             if gen_class:
                 cdo = unreal.get_default_object(gen_class)
-                if cdo and data_asset and schema.cdo_binding_property:
-                    try:
-                        cdo.set_editor_property(schema.cdo_binding_property, data_asset)
-                        unreal.log(f"🔗 [UniversalImporter] Bound DataAsset to CDO property '{schema.cdo_binding_property}' on '{bp_name}'.")
-                    except Exception:
-                        pass
+                if cdo:
+                    if data_asset and schema.cdo_binding_property:
+                        for prop in [schema.cdo_binding_property, "data_asset", "data_asset_ref", "species_data"]:
+                            try:
+                                cdo.set_editor_property(prop, data_asset)
+                                unreal.log(f"🔗 [UniversalImporter] Bound DataAsset to CDO property '{prop}' on '{bp_name}'.")
+                                break
+                            except Exception:
+                                pass
+
+                    # Injective Component Attribute Reflection
+                    apply_component_properties(cdo, row, schema)
 
                 cdo.modify()
                 bp_asset.modify()
@@ -481,7 +522,7 @@ def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto
 
         editor_asset_lib.save_loaded_asset(data_asset)
 
-        # 2. Automated Blueprint Synthesis & CDO Binding
+        # 2. Automated Blueprint Synthesis & CDO Binding & Component Attribute Injection
         actor_class_str = row.get("ActorClass", "").strip()
         parent_class_str = row.get(schema.parent_class_column, "").strip()
         if actor_class_str:
@@ -490,6 +531,7 @@ def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto
                 parent_class_str=parent_class_str,
                 schema=schema,
                 data_asset=data_asset,
+                row=row,
                 asset_tools=asset_tools,
                 editor_asset_lib=editor_asset_lib
             )
