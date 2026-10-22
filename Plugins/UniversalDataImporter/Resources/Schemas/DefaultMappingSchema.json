@@ -62,14 +62,7 @@
       "FallbackValue": "100"
     }
   ],
-  "NestedComponentPropertyMap": [
-    {
-      "ComponentClass": "/Script/Engine.ActorComponent",
-      "CSVColumn": "Health",
-      "TargetProperty": "Health",
-      "PropertyType": "Int32"
-    }
-  ],
+  "NestedComponentPropertyMap": [],
   "BlueprintSynthesisRules": {
     "bCreateMissingBlueprints": true,
     "DefaultParentClass": "/Script/UniversalDataImporter.UniversalActor",
