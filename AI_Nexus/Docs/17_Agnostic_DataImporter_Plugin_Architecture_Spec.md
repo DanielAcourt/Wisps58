@@ -184,3 +184,15 @@ To integrate this work into the active sprint (`SR_20261026`), Ticket `B-065` is
 - **Node:** DevOps / Tools
 - **Why:** Existing CSV importer scripts are tied to Sovereign C++ classes and fixed project folders. An agnostic plugin architecture is required for project reusability and Fab marketplace release.
 - **What:** Deliver `AI_Nexus/Docs/17_Agnostic_DataImporter_Plugin_Architecture_Spec.md`, initialize `Plugins/UniversalDataImporter/` directory structure with sample schema JSON and template CSV, and outline reflective attribute component mapping.
+
+---
+
+## 9. Reverse Class Exporter (`export_csv_template_from_class`)
+
+To ensure any user can quickly onboard without manually writing CSV headers or JSON mapping schemas, the plugin includes a reverse class reflection generator:
+
+1. **UClass Reflection:** `export_csv_template_from_class(class_path)` loads any target `UClass` (DataAsset, Actor, or Component).
+2. **UProperty Inspection:** Iterates through editable `UProperty` descriptors on the class's Default Object (CDO).
+3. **Artifact Generation:**
+   - Auto-generates a clean sample CSV template (`SampleTemplate.csv`) with corresponding column headers.
+   - Auto-generates a 1-to-1 matching JSON mapping schema (`GeneratedSchema.json`).

@@ -14,13 +14,7 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-	"Modules": [
-		{
-			"Name": "UniversalDataImporter",
-			"Type": "Editor",
-			"LoadingPhase": "Default"
-		}
-	],
+	"Modules": [],
 	"Plugins": [
 		{
 			"Name": "EditorScriptingUtilities",
