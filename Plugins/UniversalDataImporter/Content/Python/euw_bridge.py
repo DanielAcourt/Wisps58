@@ -41,10 +41,10 @@ def execute_template_generator_ui(class_path="/Script/UniversalDataImporter.Univ
         class_path = "/Script/UniversalDataImporter.UniversalDataAsset"
 
     if not output_csv or not output_csv.strip():
-        output_csv = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
+        output_csv = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
 
     if not output_schema or not output_schema.strip():
-        output_schema = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "GeneratedSchema.json"))
+        output_schema = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "Schemas", "GeneratedSchema.json"))
 
     # Sanitize backslashes for Windows path strings in EUW
     output_csv = str(output_csv).strip().strip("'").strip('"').replace("\\", "/")
@@ -76,10 +76,10 @@ def execute_importer_ui(csv_path="", schema_path="", b_overwrite=True, b_auto_bi
     save_dirty_packages()
 
     if not csv_path or not csv_path.strip():
-        csv_path = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "SampleSpeciesTemplate.csv"))
+        csv_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "SampleTemplates", "SampleSpeciesTemplate.csv"))
 
     if not schema_path or not schema_path.strip():
-        schema_path = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "DefaultMappingSchema.json"))
+        schema_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "Schemas", "DefaultMappingSchema.json"))
 
     csv_path = str(csv_path).strip().strip("'").strip('"').replace("\\", "/")
     schema_path = str(schema_path).strip().strip("'").strip('"').replace("\\", "/")

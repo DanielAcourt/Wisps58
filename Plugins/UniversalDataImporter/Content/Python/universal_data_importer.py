@@ -181,10 +181,10 @@ def export_csv_template_from_class(class_path="/Script/UniversalDataImporter.Uni
         return False
 
     if not output_csv_path or not str(output_csv_path).strip():
-        output_csv_path = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
+        output_csv_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
 
     if not output_schema_path or not str(output_schema_path).strip():
-        output_schema_path = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "GeneratedSchema.json"))
+        output_schema_path = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "Schemas", "GeneratedSchema.json"))
 
     output_csv_path = str(output_csv_path).strip().strip("'").strip('"').replace("\\", "/")
     output_schema_path = str(output_schema_path).strip().strip("'").strip('"').replace("\\", "/")
@@ -267,8 +267,8 @@ def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto
     """
     # Auto-resolve CSV path if empty or invalid
     if not csv_path or not str(csv_path).strip() or not os.path.exists(str(csv_path).strip()):
-        gen_csv = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
-        sample_csv = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "SampleSpeciesTemplate.csv"))
+        gen_csv = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
+        sample_csv = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "SampleTemplates", "SampleSpeciesTemplate.csv"))
         if os.path.exists(gen_csv):
             csv_path = gen_csv
         elif os.path.exists(sample_csv):
@@ -276,8 +276,8 @@ def import_csv_with_schema(csv_path="", schema_path="", b_overwrite=True, b_auto
 
     # Auto-resolve Schema path if empty or invalid
     if not schema_path or not str(schema_path).strip() or not os.path.exists(str(schema_path).strip()):
-        gen_schema = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "GeneratedSchema.json"))
-        default_schema = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "DefaultMappingSchema.json"))
+        gen_schema = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "Schemas", "GeneratedSchema.json"))
+        default_schema = os.path.abspath(os.path.join(current_dir, "..", "..", "Resources", "Schemas", "DefaultMappingSchema.json"))
         if os.path.exists(gen_schema):
             schema_path = gen_schema
         elif os.path.exists(default_schema):
