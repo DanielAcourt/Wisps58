@@ -156,7 +156,7 @@ def synthesize_blueprint_actor(actor_class_str, parent_class_str, schema, data_a
             unreal.log_warning(f"⚠️ [UniversalImporter] Blueprint synthesis/CDO binding notice for '{bp_name}': {e_bp}")
 
 
-def export_csv_template_from_class(class_path, output_csv_path="SampleTemplate.csv", output_schema_path="GeneratedSchema.json"):
+def export_csv_template_from_class(class_path="/Script/UniversalDataImporter.UniversalDataAsset", output_csv_path="", output_schema_path=""):
     """
     Reflects ANY user UClass (DataAsset, Actor, or Component) and exports:
     1. A sample CSV template with headers for all editable UProperties.
@@ -166,10 +166,28 @@ def export_csv_template_from_class(class_path, output_csv_path="SampleTemplate.c
         print("❌ [UniversalImporter] export_csv_template_from_class requires running inside Unreal Editor.")
         return False
 
+    if not class_path or not str(class_path).strip():
+        class_path = "/Script/UniversalDataImporter.UniversalDataAsset"
+
     uclass = unreal.load_class(None, class_path)
+    if not uclass:
+        # Fall back to standard DataAsset if plugin module class isn't loaded yet
+        unreal.log_warning(f"⚠️ Could not load class '{class_path}', falling back to '/Script/Engine.DataAsset'.")
+        class_path = "/Script/Engine.DataAsset"
+        uclass = unreal.load_class(None, class_path)
+
     if not uclass:
         unreal.log_error(f"❌ Could not load class at path '{class_path}'")
         return False
+
+    if not output_csv_path or not str(output_csv_path).strip():
+        output_csv_path = os.path.abspath(os.path.join(current_dir, "..", "Resources", "SampleTemplates", "GeneratedTemplate.csv"))
+
+    if not output_schema_path or not str(output_schema_path).strip():
+        output_schema_path = os.path.abspath(os.path.join(current_dir, "..", "Resources", "Schemas", "GeneratedSchema.json"))
+
+    output_csv_path = str(output_csv_path).strip().strip("'").strip('"').replace("\\", "/")
+    output_schema_path = str(output_schema_path).strip().strip("'").strip('"').replace("\\", "/")
 
     cdo = unreal.get_default_object(uclass)
     if not cdo:
