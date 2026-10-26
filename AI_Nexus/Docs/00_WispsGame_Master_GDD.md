@@ -45,18 +45,20 @@ If the Dragon perishes during a dungeon run, the world resets back to the Medita
                                               v
                            +-------------------------------------+
                            |      4. DUNGEON EXPEDITION (PHASE 2)|
-                           |  - Battle through Procedural Vaults |
+                           |  - 3x3 Rank Matrix Party Formation  |
+                           |  - Turn-Based Dedicated Arena Combat|
+                           |  - Action Class Unlocks & CP Multi  |
                            |  - Seek Dormant Female Dragon Eggs  |
                            +------------------+------------------+
                                   /                        \
-                    [IF DRAGON DIES]                 [IF SUCCESSFUL]
+                    [IF DRAGON DIES]                 [RESCUE FEMALE EGG]
                             /                                \
                            v                                  v
          +----------------------------------+   +----------------------------------+
-         |  5A. ROGUE-LITE WORLD RESET      |   |  5B. FEMALE DRAGON RESCUE        |
-         |  - Convert Progress -> Soul Qi   |   |  - Return Female Egg to Garden   |
-         |  - Retain Wisp % Stat Caps       |   |  - Hatch & Raise Female Dragon   |
-         |  - Retain Unlocked Species Seeds |   |  - Execute Breeding & Mutation   |
+         |  5A. ROGUE-LITE WORLD RESET      |   |  5B. EXTRACTION & BREEDING       |
+         |  - Convert Progress -> Soul Qi   |   |  - Instant Teleport vs Reverse   |
+         |  - Retain Wisp % Stat Caps       |   |    Return ("Overburdened" +Qi)   |
+         |  - Retain Unlocked Species Seeds |   |  - Hatch & Mating Mutation Loop  |
          +----------------------------------+   +----------------------------------+
                            |                                  |
                            +----------------->  <-------------+
@@ -111,23 +113,32 @@ Entities in the garden do not exist in isolation—their spatial placement creat
 
 ---
 
-## 5. Phase 2: Dungeon Exploration & Female Dragon Rescue
+## 5. Phase 2: Dungeon Exploration, Turn-Based Combat & Female Dragon Rescue
 
-### 5.1 Procedural Dungeon Expedition
-- The player leaves the peaceful Meditation Garden and enters procedural dungeon floors alongside their adult Male Dragon.
-- **Combat & Abilities**: Combat scales with the D&D attributes (Strength, Dexterity, Constitution, Intelligence, Wisdom) developed during the Garden phase.
-- **Dungeon Directives**: Defeat corrupted elemental guardians, harvest rare spirit herbs, and locate ancient sealed vaults.
+*(For detailed specifications, see `AI_Nexus/Docs/18_Phase2_Combat_Class_Dungeon_GDD.md`)*
 
-### 5.2 Rescuing Female Dragons & Awakening
-- **The Rescue Objective**: Deep inside the dungeon vaults lie dormant **Female Dragon Eggs** / frozen female dragon spirits.
-- **Egg Awakening**: Upon defeating vault guardians, the player retrieves the Female Dragon Egg and returns through the Gateway to the Meditation Garden.
+### 5.1 Turn-Based Combat & Dedicated Battle Arena
+- **Sequential Turn Queue**: Combat uses a strict sequential turn-based queue ordered by **Dexterity (DEX)** and speed modifiers. Time pauses during action selection.
+- **Dedicated 3D Battle Arena Platform**: Touching an enemy in 3D procedural corridors transitions to a dedicated biome-tailored battle stage, eliminating camera clipping and corridor navigation bugs.
 
-### 5.3 Dragon Breeding & Genetic Mutation Protocol
-- **Raising Female Dragons**: The rescued female egg is hatched and raised in the Garden.
-- **Breeding Pair**: When an adult Male Domain Dragon and an adult Female Dragon are in close proximity in the Garden and placed in `Charisma`/`Qi` states, they undergo a cultivation gestation cycle (`GestationRate` on `USovereignBioComponent`).
-- **Ark/Palworld-Style Attribute Inheritance**:
-  - Offspring eggs inherit base D&D attributes derived from parent averages.
-  - **Mutation Probability**: Controlled by `Luck` training focus and parent Qi purity. A successful mutation grants higher stat caps, unique elemental affiliations, or visual mesh variations.
+### 5.2 Action-Based Class Unlocks, Class Points (CP) & Professions
+- **Starter Class**: All entities begin as **Adventurer**.
+- **Action Accumulation**: Performing physical strikes, casting Qi spells, or taking damage accumulates progress towards specialized classes (*Knight*, *Wizard*, *Guardian*, *Dragoon*). Dungeon Skill Tomes also unlock advanced classes.
+- **Multi-Classing via CP**: Entities equip multiple unlocked classes limited only by their **Class Point (CP)** budget.
+- **Professions**: Features dedicated gathering and crafting professions (*Mining*, *Lumbering*, *Alchemy*, *Smithing*) managed via `USovereignProfessionComponent`.
+
+### 5.3 Tactical 3x3 Rank Matrix Party Formation
+Party deployment supports up to 9 slots arranged in 3 distinct functional ranks:
+1. **Front Rank (Slots 1–3)**: Tanks & Melee (+15% Defense, +10% Melee Power, High Enemy Aggro).
+2. **Mid Rank (Slots 4–6)**: Ranged & Offensive Spells (+15% Ranged & Qi Damage).
+3. **Rear Rank (Slots 7–9)**: Support & Healers (+20% Healing & Buff Potency).
+*Progression Unlocks*: Starts with Front Rank only. Mid and Rear ranks are unlocked by completing storyline taming/dungeon milestones.
+
+### 5.4 Female Dragon Rescue & The "Reverse Return" High-Risk Loop
+- **Vault Objective**: Defeating floor bosses reveals dormant **Female Dragon Eggs**.
+- **Extraction Choice**:
+  - **Safe Exit**: Step into the boss room Gateway Teleporter for instant return with standard egg Qi.
+  - **Reverse Return ("Risk it for the Biscuit")**: Manually walk back through repopulated floors with an empowered respawned boss at the entrance. The party suffers the **Overburdened** condition (-20% all stats), but successfully escaping yields a **+100% to +200% Bonus Qi Yield** on the rescued egg!
 
 ---
 
@@ -158,8 +169,11 @@ The design directly leverages existing Sovereign Framework C++ subsystems:
 |:---|:---|:---|
 | **Wisp Spirit Control** | `ASovereignPlayerWisp` | First-person flight controls, targeting line-of-sight sweep, possession trigger. |
 | **Possession SOP** | `IInteractionInterface` | `AttemptPossession()`, `EjectFromHost()`, `SnapToTargetNotIncludingScale`. |
-| **Entity Core & Soul** | `USovereignSaveableEntityComponent` | Soul Hub mediator serializing `Bio`, `Qi`, `Attribute`, `Level` brokers under named JSON tags. |
-| **Training States** | `USovereignLevelComponent` | `ESovereignTrainingFocus`, `TrainAttribute()` integer stat rollover, XP accumulators. |
+| **Entity Core & Soul** | `USovereignSaveableEntityComponent` | Soul Hub mediator serializing `Bio`, `Qi`, `Attribute`, `Level`, `Class`, `Profession` brokers under named JSON tags. |
+| **Training States & Level** | `USovereignLevelComponent` | `ESovereignTrainingFocus`, `TrainAttribute()` integer stat rollover, XP accumulators. |
+| **Class System & CP** | `USovereignClassComponent` | Unlocked class records, CP budget validation, equipped spellbooks and passive ability slots. |
+| **Professions System** | `USovereignProfessionComponent` | Tracks Mining, Lumbering, Alchemy, Smithing skill levels, recipes, and yield multipliers. |
+| **Skill & Action Tracker**| `USovereignSkillComponent` | Action accumulation counters for class unlocks, skill cooldowns, and damage formulas. |
 | **Attributes & Stats** | `USovereignAttributeComponent` | D&D core stats (STR, DEX, CON, INT, WIS, CHA, LCK), `SyncStatsFromEntity()`, health scaling. |
 | **Spatial Qi Aura** | `USovereignQiComponent` | Low-frequency `OnSovereignHeartbeat` spatial queries, `QiAuraRadius`, `QiGive`/`QiTake` flow. |
 | **Biological Metabolism** | `USovereignBioComponent` | Vitals (Hunger, Hydration), growth maturity accumulation, gestation rate for breeding. |
@@ -176,8 +190,10 @@ The design directly leverages existing Sovereign Framework C++ subsystems:
 3. **Spatial Qi Proximity**: Heartbeat Qi aura radiation and mutual plant/rock interactions in the Meditation Garden level.
 4. **Male Dragon Egg Incubation**: Qi threshold gathering, hatching, and stage growth pipeline.
 
-### Phase 2: Dungeon Expansion & Breeding Loop
+### Phase 2: Dungeon Expansion, Combat & Breeding Loop
 1. **Unsealed Dungeon Gateway**: Gateway unsealing trigger upon Male Dragon adult maturity.
-2. **Procedural Dungeon Floor**: Level loading and combat integration.
-3. **Female Dragon Rescue & Breeding**: Female egg retrieval, gestation, and Ark-style attribute/mutation inheritance.
-4. **Rogue-lite Soul Qi Persistence**: Death reset logic, Soul Qi currency calculation, and permanent Wisp upgrade unlocks.
+2. **Dedicated Battle Arena & Turn Queue**: Sequential turn-based combat system on dedicated biome stages.
+3. **Class, CP & Skill Components**: C++ `USovereignClassComponent`, `USovereignSkillComponent`, and `USovereignProfessionComponent` integration with action-based unlocks.
+4. **3x3 Rank Matrix Party Deployment**: Formation grid and rank progression milestones.
+5. **Female Dragon Rescue & Reverse Return Loop**: Teleport vs. Reverse Return risk-reward loop (+Qi vs. Overburdened -20% debuff), gestation, and Ark-style attribute/mutation inheritance.
+6. **Rogue-lite Soul Qi Persistence**: Death reset logic, Soul Qi currency calculation, and permanent Wisp upgrade unlocks.
