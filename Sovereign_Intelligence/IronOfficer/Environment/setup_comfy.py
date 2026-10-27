@@ -83,15 +83,19 @@ def find_comfy_directory() -> Path:
 
 def patch_comfy_kitchen_if_needed(venv_dir: Path):
     """
-    Force-reinstalls a clean copy of comfy-kitchen to wipe any corrupted site-packages edits,
-    then applies minimal surgical type hint fixes ONLY to files containing `@torch.library.custom_op`.
+    Force-reinstalls a clean copy of comfy-kitchen to wipe any previous edits,
+    then strips stringified annotations (`from __future__ import annotations`) and replaces
+    Python 3.9+ syntax (`list[...]`, `X | None`) with `typing.List` / `typing.Optional`
+    specifically in `@torch.library.custom_op` files to satisfy PyTorch schema inference.
     """
+    import re
+
     if os.name == "nt":
         venv_python = venv_dir / "Scripts" / "python.exe"
     else:
         venv_python = venv_dir / "bin" / "python"
 
-    # Step 1: Force clean reinstall of comfy-kitchen to ensure zero corrupted files
+    # Step 1: Force clean reinstall of comfy-kitchen
     try:
         print("[07 CLEANUP] Resetting comfy-kitchen to pristine package state...")
         subprocess.run([str(venv_python), "-m", "pip", "install", "--force-reinstall", "--no-deps", "comfy-kitchen"], capture_output=True, text=True)
@@ -110,41 +114,26 @@ def patch_comfy_kitchen_if_needed(venv_dir: Path):
             for py_file in ck_dir.glob("**/*.py"):
                 try:
                     content = py_file.read_text(encoding="utf-8")
-                    # STRICT FILTER: Only touch files that register PyTorch custom_ops
-                    if "@torch.library.custom_op" not in content and "custom_op(" not in content:
+                    if "custom_op" not in content:
                         continue
 
-                    lines = content.splitlines(keepends=True)
-                    new_lines = []
-                    b_modified = False
+                    # 1. Comment out `from __future__ import annotations` so PyTorch receives actual types, not strings
+                    content = content.replace("from __future__ import annotations", "# from __future__ import annotations (disabled for PyTorch custom_op schema inference)")
 
-                    for line in lines:
-                        # Replace list[...] with typing.List[...] in custom_op signature lines
-                        if "list[" in line or "| None" in line or "None |" in line:
-                            line = line.replace("list[", "typing.List[")
-                            line = line.replace("sequence[", "typing.Sequence[")
-                            line = line.replace("| None", "| None") # Keep union if not custom_op
-                            b_modified = True
-                        new_lines.append(line)
+                    # 2. Convert list[...] -> typing.List[...] and sequence[...] -> typing.Sequence[...]
+                    content = re.sub(r'\blist\[', 'typing.List[', content)
+                    content = re.sub(r'\bsequence\[', 'typing.Sequence[', content)
 
-                    if b_modified:
-                        # Add `import typing` after `from __future__` if typing. is referenced
-                        final_content = "".join(new_lines)
-                        if "typing." in final_content and "import typing" not in final_content:
-                            split_lines = final_content.splitlines(keepends=True)
-                            future_idx = -1
-                            for idx, l in enumerate(split_lines):
-                                if "from __future__ import" in l:
-                                    future_idx = idx
+                    # 3. Convert `type | None` or `None | type` -> `typing.Optional[type]`
+                    content = re.sub(r'([a-zA-Z0-9_\.\[\]]+)\s*\|\s*None', r'typing.Optional[\1]', content)
+                    content = re.sub(r'None\s*\|\s*([a-zA-Z0-9_\.\[\]]+)', r'typing.Optional[\1]', content)
 
-                            if future_idx >= 0:
-                                split_lines.insert(future_idx + 1, "import typing\n")
-                            else:
-                                split_lines.insert(0, "import typing\n")
-                            final_content = "".join(split_lines)
+                    # 4. Ensure `import typing` is present
+                    if "typing." in content and "import typing" not in content:
+                        content = "import typing\n" + content
 
-                        py_file.write_text(final_content, encoding="utf-8")
-                        print(f"[07 PATCH SUCCESS] Surgically patched custom_op schema in {py_file.name}")
+                    py_file.write_text(content, encoding="utf-8")
+                    print(f"[07 PATCH SUCCESS] Disabled stringified annotations & patched custom_op schema in {py_file.name}")
                 except Exception as e:
                     print(f"[07 WARNING] Could not patch {py_file.name}: {e}")
 
