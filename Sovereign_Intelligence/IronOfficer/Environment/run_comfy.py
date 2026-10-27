@@ -11,7 +11,7 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from setup_comfy import find_comfy_directory, main as run_setup_comfy
+from setup_comfy import find_comfy_directory, patch_comfy_kitchen_if_needed, main as run_setup_comfy
 
 def main():
     b_verify_only = "--verify-only" in sys.argv
@@ -39,6 +39,9 @@ def main():
 
     print(f"\n[07] ComfyUI Directory: {comfy_dir}")
     print(f"[07] Virtual Environment Python: {venv_python}")
+
+    # Ensure comfy_kitchen schema type hints are patched before launch
+    patch_comfy_kitchen_if_needed(venv_dir)
 
     # Test PyTorch & CUDA
     print("\n[07] Testing PyTorch and CUDA acceleration...")

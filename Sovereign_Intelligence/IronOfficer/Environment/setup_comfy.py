@@ -83,29 +83,50 @@ def find_comfy_directory() -> Path:
 
 def patch_comfy_kitchen_if_needed(venv_dir: Path):
     """
-    Patches comfy_kitchen/backends/eager/conv3d.py inside venv if present,
-    replacing built-in type hint `stride: list[int]` with `stride: List[int]`
-    to satisfy PyTorch custom_op schema inference across all PyTorch 2.x versions.
+    Recursively scans site-packages/comfy_kitchen (and subdirectories) inside venv,
+    replacing Python 3.9+ built-in type hints (e.g. list[int], Tensor | None) with typing.List/Optional
+    for PyTorch custom_op schema inference compatibility.
     """
-    site_packages = venv_dir / "Lib" / "site-packages"
-    if not site_packages.exists():
-        site_packages = venv_dir / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+    import re
 
-    conv3d_file = site_packages / "comfy_kitchen" / "backends" / "eager" / "conv3d.py"
-    if conv3d_file.exists():
-        try:
-            content = conv3d_file.read_text(encoding="utf-8")
-            if "stride: list[int]" in content:
-                print(f"[07 PATCH] Applying custom_op schema fix to {conv3d_file.name}...")
-                if "from typing import" in content:
-                    content = content.replace("from typing import ", "from typing import List, Sequence, ")
-                else:
-                    content = "from typing import List, Sequence\n" + content
-                content = content.replace("stride: list[int]", "stride: List[int]")
-                conv3d_file.write_text(content, encoding="utf-8")
-                print("[07 PATCH SUCCESS] comfy_kitchen custom_op schema patched successfully.")
-        except Exception as e:
-            print(f"[07 WARNING] Could not patch comfy_kitchen: {e}")
+    site_packages_list = [
+        venv_dir / "Lib" / "site-packages",
+        venv_dir / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+    ]
+
+    for site_packages in site_packages_list:
+        ck_dir = site_packages / "comfy_kitchen"
+        if ck_dir.exists():
+            for py_file in ck_dir.glob("**/*.py"):
+                try:
+                    content = py_file.read_text(encoding="utf-8")
+                    orig_content = content
+
+                    needed_imports = []
+                    if "list[" in content and "List" not in content:
+                        needed_imports.append("List")
+                    if ("| None" in content or "None |" in content) and "Optional" not in content:
+                        needed_imports.append("Optional")
+
+                    if needed_imports:
+                        if "from typing import" in content:
+                            content = content.replace("from typing import ", f"from typing import {', '.join(needed_imports)}, ")
+                        else:
+                            content = f"from typing import {', '.join(needed_imports)}\n" + content
+
+                    # Replace list[...] -> List[...]
+                    content = re.sub(r'\blist\[', 'List[', content)
+                    content = re.sub(r'\bsequence\[', 'Sequence[', content)
+
+                    # Replace `type | None` or `None | type` -> `Optional[type]`
+                    content = re.sub(r'([\w\.]+)\s*\|\s*None', r'Optional[\1]', content)
+                    content = re.sub(r'None\s*\|\s*([\w\.]+)', r'Optional[\1]', content)
+
+                    if content != orig_content:
+                        py_file.write_text(content, encoding="utf-8")
+                        print(f"[07 PATCH SUCCESS] Patched PyTorch custom_op type hints in {py_file.relative_to(ck_dir)}")
+                except Exception as e:
+                    print(f"[07 WARNING] Could not patch {py_file.name}: {e}")
 
 def main():
     print("=" * 70)
