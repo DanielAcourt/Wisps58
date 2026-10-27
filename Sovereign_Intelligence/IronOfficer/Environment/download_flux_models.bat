@@ -54,9 +54,9 @@ if %errorlevel% NEQ 0 (
 )
 echo.
 
-:: Model 2: FLUX VAE (~335 MB - Open Ungated URL)
+:: Model 2: FLUX VAE (~335 MB - Open Ungated Direct URL)
 set "FLUX_VAE_FILE=models\vae\ae.safetensors"
-set "FLUX_VAE_URL=https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/ae.safetensors"
+set "FLUX_VAE_URL=https://huggingface.co/camenduru/FLUX.1-dev/resolve/main/ae.safetensors"
 
 echo -----------------------------------------------------------------------
 echo [07 DOWNLOADING 2/4] FLUX VAE model (~335 MB)

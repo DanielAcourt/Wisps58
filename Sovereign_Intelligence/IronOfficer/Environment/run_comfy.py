@@ -24,7 +24,7 @@ def verify_and_repair_models(comfy_dir: Path):
     models_dir.mkdir(parents=True, exist_ok=True)
 
     required_models = [
-        (models_dir / "vae" / "ae.safetensors", "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/ae.safetensors", 335000000, "FLUX VAE"),
+        (models_dir / "vae" / "ae.safetensors", "https://huggingface.co/camenduru/FLUX.1-dev/resolve/main/ae.safetensors", 335000000, "FLUX VAE"),
         (models_dir / "clip" / "clip_l.safetensors", "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors", 240000000, "CLIP-L Text Encoder"),
         (models_dir / "clip" / "t5xxl_fp8_e4m3fn.safetensors", "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors", 4000000000, "T5-XXL Text Encoder"),
     ]
