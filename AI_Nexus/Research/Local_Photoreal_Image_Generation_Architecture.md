@@ -25,7 +25,7 @@ To ensure stable co-existence with the primary LLM (**Llama 3.1 70B** running un
 │ Image Diffusion Model (FLUX.1 FP8/NF4)  │ ~10.0 GB VRAM                 │
 ├────────────────────────────────────────┼───────────────────────────────┤
 │ System / PyTorch VRAM Overhead         │ ~1.5 GB VRAM                  │
-└────────────────────────────────────────┴───────────────────────────────┘
+└────────────────────────────────────────┴────────────────└──────────────┘
 ```
 
 #### Dual Operational Modes:
@@ -358,6 +358,44 @@ def poll_comfy_completion(prompt_id, timeout_sec=30):
         time.sleep(0.25)
     raise TimeoutError("Image generation timed out on ComfyUI backend.")
 ```
+
+---
+
+### 4.4 Interaction Pattern Evaluation: Slash Commands vs LLM Tool Calling vs Hybrid Gateway
+
+When integrating image generation into the Iron Knight user interface (Chat Vessel / CLI / Unreal Simulation), three interaction models exist:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        INTERACTION MODEL ANALYSIS                      │
+├──────────────────┬─────────────────────────────────────────────────────┤
+│ 1. Direct Slash  │ `/imagegen "Cinematic knight in mist"`              │
+│    Command       │ - Instant execution (bypasses LLM token latency)   │
+│                  │ - 100% deterministic user control                  │
+├──────────────────┼─────────────────────────────────────────────────────┤
+│ 2. LLM Tool      │ "Iron Knight, draw a picture of the dragon"         │
+│    Calling       │ - LLM auto-expands prompt into photorealistic style │
+│                  │ - Conversational & spontaneous roleplay triggers    │
+├──────────────────┼─────────────────────────────────────────────────────┤
+│ 3. Hybrid        │ ★ RECOMMENDED ARCHITECTURE                          │
+│    Gateway       │ - `/imagegen` slash command for instant generation  │
+│                  │ - `generate_image()` tool call for natural chat     │
+│                  │ - Single unified `POST /v1/image/generate` backend  │
+└──────────────────┴─────────────────────────────────────────────────────┘
+```
+
+#### Proposed Hybrid Command Architecture:
+1. **Slash Command (`/imagegen <prompt>`)**:
+   - Intercepted directly by the UI / Bridge.
+   - Bypasses LLM processing and sends the exact prompt straight to ComfyUI.
+   - Ideal for rapid testing, precise prompt engineering, and instant image creation.
+
+2. **LLM Tool Call (`generate_image(prompt, aspect_ratio, model_type)`)**:
+   - Registered as a JSON tool schema with Llama 3.1 70B (Iron Knight).
+   - When the user asks "Show me what this creature looks like", the Iron Knight automatically enriches the simple input into a detailed, photorealistic FLUX prompt (adding optic specs, lighting tags, camera lens parameters) and invokes the tool call.
+
+3. **Unified Backend Gateway (`POST /v1/image/generate`)**:
+   - The underlying REST API endpoint on `bridge.py` that handles execution queueing, PSTA validation, and ComfyUI dispatch for both input methods.
 
 ---
 
