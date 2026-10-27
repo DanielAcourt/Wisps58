@@ -1,13 +1,13 @@
-# Copyright (c) 2013-2025 Daniel Acourt. Version 36.4.7-Knight-AAS. Licensed under GPLv3 (See LICENSE). Last Updated: 2025-06-18
+# Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.7-Knight-AAS. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-21
 """
 Iron Officer: Chat Vessel (AD-002)
 ----------------------------------
 A terminal-based Human-Machine Interface (HMI) for communicating with the Sovereign Bridge.
 The Vessel serves as the primary 'Spirit Link' between the Lead Programmer and the
-Architectural Knight, enabling PSTA-driven command execution and AAS arbitration.
+Architectural Knight, enabling PSTA-driven command execution, AAS arbitration, and direct
+local photorealistic image generation (/image command).
 
-// [Jules] Hardened terminal logic to prevent 'Operational Stasis' and ensure
-// functional parity with the v1.3.3 Scribe Protocol. [2025-06-18]
+// [Jules] Added /image & /imagegen direct synthesis commands to ChatVessel [2026-10-21]
 """
 
 import os
@@ -16,11 +16,14 @@ import json
 import requests
 import datetime
 import shlex
+import time
+import uuid
 from typing import List, Dict
 
 # --- Configuration ---
-VESSEL_VERSION = "0.36.3.1-Knight" # Internal UI Version
+VESSEL_VERSION = "0.36.4.0-Knight" # Internal UI Version
 BRIDGE_URL = "http://127.0.0.1:8000"
+COMFY_URL = "http://127.0.0.1:8188"
 
 # Handle PyInstaller paths for frozen executables
 if getattr(sys, 'frozen', False):
@@ -31,7 +34,7 @@ else:
 class ChatVessel:
     """
     Main HMI Controller. Manages session history, command parsing, and
-    synchronization with the Iron Officer Bridge.
+    synchronization with the Iron Officer Bridge and ComfyUI Image Generation Engine.
     """
     def __init__(self):
         self.session_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -79,7 +82,7 @@ class ChatVessel:
         print(f" SOVEREIGN IRON OFFICER | VESSEL v{VESSEL_VERSION}")
         print(f" User: {self.user_name} | Session: {self.session_id}")
         print("="*60)
-        print(" Commands: /07, /p, /t, /s, /a, /verify, /vss, /phi, /velocity")
+        print(" Commands: /07, /p, /t, /s, /a, /verify, /vss, /phi, /velocity, /image")
         print(" Tools:    /read, /write, /patch, /append, /list, /backups, /handshake")
         print(" Meta:     /report, /status, /tools, /exit")
         print("-"*60)
@@ -276,6 +279,93 @@ class ChatVessel:
         except Exception as e:
             print(f"\n[07 ERROR] Handshake failed: {e}\n")
 
+    def run_image(self, args: List[str]):
+        """
+        Executes local photorealistic image synthesis via /image or /imagegen.
+        Attempts Iron Officer Bridge API first, with automatic fallback to standalone ComfyUI REST API.
+        """
+        if not args:
+            print("\n[07] Usage: /image <photorealistic prompt descriptors>\n")
+            return
+
+        prompt_text = " ".join(args)
+        print(f"\n[07 IMAGE SYNTHESIS]")
+        print(f" -> PROMPT: {prompt_text}")
+
+        # 1. Try Iron Officer Bridge API endpoint
+        try:
+            payload = {"prompt": prompt_text, "model_type": "flux_dev"}
+            response = requests.post(f"{BRIDGE_URL}/v1/image/generate", json=payload, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                print(f" -> STATUS: SUCCESS (Bridge Gateway)")
+                print(f" -> IMAGE PATH: {data.get('image_path')}")
+                print("-" * 30 + "\n")
+                return
+        except Exception:
+            pass # Fall through to direct standalone ComfyUI API
+
+        # 2. Standalone Direct ComfyUI REST API Engine (Port 8188)
+        try:
+            stats_resp = requests.get(f"{COMFY_URL}/system_stats", timeout=3)
+            if stats_resp.status_code == 200:
+                seed = int(time.time() * 1000) % 1000000000
+                workflow = {
+                    "3": {
+                        "inputs": {
+                            "seed": seed, "steps": 25, "cfg": 3.5, "sampler_name": "euler",
+                            "scheduler": "simple", "denoise": 1.0,
+                            "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]
+                        },
+                        "class_type": "KSampler"
+                    },
+                    "4": {"inputs": {"unet_name": "flux1-dev-fp8.safetensors", "weight_dtype": "fp8_e4m3fn"}, "class_type": "UNETLoader"},
+                    "5": {"inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "class_type": "EmptyLatentImage"},
+                    "6": {"inputs": {"text": prompt_text, "clip": ["8", 0]}, "class_type": "CLIPTextEncode"},
+                    "7": {"inputs": {"text": "blurry, low quality, distorted", "clip": ["8", 0]}, "class_type": "CLIPTextEncode"},
+                    "8": {"inputs": {"clip_name1": "clip_l.safetensors", "clip_name2": "t5xxl_fp8_e4m3fn.safetensors", "type": "flux"}, "class_type": "DualCLIPLoader"},
+                    "9": {"inputs": {"samples": ["3", 0], "vae": ["10", 0]}, "class_type": "VAEDecode"},
+                    "10": {"inputs": {"vae_name": "ae.safetensors"}, "class_type": "VAELoader"},
+                    "11": {"inputs": {"filename_prefix": "IronKnight_Gen", "images": ["9", 0]}, "class_type": "SaveImage"}
+                }
+                client_id = str(uuid.uuid4())
+                prompt_res = requests.post(f"{COMFY_URL}/prompt", json={"prompt": workflow, "client_id": client_id}, timeout=5)
+                if prompt_res.status_code == 200:
+                    p_id = prompt_res.json().get("prompt_id")
+                    print(f" -> COMFYUI QUEUED: Prompt ID {p_id}")
+                    print(f" -> Generating image on local GPU... Please wait.")
+
+                    # Poll history endpoint for completion (up to 60 seconds)
+                    for _ in range(120):
+                        time.sleep(0.5)
+                        try:
+                            hist_resp = requests.get(f"{COMFY_URL}/history/{p_id}", timeout=3)
+                            if hist_resp.status_code == 200 and p_id in hist_resp.json():
+                                hist_data = hist_resp.json()[p_id]
+                                outputs = hist_data.get("outputs", {}).get("11", {}).get("images", [])
+                                if outputs:
+                                    img_info = outputs[0]
+                                    filename = img_info.get("filename")
+                                    subfolder = img_info.get("subfolder", "")
+                                    print(f" -> GENERATION COMPLETE!")
+                                    print(f" -> FILENAME: {filename}")
+                                    print(f" -> OUTPUT LOCATION: ComfyUI/output/{subfolder}/{filename}".replace("//", "/"))
+                                else:
+                                    print(f" -> GENERATION FINISHED.")
+                                print("-" * 30 + "\n")
+                                return
+                        except Exception:
+                            pass
+                    print(f" -> [TIMEOUT] Generation queued but took longer than 60s.")
+                else:
+                    print(f" -> ERROR: ComfyUI rejected prompt payload: {prompt_res.text}")
+            else:
+                print(f" -> ERROR: ComfyUI API server not responding on {COMFY_URL}")
+        except Exception as e:
+            print(f" -> ERROR: Could not connect to ComfyUI Engine at {COMFY_URL}")
+            print(f" -> Tip: Run 'run_comfy_api.bat' to start the ComfyUI API server.")
+        print("-" * 30 + "\n")
+
     def run_tool_command(self, cmd: str, args: List[str]):
         """Directly executes AAS-governed tools (read, write, patch, etc.) via slash commands."""
         tool_map = {
@@ -397,6 +487,7 @@ class ChatVessel:
                 if cmd == "/velocity": self.run_velocity(); continue
                 if cmd == "/backups": self.run_backups(); continue
                 if cmd == "/handshake": self.run_handshake(); continue
+                if cmd in ["/image", "/imagegen"]: self.run_image(args); continue
                 if cmd in ["/read", "/write", "/patch", "/append", "/list"]:
                     self.run_tool_command(cmd, args); continue
                 if cmd == "/tools":
