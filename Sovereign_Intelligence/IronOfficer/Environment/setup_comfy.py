@@ -83,9 +83,10 @@ def find_comfy_directory() -> Path:
 
 def patch_comfy_kitchen_if_needed(venv_dir: Path):
     """
-    Recursively scans site-packages/comfy_kitchen (and subdirectories) inside venv,
-    replacing Python 3.9+ built-in type hints (e.g. list[int], Tensor | None) with typing.List/Optional
-    for PyTorch custom_op schema inference compatibility.
+    Scans site-packages/comfy_kitchen files inside venv that contain @torch.library.custom_op,
+    replacing Python 3.9+ built-in type hints (e.g. list[int], Tensor | None) with typing.List / typing.Optional
+    to satisfy PyTorch custom_op schema inference across PyTorch 2.5+.
+    Uses fully qualified `typing.*` references to avoid modifying file imports or `from __future__` order.
     """
     import re
 
@@ -100,27 +101,33 @@ def patch_comfy_kitchen_if_needed(venv_dir: Path):
             for py_file in ck_dir.glob("**/*.py"):
                 try:
                     content = py_file.read_text(encoding="utf-8")
+                    # ONLY patch files that actually define PyTorch custom_ops
+                    if "custom_op" not in content:
+                        continue
+
                     orig_content = content
 
-                    needed_imports = []
-                    if "list[" in content and "List" not in content:
-                        needed_imports.append("List")
-                    if ("| None" in content or "None |" in content) and "Optional" not in content:
-                        needed_imports.append("Optional")
+                    # Replace list[...] -> typing.List[...] and sequence[...] -> typing.Sequence[...]
+                    content = re.sub(r'\blist\[', 'typing.List[', content)
+                    content = re.sub(r'\bsequence\[', 'typing.Sequence[', content)
 
-                    if needed_imports:
-                        if "from typing import" in content:
-                            content = content.replace("from typing import ", f"from typing import {', '.join(needed_imports)}, ")
+                    # Replace `type | None` or `None | type` -> `typing.Optional[type]`
+                    content = re.sub(r'([a-zA-Z0-9_\.\[\]]+)\s*\|\s*None', r'typing.Optional[\1]', content)
+                    content = re.sub(r'None\s*\|\s*([a-zA-Z0-9_\.\[\]]+)', r'typing.Optional[\1]', content)
+
+                    # Ensure `import typing` is present if typing. is referenced
+                    if "typing." in content and "import typing" not in content:
+                        lines = content.splitlines(keepends=True)
+                        future_idx = -1
+                        for i, l in enumerate(lines):
+                            if "from __future__ import" in l:
+                                future_idx = i
+
+                        if future_idx >= 0:
+                            lines.insert(future_idx + 1, "import typing\n")
                         else:
-                            content = f"from typing import {', '.join(needed_imports)}\n" + content
-
-                    # Replace list[...] -> List[...]
-                    content = re.sub(r'\blist\[', 'List[', content)
-                    content = re.sub(r'\bsequence\[', 'Sequence[', content)
-
-                    # Replace `type | None` or `None | type` -> `Optional[type]`
-                    content = re.sub(r'([\w\.]+)\s*\|\s*None', r'Optional[\1]', content)
-                    content = re.sub(r'None\s*\|\s*([\w\.]+)', r'Optional[\1]', content)
+                            lines.insert(0, "import typing\n")
+                        content = "".join(lines)
 
                     if content != orig_content:
                         py_file.write_text(content, encoding="utf-8")
@@ -216,38 +223,43 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"[07 WARNING] Pip upgrade step had issues: {e}")
 
-    # Step 3: Unconditionally uninstall PyTorch to force clean 2.4.1+cu124 build
-    print("\n[07] Preparing clean PyTorch installation for ComfyUI...")
-    subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
+    # Step 3: Check if PyTorch with CUDA is ALREADY working
+    print("\n[07] Checking PyTorch and CUDA installation...")
+    test_cmd = [str(venv_python), "-c", "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"]
+    test_res = subprocess.run(test_cmd)
 
-    # Step 4: Force Install CUDA PyTorch wheels with explicit CUDA verification
-    pytorch_targets = [
-        ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.4.1 (Stable ComfyUI)"),
-        ([str(venv_python), "-m", "pip", "install", "torch==2.5.1+cu124", "torchvision==0.20.1+cu124", "torchaudio==2.5.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.5.1"),
-        ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 Latest Index"),
-        ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121", "--no-cache-dir"], "CUDA 12.1 Index"),
-    ]
+    if test_res.returncode == 0:
+        print("[07 SUCCESS] PyTorch with CUDA is already installed and verified!")
+        cuda_torch_ok = True
+    else:
+        print("[07 NOTICE] PyTorch CUDA not verified. Preparing clean CUDA PyTorch wheel installation...")
+        subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
 
-    cuda_torch_ok = False
-    for cmd, label in pytorch_targets:
-        print(f"\n[07] Installing PyTorch via {label}...")
-        res = subprocess.run(cmd)
-        if res.returncode == 0:
-            # Strictly verify if installed PyTorch has CUDA available
-            test_cmd = [str(venv_python), "-c", "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"]
-            test_res = subprocess.run(test_cmd)
-            if test_res.returncode == 0:
-                print(f"\n[07 SUCCESS] PyTorch CUDA acceleration verified via {label}!")
-                cuda_torch_ok = True
-                break
-            else:
-                print(f" -> {label} finished but torch.cuda.is_available() returned False. Purging and trying next index...")
-                subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio"])
+        pytorch_targets = [
+            ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 PyTorch 2.4.1 (Stable ComfyUI)"),
+            ([str(venv_python), "-m", "pip", "install", "torch==2.5.1+cu124", "torchvision==0.20.1+cu124", "torchaudio==2.5.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 PyTorch 2.5.1"),
+            ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 Latest Index"),
+            ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121"], "CUDA 12.1 Index"),
+        ]
 
-    if not cuda_torch_ok:
-        print("\n[07 ERROR] All PyTorch CUDA wheel installations failed.")
-        print("Action Required: Please verify NVIDIA GPU drivers are installed and 64-bit Python 3.10/3.11/3.12 is in use.")
-        sys.exit(1)
+        cuda_torch_ok = False
+        for cmd, label in pytorch_targets:
+            print(f"\n[07] Installing PyTorch via {label}...")
+            res = subprocess.run(cmd)
+            if res.returncode == 0:
+                test_res = subprocess.run(test_cmd)
+                if test_res.returncode == 0:
+                    print(f"\n[07 SUCCESS] PyTorch CUDA acceleration verified via {label}!")
+                    cuda_torch_ok = True
+                    break
+                else:
+                    print(f" -> {label} finished but torch.cuda.is_available() returned False. Purging and trying next index...")
+                    subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio"])
+
+        if not cuda_torch_ok:
+            print("\n[07 ERROR] All PyTorch CUDA wheel installations failed.")
+            print("Action Required: Please verify NVIDIA GPU drivers are installed and 64-bit Python 3.10/3.11/3.12 is in use.")
+            sys.exit(1)
 
     # Step 5: Install ComfyUI dependencies
     req_file = comfy_dir / "requirements.txt"
