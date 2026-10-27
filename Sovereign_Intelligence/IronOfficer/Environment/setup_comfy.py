@@ -83,10 +83,10 @@ def find_comfy_directory() -> Path:
 
 def patch_comfy_kitchen_if_needed(venv_dir: Path):
     """
-    Scans site-packages/comfy_kitchen files inside venv that contain @torch.library.custom_op,
-    replacing Python 3.9+ built-in type hints (e.g. list[int], Tensor | None) with typing.List / typing.Optional
-    to satisfy PyTorch custom_op schema inference across PyTorch 2.5+.
-    Uses fully qualified `typing.*` references to avoid modifying file imports or `from __future__` order.
+    Sanitizes and patches site-packages/comfy_kitchen inside venv:
+    1. Fixes any corrupted files where imports were placed above `from __future__`.
+    2. Replaces Python 3.9+ built-in type hints (e.g. list[int]) in @torch.library.custom_op
+       with typing.List / typing.Optional for PyTorch 2.5+ custom_op schema inference.
     """
     import re
 
@@ -101,37 +101,41 @@ def patch_comfy_kitchen_if_needed(venv_dir: Path):
             for py_file in ck_dir.glob("**/*.py"):
                 try:
                     content = py_file.read_text(encoding="utf-8")
-                    # ONLY patch files that actually define PyTorch custom_ops
-                    if "custom_op" not in content:
-                        continue
-
                     orig_content = content
 
-                    # Replace list[...] -> typing.List[...] and sequence[...] -> typing.Sequence[...]
-                    content = re.sub(r'\blist\[', 'typing.List[', content)
-                    content = re.sub(r'\bsequence\[', 'typing.Sequence[', content)
-
-                    # Replace `type | None` or `None | type` -> `typing.Optional[type]`
-                    content = re.sub(r'([a-zA-Z0-9_\.\[\]]+)\s*\|\s*None', r'typing.Optional[\1]', content)
-                    content = re.sub(r'None\s*\|\s*([a-zA-Z0-9_\.\[\]]+)', r'typing.Optional[\1]', content)
-
-                    # Ensure `import typing` is present if typing. is referenced
-                    if "typing." in content and "import typing" not in content:
+                    # --- Step 1: Auto-Repair from __future__ order ---
+                    if "from __future__ import" in content:
                         lines = content.splitlines(keepends=True)
-                        future_idx = -1
-                        for i, l in enumerate(lines):
-                            if "from __future__ import" in l:
-                                future_idx = i
+                        future_lines = [l for l in lines if "from __future__ import" in l]
+                        other_lines = [l for l in lines if "from __future__ import" not in l]
+                        content = "".join(future_lines + other_lines)
 
-                        if future_idx >= 0:
-                            lines.insert(future_idx + 1, "import typing\n")
-                        else:
-                            lines.insert(0, "import typing\n")
-                        content = "".join(lines)
+                    # --- Step 2: Patch custom_op schema type hints ---
+                    if "custom_op" in content:
+                        # Replace list[...] -> typing.List[...] and sequence[...] -> typing.Sequence[...]
+                        content = re.sub(r'\blist\[', 'typing.List[', content)
+                        content = re.sub(r'\bsequence\[', 'typing.Sequence[', content)
+
+                        # Replace `type | None` or `None | type` -> `typing.Optional[type]`
+                        content = re.sub(r'([a-zA-Z0-9_\.\[\]]+)\s*\|\s*None', r'typing.Optional[\1]', content)
+                        content = re.sub(r'None\s*\|\s*([a-zA-Z0-9_\.\[\]]+)', r'typing.Optional[\1]', content)
+
+                        if "typing." in content and "import typing" not in content and "from typing import" not in content:
+                            lines = content.splitlines(keepends=True)
+                            future_idx = -1
+                            for i, l in enumerate(lines):
+                                if "from __future__ import" in l:
+                                    future_idx = i
+
+                            if future_idx >= 0:
+                                lines.insert(future_idx + 1, "import typing\n")
+                            else:
+                                lines.insert(0, "import typing\n")
+                            content = "".join(lines)
 
                     if content != orig_content:
                         py_file.write_text(content, encoding="utf-8")
-                        print(f"[07 PATCH SUCCESS] Patched PyTorch custom_op type hints in {py_file.relative_to(ck_dir)}")
+                        print(f"[07 REPAIR SUCCESS] Repaired and patched {py_file.relative_to(ck_dir)}")
                 except Exception as e:
                     print(f"[07 WARNING] Could not patch {py_file.name}: {e}")
 
