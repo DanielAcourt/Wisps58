@@ -3,7 +3,7 @@
 Iron Officer: ComfyUI Standalone Setup Script
 ---------------------------------------------
 Automates Python virtual environment creation with Python 3.10-3.12 compatibility enforcement,
-PyTorch CUDA installation pinned to 2.5.1+cu124 for comfy_kitchen compatibility, dependency resolution,
+PyTorch CUDA installation pinned to 2.4.1+cu124, comfy_kitchen schema type hint patching, dependency resolution,
 and directory structure initialization.
 """
 
@@ -80,6 +80,32 @@ def find_comfy_directory() -> Path:
                     return Path(root).resolve()
 
     return None
+
+def patch_comfy_kitchen_if_needed(venv_dir: Path):
+    """
+    Patches comfy_kitchen/backends/eager/conv3d.py inside venv if present,
+    replacing built-in type hint `stride: list[int]` with `stride: List[int]`
+    to satisfy PyTorch custom_op schema inference across all PyTorch 2.x versions.
+    """
+    site_packages = venv_dir / "Lib" / "site-packages"
+    if not site_packages.exists():
+        site_packages = venv_dir / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
+
+    conv3d_file = site_packages / "comfy_kitchen" / "backends" / "eager" / "conv3d.py"
+    if conv3d_file.exists():
+        try:
+            content = conv3d_file.read_text(encoding="utf-8")
+            if "stride: list[int]" in content:
+                print(f"[07 PATCH] Applying custom_op schema fix to {conv3d_file.name}...")
+                if "from typing import" in content:
+                    content = content.replace("from typing import ", "from typing import List, Sequence, ")
+                else:
+                    content = "from typing import List, Sequence\n" + content
+                content = content.replace("stride: list[int]", "stride: List[int]")
+                conv3d_file.write_text(content, encoding="utf-8")
+                print("[07 PATCH SUCCESS] comfy_kitchen custom_op schema patched successfully.")
+        except Exception as e:
+            print(f"[07 WARNING] Could not patch comfy_kitchen: {e}")
 
 def main():
     print("=" * 70)
@@ -169,20 +195,20 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"[07 WARNING] Pip upgrade step had issues: {e}")
 
-    # Step 3: Unconditionally uninstall any CPU or PyTorch 2.6+ wheels to ensure torch==2.5.1 compatibility
+    # Step 3: Unconditionally uninstall PyTorch to force clean 2.4.1+cu124 build
     print("\n[07] Preparing clean PyTorch installation for ComfyUI...")
     subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
 
-    # Step 4: Force Install CUDA PyTorch 2.5.1 wheels with explicit CUDA verification
-    pytorch_commands = [
-        ([str(venv_python), "-m", "pip", "install", "torch==2.5.1+cu124", "torchvision==0.20.1+cu124", "torchaudio==2.5.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.5.1 (Recommended)"),
-        ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.4.1"),
+    # Step 4: Force Install CUDA PyTorch wheels with explicit CUDA verification
+    pytorch_targets = [
+        ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.4.1 (Stable ComfyUI)"),
+        ([str(venv_python), "-m", "pip", "install", "torch==2.5.1+cu124", "torchvision==0.20.1+cu124", "torchaudio==2.5.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.5.1"),
         ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 Latest Index"),
         ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121", "--no-cache-dir"], "CUDA 12.1 Index"),
     ]
 
     cuda_torch_ok = False
-    for cmd, label in pytorch_commands:
+    for cmd, label in pytorch_targets:
         print(f"\n[07] Installing PyTorch via {label}...")
         res = subprocess.run(cmd)
         if res.returncode == 0:
@@ -211,7 +237,10 @@ def main():
         print("\n[07] Installing standard PyTorch/ComfyUI packages...")
         subprocess.run([str(venv_python), "-m", "pip", "install", "pillow", "pyyaml", "safetensors", "scipy", "tqdm", "psutil", "requests"])
 
-    # Step 6: Ensure Model Directories Exist
+    # Step 6: Apply comfy_kitchen type hint schema patch
+    patch_comfy_kitchen_if_needed(venv_dir)
+
+    # Step 7: Ensure Model Directories Exist
     print("\n[07] Ensuring model subdirectories exist...")
     model_dirs = ["unet", "vae", "clip", "checkpoints", "loras", "controlnet"]
     models_base = comfy_dir / "models"

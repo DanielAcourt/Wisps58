@@ -102,11 +102,10 @@ class ChatVessel:
             else:
                 print(f"[07 WARNING] Bridge returned status {response.status_code}")
         except Exception as e:
-            print(f"[07 ERROR] Could not connect to Iron Officer Bridge at {BRIDGE_URL}")
-            print(f"[07 Details] {e}")
-            print("[07] Ensure 'run_bridge.bat' is active and listening on port 8000.")
-            input("\nPress Enter to exit...")
-            sys.exit(1)
+            self.bridge_version = "OFFLINE"
+            print(f"[07 NOTICE] Iron Officer Bridge at {BRIDGE_URL} is currently offline.")
+            print("[07] Operating in Standalone Local Command Mode.")
+            print("[07] Note: Direct commands like /image, /status, /tools remain fully operational.\n")
 
     def print_header(self):
         """Displays the mission-critical header and command manifest."""
