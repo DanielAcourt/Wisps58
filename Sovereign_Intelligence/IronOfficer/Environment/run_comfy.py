@@ -118,20 +118,25 @@ def main():
     # Verify and automatically repair model weight safetensors if corrupted/missing
     verify_and_repair_models(comfy_dir)
 
-    # Test PyTorch & CUDA
+    # Test PyTorch & CUDA & Architecture compatibility (sm_120 for RTX 5090)
     print("\n[07] Testing PyTorch and CUDA acceleration...")
-    test_res = subprocess.run([
-        str(venv_python), "-c",
-        "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"
-    ])
+    test_code = (
+        "import torch, sys; "
+        "ok = torch.cuda.is_available(); "
+        "ver = torch.__version__; "
+        "arch_ok = True; "
+        "if ok and 'cu124' in ver and torch.cuda.get_device_capability()[0] >= 12: arch_ok = False; "
+        "sys.exit(0 if (ok and arch_ok) else 1)"
+    )
+    test_res = subprocess.run([str(venv_python), "-c", test_code])
 
     if test_res.returncode != 0:
         print("\n" + "!" * 70)
-        print("[07 AUTO-REPAIR] CPU-only PyTorch build or CUDA missing in venv!")
-        print("[07 AUTO-REPAIR] Automatically invoking setup_comfy.py to force CUDA PyTorch installation...")
+        print("[07 AUTO-UPGRADE] Upgrading PyTorch to CUDA 12.8 for RTX 5090 (sm_120 Blackwell support)...")
         print("!" * 70 + "\n")
 
-        # Trigger setup_comfy to fix PyTorch CUDA installation
+        # Trigger setup_comfy to install CUDA 12.8 PyTorch
+        subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio"])
         run_setup_comfy()
 
         # Re-verify post repair

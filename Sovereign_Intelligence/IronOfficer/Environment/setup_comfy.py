@@ -230,10 +230,10 @@ def main():
         subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
 
         pytorch_targets = [
-            ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 PyTorch 2.4.1 (Stable ComfyUI)"),
+            ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu128"], "CUDA 12.8 PyTorch (RTX 5090 / sm_120 Blackwell Native)"),
+            ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu126"], "CUDA 12.6 PyTorch (RTX 50 Series)"),
             ([str(venv_python), "-m", "pip", "install", "torch==2.5.1+cu124", "torchvision==0.20.1+cu124", "torchaudio==2.5.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 PyTorch 2.5.1"),
-            ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 Latest Index"),
-            ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121"], "CUDA 12.1 Index"),
+            ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124"], "CUDA 12.4 PyTorch 2.4.1"),
         ]
 
         cuda_torch_ok = False
