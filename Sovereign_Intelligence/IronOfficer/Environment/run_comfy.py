@@ -3,6 +3,7 @@
 Iron Officer: ComfyUI Headless API Server Launcher
 --------------------------------------------------
 Launches ComfyUI in headless API server mode listening on 127.0.0.1:8188.
+Supports --verify-only flag for diagnostic environment checks.
 """
 
 import os
@@ -12,8 +13,10 @@ from pathlib import Path
 from setup_comfy import find_comfy_directory
 
 def main():
+    b_verify_only = "--verify-only" in sys.argv
+
     print("=" * 70)
-    print("[07] Iron Officer: Launching Headless ComfyUI API Server")
+    print(f"[07] Iron Officer: {'ComfyUI Diagnostic Audit' if b_verify_only else 'Launching Headless ComfyUI API Server'}")
     print("=" * 70)
 
     comfy_dir = find_comfy_directory()
@@ -46,6 +49,10 @@ def main():
     if test_res.returncode != 0:
         print("\n[07 ERROR] PyTorch test failed. Please re-run setup_comfy_standalone.bat!")
         sys.exit(1)
+
+    if b_verify_only:
+        print("\n[07 SUCCESS] Diagnostic verification complete. Virtual environment and PyTorch are operational!")
+        sys.exit(0)
 
     print("\n" + "=" * 70)
     print("[07] Starting ComfyUI backend server listening on http://127.0.0.1:8188...")

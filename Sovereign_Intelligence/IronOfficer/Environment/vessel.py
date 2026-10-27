@@ -23,7 +23,7 @@ import uuid
 from typing import List, Dict
 
 # --- Configuration ---
-VESSEL_VERSION = "0.36.4.2-Knight" # Internal UI Version
+VESSEL_VERSION = "0.36.4.3-Knight" # Internal UI Version
 BRIDGE_URL = "http://127.0.0.1:8000"
 COMFY_URL = "http://127.0.0.1:8188"
 
@@ -32,6 +32,18 @@ if getattr(sys, 'frozen', False):
     REPORT_DIR = os.path.dirname(sys.executable)
 else:
     REPORT_DIR = os.path.dirname(__file__)
+
+def get_repo_root() -> str:
+    """Finds the root repository directory dynamically by looking for AI_Nexus."""
+    curr = os.path.abspath(REPORT_DIR)
+    while curr and os.path.basename(curr):
+        if os.path.isdir(os.path.join(curr, "AI_Nexus")):
+            return curr
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+    return os.path.abspath(os.path.join(REPORT_DIR, "..", "..", ".."))
 
 class ChatVessel:
     """
@@ -316,8 +328,9 @@ class ChatVessel:
             print("\n[07] Usage: /image <photorealistic prompt descriptors>\n")
             return
 
-        # Ensure destination memory directory exists (Sovereign_Intelligence/IronOfficer/Environment -> repo_root/AI_Nexus/Memories/GeneratedImages)
-        nexus_img_dir = os.path.abspath(os.path.join(REPORT_DIR, "..", "..", "..", "AI_Nexus", "Memories", "GeneratedImages"))
+        # Ensure destination memory directory exists
+        repo_root = get_repo_root()
+        nexus_img_dir = os.path.abspath(os.path.join(repo_root, "AI_Nexus", "Memories", "GeneratedImages"))
         os.makedirs(nexus_img_dir, exist_ok=True)
 
         prompt_text = " ".join(args).strip().strip('"').strip("'")
