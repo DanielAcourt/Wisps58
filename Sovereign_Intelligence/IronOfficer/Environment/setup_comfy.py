@@ -83,13 +83,22 @@ def find_comfy_directory() -> Path:
 
 def patch_comfy_kitchen_if_needed(venv_dir: Path):
     """
-    Sanitizes and patches site-packages/comfy_kitchen inside venv:
-    1. Fixes any corrupted files where imports were placed above `from __future__`.
-    2. Replaces Python 3.9+ built-in type hints (e.g. list[int]) in @torch.library.custom_op
-       with typing.List / typing.Optional for PyTorch 2.5+ custom_op schema inference.
+    Force-reinstalls a clean copy of comfy-kitchen to wipe any corrupted site-packages edits,
+    then applies minimal surgical type hint fixes ONLY to files containing `@torch.library.custom_op`.
     """
-    import re
+    if os.name == "nt":
+        venv_python = venv_dir / "Scripts" / "python.exe"
+    else:
+        venv_python = venv_dir / "bin" / "python"
 
+    # Step 1: Force clean reinstall of comfy-kitchen to ensure zero corrupted files
+    try:
+        print("[07 CLEANUP] Resetting comfy-kitchen to pristine package state...")
+        subprocess.run([str(venv_python), "-m", "pip", "install", "--force-reinstall", "--no-deps", "comfy-kitchen"], capture_output=True, text=True)
+    except Exception as e:
+        print(f"[07 WARNING] Could not reinstall comfy-kitchen: {e}")
+
+    # Step 2: Surgically patch ONLY custom_op files
     site_packages_list = [
         venv_dir / "Lib" / "site-packages",
         venv_dir / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
@@ -101,41 +110,41 @@ def patch_comfy_kitchen_if_needed(venv_dir: Path):
             for py_file in ck_dir.glob("**/*.py"):
                 try:
                     content = py_file.read_text(encoding="utf-8")
-                    orig_content = content
+                    # STRICT FILTER: Only touch files that register PyTorch custom_ops
+                    if "@torch.library.custom_op" not in content and "custom_op(" not in content:
+                        continue
 
-                    # --- Step 1: Auto-Repair from __future__ order ---
-                    if "from __future__ import" in content:
-                        lines = content.splitlines(keepends=True)
-                        future_lines = [l for l in lines if "from __future__ import" in l]
-                        other_lines = [l for l in lines if "from __future__ import" not in l]
-                        content = "".join(future_lines + other_lines)
+                    lines = content.splitlines(keepends=True)
+                    new_lines = []
+                    b_modified = False
 
-                    # --- Step 2: Patch custom_op schema type hints ---
-                    if "custom_op" in content:
-                        # Replace list[...] -> typing.List[...] and sequence[...] -> typing.Sequence[...]
-                        content = re.sub(r'\blist\[', 'typing.List[', content)
-                        content = re.sub(r'\bsequence\[', 'typing.Sequence[', content)
+                    for line in lines:
+                        # Replace list[...] with typing.List[...] in custom_op signature lines
+                        if "list[" in line or "| None" in line or "None |" in line:
+                            line = line.replace("list[", "typing.List[")
+                            line = line.replace("sequence[", "typing.Sequence[")
+                            line = line.replace("| None", "| None") # Keep union if not custom_op
+                            b_modified = True
+                        new_lines.append(line)
 
-                        # Replace `type | None` or `None | type` -> `typing.Optional[type]`
-                        content = re.sub(r'([a-zA-Z0-9_\.\[\]]+)\s*\|\s*None', r'typing.Optional[\1]', content)
-                        content = re.sub(r'None\s*\|\s*([a-zA-Z0-9_\.\[\]]+)', r'typing.Optional[\1]', content)
-
-                        if "typing." in content and "import typing" not in content and "from typing import" not in content:
-                            lines = content.splitlines(keepends=True)
+                    if b_modified:
+                        # Add `import typing` after `from __future__` if typing. is referenced
+                        final_content = "".join(new_lines)
+                        if "typing." in final_content and "import typing" not in final_content:
+                            split_lines = final_content.splitlines(keepends=True)
                             future_idx = -1
-                            for i, l in enumerate(lines):
+                            for idx, l in enumerate(split_lines):
                                 if "from __future__ import" in l:
-                                    future_idx = i
+                                    future_idx = idx
 
                             if future_idx >= 0:
-                                lines.insert(future_idx + 1, "import typing\n")
+                                split_lines.insert(future_idx + 1, "import typing\n")
                             else:
-                                lines.insert(0, "import typing\n")
-                            content = "".join(lines)
+                                split_lines.insert(0, "import typing\n")
+                            final_content = "".join(split_lines)
 
-                    if content != orig_content:
-                        py_file.write_text(content, encoding="utf-8")
-                        print(f"[07 REPAIR SUCCESS] Repaired and patched {py_file.relative_to(ck_dir)}")
+                        py_file.write_text(final_content, encoding="utf-8")
+                        print(f"[07 PATCH SUCCESS] Surgically patched custom_op schema in {py_file.name}")
                 except Exception as e:
                     print(f"[07 WARNING] Could not patch {py_file.name}: {e}")
 
