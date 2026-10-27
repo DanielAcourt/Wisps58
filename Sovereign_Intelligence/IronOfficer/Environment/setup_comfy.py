@@ -18,8 +18,12 @@ def find_comfy_directory() -> Path:
 
     candidate_paths = [
         Path("C:/Users/Danie/Unreal Projects/2027/repo/comfy/ComfyUI-master/ComfyUI-master"),
-        repo_root / "comfy" / "ComfyUI-master" / "ComfyUI-master",
         Path("C:/Users/Danie/Unreal Projects/2027/repo/comfy/ComfyUI-master"),
+        repo_root.parent.parent / "comfy" / "ComfyUI-master" / "ComfyUI-master",
+        repo_root.parent.parent / "comfy" / "ComfyUI-master",
+        repo_root.parent / "comfy" / "ComfyUI-master" / "ComfyUI-master",
+        repo_root.parent / "comfy" / "ComfyUI-master",
+        repo_root / "comfy" / "ComfyUI-master" / "ComfyUI-master",
         repo_root / "comfy" / "ComfyUI-master",
         repo_root / "comfy",
     ]
@@ -28,13 +32,13 @@ def find_comfy_directory() -> Path:
         if (path / "main.py").exists():
             return path.resolve()
 
-    # Shallow check inside repo_root/comfy folder if present
-    comfy_base = repo_root / "comfy"
-    if comfy_base.exists():
-        for root, dirs, files in os.walk(str(comfy_base)):
-            dirs[:] = [d for d in dirs if d not in ('.git', 'venv', 'Intermediate', 'Binaries', 'Saved', '__pycache__')]
-            if "main.py" in files:
-                return Path(root).resolve()
+    # Shallow check inside sibling comfy folder if present
+    for search_base in [repo_root.parent.parent / "comfy", repo_root.parent / "comfy", repo_root / "comfy"]:
+        if search_base.exists():
+            for root, dirs, files in os.walk(str(search_base)):
+                dirs[:] = [d for d in dirs if d not in ('.git', 'venv', 'Intermediate', 'Binaries', 'Saved', '__pycache__')]
+                if "main.py" in files:
+                    return Path(root).resolve()
 
     return None
 
