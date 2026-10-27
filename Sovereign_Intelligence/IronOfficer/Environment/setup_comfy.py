@@ -3,7 +3,8 @@
 Iron Officer: ComfyUI Standalone Setup Script
 ---------------------------------------------
 Automates Python virtual environment creation with Python 3.10-3.12 compatibility enforcement,
-PyTorch CUDA installation with multi-index fallback, dependency resolution, and directory initialization.
+PyTorch CUDA installation pinned to 2.5.1+cu124 for comfy_kitchen compatibility, dependency resolution,
+and directory structure initialization.
 """
 
 import os
@@ -168,26 +169,21 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"[07 WARNING] Pip upgrade step had issues: {e}")
 
-    # Step 3: Unconditionally uninstall any CPU PyTorch builds
-    print("\n[07] Force-uninstalling any existing PyTorch wheels...")
+    # Step 3: Unconditionally uninstall any CPU or PyTorch 2.6+ wheels to ensure torch==2.5.1 compatibility
+    print("\n[07] Preparing clean PyTorch installation for ComfyUI...")
     subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
 
-    # Step 4: Force Install CUDA PyTorch wheels with explicit CUDA verification
-    pytorch_targets = [
-        ("https://download.pytorch.org/whl/cu124", "CUDA 12.4 Wheel Index"),
-        ("https://download.pytorch.org/whl/cu121", "CUDA 12.1 Wheel Index"),
-        ("https://download.pytorch.org/whl/cu118", "CUDA 11.8 Wheel Index"),
+    # Step 4: Force Install CUDA PyTorch 2.5.1 wheels with explicit CUDA verification
+    pytorch_commands = [
+        ([str(venv_python), "-m", "pip", "install", "torch==2.5.1+cu124", "torchvision==0.20.1+cu124", "torchaudio==2.5.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.5.1 (Recommended)"),
+        ([str(venv_python), "-m", "pip", "install", "torch==2.4.1+cu124", "torchvision==0.19.1+cu124", "torchaudio==2.4.1+cu124", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 PyTorch 2.4.1"),
+        ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124", "--no-cache-dir"], "CUDA 12.4 Latest Index"),
+        ([str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu121", "--no-cache-dir"], "CUDA 12.1 Index"),
     ]
 
     cuda_torch_ok = False
-    for index_url, label in pytorch_targets:
-        print(f"\n[07] Installing CUDA PyTorch via {label}...")
-        cmd = [
-            str(venv_python), "-m", "pip", "install",
-            "torch", "torchvision", "torchaudio",
-            "--index-url", index_url,
-            "--force-reinstall", "--no-cache-dir"
-        ]
+    for cmd, label in pytorch_commands:
+        print(f"\n[07] Installing PyTorch via {label}...")
         res = subprocess.run(cmd)
         if res.returncode == 0:
             # Strictly verify if installed PyTorch has CUDA available
