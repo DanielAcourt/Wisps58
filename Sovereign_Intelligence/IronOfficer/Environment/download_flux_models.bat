@@ -1,7 +1,7 @@
 @echo off
 :: Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE).
 :: 07 Architecture: Automated Model Downloader for FLUX.1 [dev] FP8
-:: Target: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\models
+:: Target: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\models
 
 title [07] ComfyUI FLUX.1 Model Downloader
 
@@ -14,12 +14,17 @@ set "SCRIPT_DIR=%~dp0"
 set "REPO_ROOT=%SCRIPT_DIR%..\..\..\"
 
 set "COMFY_DIR="
-if exist "%REPO_ROOT%\comfy\ComfyUI-master\main.py" (
+if exist "%REPO_ROOT%\comfy\ComfyUI-master\ComfyUI-master\main.py" (
+    set "COMFY_DIR=%REPO_ROOT%\comfy\ComfyUI-master\ComfyUI-master"
+) else if exist "C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\main.py" (
+    set "COMFY_DIR=C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master"
+) else if exist "%REPO_ROOT%\comfy\ComfyUI-master\main.py" (
     set "COMFY_DIR=%REPO_ROOT%\comfy\ComfyUI-master"
 ) else if exist "C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\main.py" (
     set "COMFY_DIR=C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master"
 ) else (
     echo [07 ERROR] ComfyUI directory not found!
+    echo Target expected at: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\main.py
     pause
     exit /b 1
 )
@@ -34,7 +39,6 @@ if not exist "models\clip" mkdir "models\clip"
 echo [07] Downloading models into: "%COMFY_DIR%\models"
 echo.
 
-:: Helper function using PowerShell for downloading with progress
 :: Model 1: FLUX.1 [dev] FP8 UNet (~12 GB)
 set "FLUX_UNET_FILE=models\unet\flux1-dev-fp8.safetensors"
 set "FLUX_UNET_URL=https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors"

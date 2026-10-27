@@ -1,7 +1,7 @@
 @echo off
 :: Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE).
 :: 07 Architecture: Standalone ComfyUI Environment Setup Script
-:: Target: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master
+:: Target: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master
 
 title [07] ComfyUI Standalone Setup
 
@@ -13,16 +13,19 @@ echo =======================================================================
 set "SCRIPT_DIR=%~dp0"
 set "REPO_ROOT=%SCRIPT_DIR%..\..\..\"
 
-:: Check relative path first, then fallback to explicit path
+:: Check nested path first, then single level, then explicit fallback
 set "COMFY_DIR="
-if exist "%REPO_ROOT%\comfy\ComfyUI-master\main.py" (
+if exist "%REPO_ROOT%\comfy\ComfyUI-master\ComfyUI-master\main.py" (
+    set "COMFY_DIR=%REPO_ROOT%\comfy\ComfyUI-master\ComfyUI-master"
+) else if exist "C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\main.py" (
+    set "COMFY_DIR=C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master"
+) else if exist "%REPO_ROOT%\comfy\ComfyUI-master\main.py" (
     set "COMFY_DIR=%REPO_ROOT%\comfy\ComfyUI-master"
 ) else if exist "C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\main.py" (
     set "COMFY_DIR=C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master"
 ) else (
     echo [07 ERROR] ComfyUI directory not found!
-    echo Target expected at: comfy\ComfyUI-master\main.py
-    echo or C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\main.py
+    echo Target expected at: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\main.py
     pause
     exit /b 1
 )

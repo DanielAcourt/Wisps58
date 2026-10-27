@@ -15,12 +15,17 @@ set "SCRIPT_DIR=%~dp0"
 set "REPO_ROOT=%SCRIPT_DIR%..\..\..\"
 
 set "COMFY_DIR="
-if exist "%REPO_ROOT%\comfy\ComfyUI-master\main.py" (
+if exist "%REPO_ROOT%\comfy\ComfyUI-master\ComfyUI-master\main.py" (
+    set "COMFY_DIR=%REPO_ROOT%\comfy\ComfyUI-master\ComfyUI-master"
+) else if exist "C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\main.py" (
+    set "COMFY_DIR=C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master"
+) else if exist "%REPO_ROOT%\comfy\ComfyUI-master\main.py" (
     set "COMFY_DIR=%REPO_ROOT%\comfy\ComfyUI-master"
 ) else if exist "C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\main.py" (
     set "COMFY_DIR=C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master"
 ) else (
     echo [07 ERROR] ComfyUI directory not found!
+    echo Target expected at: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\main.py
     pause
     exit /b 1
 )
