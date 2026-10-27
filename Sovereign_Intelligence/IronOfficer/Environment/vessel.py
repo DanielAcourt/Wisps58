@@ -7,7 +7,8 @@ The Vessel serves as the primary 'Spirit Link' between the Lead Programmer and t
 Architectural Knight, enabling PSTA-driven command execution, AAS arbitration, and direct
 local photorealistic image generation (/image command).
 
-// [Jules] Added /image & /imagegen direct synthesis commands to ChatVessel [2026-10-21]
+// [Jules] Added /image & /imagegen direct synthesis commands to ChatVessel with automatic
+// output directory creation (AI_Nexus/Memories/GeneratedImages/) and image fetching. [2026-10-21]
 """
 
 import os
@@ -283,14 +284,20 @@ class ChatVessel:
         """
         Executes local photorealistic image synthesis via /image or /imagegen.
         Attempts Iron Officer Bridge API first, with automatic fallback to standalone ComfyUI REST API.
+        Automatically verifies and creates AI_Nexus/Memories/GeneratedImages/ and saves output files.
         """
         if not args:
             print("\n[07] Usage: /image <photorealistic prompt descriptors>\n")
             return
 
-        prompt_text = " ".join(args)
+        # Ensure destination memory directory exists
+        nexus_img_dir = os.path.abspath(os.path.join(REPORT_DIR, "..", "..", "AI_Nexus", "Memories", "GeneratedImages"))
+        os.makedirs(nexus_img_dir, exist_ok=True)
+
+        prompt_text = " ".join(args).strip().strip('"').strip("'")
         print(f"\n[07 IMAGE SYNTHESIS]")
         print(f" -> PROMPT: {prompt_text}")
+        print(f" -> DESTINATION ZONE: {nexus_img_dir.replace('\\', '/')}")
 
         # 1. Try Iron Officer Bridge API endpoint
         try:
@@ -335,8 +342,8 @@ class ChatVessel:
                     print(f" -> COMFYUI QUEUED: Prompt ID {p_id}")
                     print(f" -> Generating image on local GPU... Please wait.")
 
-                    # Poll history endpoint for completion (up to 60 seconds)
-                    for _ in range(120):
+                    # Poll history endpoint for completion (up to 120 seconds)
+                    for _ in range(240):
                         time.sleep(0.5)
                         try:
                             hist_resp = requests.get(f"{COMFY_URL}/history/{p_id}", timeout=3)
@@ -347,16 +354,27 @@ class ChatVessel:
                                     img_info = outputs[0]
                                     filename = img_info.get("filename")
                                     subfolder = img_info.get("subfolder", "")
-                                    print(f" -> GENERATION COMPLETE!")
-                                    print(f" -> FILENAME: {filename}")
-                                    print(f" -> OUTPUT LOCATION: ComfyUI/output/{subfolder}/{filename}".replace("//", "/"))
+                                    img_type = img_info.get("type", "output")
+
+                                    # Fetch image bytes directly from ComfyUI view API
+                                    img_view_url = f"{COMFY_URL}/view?filename={filename}&subfolder={subfolder}&type={img_type}"
+                                    img_data_resp = requests.get(img_view_url, timeout=10)
+                                    if img_data_resp.status_code == 200:
+                                        target_filepath = os.path.join(nexus_img_dir, filename)
+                                        with open(target_filepath, "wb") as f:
+                                            f.write(img_data_resp.content)
+                                        print(f" -> GENERATION COMPLETE!")
+                                        print(f" -> FILENAME: {filename}")
+                                        print(f" -> COPIED TO MEMORY ZONE: AI_Nexus/Memories/GeneratedImages/{filename}")
+                                    else:
+                                        print(f" -> GENERATION FINISHED (View Fetch Warning). Filename: {filename}")
                                 else:
                                     print(f" -> GENERATION FINISHED.")
                                 print("-" * 30 + "\n")
                                 return
                         except Exception:
                             pass
-                    print(f" -> [TIMEOUT] Generation queued but took longer than 60s.")
+                    print(f" -> [TIMEOUT] Generation queued but took longer than 120s.")
                 else:
                     print(f" -> ERROR: ComfyUI rejected prompt payload: {prompt_res.text}")
             else:
