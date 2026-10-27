@@ -11,10 +11,23 @@ echo [07] Iron Officer: Launching ComfyUI Setup Manager
 echo =======================================================================
 echo.
 
-python setup_comfy.py
-if %errorlevel% NEQ 0 (
-    py setup_comfy.py
+:: Priority 1: Windows 'py' launcher with Python 3.11 / 3.12 (PyTorch compatible)
+py -3.11 --version >nul 2>&1
+if %errorlevel% EQU 0 (
+    echo [07] Executing setup using Python 3.11...
+    py -3.11 setup_comfy.py
+    goto :END
 )
 
+py -3.12 --version >nul 2>&1
+if %errorlevel% EQU 0 (
+    echo [07] Executing setup using Python 3.12...
+    py -3.12 setup_comfy.py
+    goto :END
+)
+
+python setup_comfy.py
+
+:END
 echo.
 pause

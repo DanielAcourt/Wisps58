@@ -59,7 +59,7 @@ def main():
         # Re-verify post repair
         test_res_2 = subprocess.run([
             str(venv_python), "-c",
-            "import torch, sys; print(f'[07 REPAIRED] PyTorch: {torch.__version__} | CUDA: {torch.cuda.is_available()} | GPU: {torch.cuda.get_device_name(0)}'); sys.exit(0 if torch.cuda.is_available() else 1)"
+            "import torch, sys; gpu = torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None'; print(f'[07 REPAIRED] PyTorch: {torch.__version__} | CUDA: {torch.cuda.is_available()} | GPU: {gpu}'); sys.exit(0 if torch.cuda.is_available() else 1)"
         ])
         if test_res_2.returncode != 0:
             print("\n[07 ERROR] PyTorch CUDA installation failed after auto-repair attempt.")

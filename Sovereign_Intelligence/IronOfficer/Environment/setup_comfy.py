@@ -2,14 +2,52 @@
 """
 Iron Officer: ComfyUI Standalone Setup Script
 ---------------------------------------------
-Automates Python virtual environment creation, PyTorch CUDA installation with multi-index
-fallback (cu124 -> cu121 -> cu118) and strict CUDA verification, dependency resolution, and directory structure initialization.
+Automates Python virtual environment creation with Python 3.10-3.12 compatibility enforcement,
+PyTorch CUDA installation with multi-index fallback, dependency resolution, and directory initialization.
 """
 
 import os
 import sys
+import shutil
 import subprocess
 from pathlib import Path
+
+def find_compatible_python() -> str:
+    """
+    Finds a Python 3.10, 3.11, or 3.12 executable on the system.
+    PyTorch does NOT support Python 3.13 / 3.14 wheels yet.
+    """
+    if sys.version_info >= (3, 10) and sys.version_info < (3, 13):
+        return sys.executable
+
+    # Check Windows 'py' launcher for Python 3.11 or 3.12
+    for py_ver in ["-3.11", "-3.12", "-3.10"]:
+        try:
+            res = subprocess.run(["py", py_ver, "-c", "import sys; print(sys.executable)"], capture_output=True, text=True)
+            if res.returncode == 0 and res.stdout.strip():
+                executable = res.stdout.strip()
+                if os.path.exists(executable):
+                    return executable
+        except Exception:
+            pass
+
+    # Check common Windows Python installation directories
+    local_app_data = os.environ.get("LocalAppData", "")
+    program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+    candidates = [
+        os.path.join(local_app_data, r"Programs\Python\Python311\python.exe"),
+        os.path.join(local_app_data, r"Programs\Python\Python312\python.exe"),
+        os.path.join(program_files, r"Python311\python.exe"),
+        os.path.join(program_files, r"Python312\python.exe"),
+        r"C:\Python311\python.exe",
+        r"C:\Python312\python.exe",
+    ]
+
+    for cand in candidates:
+        if cand and os.path.exists(cand):
+            return cand
+
+    return None
 
 def find_comfy_directory() -> Path:
     """Locates the ComfyUI installation directory efficiently without deep filesystem sweeps."""
@@ -53,9 +91,26 @@ def main():
     print(f"[07] Host Python Executable: {sys.executable}")
     print(f"[07] Host Python Version:    {py_ver} ({'64-bit' if is_64bit else '32-bit WARNING'})")
 
-    if not is_64bit:
-        print("\n[07 WARNING] 32-bit Python detected! PyTorch requires 64-bit Python.")
-        print("Please install 64-bit Python 3.10 / 3.11 / 3.12 from python.org!")
+    # Python Version Compatibility Guard
+    target_py = sys.executable
+    if sys.version_info >= (3, 13):
+        print("\n" + "!" * 70)
+        print(f"[07 WARNING] Python {py_ver} detected!")
+        print("PyTorch and CUDA do NOT support Python 3.13 or 3.14 wheels yet.")
+        print("Searching system for Python 3.10, 3.11, or 3.12...")
+        print("!" * 70)
+
+        compat_py = find_compatible_python()
+        if compat_py:
+            print(f"[07 AUTO-SWITCH] Found compatible Python: {compat_py}")
+            target_py = compat_py
+        else:
+            print("\n[07 CRITICAL ERROR] No compatible Python version (3.10 - 3.12) found on system!")
+            print("PyTorch requires Python 3.10, 3.11, or 3.12.")
+            print("\nTo fix this, run this command in Command Prompt:")
+            print("    winget install Python.Python.3.11")
+            print("\nThen re-run setup_comfy_standalone.bat!")
+            sys.exit(1)
 
     comfy_dir = find_comfy_directory()
     if not comfy_dir:
@@ -75,11 +130,30 @@ def main():
     else:
         venv_python = venv_dir / "bin" / "python"
 
-    # Step 1: Create Virtual Environment if missing
-    if not venv_python.exists():
-        print(f"\n[07] Creating dedicated Python Virtual Environment at {venv_dir}...")
+    # Step 1: Check if venv was created with incompatible Python version
+    b_recreate_venv = False
+    if venv_python.exists():
+        v_check = subprocess.run([str(venv_python), "-c", "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"], capture_output=True, text=True)
+        if v_check.returncode == 0:
+            v_ver = v_check.stdout.strip()
+            if v_ver.startswith("3.14") or v_ver.startswith("3.13"):
+                print(f"\n[07 PURGE] Existing venv was built with Python {v_ver} (incompatible with PyTorch CUDA).")
+                print(f"[07 PURGE] Forcefully purging {venv_dir} to rebuild with {target_py}...")
+                b_recreate_venv = True
+
+    if not venv_python.exists() or b_recreate_venv:
+        if b_recreate_venv and venv_dir.exists():
+            try:
+                if os.name == "nt":
+                    subprocess.run(f'rmdir /s /q "{venv_dir}"', shell=True)
+                else:
+                    shutil.rmtree(str(venv_dir), ignore_errors=True)
+            except Exception as e:
+                print(f"[07 WARNING] Could not completely remove venv folder: {e}")
+
+        print(f"\n[07] Creating dedicated Python Virtual Environment at {venv_dir} using {target_py}...")
         try:
-            subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+            subprocess.run([target_py, "-m", "venv", str(venv_dir)], check=True)
             print("[07] Virtual Environment created successfully.")
         except subprocess.CalledProcessError as e:
             print(f"[07 ERROR] Failed to create virtual environment: {e}")
@@ -87,14 +161,14 @@ def main():
     else:
         print(f"\n[07] Existing Virtual Environment detected at {venv_dir}")
 
-    # Step 2: Upgrade Pip, Setuptools, Wheel
+    # Step 2: Upgrade Pip, Setuptools, Wheel inside venv
     try:
-        print("\n[07] Upgrading pip, setuptools, wheel...")
+        print("\n[07] Upgrading pip, setuptools, wheel inside venv...")
         subprocess.run([str(venv_python), "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"[07 WARNING] Pip upgrade step had issues: {e}")
 
-    # Step 3: Unconditionally uninstall any CPU PyTorch builds to prevent cached CPU wheel locks
+    # Step 3: Unconditionally uninstall any CPU PyTorch builds
     print("\n[07] Force-uninstalling any existing PyTorch wheels...")
     subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
 

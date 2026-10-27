@@ -11,10 +11,23 @@ echo [07] Iron Officer: Launching Headless ComfyUI API Server
 echo =======================================================================
 echo.
 
-python run_comfy.py
-if %errorlevel% NEQ 0 (
-    py run_comfy.py
+:: Priority 1: Windows 'py' launcher with Python 3.11 / 3.12 (PyTorch compatible)
+py -3.11 --version >nul 2>&1
+if %errorlevel% EQU 0 (
+    echo [07] Launching server using Python 3.11...
+    py -3.11 run_comfy.py
+    goto :END
 )
 
+py -3.12 --version >nul 2>&1
+if %errorlevel% EQU 0 (
+    echo [07] Launching server using Python 3.12...
+    py -3.12 run_comfy.py
+    goto :END
+)
+
+python run_comfy.py
+
+:END
 echo.
 pause

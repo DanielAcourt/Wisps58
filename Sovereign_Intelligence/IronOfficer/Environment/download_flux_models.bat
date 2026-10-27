@@ -3,11 +3,11 @@
 :: 07 Architecture: Automated Model Downloader for FLUX.1 [dev] FP8 with Resumable Visual Progress
 :: Target: C:\Users\Danie\Unreal Projects\2027\repo\comfy\ComfyUI-master\ComfyUI-master\models
 
-title [07] ComfyUI FLUX.1 Model Downloader (Visual Progress & Resumable)
+title "[07] ComfyUI FLUX.1 Model Downloader"
 
 echo =======================================================================
 echo [07] Iron Officer: Automated FLUX.1 [dev] FP8 Model Weights Downloader
-echo [07] Features: Live Transfer Speed, Percentage Progress & Resumable Download
+echo [07] Features: Live Transfer Speed, Percentage Progress, and Resumable Download
 echo =======================================================================
 
 :: 1. Resolve Target ComfyUI Directory
@@ -39,14 +39,6 @@ if not exist "models\clip" mkdir "models\clip"
 
 echo [07] Downloading models into: "%COMFY_DIR%\models"
 echo.
-
-:: Detect curl executable
-set "DL_CMD=curl -L -C -"
-curl --version >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo [07 WARNING] curl not found in PATH. Downloading via PowerShell Start-BitsTransfer...
-    set "DL_CMD=powershell -Command Start-BitsTransfer -Source"
-)
 
 :: Model 1: FLUX.1 [dev] FP8 UNet (~12 GB)
 set "FLUX_UNET_FILE=models\unet\flux1-dev-fp8.safetensors"
