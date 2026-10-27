@@ -3,7 +3,7 @@
 Iron Officer: ComfyUI Standalone Setup Script
 ---------------------------------------------
 Automates Python virtual environment creation, PyTorch CUDA installation with multi-index
-fallback (cu124 -> cu121 -> PyPI), dependency resolution, and directory structure initialization.
+fallback (cu124 -> cu121 -> cu118) and strict CUDA verification, dependency resolution, and directory structure initialization.
 """
 
 import os
@@ -94,36 +94,45 @@ def main():
     except subprocess.CalledProcessError as e:
         print(f"[07 WARNING] Pip upgrade step had issues: {e}")
 
-    # Step 3: Install PyTorch with multi-index fallback
-    print("\n[07] Installing PyTorch with CUDA acceleration...")
+    # Step 3: Unconditionally uninstall any CPU PyTorch builds to prevent cached CPU wheel locks
+    print("\n[07] Force-uninstalling any existing PyTorch wheels...")
+    subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio", "intel-openmp"])
+
+    # Step 4: Force Install CUDA PyTorch wheels with explicit CUDA verification
     pytorch_targets = [
-        ("https://download.pytorch.org/whl/cu124", "CUDA 12.4 Index"),
-        ("https://download.pytorch.org/whl/cu121", "CUDA 12.1 Index"),
-        ("https://download.pytorch.org/whl/cu118", "CUDA 11.8 Index"),
-        (None, "Standard PyPI Index")
+        ("https://download.pytorch.org/whl/cu124", "CUDA 12.4 Wheel Index"),
+        ("https://download.pytorch.org/whl/cu121", "CUDA 12.1 Wheel Index"),
+        ("https://download.pytorch.org/whl/cu118", "CUDA 11.8 Wheel Index"),
     ]
 
-    torch_installed = False
-    for index_url, index_label in pytorch_targets:
-        print(f" -> Attempting PyTorch installation via {index_label}...")
-        cmd = [str(venv_python), "-m", "pip", "install", "torch", "torchvision", "torchaudio"]
-        if index_url:
-            cmd.extend(["--index-url", index_url])
-
+    cuda_torch_ok = False
+    for index_url, label in pytorch_targets:
+        print(f"\n[07] Installing CUDA PyTorch via {label}...")
+        cmd = [
+            str(venv_python), "-m", "pip", "install",
+            "torch", "torchvision", "torchaudio",
+            "--index-url", index_url,
+            "--force-reinstall", "--no-cache-dir"
+        ]
         res = subprocess.run(cmd)
         if res.returncode == 0:
-            print(f"[07 SUCCESS] PyTorch installed successfully via {index_label}!")
-            torch_installed = True
-            break
-        else:
-            print(f" -> {index_label} installation returned exit code {res.returncode}. Trying next index...")
+            # Strictly verify if installed PyTorch has CUDA available
+            test_cmd = [str(venv_python), "-c", "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"]
+            test_res = subprocess.run(test_cmd)
+            if test_res.returncode == 0:
+                print(f"\n[07 SUCCESS] PyTorch CUDA acceleration verified via {label}!")
+                cuda_torch_ok = True
+                break
+            else:
+                print(f" -> {label} finished but torch.cuda.is_available() returned False. Purging and trying next index...")
+                subprocess.run([str(venv_python), "-m", "pip", "uninstall", "-y", "torch", "torchvision", "torchaudio"])
 
-    if not torch_installed:
-        print("\n[07 ERROR] All PyTorch installation attempts failed.")
-        print("Diagnostic Tip: If using Python 3.13 or 32-bit Python, please install 64-bit Python 3.11 or 3.12.")
+    if not cuda_torch_ok:
+        print("\n[07 ERROR] All PyTorch CUDA wheel installations failed.")
+        print("Action Required: Please verify NVIDIA GPU drivers are installed and 64-bit Python 3.10/3.11/3.12 is in use.")
         sys.exit(1)
 
-    # Step 4: Install ComfyUI dependencies
+    # Step 5: Install ComfyUI dependencies
     req_file = comfy_dir / "requirements.txt"
     if req_file.exists():
         print(f"\n[07] Installing dependencies from {req_file}...")
@@ -132,7 +141,7 @@ def main():
         print("\n[07] Installing standard PyTorch/ComfyUI packages...")
         subprocess.run([str(venv_python), "-m", "pip", "install", "pillow", "pyyaml", "safetensors", "scipy", "tqdm", "psutil", "requests"])
 
-    # Step 5: Ensure Model Directories Exist
+    # Step 6: Ensure Model Directories Exist
     print("\n[07] Ensuring model subdirectories exist...")
     model_dirs = ["unet", "vae", "clip", "checkpoints", "loras", "controlnet"]
     models_base = comfy_dir / "models"

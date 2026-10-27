@@ -3,6 +3,7 @@
 Iron Officer: ComfyUI Headless API Server Launcher
 --------------------------------------------------
 Launches ComfyUI in headless API server mode listening on 127.0.0.1:8188.
+Includes auto-repair when CPU-only PyTorch builds are detected.
 Supports --verify-only flag for diagnostic environment checks.
 """
 
@@ -10,7 +11,7 @@ import os
 import sys
 import subprocess
 from pathlib import Path
-from setup_comfy import find_comfy_directory
+from setup_comfy import find_comfy_directory, main as run_setup_comfy
 
 def main():
     b_verify_only = "--verify-only" in sys.argv
@@ -33,8 +34,8 @@ def main():
 
     if not venv_python.exists():
         print(f"\n[07 ERROR] Virtual Environment python not found at {venv_python}!")
-        print("[07 ACTION REQUIRED] Run 'setup_comfy_standalone.bat' first to build the environment!")
-        sys.exit(1)
+        print("[07 ACTION REQUIRED] Triggering setup_comfy.py to build environment...")
+        run_setup_comfy()
 
     print(f"\n[07] ComfyUI Directory: {comfy_dir}")
     print(f"[07] Virtual Environment Python: {venv_python}")
@@ -43,15 +44,30 @@ def main():
     print("\n[07] Testing PyTorch and CUDA acceleration...")
     test_res = subprocess.run([
         str(venv_python), "-c",
-        "import torch; print(f'[07] PyTorch Version: {torch.__version__} | CUDA Available: {torch.cuda.is_available()}'); print(f'[07] GPU Device: {torch.cuda.get_device_name(0)}') if torch.cuda.is_available() else print('[07 WARNING] CUDA GPU not detected!')"
+        "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)"
     ])
 
     if test_res.returncode != 0:
-        print("\n[07 ERROR] PyTorch test failed. Please re-run setup_comfy_standalone.bat!")
-        sys.exit(1)
+        print("\n" + "!" * 70)
+        print("[07 AUTO-REPAIR] CPU-only PyTorch build or CUDA missing in venv!")
+        print("[07 AUTO-REPAIR] Automatically invoking setup_comfy.py to force CUDA PyTorch installation...")
+        print("!" * 70 + "\n")
+
+        # Trigger setup_comfy to fix PyTorch CUDA installation
+        run_setup_comfy()
+
+        # Re-verify post repair
+        test_res_2 = subprocess.run([
+            str(venv_python), "-c",
+            "import torch, sys; print(f'[07 REPAIRED] PyTorch: {torch.__version__} | CUDA: {torch.cuda.is_available()} | GPU: {torch.cuda.get_device_name(0)}'); sys.exit(0 if torch.cuda.is_available() else 1)"
+        ])
+        if test_res_2.returncode != 0:
+            print("\n[07 ERROR] PyTorch CUDA installation failed after auto-repair attempt.")
+            print("Please verify NVIDIA drivers are installed and 64-bit Python is in use.")
+            sys.exit(1)
 
     if b_verify_only:
-        print("\n[07 SUCCESS] Diagnostic verification complete. Virtual environment and PyTorch are operational!")
+        print("\n[07 SUCCESS] Diagnostic verification complete. Virtual environment and PyTorch CUDA are operational!")
         sys.exit(0)
 
     print("\n" + "=" * 70)
