@@ -8,7 +8,8 @@ Architectural Knight, enabling PSTA-driven command execution, AAS arbitration, a
 local photorealistic image generation (/image command).
 
 // [Jules] Added /image & /imagegen direct synthesis commands to ChatVessel with automatic
-// output directory creation (AI_Nexus/Memories/GeneratedImages/) and image fetching. [2026-10-21]
+// output directory creation (AI_Nexus/Memories/GeneratedImages/), image fetching, and
+// live Image Engine startup connection probing. [2026-10-21]
 """
 
 import os
@@ -22,7 +23,7 @@ import uuid
 from typing import List, Dict
 
 # --- Configuration ---
-VESSEL_VERSION = "0.36.4.0-Knight" # Internal UI Version
+VESSEL_VERSION = "0.36.4.1-Knight" # Internal UI Version
 BRIDGE_URL = "http://127.0.0.1:8000"
 COMFY_URL = "http://127.0.0.1:8188"
 
@@ -44,7 +45,26 @@ class ChatVessel:
         self.identity = "Iron Officer"
         self.show_tools = True
         self.bridge_version = "Unknown"
+        self.image_engine_status = "UNKNOWN"
         self.fetch_bridge_info()
+        self.check_image_engine()
+
+    def check_image_engine(self) -> bool:
+        """
+        Actively probes the local ComfyUI API engine on port 8188.
+        Updates self.image_engine_status string.
+        """
+        try:
+            response = requests.get(f"{COMFY_URL}/system_stats", timeout=1.5)
+            if response.status_code == 200:
+                self.image_engine_status = "ONLINE (ComfyUI on 127.0.0.1:8188)"
+                return True
+            else:
+                self.image_engine_status = f"HTTP {response.status_code} (OFFLINE)"
+                return False
+        except Exception:
+            self.image_engine_status = "OFFLINE (Run 'run_comfy_api.bat' to start)"
+            return False
 
     def fetch_bridge_info(self):
         """
@@ -79,9 +99,11 @@ class ChatVessel:
     def print_header(self):
         """Displays the mission-critical header and command manifest."""
         os.system('cls' if os.name == 'nt' else 'clear')
+        self.check_image_engine()
         print("="*60)
         print(f" SOVEREIGN IRON OFFICER | VESSEL v{VESSEL_VERSION}")
         print(f" User: {self.user_name} | Session: {self.session_id}")
+        print(f" Image Engine: {self.image_engine_status}")
         print("="*60)
         print(" Commands: /07, /p, /t, /s, /a, /verify, /vss, /phi, /velocity, /image")
         print(" Tools:    /read, /write, /patch, /append, /list, /backups, /handshake")
@@ -95,6 +117,7 @@ class ChatVessel:
         report = {
             "vessel_version": VESSEL_VERSION,
             "bridge_version": self.bridge_version,
+            "image_engine_status": self.image_engine_status,
             "timestamp": datetime.datetime.now().isoformat(),
             "transcript": self.history,
         }
@@ -107,12 +130,14 @@ class ChatVessel:
 
     def show_status(self):
         """Displays low-level bridge health and Safe Zone configuration."""
+        self.check_image_engine()
         try:
             response = requests.get(f"{BRIDGE_URL}/", timeout=2)
             data = response.json()
             print("\n" + "-"*30)
             print(f"BRIDGE: {data.get('status')} v{data.get('version')}")
             print(f"HARDWARE: {data.get('hardware')}")
+            print(f"IMAGE ENGINE: {self.image_engine_status}")
             print(f"SAFE ZONES (R): {len(data.get('read_zones', []))}")
             print(f"SAFE ZONES (W): {len(data.get('write_zones', []))}")
             print("-"*30 + "\n")
@@ -142,6 +167,7 @@ class ChatVessel:
 
                 a = data['A']
                 print(f"A: **[Administrative Truth - Nexus State]:** All AAS directives are {a['status']} and compliant with v{a['version']}. Nexus {'OK' if a['nexus_ok'] else 'FAILED'}. Diligence Score={a.get('diligence', '0.0')}")
+                print(f"Image Engine: {self.image_engine_status}")
                 print("\n*Status Cycle Complete. Reporting nominal functionality.*\n")
             else:
                 print(f"\n[07 ERROR] Salute failed: {response.text}\n")
@@ -283,7 +309,7 @@ class ChatVessel:
     def run_image(self, args: List[str]):
         """
         Executes local photorealistic image synthesis via /image or /imagegen.
-        Attempts Iron Officer Bridge API first, with automatic fallback to standalone ComfyUI REST API.
+        Attempts ComfyUI REST API directly on port 8188.
         Automatically verifies and creates AI_Nexus/Memories/GeneratedImages/ and saves output files.
         """
         if not args:
@@ -299,88 +325,78 @@ class ChatVessel:
         print(f" -> PROMPT: {prompt_text}")
         print(f" -> DESTINATION ZONE: {nexus_img_dir.replace('\\', '/')}")
 
-        # 1. Try Iron Officer Bridge API endpoint
-        try:
-            payload = {"prompt": prompt_text, "model_type": "flux_dev"}
-            response = requests.post(f"{BRIDGE_URL}/v1/image/generate", json=payload, timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                print(f" -> STATUS: SUCCESS (Bridge Gateway)")
-                print(f" -> IMAGE PATH: {data.get('image_path')}")
-                print("-" * 30 + "\n")
-                return
-        except Exception:
-            pass # Fall through to direct standalone ComfyUI API
+        # Check if ComfyUI is online
+        if not self.check_image_engine():
+            print(f" -> ERROR: ComfyUI Image Engine is OFFLINE.")
+            print(f" -> ACTION REQUIRED: Run 'run_comfy_api.bat' in Sovereign_Intelligence/IronOfficer/Environment/")
+            print("-" * 30 + "\n")
+            return
 
-        # 2. Standalone Direct ComfyUI REST API Engine (Port 8188)
+        # Standalone Direct ComfyUI REST API Engine (Port 8188)
         try:
-            stats_resp = requests.get(f"{COMFY_URL}/system_stats", timeout=3)
-            if stats_resp.status_code == 200:
-                seed = int(time.time() * 1000) % 1000000000
-                workflow = {
-                    "3": {
-                        "inputs": {
-                            "seed": seed, "steps": 25, "cfg": 3.5, "sampler_name": "euler",
-                            "scheduler": "simple", "denoise": 1.0,
-                            "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]
-                        },
-                        "class_type": "KSampler"
+            seed = int(time.time() * 1000) % 1000000000
+            workflow = {
+                "3": {
+                    "inputs": {
+                        "seed": seed, "steps": 25, "cfg": 3.5, "sampler_name": "euler",
+                        "scheduler": "simple", "denoise": 1.0,
+                        "model": ["4", 0], "positive": ["6", 0], "negative": ["7", 0], "latent_image": ["5", 0]
                     },
-                    "4": {"inputs": {"unet_name": "flux1-dev-fp8.safetensors", "weight_dtype": "fp8_e4m3fn"}, "class_type": "UNETLoader"},
-                    "5": {"inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "class_type": "EmptyLatentImage"},
-                    "6": {"inputs": {"text": prompt_text, "clip": ["8", 0]}, "class_type": "CLIPTextEncode"},
-                    "7": {"inputs": {"text": "blurry, low quality, distorted", "clip": ["8", 0]}, "class_type": "CLIPTextEncode"},
-                    "8": {"inputs": {"clip_name1": "clip_l.safetensors", "clip_name2": "t5xxl_fp8_e4m3fn.safetensors", "type": "flux"}, "class_type": "DualCLIPLoader"},
-                    "9": {"inputs": {"samples": ["3", 0], "vae": ["10", 0]}, "class_type": "VAEDecode"},
-                    "10": {"inputs": {"vae_name": "ae.safetensors"}, "class_type": "VAELoader"},
-                    "11": {"inputs": {"filename_prefix": "IronKnight_Gen", "images": ["9", 0]}, "class_type": "SaveImage"}
-                }
-                client_id = str(uuid.uuid4())
-                prompt_res = requests.post(f"{COMFY_URL}/prompt", json={"prompt": workflow, "client_id": client_id}, timeout=5)
-                if prompt_res.status_code == 200:
-                    p_id = prompt_res.json().get("prompt_id")
-                    print(f" -> COMFYUI QUEUED: Prompt ID {p_id}")
-                    print(f" -> Generating image on local GPU... Please wait.")
+                    "class_type": "KSampler"
+                },
+                "4": {"inputs": {"unet_name": "flux1-dev-fp8.safetensors", "weight_dtype": "fp8_e4m3fn"}, "class_type": "UNETLoader"},
+                "5": {"inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "class_type": "EmptyLatentImage"},
+                "6": {"inputs": {"text": prompt_text, "clip": ["8", 0]}, "class_type": "CLIPTextEncode"},
+                "7": {"inputs": {"text": "blurry, low quality, distorted", "clip": ["8", 0]}, "class_type": "CLIPTextEncode"},
+                "8": {"inputs": {"clip_name1": "clip_l.safetensors", "clip_name2": "t5xxl_fp8_e4m3fn.safetensors", "type": "flux"}, "class_type": "DualCLIPLoader"},
+                "9": {"inputs": {"samples": ["3", 0], "vae": ["10", 0]}, "class_type": "VAEDecode"},
+                "10": {"inputs": {"vae_name": "ae.safetensors"}, "class_type": "VAELoader"},
+                "11": {"inputs": {"filename_prefix": "IronKnight_Gen", "images": ["9", 0]}, "class_type": "SaveImage"}
+            }
+            client_id = str(uuid.uuid4())
+            prompt_res = requests.post(f"{COMFY_URL}/prompt", json={"prompt": workflow, "client_id": client_id}, timeout=5)
+            if prompt_res.status_code == 200:
+                p_id = prompt_res.json().get("prompt_id")
+                print(f" -> COMFYUI QUEUED: Prompt ID {p_id}")
+                print(f" -> Generating image on local GPU... Please wait.")
 
-                    # Poll history endpoint for completion (up to 120 seconds)
-                    for _ in range(240):
-                        time.sleep(0.5)
-                        try:
-                            hist_resp = requests.get(f"{COMFY_URL}/history/{p_id}", timeout=3)
-                            if hist_resp.status_code == 200 and p_id in hist_resp.json():
-                                hist_data = hist_resp.json()[p_id]
-                                outputs = hist_data.get("outputs", {}).get("11", {}).get("images", [])
-                                if outputs:
-                                    img_info = outputs[0]
-                                    filename = img_info.get("filename")
-                                    subfolder = img_info.get("subfolder", "")
-                                    img_type = img_info.get("type", "output")
+                # Poll history endpoint for completion (up to 120 seconds)
+                for _ in range(240):
+                    time.sleep(0.5)
+                    try:
+                        hist_resp = requests.get(f"{COMFY_URL}/history/{p_id}", timeout=3)
+                        if hist_resp.status_code == 200 and p_id in hist_resp.json():
+                            hist_data = hist_resp.json()[p_id]
+                            outputs = hist_data.get("outputs", {}).get("11", {}).get("images", [])
+                            if outputs:
+                                img_info = outputs[0]
+                                filename = img_info.get("filename")
+                                subfolder = img_info.get("subfolder", "")
+                                img_type = img_info.get("type", "output")
 
-                                    # Fetch image bytes directly from ComfyUI view API
-                                    img_view_url = f"{COMFY_URL}/view?filename={filename}&subfolder={subfolder}&type={img_type}"
-                                    img_data_resp = requests.get(img_view_url, timeout=10)
-                                    if img_data_resp.status_code == 200:
-                                        target_filepath = os.path.join(nexus_img_dir, filename)
-                                        with open(target_filepath, "wb") as f:
-                                            f.write(img_data_resp.content)
-                                        print(f" -> GENERATION COMPLETE!")
-                                        print(f" -> FILENAME: {filename}")
-                                        print(f" -> COPIED TO MEMORY ZONE: AI_Nexus/Memories/GeneratedImages/{filename}")
-                                    else:
-                                        print(f" -> GENERATION FINISHED (View Fetch Warning). Filename: {filename}")
+                                # Fetch image bytes directly from ComfyUI view API
+                                img_view_url = f"{COMFY_URL}/view?filename={filename}&subfolder={subfolder}&type={img_type}"
+                                img_data_resp = requests.get(img_view_url, timeout=10)
+                                if img_data_resp.status_code == 200:
+                                    target_filepath = os.path.join(nexus_img_dir, filename)
+                                    with open(target_filepath, "wb") as f:
+                                        f.write(img_data_resp.content)
+                                    print(f" -> GENERATION COMPLETE!")
+                                    print(f" -> FILENAME: {filename}")
+                                    print(f" -> COPIED TO MEMORY ZONE: AI_Nexus/Memories/GeneratedImages/{filename}")
                                 else:
-                                    print(f" -> GENERATION FINISHED.")
-                                print("-" * 30 + "\n")
-                                return
-                        except Exception:
-                            pass
-                    print(f" -> [TIMEOUT] Generation queued but took longer than 120s.")
-                else:
-                    print(f" -> ERROR: ComfyUI rejected prompt payload: {prompt_res.text}")
+                                    print(f" -> GENERATION FINISHED (View Fetch Warning). Filename: {filename}")
+                            else:
+                                print(f" -> GENERATION FINISHED.")
+                            print("-" * 30 + "\n")
+                            return
+                    except Exception:
+                        pass
+                print(f" -> [TIMEOUT] Generation queued but took longer than 120s.")
             else:
-                print(f" -> ERROR: ComfyUI API server not responding on {COMFY_URL}")
+                print(f" -> ERROR: ComfyUI rejected prompt payload: {prompt_res.text}")
         except Exception as e:
-            print(f" -> ERROR: Could not connect to ComfyUI Engine at {COMFY_URL}")
+            print(f" -> ERROR: Could not connect to ComfyUI Engine at {COMFY_URL}: {e}")
             print(f" -> Tip: Run 'run_comfy_api.bat' to start the ComfyUI API server.")
         print("-" * 30 + "\n")
 
