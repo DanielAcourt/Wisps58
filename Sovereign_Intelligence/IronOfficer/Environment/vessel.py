@@ -23,7 +23,7 @@ import uuid
 from typing import List, Dict
 
 # --- Configuration ---
-VESSEL_VERSION = "0.36.4.1-Knight" # Internal UI Version
+VESSEL_VERSION = "0.36.4.2-Knight" # Internal UI Version
 BRIDGE_URL = "http://127.0.0.1:8000"
 COMFY_URL = "http://127.0.0.1:8188"
 
@@ -316,8 +316,8 @@ class ChatVessel:
             print("\n[07] Usage: /image <photorealistic prompt descriptors>\n")
             return
 
-        # Ensure destination memory directory exists
-        nexus_img_dir = os.path.abspath(os.path.join(REPORT_DIR, "..", "..", "AI_Nexus", "Memories", "GeneratedImages"))
+        # Ensure destination memory directory exists (Sovereign_Intelligence/IronOfficer/Environment -> repo_root/AI_Nexus/Memories/GeneratedImages)
+        nexus_img_dir = os.path.abspath(os.path.join(REPORT_DIR, "..", "..", "..", "AI_Nexus", "Memories", "GeneratedImages"))
         os.makedirs(nexus_img_dir, exist_ok=True)
 
         prompt_text = " ".join(args).strip().strip('"').strip("'")
