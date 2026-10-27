@@ -54,15 +54,20 @@ if %errorlevel% NEQ 0 (
 )
 echo.
 
-:: Model 2: FLUX VAE (~335 MB)
+:: Model 2: FLUX VAE (~335 MB - Open Ungated URL)
 set "FLUX_VAE_FILE=models\vae\ae.safetensors"
-set "FLUX_VAE_URL=https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/vae/diffusion_pytorch_model.safetensors"
+set "FLUX_VAE_URL=https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/ae.safetensors"
 
 echo -----------------------------------------------------------------------
 echo [07 DOWNLOADING 2/4] FLUX VAE model (~335 MB)
 echo Target: %FLUX_VAE_FILE%
 echo -----------------------------------------------------------------------
-curl -L -C - --output "%FLUX_VAE_FILE%" "%FLUX_VAE_URL%"
+:: For VAE, forcefully delete any existing file to prevent HTML/resume header corruption
+if exist "%FLUX_VAE_FILE%" (
+    echo [07 CLEANUP] Removing existing VAE weights to guarantee clean binary header...
+    del /f /q "%FLUX_VAE_FILE%"
+)
+curl -L --output "%FLUX_VAE_FILE%" "%FLUX_VAE_URL%"
 echo.
 
 :: Model 3: CLIP-L Text Encoder (~246 MB)

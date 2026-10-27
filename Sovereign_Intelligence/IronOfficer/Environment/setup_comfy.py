@@ -83,26 +83,14 @@ def find_comfy_directory() -> Path:
 
 def patch_comfy_kitchen_if_needed(venv_dir: Path):
     """
-    Force-reinstalls a clean copy of comfy-kitchen to wipe any previous edits,
-    then strips stringified annotations (`from __future__ import annotations`) and replaces
-    Python 3.9+ syntax (`list[...]`, `X | None`) with `typing.List` / `typing.Optional`
-    specifically in `@torch.library.custom_op` files to satisfy PyTorch schema inference.
+    Surgically patches site-packages/comfy_kitchen inside venv if needed:
+    Comments out `from __future__ import annotations` and replaces Python 3.9+ syntax
+    (`list[...]`, `X | None`) with `typing.List` / `typing.Optional` specifically in
+    `@torch.library.custom_op` files to satisfy PyTorch custom_op schema inference across PyTorch 2.5+.
+    Does NOT force-reinstall pip on every startup.
     """
     import re
 
-    if os.name == "nt":
-        venv_python = venv_dir / "Scripts" / "python.exe"
-    else:
-        venv_python = venv_dir / "bin" / "python"
-
-    # Step 1: Force clean reinstall of comfy-kitchen
-    try:
-        print("[07 CLEANUP] Resetting comfy-kitchen to pristine package state...")
-        subprocess.run([str(venv_python), "-m", "pip", "install", "--force-reinstall", "--no-deps", "comfy-kitchen"], capture_output=True, text=True)
-    except Exception as e:
-        print(f"[07 WARNING] Could not reinstall comfy-kitchen: {e}")
-
-    # Step 2: Surgically patch ONLY custom_op files
     site_packages_list = [
         venv_dir / "Lib" / "site-packages",
         venv_dir / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "site-packages"
@@ -115,6 +103,10 @@ def patch_comfy_kitchen_if_needed(venv_dir: Path):
                 try:
                     content = py_file.read_text(encoding="utf-8")
                     if "custom_op" not in content:
+                        continue
+
+                    # If already patched, skip file
+                    if "(disabled for PyTorch custom_op schema inference)" in content:
                         continue
 
                     # 1. Comment out `from __future__ import annotations` so PyTorch receives actual types, not strings
