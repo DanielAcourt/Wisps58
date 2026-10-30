@@ -101,6 +101,7 @@ PROTECTED_NODES = {
 TOOL_MIN_PRECEDENCE = {
     "delete_file": 10,
     "write_file": 8,
+    "run_command": 8,
     "read_file": 3,
     "list_files": 3,
     "get_system_telemetry": 5,
@@ -978,6 +979,46 @@ async def tool_refresh_rag_index(persona: str = "Unknown", **kwargs):
     except Exception as e:
         return {"error": f"Failed to rebuild RAG index: {str(e)}"}
 
+async def tool_run_command(command: str, working_dir: Optional[str] = None, persona: str = "Unknown", **kwargs):
+    """
+    [AD-023] Executes a CLI terminal command (e.g. pytest, unittest, git, cmake) in a local subprocess.
+    Guarded by AAS VSS safety thresholds.
+    """
+    target_dir = resolve_secure_path(working_dir) if working_dir else REPO_ROOT
+    target_node = f"TERMINAL/{get_target_node_name(target_dir)}"
+    payload = AgentCommandPayload(persona=persona, command="run_command", target_node=target_node)
+
+    arbitration = await bridge_governor.arbitrate(payload)
+    if arbitration["status"] != "200_OK":
+        return arbitration
+
+    # Sanity check: block destructive system commands
+    destructive_cmds = ["format", "rm -rf", "rmdir /s", "del /f /s /q c:\\", "mkfs"]
+    if any(dc in command.lower() for dc in destructive_cmds):
+        return {"error": f"AAS Security Violation: Destructive command '{command}' is strictly forbidden."}
+
+    try:
+        proc = subprocess.run(
+            command,
+            shell=True,
+            cwd=target_dir,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        return {
+            "status": "success" if proc.returncode == 0 else "command_failed",
+            "returncode": proc.returncode,
+            "stdout": proc.stdout[:4000],
+            "stderr": proc.stderr[:4000],
+            "command": command,
+            "working_dir": target_dir
+        }
+    except subprocess.TimeoutExpired:
+        return {"error": f"Command timed out after 30 seconds: '{command}'"}
+    except Exception as e:
+        return {"error": f"Subprocess execution error: {str(e)}"}
+
 async def execute_tool(name: str, arguments: Dict[str, Any], persona: str = "Unknown") -> Dict[str, Any]:
     tools = {
         "list_files": tool_list_files,
@@ -991,7 +1032,8 @@ async def execute_tool(name: str, arguments: Dict[str, Any], persona: str = "Unk
         "get_system_telemetry": tool_get_system_telemetry,
         "refresh_rag_index": tool_refresh_rag_index,
         "push_chat_to_unreal": tool_push_chat_to_unreal,
-        "send_unreal_directive": tool_send_unreal_directive
+        "send_unreal_directive": tool_send_unreal_directive,
+        "run_command": tool_run_command
     }
     if name in tools: return await tools[name](persona=persona, **arguments)
     return {"error": f"Tool '{name}' not found."}
@@ -1627,7 +1669,8 @@ async def unreal_chat(request: UnrealChatRequest):
         {"type": "function", "function": {"name": "get_system_telemetry", "description": "GPU status.", "parameters": {"type": "object", "properties": {"interval": {"type": "integer"}, "duration": {"type": "integer"}}}}},
         {"type": "function", "function": {"name": "refresh_rag_index", "description": "Trigger a complete rebuild and refresh of the RAG search index from the AI_Nexus folder.", "parameters": {"type": "object", "properties": {}}}},
         {"type": "function", "function": {"name": "push_chat_to_unreal", "description": "Pushes an AI-formed chat string directly into the mailbox queue of a specific Unreal actor.", "parameters": {"type": "object", "properties": {"actor_name": {"type": "string", "description": "The target Unreal actor name (e.g., SIM_PlayerWisp or PlayerWisp)"}, "message": {"type": "string", "description": "The message content to push"}}, "required": ["actor_name", "message"]}}},
-        {"type": "function", "function": {"name": "send_unreal_directive", "description": "Sends a physical runtime action directive (e.g. EjectAgentPossession, PerformAgentPossession, MoveToLocation, MoveToActor, InteractWithObject) directly to a target Unreal Engine entity during play. For PerformAgentPossession/MoveToActor, supply parameters: {\"target_vessel\": \"<EntityID_or_ActorName>\"}. For MoveToLocation, supply {\"location\": {\"X\": 100, \"Y\": 200, \"Z\": 0}}.", "parameters": {"type": "object", "properties": {"target_entity": {"type": "string", "description": "The target entity or agent name (e.g., SIM_IronKnight, BP_Antelope, or MySovereignBaseCharacter)"}, "action_name": {"type": "string", "description": "The directive action name (e.g. PerformAgentPossession, EjectAgentPossession, MoveToLocation, MoveToActor, InteractWithObject)"}, "parameters": {"type": "object", "description": "Action parameters object (e.g., target_vessel, location, or target_object)."}}, "required": ["target_entity", "action_name"]}}}
+        {"type": "function", "function": {"name": "send_unreal_directive", "description": "Sends a physical runtime action directive (e.g. EjectAgentPossession, PerformAgentPossession, MoveToLocation, MoveToActor, InteractWithObject) directly to a target Unreal Engine entity during play. For PerformAgentPossession/MoveToActor, supply parameters: {\"target_vessel\": \"<EntityID_or_ActorName>\"}. For MoveToLocation, supply {\"location\": {\"X\": 100, \"Y\": 200, \"Z\": 0}}.", "parameters": {"type": "object", "properties": {"target_entity": {"type": "string", "description": "The target entity or agent name (e.g., SIM_IronKnight, BP_Antelope, or MySovereignBaseCharacter)"}, "action_name": {"type": "string", "description": "The directive action name (e.g. PerformAgentPossession, EjectAgentPossession, MoveToLocation, MoveToActor, InteractWithObject)"}, "parameters": {"type": "object", "description": "Action parameters object (e.g., target_vessel, location, or target_object)."}}, "required": ["target_entity", "action_name"]}}},
+        {"type": "function", "function": {"name": "run_command", "description": "Executes a CLI terminal command (e.g., pytest, unittest, git, cmake) in a local subprocess.", "parameters": {"type": "object", "properties": {"command": {"type": "string", "description": "The shell command string to execute"}, "working_dir": {"type": "string", "description": "Optional working directory relative to REPO_ROOT"}}, "required": ["command"]}}}
     ]
 
     messages = [{"role": "system", "content": system_prompt}] + chat_history
