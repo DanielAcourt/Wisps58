@@ -585,15 +585,31 @@ def to_forward_slash(path: str) -> str:
 
 def resolve_secure_path(raw_path: str) -> str:
     """Hardened path resolution to strip absolute bloat and focus on REPO_ROOT or Safe Zones."""
-    path_str = to_forward_slash(str(raw_path))
+    path_str = to_forward_slash(str(raw_path).strip("'\""))
 
-    # Handle absolute Windows paths (e.g., E:\IronKnight)
-    if ":" in path_str:
-        # Check if the path is explicitly allowed in PERSONA_ZONES
+    # Fix missing slashes after drive letter, e.g. C:Users -> C:/Users
+    path_str = re.sub(r'^([a-zA-Z]):([^/])', r'\1:/\2', path_str)
+
+    # Check if absolute path with drive letter
+    if re.match(r'^[a-zA-Z]:/', path_str):
+        abs_path = os.path.abspath(path_str)
+        norm_abs = to_forward_slash(abs_path).lower()
+        norm_repo = to_forward_slash(REPO_ROOT).lower()
+
+        # If path is inside repo root or any allowed zone, preserve absolute path
+        if norm_abs.startswith(norm_repo):
+            return abs_path
+
+        for zone in READ_ZONES + WRITE_ZONES + ROLEPLAY_ZONES:
+            norm_zone = to_forward_slash(os.path.abspath(zone)).lower()
+            if norm_abs.startswith(norm_zone):
+                return abs_path
+
         for persona, zones in PERSONA_ZONES.items():
             for zone in zones:
-                if to_forward_slash(zone).lower() in path_str.lower():
-                    return os.path.abspath(raw_path)
+                norm_zone = to_forward_slash(os.path.abspath(os.path.join(REPO_ROOT, zone))).lower()
+                if norm_zone in norm_abs or norm_abs.startswith(norm_zone):
+                    return abs_path
 
     # Standard relative path resolution within repo
     if REPO_NAME in path_str:
@@ -604,10 +620,13 @@ def resolve_secure_path(raw_path: str) -> str:
 def is_path_authorized(filepath: str, mode: str = "read") -> bool:
     abs_path = os.path.abspath(filepath)
     zones = WRITE_ZONES if mode == "write" else READ_ZONES
+    norm_abs = to_forward_slash(abs_path).lower()
+
     for zone in zones:
-        if abs_path == zone or abs_path.startswith(zone + os.sep) or abs_path.startswith(zone + "/"):
+        norm_zone = to_forward_slash(os.path.abspath(zone)).lower()
+        if norm_abs == norm_zone or norm_abs.startswith(norm_zone + "/") or norm_abs.startswith(norm_zone + "\\"):
             return True
-        if zone == REPO_ROOT and abs_path.startswith(zone):
+        if norm_zone == to_forward_slash(REPO_ROOT).lower() and norm_abs.startswith(norm_zone):
             return True
     return False
 

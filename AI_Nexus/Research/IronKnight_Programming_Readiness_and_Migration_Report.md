@@ -1,118 +1,81 @@
-# Technical Audit & Migration Roadmap: Iron Knight Autonomous Programming Readiness
+# Comprehensive Technical Audit & Recommendations: Building a Dependable Local Programming Agent (Iron Knight)
 
-**Document Version:** 1.2.0
+**Document Version:** 2.0.0
 **Author:** Jules (Agentic Technical Lead)
 **Target Architecture:** Iron Knight / Iron Officer (RTX 5090 32GB VRAM Local Suite)
-**Date:** 2026-10-27
+**Date:** 2026-10-30
 
 ---
 
 ## 1. Executive Summary
 
-With cloud agent platforms facing strict weekly token caps (e.g., Antigravity consuming ~28% of weekly allowance on a single end-of-sprint workflow) and service turn-downs approaching, achieving **100% local, sovereign programming autonomy** is a top operational priority.
+Transitioning from cloud-based AI coding agents (such as Jules) to a **100% offline, dependable local programming agent** on the RTX 5090 rig requires expanding Iron Knight's capabilities beyond an Unreal Engine API bridge into a **standalone software engineering execution engine**.
 
-This report evaluates the current readiness of **Iron Knight / Iron Officer** on the RTX 5090 rig to perform autonomous, agentic coding tasks (file exploration, diff editing, test execution, C++ compilation, and git operations) equivalent to Jules, and provides an actionable roadmap to achieve feature parity offline without cloud token tolling.
+Currently, Iron Knight excels at RAG knowledge retrieval, PSTA viability arbitration, and Unreal Engine simulation bridge directives. However, for general programming tasks (editing C++/Python, running tests, executing git commands, and debugging), it relies on single-turn human prompting and lacks CLI subprocess execution capabilities.
 
----
-
-## 2. Capabilities Comparison Matrix: Jules vs. Iron Knight
-
-| Capability Domain | Jules (Cloud Agent) | Iron Knight (Current State) | Iron Knight (Target State) | Gap / Action Required |
-| :--- | :--- | :--- | :--- | :--- |
-| **Hardware / Processing** | Cloud Clusters | Local RTX 5090 (32GB VRAM) | Local RTX 5090 (32GB VRAM) | **Ready**: Massive local compute power available. |
-| **LLM Engine** | Claude 3.5 Sonnet / High-Param Models | Llama 3.1 70B / Local API | Qwen 2.5 Coder 32B Instruct (FP8/Q8) or DeepSeek Coder | **Upgrade Model**: Load Qwen 2.5 Coder 32B for 90%+ coding benchmark performance. |
-| **Token Cost / Limits** | Metered / Weekly Caps | **$0 Cost / Unlimited** | **$0 Cost / Unlimited** | **Advantage Iron Knight**: Bypasses cloud caps entirely. |
-| **Workspace Exploration** | `list_files`, `grep`, `read_file` | `rag.py` (semantic context), UE5 MCP tools | Full FS tools (`list_dir`, `read_file`, `grep_search`) | **Extend Tools**: Expose standard OS filesystem tools in bridge/MCP. |
-| **Code Modification** | Targeted Diff / Merge Diff edits | Whole file write + `.bak` backup via AAS | Diff/Patch tool + AAS VSS safety gating | **Implement Diff Tool**: Add merge diff / patch applicator to prevent full-file overwrites. |
-| **Command Execution** | Sandbox Bash execution | Non-interactive Python bridge | Gated CLI / PowerShell / Bash harness | **Implement Subprocess Harness**: Add safe bash/cmd execution tool guarded by VSS scores. |
-| **Agentic Loop** | Autonomous multi-turn loop (Plan -> Act -> Verify -> Reflect) | Single request-response (`/v1/chat`, `/v1/unreal/chat`) | Interactive CLI / Loop agent (`iron_coder.py`) | **Build Agent Loop**: Wrap bridge into an autonomous loop driver. |
-| **Safety & Audit** | Pre-commit checks & guidelines | AAS Protocol (VSS >= 0.7) + PSTA audit | AAS Protocol (VSS >= 0.7) + Pre-commit checks | **Advantage Iron Knight**: AAS safety gating prevents corrupt mutations. |
+This document presents a complete architectural audit and actionable recommendations to upgrade Iron Knight into a highly dependable, autonomous local software engineer.
 
 ---
 
-## 3. Iron Knight Technical Readiness Assessment
+## 2. Technical Gap Analysis: What Iron Knight Needs for Local Programming
 
-### Overall Readiness Score: 68% (High Foundation, Specific Gaps)
-
-1. **Hardware & Infrastructure (100% Ready)**:
-   - The RTX 5090 (32GB VRAM) easily hosts state-of-the-art open weights coding models (such as **Qwen 2.5 Coder 32B Instruct** in FP8 or Q8_0 GGUF/EXL2), processing up to 100+ tokens/sec locally with zero context limits or cloud billing.
-
-2. **Safety & Governance (95% Ready)**:
-   - The **Agency Arbitration Schema (AAS)** and **Viability Safety Score (VSS)** framework already exist in `bridge.py` and `mcp_client.py`. Modifications are safely audited and backed up (`.bak`).
-
-3. **Workspace Retrieval & RAG (80% Ready)**:
-   - `rag.py` and `query_rag.py` provide level-aware contextual retrieval across 12 years of research notes and C++ header files.
-
-4. **Agentic Execution Engine (40% Gap)**:
-   - Current Iron Officer scripts focus on Unreal simulation chat (`POST /v1/unreal/chat`) and MCP bridge (`mcp_client.py`). To act as a standalone programming agent, Iron Knight requires:
-     - A local terminal execution tool (running `cmake`, `UnrealBuildTool`, `pytest`, `git`).
-     - A patch/diff applicator tool.
-     - An autonomous turn loop (`iron_coder.py`).
+| Feature Domain | Current State (Unreal Bridge Focus) | Target State (Local Engineer Focus) | Priority |
+| :--- | :--- | :--- | :--- |
+| **Model Selection** | Llama 3.1 70B (General Chat) | **Qwen 2.5 Coder 32B Instruct** (FP8 / Q8_0) | **CRITICAL** |
+| **Command Execution** | None (File I/O and REST API only) | **VSS-Gated CLI Subprocess Runner** (`run_command`) | **CRITICAL** |
+| **Execution Loop** | Single-turn request/response (`/v1/chat`) | **Autonomous Multi-Turn Agent Loop** (`iron_coder.py`) | **CRITICAL** |
+| **Code Editing** | Whole file write & basic string `patch_file` | **Git Merge Diff / Unified Patch Applicator** | **HIGH** |
+| **Workspace Navigation** | Basic `list_files` & regex `search_files` | **Git-Aware Directory Mapper & Structural Grep** | **MEDIUM** |
+| **Quality Control** | AAS VSS score arbitration | **Automated Pre-Commit Verification & Test Runner** | **HIGH** |
 
 ---
 
-## 4. Live Interaction Case Study: End-of-Sprint Vessel Transcript Analysis
+## 3. Top 6 Actionable Upgrade Recommendations
 
-An empirical audit of a live session with Iron Officer Vessel v0.36.4.3 (`Session 20261030_113409`) executing an **End of Sprint Protocol** revealed critical system strengths as well as specific tool-loop friction points:
+### 1. Deploy Qwen 2.5 Coder 32B Instruct on RTX 5090 (Model Layer)
+- **Why**: General chat models (Llama 3.1 70B) frequently hallucinate tool outputs or struggle with multi-file refactoring and JSON tool call formatting.
+- **Solution**: Load **Qwen 2.5 Coder 32B Instruct** (FP8 or Q8_0 GGUF/EXL2) into Ollama / llama.cpp / vLLM on the RTX 5090.
+- **Performance**: Qwen 2.5 Coder 32B scores 90%+ on HumanEval and MBPP, matching or exceeding Claude 3.5 Sonnet on coding tasks while executing locally at 100+ tokens/sec with $0 token cost.
 
-### 🌟 Demonstrated Strengths
-1. **RAG & SSoT Grounding**: Iron Officer instantly referenced `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md` and cross-referenced `AI_Nexus/DevOps/CURRENT_SPRINT.md`.
-2. **Strict Date Discrepancy Pushback**: When supplied with End Date `30/10/2026`, Iron Officer flagged a temporal conflict against `CURRENT_SPRINT.md` target end date (`21/10/2026` for `SR_20261026`), properly requiring explicit Lead authorization before overriding project history.
+### 2. Implement the VSS-Gated Subprocess Execution Tool (`run_command`)
+- **Why**: An agent cannot debug or verify code without running compiler commands (`cmake`, `UnrealBuildTool.exe`), unit tests (`pytest`, `unittest`), or version control commands (`git status`, `git diff`, `git commit`).
+- **Solution**: Add `tool_run_command(command, working_dir)` to `bridge.py`:
+  - Enforce AAS VSS safety thresholds (VSS >= 0.7 for build/test commands, VSS >= 1.0 for destructive actions).
+  - Execute commands in a sandboxed subprocess and return stdout/stderr to the model context.
 
-### ⚠️ Identified Fundamental Conceptual Errors & Friction Points
-1. **Target File Misunderstanding (Editing Protocol SOP vs. Generating Review Archive)**:
-   - **Protocol Intent**: `END_OF_SPRINT_PROTOCOL.md` is a **read-only SOP specification** explaining *how* to perform an end of sprint. The protocol explicitly mandates creating a **NEW review document** (`AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md`) and resetting `CURRENT_SPRINT.md`.
-   - **Iron Officer Error**: Iron Officer attempted to patch the SOP file itself (`END_OF_SPRINT_PROTOCOL.md`) with the dates!
-2. **Malformed Tool Execution**:
-   - Iron Officer attempted a file patch: `patch_file({'filepath': '...', 'replace': '[Start Date]', 'search': '[Start Date]'})`.
-   - Because `search` and `replace` were identical (`[Start Date]`), the tool returned `RESULT: No data...`.
-3. **False Diagnostic Attribution (Hallucinated Gate Error)**:
-   - Upon receiving `RESULT: No data...`, Iron Officer misdiagnosed the tool failure as an AAS Security Gate error (`409_CONFLICT_GATE`), claiming it lacked authority and demanding the user execute `/handshake`.
-4. **Looping Handshake Trap**:
-   - User executed `/handshake` successfully (`STATUS: 200_OK (+0.5)`).
-   - Despite authority being granted, Iron Officer remained stuck in its previous hallucinated state and requested `/handshake` a second time, causing user frustration.
+### 3. Build the Autonomous Multi-Turn Execution Loop (`iron_coder.py`)
+- **Why**: Single-turn chat requires human hand-holding after every command. Real coding tasks require an iterative loop: **Plan $\rightarrow$ Tool Call $\rightarrow$ Inspect Output $\rightarrow$ Correct Errors $\rightarrow$ Verify Tests $\rightarrow$ Reflect $\rightarrow$ Finalize**.
+- **Solution**: Implement `Sovereign_Intelligence/IronOfficer/iron_coder.py` as an autonomous CLI loop driver that accepts high-level prompts, maintains task state, executes tools in sequence, and iterates until unit tests pass.
 
-### 🛠️ Required Technical Fixes for Iron Officer
-- **System Prompt / SOP Context Grounding**: Explicitly instruct Iron Officer in its system prompt that protocol SOP files (`/Protocols/*.md`) are read-only instruction guides; execution outputs must be written to new review files under `AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md`.
-- **Tool Error Classification**: Bridge must explicitly distinguish tool execution errors (e.g. `search == replace` or string not found) from HTTP 409 AAS Conflict Gate errors in prompt context.
-- **Handshake State Syncing**: Ensure `/handshake` success events immediately update context variables (`bHandshakeActive = True`) so the model recognizes authority elevation without looping.
-- **Pre-Flight Tool Validation**: Add basic sanity checks in `patch_file` (e.g., throw explicit error if `search == replace`).
+### 4. Implement Unified Merge Diff / Patch Applicator Tool
+- **Why**: Simple string replacement (`content.replace(search, replace)`) fails when whitespace or duplicate code blocks exist, or when editing large multi-line functions.
+- **Solution**: Add `tool_apply_patch(filepath, patch_diff)` to `bridge.py` supporting standard Git merge diffs (`<<<<<<< SEARCH`, `=======`, `>>>>>>> REPLACE`) and unified diff formats with automatic `.bak` backup creation.
 
----
+### 5. Add Workspace Exploration & Git Integration Tools
+- **Why**: Iron Knight needs fast, structured visibility into repository structure without getting bogged down in `.git`, `__pycache__`, or `Intermediate` build folders.
+- **Solution**: Add `tool_git_status()`, `tool_git_diff()`, and update `map_directory` to automatically respect `.gitignore` rules.
 
-## 5. Antigravity & Local Token Optimization Strategies
-
-To immediately mitigate token consumption on Antigravity while transitioning to Iron Knight:
-
-1. **Prompt & Context Trimming**:
-   - Avoid dumping full source files into cloud prompts. Use concise file summaries or targeted diffs.
-2. **Local Pre-Filtering via RAG**:
-   - Use Iron Officer's local `query_rag.py` to retrieve relevant file snippets before sending requests to Antigravity.
-3. **Offload Verification & Pre-Commit to Local Scripts**:
-   - Run unit tests, C++ compilation checks, and python syntax linters locally via batch scripts before invoking cloud models.
-4. **Reserve Cloud Tokens for High-Level Planning**:
-   - Use Antigravity strictly for initial architectural planning and system design, while delegating code implementation, boilerplate generation, and verification to local Iron Knight.
+### 6. Embed Automated Pre-Commit Verification & Pre-Flight Checks
+- **Why**: Prevent broken builds or syntax errors from being committed to the repository.
+- **Solution**: Before `iron_coder.py` finishes a task, automatically trigger:
+  1. Syntax compilation checks (`python3 -m py_compile` or C++ build dry-run).
+  2. Test suite execution (`unittest` / `pytest`).
+  3. Pre-commit check verification.
 
 ---
 
-## 6. Actionable Migration Roadmap (3-Phase Plan)
+## 4. Hardware Allocation Strategy on RTX 5090 (32GB VRAM)
 
-### Phase 1: Local Model Selection & Local Inference Engine (1-2 Days)
-- **Model**: Deploy **Qwen 2.5 Coder 32B Instruct** (or **DeepSeek Coder V2**) on Ollama / vLLM / LM Studio / llama.cpp on the RTX 5090.
-- **Verification**: Test code generation accuracy, function calling / tool format adherence, and multi-file reasoning.
-
-### Phase 2: Autonomous Tool Harness Expansion (2-3 Days)
-- **Filesystem Tools**: Expose `read_file`, `write_file`, `apply_diff`, `list_directory`, `search_grep` inside Iron Officer's tool definitions.
-- **Execution Harness**: Add a VSS-gated subprocess runner (`run_command`) for compiling C++, executing Python scripts, and running git status/commit commands.
-- **AAS Integration**: Ensure every file mutation or execution command is scored by VSS (VSS >= 0.7 for file edits, VSS >= 1.0 for destructive actions).
-- **Tool Error Sanitization**: Patch `bridge.py` and tool wrappers to prevent `search == replace` bugs and separate tool output errors from 409 Conflict Gates.
-
-### Phase 3: Agentic Loop & CLI Interface (`iron_coder.py`) (2 Days)
-- **Driver Script**: Create `Sovereign_Intelligence/IronOfficer/iron_coder.py` featuring a Plan -> Tool Execution -> Verification -> Reflection loop.
-- **Pre-Commit Integration**: Embed automated pre-commit verification steps directly into the final submission routine.
+| Resource | Memory Allocation | Purpose |
+| :--- | :--- | :--- |
+| **Qwen 2.5 Coder 32B (FP8)** | ~20 GB VRAM | High-speed local reasoning & code generation |
+| **KV Cache Context Window (32k tokens)** | ~6 GB VRAM | Long file context & multi-file reasoning |
+| **Local RAG Embedding Model** | ~1 GB VRAM | Instant semantic retrieval across 12+ years of notes |
+| **Headless ComfyUI Service (Port 8188)** | ~5 GB VRAM (Dynamic) | Photoreal image generation (`/imagegen`) |
+| **Total System Reserve** | **32 GB VRAM** | **100% Utilized / 0 Cloud Dependency** |
 
 ---
 
-## 7. Conclusion & Recommendation
+## 5. Summary Roadmap
 
-Iron Knight possesses an outstanding architectural foundation with the **AAS protocol**, **RTX 5090 hardware**, and **Unreal MCP integration**. By upgrading the underlying model to **Qwen 2.5 Coder 32B**, addressing the SOP file target misunderstanding and tool error misattribution bug revealed in the End-of-Sprint transcript, and implementing a lightweight local CLI execution harness, Iron Knight will fully replicate Jules's agentic programming capabilities 100% offline—saving 100% of cloud token costs and eliminating reliance on external rate limits.
+By implementing tickets **`AD-021`** (Tool Error Disambiguation & Handshake Context Sync), **`AD-022`** (Protocol Read-Only Grounding), **`AD-023`** (Iron Coder Loop Harness), and **`T-001` through `T-006`** (Sovereign Local Bridge & State Persistence) in `CURRENT_SPRINT.md`, Iron Knight will evolve from an Unreal API bridge into a **100% sovereign, highly dependable local software engineer**—saving 100% of cloud token costs and eliminating reliance on external rate limits.
