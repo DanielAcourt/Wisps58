@@ -644,6 +644,15 @@ def get_target_node_name(abs_path: str) -> str:
 async def tool_write_file(filepath: str, content: str, persona: str = "Unknown"):
     target_path = resolve_secure_path(filepath)
     target_node = get_target_node_name(target_path)
+
+    # [AD-022] Enforce Read-Only protection on canonical SOP protocol specifications
+    if "ai_nexus/protocols/" in target_node.lower():
+        return {
+            "status": "SOP_READ_ONLY_PROTECTED",
+            "error": f"SOP Violation: '{filepath}' is a canonical SOP specification file and is READ-ONLY. Generated execution outputs must be written to new files under 'AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md'.",
+            "filepath": filepath
+        }
+
     payload = AgentCommandPayload(persona=persona, command="write_file", target_node=target_node)
 
     arbitration = await bridge_governor.arbitrate(payload)
@@ -688,7 +697,7 @@ async def tool_write_file(filepath: str, content: str, persona: str = "Unknown")
 async def tool_patch_file(filepath: str, search: str, replace: str, persona: str = "Unknown"):
     """
     [AAS v1.3.2] Surgical file modification to prevent total overwrite data loss.
-    Enhanced with AD-021 parameter pre-flight validation.
+    Enhanced with AD-021 parameter pre-flight validation and AD-022 SOP protection.
     """
     if search == replace:
         return {
@@ -699,6 +708,15 @@ async def tool_patch_file(filepath: str, search: str, replace: str, persona: str
 
     target_path = resolve_secure_path(filepath)
     target_node = get_target_node_name(target_path)
+
+    # [AD-022] Enforce Read-Only protection on canonical SOP protocol specifications
+    if "ai_nexus/protocols/" in target_node.lower():
+        return {
+            "status": "SOP_READ_ONLY_PROTECTED",
+            "error": f"SOP Violation: '{filepath}' is a canonical SOP specification file and is READ-ONLY. Generated execution outputs must be written to new files under 'AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md'.",
+            "filepath": filepath
+        }
+
     payload = AgentCommandPayload(persona=persona, command="write_file", target_node=target_node) # Patching is a write action
 
     arbitration = await bridge_governor.arbitrate(payload)
@@ -1859,6 +1877,23 @@ async def process_chat_request(model: str, messages: List[Dict], tools: List[Dic
                         f"'{tool_result.get('error')}'. This is NOT a security gate block or 409 Conflict Gate. "
                         f"DO NOT request a /handshake. Read the target file first using `read_file` to inspect the exact "
                         f"text, and then re-issue `{name}` with valid, non-identical search and replace parameters."
+                    )
+                })
+            elif isinstance(tool_result, dict) and tool_result.get("status") == "SOP_READ_ONLY_PROTECTED":
+                tool_outputs.append(tool_result)
+                messages.append({
+                    "role": "tool",
+                    "content": json.dumps(tool_result),
+                    "name": name,
+                    "tool_call_id": call.get("id")
+                })
+                messages.append({
+                    "role": "system",
+                    "content": (
+                        f"[SOP GROUNDING DIRECTIVE - AD-022] CRITICAL: '{tool_result.get('filepath')}' is a READ-ONLY SOP specification template. "
+                        f"DO NOT attempt to edit or patch the protocol document itself. "
+                        f"You MUST write generated sprint outputs, review summaries, or logs into a NEW file under "
+                        f"`AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md` (e.g. `AI_Nexus/Timeline/SprintReviews/SR_20261030.md`)."
                     )
                 })
             else:
