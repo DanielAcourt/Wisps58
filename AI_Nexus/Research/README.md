@@ -1,8 +1,15 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-17
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-21
 # AI_Nexus/Research: The Knowledge Foundation
 
 ## 🔬 Purpose
 This directory serves as the repository for formal research, academic papers, mathematical proofs, and foundational definitions. It is the "Deep Memory" of the Sovereign Framework, providing the theoretical underpinnings for our cyber-physical systems.
+
+## 📂 Featured Research & Specifications
+
+- **[Local Photorealistic Image Generation Architecture](./Local_Photoreal_Image_Generation_Architecture.md)**: Architectural specification for 100% local, uncensored photorealistic image synthesis on the GTX 5090 (32GB VRAM) via FLUX.1/SDXL, headless ComfyUI API backend, Iron Officer bridge integration (`bridge.py`), and AI-Toolkit LoRA fine-tuning pipelines.
+- **[Fine-Tuning Sovereign LLM Specification](./FineTuning_Sovereign_LLM_Spec.md)**: Strategy for fine-tuning local models with learned behavioral priors constrained by deterministic PSTA/AAS safety kernels.
+- **[System Audit & Friction-Free Architecture Report](./AI_Nexus_System_Audit_and_Friction_Free_Architecture_Report.md)**: System audit of local bridge infrastructure and execution speedups.
+- **[Adaptive Field Interpolator Specification](./Adaptive_Field_Interpolator_Spec.md)**: Mathematical specification for spatial field interpolation in simulation.
 
 ## 📂 Structure
 
