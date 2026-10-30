@@ -30,6 +30,7 @@ app = FastAPI(title="Sovereign Iron Officer Bridge")
 
 from rag import SovereignRAG
 from mcp_client import SovereignMCPClient
+from local_state_tracker import LocalStateTracker
 import tts_sanitizer
 
 # --- Configuration ---
@@ -63,6 +64,7 @@ RAG_IGNORED_DIRS = ["protocols", "devops", "admin", "bridge.py"]
 
 rag_engine = SovereignRAG(REPO_ROOT, chunk_size_words=RAG_CHUNK_SIZE_WORDS)
 mcp_client = SovereignMCPClient(mcp_url="http://127.0.0.1:8000/mcp")
+state_tracker = LocalStateTracker(repo_root=REPO_ROOT)
 
 # --- AAS/PSTA Constants ---
 PERSONA_PRECEDENCE = {
@@ -174,7 +176,9 @@ load_config()
 NEXUS_PATH = "Unknown"
 HARDWARE_ID = "GTX 5090 (Assumed)"
 IS_HARD_FREEZE = False
-HANDSHAKE_ACTIVE = False
+# [T-002] Restore persistent handshake state from LocalStateTracker if present
+_saved_handshake = state_tracker.load_state("handshake_status", {})
+HANDSHAKE_ACTIVE = _saved_handshake.get("handshake_active", False) if isinstance(_saved_handshake, dict) else False
 latest_rag_similarity_score = 1.0
 latest_session_char_count = 0
 
@@ -568,6 +572,7 @@ class SovereignBridge:
         if HANDSHAKE_ACTIVE and payload.command not in non_destructive_tools:
             if not PERSISTENT_HANDSHAKE:
                 HANDSHAKE_ACTIVE = False
+                state_tracker.save_state("handshake_status", {"handshake_active": False})
                 logger.info(f"AAS HANDSHAKE: Boost consumed by mutation '{payload.command}' on '{payload.target_node}'.")
             else:
                 logger.info(f"AAS HANDSHAKE: Persistent Handshake Active. Boost retained for mutation '{payload.command}' on '{payload.target_node}'.")
@@ -1084,7 +1089,8 @@ async def get_psta_social():
 async def execute_handshake():
     global HANDSHAKE_ACTIVE
     HANDSHAKE_ACTIVE = True
-    logger.info("AAS HANDSHAKE: Global Authority Boost Active.")
+    state_tracker.save_state("handshake_status", {"handshake_active": True})
+    logger.info("AAS HANDSHAKE: Global Authority Boost Active and Persisted.")
     return {"status": "200_OK", "message": "Handshake successful. Authority boosted (+0.5)."}
 
 @app.post("/v1/rag/reindex")
