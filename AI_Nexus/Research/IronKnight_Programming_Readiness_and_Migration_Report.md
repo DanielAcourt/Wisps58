@@ -1,6 +1,6 @@
 # Technical Audit & Migration Roadmap: Iron Knight Autonomous Programming Readiness
 
-**Document Version:** 1.1.0
+**Document Version:** 1.2.0
 **Author:** Jules (Agentic Technical Lead)
 **Target Architecture:** Iron Knight / Iron Officer (RTX 5090 32GB VRAM Local Suite)
 **Date:** 2026-10-27
@@ -59,17 +59,21 @@ An empirical audit of a live session with Iron Officer Vessel v0.36.4.3 (`Sessio
 1. **RAG & SSoT Grounding**: Iron Officer instantly referenced `AI_Nexus/Protocols/END_OF_SPRINT_PROTOCOL.md` and cross-referenced `AI_Nexus/DevOps/CURRENT_SPRINT.md`.
 2. **Strict Date Discrepancy Pushback**: When supplied with End Date `30/10/2026`, Iron Officer flagged a temporal conflict against `CURRENT_SPRINT.md` target end date (`21/10/2026` for `SR_20261026`), properly requiring explicit Lead authorization before overriding project history.
 
-### ⚠️ Identified Failure Modes & Friction Points
-1. **Malformed Tool Execution**:
+### ⚠️ Identified Fundamental Conceptual Errors & Friction Points
+1. **Target File Misunderstanding (Editing Protocol SOP vs. Generating Review Archive)**:
+   - **Protocol Intent**: `END_OF_SPRINT_PROTOCOL.md` is a **read-only SOP specification** explaining *how* to perform an end of sprint. The protocol explicitly mandates creating a **NEW review document** (`AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md`) and resetting `CURRENT_SPRINT.md`.
+   - **Iron Officer Error**: Iron Officer attempted to patch the SOP file itself (`END_OF_SPRINT_PROTOCOL.md`) with the dates!
+2. **Malformed Tool Execution**:
    - Iron Officer attempted a file patch: `patch_file({'filepath': '...', 'replace': '[Start Date]', 'search': '[Start Date]'})`.
    - Because `search` and `replace` were identical (`[Start Date]`), the tool returned `RESULT: No data...`.
-2. **False Diagnostic Attribution (Hallucinated Gate Error)**:
+3. **False Diagnostic Attribution (Hallucinated Gate Error)**:
    - Upon receiving `RESULT: No data...`, Iron Officer misdiagnosed the tool failure as an AAS Security Gate error (`409_CONFLICT_GATE`), claiming it lacked authority and demanding the user execute `/handshake`.
-3. **Looping Handshake Trap**:
+4. **Looping Handshake Trap**:
    - User executed `/handshake` successfully (`STATUS: 200_OK (+0.5)`).
    - Despite authority being granted, Iron Officer remained stuck in its previous hallucinated state and requested `/handshake` a second time, causing user frustration.
 
 ### 🛠️ Required Technical Fixes for Iron Officer
+- **System Prompt / SOP Context Grounding**: Explicitly instruct Iron Officer in its system prompt that protocol SOP files (`/Protocols/*.md`) are read-only instruction guides; execution outputs must be written to new review files under `AI_Nexus/Timeline/SprintReviews/SR_YYYYMMDD.md`.
 - **Tool Error Classification**: Bridge must explicitly distinguish tool execution errors (e.g. `search == replace` or string not found) from HTTP 409 AAS Conflict Gate errors in prompt context.
 - **Handshake State Syncing**: Ensure `/handshake` success events immediately update context variables (`bHandshakeActive = True`) so the model recognizes authority elevation without looping.
 - **Pre-Flight Tool Validation**: Add basic sanity checks in `patch_file` (e.g., throw explicit error if `search == replace`).
@@ -111,4 +115,4 @@ To immediately mitigate token consumption on Antigravity while transitioning to 
 
 ## 7. Conclusion & Recommendation
 
-Iron Knight possesses an outstanding architectural foundation with the **AAS protocol**, **RTX 5090 hardware**, and **Unreal MCP integration**. By upgrading the underlying model to **Qwen 2.5 Coder 32B**, addressing the tool error misattribution bug revealed in the End-of-Sprint transcript, and implementing a lightweight local CLI execution harness, Iron Knight will fully replicate Jules's agentic programming capabilities 100% offline—saving 100% of cloud token costs and eliminating reliance on external rate limits.
+Iron Knight possesses an outstanding architectural foundation with the **AAS protocol**, **RTX 5090 hardware**, and **Unreal MCP integration**. By upgrading the underlying model to **Qwen 2.5 Coder 32B**, addressing the SOP file target misunderstanding and tool error misattribution bug revealed in the End-of-Sprint transcript, and implementing a lightweight local CLI execution harness, Iron Knight will fully replicate Jules's agentic programming capabilities 100% offline—saving 100% of cloud token costs and eliminating reliance on external rate limits.
