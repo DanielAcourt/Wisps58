@@ -10,6 +10,7 @@ class USovereignBioComponent;
 class USovereignQiComponent;
 class USovereignElementComponent;
 class USovereignAttributeComponent;
+class USovereignLevelComponent;
 
 /**
  * ASovereignLivingEntity
@@ -37,6 +38,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Living")
 	USovereignElementComponent* GetElementComponent() const { return ElementComponent; }
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Living")
+	USovereignLevelComponent* GetLevelComponent() const { return LevelComponent; }
+
 	// --- Overrides ---
 	virtual void Tick(float DeltaTime) override;
 	virtual void Evolve() override;
@@ -60,6 +64,10 @@ protected:
 	/** The Attribute engine: Strength, Intelligence, HP */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignAttributeComponent* AttributeComponent;
+
+	/** The Leveling & Training engine: Cultivation Focus, Stat Experience, Rollover */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignLevelComponent* LevelComponent;
 
 	virtual void InitializeFromSovereignData(USovereignSpeciesData* InData) override;
 };

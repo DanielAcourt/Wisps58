@@ -341,21 +341,14 @@ bool FSovereignAttributeRegistrationTest::RunTest(const FString& Parameters)
     TScriptInterface<ISovereignBrokerInterface> BrokerInterface(AttrComp);
     Soul->RegisterBroker(BrokerInterface);
 
-    // 3. Verify custom D&D values & experience accumulators
+    // 3. Verify custom D&D base values
     AttrComp->Strength = 18;
-    AttrComp->StrengthExperience = 1250.50;
     AttrComp->Dexterity = 14;
-    AttrComp->DexterityExperience = 850.25;
     AttrComp->Constitution = 16;
-    AttrComp->ConstitutionExperience = 990.00;
     AttrComp->Intelligence = 15;
-    AttrComp->IntelligenceExperience = 450.00;
     AttrComp->Wisdom = 12;
-    AttrComp->WisdomExperience = 300.00;
     AttrComp->Charisma = 10;
-    AttrComp->CharismaExperience = 100.00;
     AttrComp->Luck = 20;
-    AttrComp->LuckExperience = 5000.00;
 
     AttrComp->ArmourClass = 15;
     AttrComp->CurrentHealth = 160.0f;
@@ -377,7 +370,6 @@ bool FSovereignAttributeRegistrationTest::RunTest(const FString& Parameters)
     TestNotNull(TEXT("Sovereign.Attributes object is valid"), AttrObj.Get());
 
     TestEqual(TEXT("Strength level correct"), AttrObj->GetIntegerField(TEXT("Strength")), 18);
-    TestEqual(TEXT("StrengthExperience correct"), AttrObj->GetNumberField(TEXT("StrengthExperience")), 1250.50);
     TestEqual(TEXT("Dexterity level correct"), AttrObj->GetIntegerField(TEXT("Dexterity")), 14);
     TestEqual(TEXT("MaxHealth correct"), AttrObj->GetNumberField(TEXT("MaxHealth")), 160.0);
     TestEqual(TEXT("PhysicalResistance correct"), AttrObj->GetNumberField(TEXT("PhysicalResistance")), 0.2);
@@ -387,10 +379,8 @@ bool FSovereignAttributeRegistrationTest::RunTest(const FString& Parameters)
     RestoredComp->OnLoad(State);
 
     TestEqual(TEXT("Restored Strength level matches"), RestoredComp->Strength, 18);
-    TestEqual(TEXT("Restored Strength XP matches"), RestoredComp->StrengthExperience, 1250.50);
     TestEqual(TEXT("Restored Dexterity level matches"), RestoredComp->Dexterity, 14);
     TestEqual(TEXT("Restored Luck level matches"), RestoredComp->Luck, 20);
-    TestEqual(TEXT("Restored Luck XP matches"), RestoredComp->LuckExperience, 5000.00);
     TestEqual(TEXT("Restored MaxHealth matches"), RestoredComp->MaxHealth, 160.0f);
     TestEqual(TEXT("Restored PhysicalResistance matches"), RestoredComp->PhysicalResistance, 0.2f);
 

@@ -5,6 +5,7 @@
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignElementComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "DataTables/SovereignSpeciesData.h"
 #include "SaveSystem/SovereignActorRegistry.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
@@ -17,6 +18,7 @@ ASovereignLivingEntity::ASovereignLivingEntity()
 	QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
 	ElementComponent = CreateDefaultSubobject<USovereignElementComponent>(TEXT("ElementComponent"));
 	AttributeComponent = CreateDefaultSubobject<USovereignAttributeComponent>(TEXT("AttributeComponent"));
+	LevelComponent = CreateDefaultSubobject<USovereignLevelComponent>(TEXT("LevelComponent"));
 }
 
 void ASovereignLivingEntity::OnSovereignHeartbeat()
@@ -42,10 +44,15 @@ void ASovereignLivingEntity::OnSovereignHeartbeat()
 		BioComponent->UpdateMetabolism(HeartbeatSeconds);
 	}
 
-	// 2. SPIRITUAL FLOW
+	// 2. SPIRITUAL FLOW & LEVEL TRAINING
 	if (QiComponent)
 	{
+		QiComponent->ProcessEnvironmentalQiAura(HeartbeatSeconds);
 		QiComponent->ProcessQiFlow(HeartbeatSeconds, WisdomVal);
+	}
+	if (LevelComponent)
+	{
+		LevelComponent->ProcessTrainingProgress(HeartbeatSeconds);
 	}
 
 	// 3. EVOLUTION CHECK

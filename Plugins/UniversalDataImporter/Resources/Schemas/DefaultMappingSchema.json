@@ -1,0 +1,73 @@
+{
+  "SchemaVersion": "1.0.0",
+  "PluginName": "UniversalDataImporter",
+  "TargetDataAssetClass": "/Script/UniversalDataImporter.UniversalDataAsset",
+  "TargetPackageDirectory": "/Game/Data/GeneratedAssets",
+  "AutoBindArtAssets": true,
+  "ArtSearchDirectories": [
+    "/Game/Art/Meshes",
+    "/Game/Art/SkeletalMeshes",
+    "/Game/Art/Materials",
+    "/Game/Art/Textures",
+    "/Game/Art",
+    "/UniversalDataImporter/Art/Meshes",
+    "/UniversalDataImporter/Art/Materials",
+    "/UniversalDataImporter/Art/Textures",
+    "/Game/Assets/External",
+    "/Game/Assets"
+  ],
+  "ColumnToPropertyMap": [
+    {
+      "CSVColumn": "Name",
+      "TargetProperty": "DisplayName",
+      "PropertyType": "Text",
+      "FallbackValue": "Unnamed_Asset"
+    },
+    {
+      "CSVColumn": "Tag",
+      "TargetProperty": "IdentityTag",
+      "PropertyType": "GameplayTag",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "Traits",
+      "TargetProperty": "Tags",
+      "PropertyType": "GameplayTagContainer",
+      "Delimiter": ","
+    },
+    {
+      "CSVColumn": "ActorClass",
+      "TargetProperty": "ActorClass",
+      "PropertyType": "SoftClassPath"
+    },
+    {
+      "CSVColumn": "Mesh",
+      "TargetProperty": "Mesh",
+      "PropertyType": "StaticMesh"
+    },
+    {
+      "CSVColumn": "SkeletalMesh",
+      "TargetProperty": "SkeletalMesh",
+      "PropertyType": "SkeletalMesh"
+    },
+    {
+      "CSVColumn": "Material",
+      "TargetProperty": "Material",
+      "PropertyType": "MaterialInterface"
+    },
+    {
+      "CSVColumn": "Health",
+      "TargetProperty": "Health",
+      "PropertyType": "Int32",
+      "FallbackValue": "100"
+    }
+  ],
+  "NestedComponentPropertyMap": [],
+  "BlueprintSynthesisRules": {
+    "bCreateMissingBlueprints": true,
+    "DefaultParentClass": "/Script/UniversalDataImporter.UniversalActor",
+    "ParentClassColumn": "ParentClass",
+    "CDOBindingProperty": "DataAssetRef",
+    "DefaultInputMappingContext": ""
+  }
+}

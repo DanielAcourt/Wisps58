@@ -2,12 +2,20 @@
 
 #include "Components/SovereignBioComponent.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
 
 USovereignBioComponent::USovereignBioComponent()
 {
     // B-038: Disable general frame-based ticking by default to rely solely on the entity heartbeat
     PrimaryComponentTick.bCanEverTick = false;
+
+    static ConstructorHelpers::FClassFinder<UUserWidget> BioWidgetFinder(TEXT("/Game/Assets/UI/WBP_BIO.WBP_BIO_C"));
+    if (BioWidgetFinder.Succeeded())
+    {
+        InspectorWidgetClass = BioWidgetFinder.Class;
+    }
 
     // Default Vitals
     Hunger = 50.0f;
