@@ -2,16 +2,25 @@
 
 
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignLevelComponent.h"
 #include "Entities/SovereignBaseEntity.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
 #include "GameFramework/Actor.h"
 
 USovereignAttributeComponent::USovereignAttributeComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> AttrWidgetFinder(TEXT("/Game/Assets/UI/WBP_Attributes.WBP_Attributes_C"));
+	if (AttrWidgetFinder.Succeeded())
+	{
+		InspectorWidgetClass = AttrWidgetFinder.Class;
+	}
 
 	// Default internal values to prevent crashes before sync
 	Strength = 10;
@@ -38,7 +47,7 @@ void USovereignAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Automatically sync when the game starts
+	// Automatically sync species stats when the game starts
 	SyncStatsFromEntity();
 
 	// Start the vessel at full health/stamina based on its new stats
@@ -74,14 +83,13 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 		float OldMaxHealth = GetMaxHealth();
 		float HealthRatio = (OldMaxHealth > 0.0f) ? (CurrentHealth / OldMaxHealth) : 1.0f;
 
-		// Preserve accumulated stat experience on top of the new growth stage base stats
-		Strength = Stage.BaseStrength + FMath::FloorToInt(StrengthExperience);
-		Dexterity = Stage.BaseDexterity + FMath::FloorToInt(DexterityExperience);
-		Constitution = Stage.BaseConstitution + FMath::FloorToInt(ConstitutionExperience);
-		Intelligence = Stage.BaseIntelligence + FMath::FloorToInt(IntelligenceExperience);
-		Wisdom = Stage.BaseWisdom + FMath::FloorToInt(WisdomExperience);
-		Charisma = Stage.BaseCharisma + FMath::FloorToInt(CharismaExperience);
-		Luck = Stage.BaseLuck + FMath::FloorToInt(LuckExperience);
+		Strength = Stage.BaseStrength;
+		Dexterity = Stage.BaseDexterity;
+		Constitution = Stage.BaseConstitution;
+		Intelligence = Stage.BaseIntelligence;
+		Wisdom = Stage.BaseWisdom;
+		Charisma = Stage.BaseCharisma;
+		Luck = Stage.BaseLuck;
 
 		// Recalculate health bounds dynamically based on updated Constitution
 		MaxHealth = GetMaxHealth();
@@ -90,10 +98,16 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced D&D attributes from Species %s (Stage %d) -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
 			*GetOwner()->GetName(), *SpeciesData->SpeciesName.ToString(), StageIdx,
 			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
-		return;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s synced default attributes."), GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
+	if (USovereignLevelComponent* LevelComp = GetOwner() ? GetOwner()->FindComponentByClass<USovereignLevelComponent>() : nullptr)
+	{
+		LevelComp->DetermineDefaultTrainingFocus();
+	}
 }
 
 float USovereignAttributeComponent::GetMaxHealth() const
@@ -198,25 +212,12 @@ void USovereignAttributeComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 	TSharedPtr<FJsonObject> AttrObj = MakeShareable(new FJsonObject());
 
 	AttrObj->SetNumberField(TEXT("Strength"), Strength);
-	AttrObj->SetNumberField(TEXT("StrengthExperience"), StrengthExperience);
-
 	AttrObj->SetNumberField(TEXT("Dexterity"), Dexterity);
-	AttrObj->SetNumberField(TEXT("DexterityExperience"), DexterityExperience);
-
 	AttrObj->SetNumberField(TEXT("Constitution"), Constitution);
-	AttrObj->SetNumberField(TEXT("ConstitutionExperience"), ConstitutionExperience);
-
 	AttrObj->SetNumberField(TEXT("Intelligence"), Intelligence);
-	AttrObj->SetNumberField(TEXT("IntelligenceExperience"), IntelligenceExperience);
-
 	AttrObj->SetNumberField(TEXT("Wisdom"), Wisdom);
-	AttrObj->SetNumberField(TEXT("WisdomExperience"), WisdomExperience);
-
 	AttrObj->SetNumberField(TEXT("Charisma"), Charisma);
-	AttrObj->SetNumberField(TEXT("CharismaExperience"), CharismaExperience);
-
 	AttrObj->SetNumberField(TEXT("Luck"), Luck);
-	AttrObj->SetNumberField(TEXT("LuckExperience"), LuckExperience);
 
 	AttrObj->SetNumberField(TEXT("ArmourClass"), ArmourClass);
 
@@ -241,25 +242,12 @@ void USovereignAttributeComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 	{
 		double Val;
 		if ((*AttrObj)->TryGetNumberField(TEXT("Strength"), Val)) Strength = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("StrengthExperience"), Val)) StrengthExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Dexterity"), Val)) Dexterity = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("DexterityExperience"), Val)) DexterityExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Constitution"), Val)) Constitution = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("ConstitutionExperience"), Val)) ConstitutionExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Intelligence"), Val)) Intelligence = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("IntelligenceExperience"), Val)) IntelligenceExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Wisdom"), Val)) Wisdom = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("WisdomExperience"), Val)) WisdomExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Charisma"), Val)) Charisma = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("CharismaExperience"), Val)) CharismaExperience = Val;
-
 		if ((*AttrObj)->TryGetNumberField(TEXT("Luck"), Val)) Luck = (int32)Val;
-		if ((*AttrObj)->TryGetNumberField(TEXT("LuckExperience"), Val)) LuckExperience = Val;
 
 		if ((*AttrObj)->TryGetNumberField(TEXT("ArmourClass"), Val)) ArmourClass = (int32)Val;
 

@@ -8,6 +8,25 @@
 #include "DataTables/SovereignSpeciesData.h"
 #include "SovereignDataTypes.generated.h"
 
+/**
+ * ESovereignTrainingFocus
+ * Defines active cultivation and training direction for entities.
+ */
+UENUM(BlueprintType)
+enum class ESovereignTrainingFocus : uint8
+{
+	None         UMETA(DisplayName = "Idle / None"),
+	Qi           UMETA(DisplayName = "Qi Cultivation"),
+	Strength     UMETA(DisplayName = "Strength Training"),
+	Dexterity    UMETA(DisplayName = "Agility & Coordination"),
+	Constitution UMETA(DisplayName = "Endurance & Hardening"),
+	Intelligence UMETA(DisplayName = "Study & Arcana"),
+	Wisdom       UMETA(DisplayName = "Meditation & Insight"),
+	Charisma     UMETA(DisplayName = "Presence & Aura"),
+	Luck         UMETA(DisplayName = "Fortune Seeking"),
+	MAX          UMETA(Hidden)
+};
+
 // Forward declaration of your Advanced Data Asset
 class USovereignSpeciesData;
 /**
@@ -109,6 +128,40 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Identity")
 	FGameplayTagContainer SpeciesTraits;
+
+	// --- SPIRITUAL & QI AURA FOOTPRINT [B-059] ---
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiGive = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiTake = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Qi Aura")
+	float QiAuraRadius = 500.0f;
+
+	// --- ITEM / ACTION XP GAINS ---
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double StrengthXP = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double DexterityXP = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double ConstitutionXP = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double IntelligenceXP = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double WisdomXP = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double CharismaXP = 0.0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Experience")
+	double LuckXP = 0.0;
 
 
 	//vERSION 3,2 iDEA

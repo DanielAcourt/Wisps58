@@ -132,11 +132,86 @@ def resolve_default_csv_path():
 
     return csv_path
 
+def discover_and_bind_stage_art(species_name, stage_idx, stg_obj, editor_asset_lib, search_dirs=None):
+    """
+    Automated Asset Discovery & Growth Stage Soft Pointer Auto-Binding Protocol (Ticket B-064).
+    Scans content directories for SM_<SpeciesName>_<stage_idx>, SK_<SpeciesName>_<stage_idx>,
+    and MI_<SpeciesName>_<stage_idx> / M_<SpeciesName>_<stage_idx>.
+    Binds discovered assets to stage_mesh, stage_skeletal_mesh, and stage_material soft pointers.
+    """
+    if not IN_UNREAL or not stg_obj or not editor_asset_lib:
+        return
+
+    if search_dirs is None:
+        search_dirs = [
+            "/Game/Assets/External",
+            "/Game/Assets/External/Meshes",
+            "/Game/Assets/External/Materials",
+            f"/Game/Assets/External/{species_name}",
+            "/Game/ArtVault",
+            "/Game/ArtVault/Meshes",
+            "/Game/ArtVault/Textures",
+            "/Game/ArtVault/Materials",
+            f"/Game/ArtVault/{species_name}",
+            "/Game/Assets"
+        ]
+
+    # Name variants for searching (e.g., "Species_AppleTree" -> ["Species_AppleTree", "AppleTree", "SpeciesAppleTree", "AppleTree"])
+    stripped_name = species_name.replace("Species_", "").replace("Object_", "")
+    clean_name = species_name.replace(" ", "").replace("_", "")
+    clean_stripped = stripped_name.replace(" ", "").replace("_", "")
+
+    name_variants = list(dict.fromkeys([species_name, stripped_name, clean_name, clean_stripped]))
+
+    # 1. Static Mesh (SM_<Species>_<StageIdx>)
+    for sdir in search_dirs:
+        for name_variant in name_variants:
+            sm_path = f"{sdir}/SM_{name_variant}_{stage_idx}"
+            if editor_asset_lib.does_asset_exist(sm_path):
+                mesh_asset = editor_asset_lib.load_asset(sm_path)
+                if mesh_asset and isinstance(mesh_asset, unreal.StaticMesh):
+                    try:
+                        stg_obj.set_editor_property("stage_mesh", mesh_asset)
+                        unreal.log(f"🎨 [B-064 Auto-Art] Bound StaticMesh '{sm_path}' to Stage {stage_idx} of {species_name}")
+                        break
+                    except Exception:
+                        pass
+
+    # 2. Skeletal Mesh (SK_<Species>_<StageIdx>)
+    for sdir in search_dirs:
+        for name_variant in name_variants:
+            sk_path = f"{sdir}/SK_{name_variant}_{stage_idx}"
+            if editor_asset_lib.does_asset_exist(sk_path):
+                sk_asset = editor_asset_lib.load_asset(sk_path)
+                if sk_asset and isinstance(sk_asset, unreal.SkeletalMesh):
+                    try:
+                        stg_obj.set_editor_property("stage_skeletal_mesh", sk_asset)
+                        unreal.log(f"🎨 [B-064 Auto-Art] Bound SkeletalMesh '{sk_path}' to Stage {stage_idx} of {species_name}")
+                        break
+                    except Exception:
+                        pass
+
+    # 3. Material Instance / Material (MI_<Species>_<StageIdx> or M_<Species>_<StageIdx>)
+    for sdir in search_dirs:
+        for name_variant in name_variants:
+            for prefix in ["MI_", "M_"]:
+                mat_path = f"{sdir}/{prefix}{name_variant}_{stage_idx}"
+                if editor_asset_lib.does_asset_exist(mat_path):
+                    mat_asset = editor_asset_lib.load_asset(mat_path)
+                    if mat_asset and isinstance(mat_asset, unreal.MaterialInterface):
+                        try:
+                            stg_obj.set_editor_property("stage_material", mat_asset)
+                            unreal.log(f"🎨 [B-064 Auto-Art] Bound Material '{mat_path}' to Stage {stage_idx} of {species_name}")
+                            break
+                        except Exception:
+                            pass
+
 def import_csv_to_data_assets(
     csv_filepath=None,
     data_asset_class_path="/Script/WispCPP7VR.SovereignSpeciesData",
     target_package_path="/Game/Data/SpeciesAssets",
-    b_overwrite=True
+    b_overwrite=True,
+    b_auto_bind_art=True
 ):
     """
     Agnostic Importer Engine:
@@ -292,6 +367,31 @@ def import_csv_to_data_assets(
                 try: data_asset.set_editor_property(prop, b_bio); break
                 except Exception: pass
 
+            # 4b. Item / Action XP Gains (B-059)
+            for xp_field in ["strength_xp", "dexterity_xp", "constitution_xp", "intelligence_xp", "wisdom_xp", "charisma_xp", "luck_xp"]:
+                csv_col = xp_field.replace("_", "").upper()  # STRENGTHXP
+                val_str = row.get(csv_col, row.get(xp_field, row.get(f"{xp_field.split('_')[0].capitalize()}XP", "0.0")))
+                try:
+                    data_asset.set_editor_property(xp_field, float(val_str))
+                except Exception:
+                    pass
+
+            # 4c. Qi Aura Footprint (B-059)
+            try:
+                data_asset.set_editor_property("qi_give", float(row.get("QiGive", row.get("QIGIVE", "5.0"))))
+            except Exception:
+                pass
+
+            try:
+                data_asset.set_editor_property("qi_take", float(row.get("QiTake", row.get("QITAKE", "5.0"))))
+            except Exception:
+                pass
+
+            try:
+                data_asset.set_editor_property("qi_aura_radius", float(row.get("QiAuraRadius", row.get("QIAURARADIUS", "500.0"))))
+            except Exception:
+                pass
+
             # 5. Soft Actor Class Pointer
             actor_class_str = row.get("ActorClass", "").strip()
             if actor_class_str:
@@ -301,6 +401,37 @@ def import_csv_to_data_assets(
                         data_asset.set_editor_property("actor_class", actor_class)
                 except Exception:
                     pass
+
+            # 5b. Default Species Material Discovery
+            if b_auto_bind_art:
+                search_dirs = [
+                    "/Game/Assets/External",
+                    "/Game/Assets/External/Materials",
+                    f"/Game/Assets/External/{asset_name}",
+                    "/Game/ArtVault",
+                    "/Game/ArtVault/Materials",
+                    "/Game/ArtVault/Textures",
+                    f"/Game/ArtVault/{asset_name}",
+                    "/Game/Assets"
+                ]
+                stripped_name = asset_name.replace("Species_", "").replace("Object_", "")
+                clean_name = asset_name.replace(" ", "").replace("_", "")
+                clean_stripped = stripped_name.replace(" ", "").replace("_", "")
+                name_vars = list(dict.fromkeys([asset_name, stripped_name, clean_name, clean_stripped]))
+
+                for sdir in search_dirs:
+                    for name_var in name_vars:
+                        for prefix in ["MI_", "M_"]:
+                            mat_path = f"{sdir}/{prefix}{name_var}"
+                            if editor_asset_lib.does_asset_exist(mat_path):
+                                mat_asset = editor_asset_lib.load_asset(mat_path)
+                                if mat_asset and isinstance(mat_asset, unreal.MaterialInterface):
+                                    try:
+                                        data_asset.set_editor_property("species_material", mat_asset)
+                                        unreal.log(f"🎨 [B-064 Auto-Art] Bound default SpeciesMaterial '{mat_path}' to {asset_name}")
+                                        break
+                                    except Exception:
+                                        pass
 
             # 6. Growth Curve Configuration (Specialized for SovereignSpeciesData)
             curve_type_str = row.get("GrowthCurveType", "Exponential").strip()
@@ -344,15 +475,39 @@ def import_csv_to_data_assets(
                         stg.set_editor_property("base_charisma", int(float(row.get("BaseCharisma", 10))))
                         stg.set_editor_property("base_luck", int(float(row.get("BaseLuck", 10))))
                         stg.set_editor_property("metabolic_rate", float(row.get("MetabolicRate", 1.0)))
+
+                    if b_auto_bind_art:
+                        discover_and_bind_stage_art(
+                            species_name=asset_name,
+                            stage_idx=stage_idx,
+                            stg_obj=stg,
+                            editor_asset_lib=editor_asset_lib
+                        )
+
                     new_stages.append(stg)
 
                 data_asset.set_editor_property("growth_stages", new_stages)
-            except Exception:
-                pass
+            except Exception as e_stg:
+                unreal.log_warning(f"⚠️ Stage creation warning [{asset_name}]: {e_stg}")
 
             # 8. Post-Import C++ Triggers
             if hasattr(data_asset, "generate_growth_stages"):
                 data_asset.generate_growth_stages()
+
+            # 8b. Re-bind stage art if generate_growth_stages mutated stage soft pointers
+            if b_auto_bind_art and hasattr(data_asset, "growth_stages"):
+                try:
+                    stages_arr = data_asset.get_editor_property("growth_stages")
+                    for s_idx, s_obj in enumerate(stages_arr):
+                        discover_and_bind_stage_art(
+                            species_name=asset_name,
+                            stage_idx=s_idx,
+                            stg_obj=s_obj,
+                            editor_asset_lib=editor_asset_lib
+                        )
+                    data_asset.set_editor_property("growth_stages", stages_arr)
+                except Exception:
+                    pass
 
             # Save Asset
             editor_asset_lib.save_loaded_asset(data_asset)
@@ -373,16 +528,17 @@ def import_csv_to_data_assets(
     unreal.log(f"✅ [Sovereign Importer] Complete! Created: {created_count} | Updated: {updated_count} assets in {target_package_path}")
     return True
 
-def import_species_templates(csv_filepath=None, target_package_path="/Game/Data/SpeciesAssets"):
+def import_species_templates(csv_filepath=None, target_package_path="/Game/Data/SpeciesAssets", b_auto_bind_art=True):
     """Backwards-compatible convenience wrapper."""
     return import_csv_to_data_assets(
         csv_filepath=csv_filepath,
         data_asset_class_path="/Script/WispCPP7VR.SovereignSpeciesData",
         target_package_path=target_package_path,
-        b_overwrite=True
+        b_overwrite=True,
+        b_auto_bind_art=b_auto_bind_art
     )
 
-def execute_importer_ui(csv_path="", class_path="/Script/WispCPP7VR.SovereignSpeciesData", output_dir="/Game/Data/SpeciesAssets", b_overwrite=True):
+def execute_importer_ui(csv_path="", class_path="/Script/WispCPP7VR.SovereignSpeciesData", output_dir="/Game/Data/SpeciesAssets", b_overwrite=True, b_auto_bind_art=True):
     """
     Blueprint / Editor Utility Widget (EUW) Execution Wrapper.
     Saves dirty packages before import and returns a concise single-line summary string
@@ -398,7 +554,8 @@ def execute_importer_ui(csv_path="", class_path="/Script/WispCPP7VR.SovereignSpe
         csv_filepath=csv_path,
         data_asset_class_path=class_path,
         target_package_path=output_dir,
-        b_overwrite=b_overwrite
+        b_overwrite=b_overwrite,
+        b_auto_bind_art=b_auto_bind_art
     )
 
     if success:

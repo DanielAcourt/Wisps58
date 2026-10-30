@@ -24,42 +24,28 @@ public:
 	// Sets default values for this component's properties
 	USovereignAttributeComponent();
 
-	// --- 1. CORE ATTRIBUTES (Infinite Accumulator Logic) ---
+	// --- 1. CORE ATTRIBUTES ---
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	int32 Strength; // The Prestige Level
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double StrengthExperience; // The Scientific Accumulator
+	int32 Strength;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 Dexterity;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double DexterityExperience;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 Constitution;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double ConstitutionExperience;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 Intelligence;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double IntelligenceExperience;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 Wisdom;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double WisdomExperience;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 Charisma;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double CharismaExperience;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 Luck;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
-	double LuckExperience;
 
 	/** Derived from Dexterity and Equipment */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")

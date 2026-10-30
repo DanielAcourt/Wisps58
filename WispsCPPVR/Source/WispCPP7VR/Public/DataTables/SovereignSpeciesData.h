@@ -37,6 +37,10 @@ struct FSovereignGrowthStage
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
     TSoftObjectPtr<USkeletalMesh> StageSkeletalMesh;
 
+    /** Optional Material override for this growth stage */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
+    TSoftObjectPtr<class UMaterialInterface> StageMaterial;
+
     /** NEW: Scaling factor for this stage (1.0 = Default) */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Growth")
     float VisualScale = 1.0f;
@@ -150,6 +154,21 @@ public:
     /** Default movement mode (Flying for Bees, Stationary for Oak) */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement")
     bool bIsBiological = false;
+
+    // --- SPIRITUAL & QI AURA FOOTPRINT [B-059] ---
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Qi Aura")
+    float QiGive = 5.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Qi Aura")
+    float QiTake = 5.0f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Qi Aura")
+    float QiAuraRadius = 500.0f;
+
+    /** Default Material assigned across all stages unless overridden in GrowthStages */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visuals")
+    TSoftObjectPtr<class UMaterialInterface> SpeciesMaterial;
 
     /** The Actor Class to spawn for this species. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawning")
