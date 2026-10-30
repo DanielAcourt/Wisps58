@@ -410,7 +410,8 @@ class SovereignBridge:
                 risk = max(risk, (required_p / 10.0))
 
         known_tags = {"version", "stage", "timestamp", "aas_score"}
-        unknown_tags_count = len([t for t in payload.meta_tags if t not in known_tags])
+        meta_tags = payload.meta_tags or {}
+        unknown_tags_count = len([t for t in meta_tags if t not in known_tags])
         deviation = min(1.0, unknown_tags_count * 0.15)
 
         memory_boost = 0.0
@@ -502,7 +503,8 @@ class SovereignBridge:
 
         # Deviation from known meta-tags
         known_tags = {"version", "stage", "timestamp", "aas_score"}
-        unknown_tags_count = len([t for t in payload.meta_tags if t not in known_tags])
+        meta_tags = payload.meta_tags or {}
+        unknown_tags_count = len([t for t in meta_tags if t not in known_tags])
         deviation = min(1.0, unknown_tags_count * 0.2)
 
         delta_logic = (risk + deviation) * (1.1 - credibility)
@@ -686,7 +688,15 @@ async def tool_write_file(filepath: str, content: str, persona: str = "Unknown")
 async def tool_patch_file(filepath: str, search: str, replace: str, persona: str = "Unknown"):
     """
     [AAS v1.3.2] Surgical file modification to prevent total overwrite data loss.
+    Enhanced with AD-021 parameter pre-flight validation.
     """
+    if search == replace:
+        return {
+            "status": "INVALID_PARAMETERS",
+            "error": "Patch failed: Search string and replace string are identical. No changes were made.",
+            "filepath": filepath
+        }
+
     target_path = resolve_secure_path(filepath)
     target_node = get_target_node_name(target_path)
     payload = AgentCommandPayload(persona=persona, command="write_file", target_node=target_node) # Patching is a write action
@@ -706,7 +716,11 @@ async def tool_patch_file(filepath: str, search: str, replace: str, persona: str
             content = f.read()
 
         if search not in content:
-             return {"error": f"Patch failed: Search string not found in '{filepath}'."}
+            return {
+                "status": "SEARCH_STRING_NOT_FOUND",
+                "error": f"Patch failed: Search string '{search[:50]}' not found in '{filepath}'.",
+                "filepath": filepath
+            }
 
         new_content = content.replace(search, replace)
 
@@ -1696,11 +1710,15 @@ async def chat(request: ChatRequest):
                 persona = "Lead"
             break
 
+    global HANDSHAKE_ACTIVE
+    handshake_status_str = "ACTIVE (+0.5 Authority Boost Engaged)" if HANDSHAKE_ACTIVE else "INACTIVE"
+
     system_prompt = f"""
     [SYSTEM: Sovereign AI Architectural Knight]
     You are the Iron Officer. You are an Architectural Knight: Precise, Loyal, and Accountable.
     Your current persona is {persona}.
     You are communicating with your Lead, {USER_NAME}.
+    AAS Handshake Boost Status: {handshake_status_str}
 
     CORE DIRECTIVES:
     - AAS PROTOCOL: You are subject to the Agency Arbitration Schema (v1.3.3).
@@ -1824,6 +1842,23 @@ async def process_chat_request(model: str, messages: List[Dict], tools: List[Dic
                         f"in your reply, state that you were BLOCKED, and explain that they need to execute an AAS Handshake "
                         f"(such as calling ExecuteAASHandshake in Unreal or /v1/aas/handshake) to grant you authority. "
                         f"DO NOT pretend you succeeded, DO NOT claim any file was written, and DO NOT make up excuses about honeypots."
+                    )
+                })
+            elif isinstance(tool_result, dict) and tool_result.get("status") in ["INVALID_PARAMETERS", "SEARCH_STRING_NOT_FOUND"]:
+                tool_outputs.append(tool_result)
+                messages.append({
+                    "role": "tool",
+                    "content": json.dumps(tool_result),
+                    "name": name,
+                    "tool_call_id": call.get("id")
+                })
+                messages.append({
+                    "role": "system",
+                    "content": (
+                        f"[TOOL ERROR DIAGNOSTIC - AD-021] Tool '{name}' failed due to argument formatting or search string mismatch: "
+                        f"'{tool_result.get('error')}'. This is NOT a security gate block or 409 Conflict Gate. "
+                        f"DO NOT request a /handshake. Read the target file first using `read_file` to inspect the exact "
+                        f"text, and then re-issue `{name}` with valid, non-identical search and replace parameters."
                     )
                 })
             else:
