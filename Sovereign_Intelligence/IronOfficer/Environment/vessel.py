@@ -396,7 +396,11 @@ class ChatVessel:
                 if cmd == "/phi": self.run_phi(); continue
                 if cmd == "/velocity": self.run_velocity(); continue
                 if cmd == "/backups": self.run_backups(); continue
-                if cmd == "/handshake": self.run_handshake(); continue
+                if cmd == "/handshake":
+                    self.run_handshake()
+                    if not args:
+                        continue
+                    user_input = " ".join(args)
                 if cmd in ["/read", "/write", "/patch", "/append", "/list"]:
                     self.run_tool_command(cmd, args); continue
                 if cmd == "/tools":
