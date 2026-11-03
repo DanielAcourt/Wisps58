@@ -3,6 +3,7 @@
 #include "Misc/AutomationTest.h"
 #include "Components/SovereignClassComponent.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "GameplayTagsManager.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 

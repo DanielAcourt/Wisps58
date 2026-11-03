@@ -2,6 +2,7 @@
 
 #include "Components/SovereignClassComponent.h"
 #include "Dom/JsonObject.h"
+#include "GameplayTagsManager.h"
 
 USovereignClassComponent::USovereignClassComponent()
 {
