@@ -14,6 +14,7 @@
 #include "Inventory/SovereignInventoryBroker.h"
 #include "Components/SovereignClassComponent.h"
 #include "Components/SovereignSkillComponent.h"
+#include "Components/SovereignPartyComponent.h"
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "Components/CapsuleComponent.h"
@@ -672,6 +673,19 @@ void ASovereignBaseCharacter::OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh>
 
 		UE_LOG(LogTemp, Log, TEXT("[%s] Character Visuals synced to Stage %d"), *GetName(), CurrentGrowthStage);
 	}
+}
+
+USovereignPartyComponent* ASovereignBaseCharacter::GetPartyComponent() const
+{
+	// Check if this character is possessed by the spirit wisp
+	if (AActor* Spirit = const_cast<ASovereignBaseCharacter*>(this)->GetInhabitingSpirit_Implementation())
+	{
+		if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+		{
+			return Wisp->GetPartyComponent();
+		}
+	}
+	return nullptr;
 }
 
 void ASovereignBaseCharacter::OnMaterialLoaded(TSoftObjectPtr<UMaterialInterface> LoadedMaterialPtr)

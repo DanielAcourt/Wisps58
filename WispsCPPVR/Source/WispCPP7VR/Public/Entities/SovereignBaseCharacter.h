@@ -25,6 +25,7 @@ class USovereignInventoryComponent;
 class USovereignInventoryBroker;
 class USovereignClassComponent;
 class USovereignSkillComponent;
+class USovereignPartyComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -84,6 +85,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
+
+	/**
+	 * Accesses the active party component.
+	 * If this is the Wisp, returns its party component directly.
+	 * If this is a possessed dragon vessel, queries the possessing Wisp for the party component.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	virtual USovereignPartyComponent* GetPartyComponent() const;
 
 	/** Base interaction trace distance in Unreal units */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
