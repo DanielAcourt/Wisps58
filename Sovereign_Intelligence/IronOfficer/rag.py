@@ -30,29 +30,30 @@ STOPWORDS = {
     "youll", "youre", "youve", "your", "yours", "yourself", "yourselves"
 }
 
-def determine_ssot_level(relative_path: str) -> int:
-    """Categorizes a filepath into its Sovereign SSoT Level (0 to 4)."""
+def determine_ssot_level_and_tier(relative_path: str) -> Tuple[int, str, int]:
+    """Returns (SSoT Level, Authority Tier Label, Authority Priority Weight) for a path."""
     path_lower = relative_path.replace("\\", "/").lower()
 
-    # Specific exceptions first
-    if "archivist_theta" in path_lower:
-        return 0
-    if "jules" in path_lower or "identity.json" in path_lower or "aas_protocol" in path_lower:
-        return 2
+    if "protocols/" in path_lower or "aas_protocol" in path_lower or "agents.md" in path_lower:
+        return 1, "Tier 1 (Canonical Protocol)", 100
 
-    # Standard directories
-    if "timeline/" in path_lower:
-        return 0
-    if "protocols/" in path_lower or "docs/" in path_lower:
-        return 1
-    if "identity/" in path_lower:
-        return 2
-    if "research/" in path_lower or "admin/" in path_lower:
-        return 3
-    if "devops/" in path_lower or "memories/" in path_lower:
-        return 4
+    if "docs/" in path_lower or "research/" in path_lower:
+        return 3, "Tier 2 (Technical Specification)", 80
 
-    return 4  # Default to Level 4 (Execution/DevOps)
+    if "source/" in path_lower or "wispscppvr/" in path_lower or "plugins/" in path_lower:
+        return 2, "Tier 3 (Current Implementation)", 70
+
+    if "devops/" in path_lower or "current_sprint.md" in path_lower:
+        return 4, "Tier 4 (Active Backlog)", 50
+
+    if "timeline/" in path_lower or "sprintreviews/" in path_lower or "archive" in path_lower:
+        return 0, "Tier 5 (Historical Archive)", 10
+
+    return 4, "Tier 4 (General Project Context)", 40
+
+def determine_ssot_level(relative_path: str) -> int:
+    level, _, _ = determine_ssot_level_and_tier(relative_path)
+    return level
 
 def tokenize(text: str) -> List[str]:
     """Tokenizes text, keeping alphanumeric strings and discarding stopwords."""
@@ -200,9 +201,12 @@ class SovereignRAG:
             tf[token] = tf[token] / total_tokens
             self.vocab.add(token)
 
+        level, tier_label, tier_priority = determine_ssot_level_and_tier(rel_path)
         self.chunks.append({
             "path": rel_path.replace("\\", "/"),
             "level": level,
+            "authority_tier": tier_label,
+            "tier_priority": tier_priority,
             "header": header,
             "text": text,
             "tf": tf,

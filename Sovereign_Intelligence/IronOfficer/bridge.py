@@ -1838,13 +1838,21 @@ async def chat(request: ChatRequest):
         try:
             results = rag_engine.search(user_query, max_chunks=RAG_MAX_CHUNKS, threshold=RAG_SIM_THRESHOLD)
             if results:
-                block_lines = ["[GROUND TRUTH: SSoT Reference Context]"]
+                block_lines = ["[RETRIEVED PROJECT KNOWLEDGE]"]
                 sims = []
                 for chunk, similarity in results:
-                    block_lines.append(f"Source: {chunk['path']} (Level {chunk['level']}) - Section: {chunk['header']} (Relevance: {similarity:.2f})")
-                    block_lines.append(chunk['text'])
-                    block_lines.append("-" * 30)
+                    tier_label = chunk.get("authority_tier", "Tier 4 (General)")
+                    block_lines.append(
+                        f"Source: {chunk['path']}\n"
+                        f"SSoT Level: Level {chunk['level']}\n"
+                        f"Authority Tier: {tier_label}\n"
+                        f"Relevance Score: {similarity:.2f}\n"
+                        f"Section: {chunk['header']}\n\n"
+                        f"Content:\n{chunk['text']}\n"
+                        f"{'-' * 40}"
+                    )
                     sims.append(similarity)
+                block_lines.append("[END RETRIEVED PROJECT KNOWLEDGE]")
                 context_block = "\n".join(block_lines)
                 latest_rag_similarity_score = sum(sims) / len(sims)
             else:
