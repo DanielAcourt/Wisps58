@@ -137,7 +137,8 @@ bool USovereignPolymorphComponent::SetVesselForm(ESovereignVesselForm NewForm)
 		// --- 2. RESIZE CAPSULE TO HUMAN DIMENSIONS ---
 		if (Capsule)
 		{
-			Capsule->SetCapsuleSize(HumanoidCapsuleRadius, HumanoidCapsuleHalfHeight, true);
+			const bool bUpdateOverlaps = (Character->GetWorld() != nullptr);
+			Capsule->SetCapsuleSize(HumanoidCapsuleRadius, HumanoidCapsuleHalfHeight, bUpdateOverlaps);
 		}
 
 		// --- 3. ADJUST MOVEMENT TO BIPEDAL WALKING ---
@@ -185,7 +186,8 @@ bool USovereignPolymorphComponent::SetVesselForm(ESovereignVesselForm NewForm)
 		// --- 2. RESTORE DRACONIC CAPSULE ---
 		if (Capsule)
 		{
-			Capsule->SetCapsuleSize(CachedTrueCapsuleRadius, CachedTrueCapsuleHalfHeight, true);
+			const bool bUpdateOverlaps = (Character->GetWorld() != nullptr);
+			Capsule->SetCapsuleSize(CachedTrueCapsuleRadius, CachedTrueCapsuleHalfHeight, bUpdateOverlaps);
 		}
 
 		// --- 3. RESTORE MOVEMENT (FLYING/SPEED) ---

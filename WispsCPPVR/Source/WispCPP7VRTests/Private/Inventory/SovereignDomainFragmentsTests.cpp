@@ -7,6 +7,7 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignLevelComponent.h"
+#include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Tests/AutomationCommon.h"
 
