@@ -86,7 +86,7 @@ bool USovereignInventoryComponent::ConsumeItem(const FGuid& InstanceId, int32 Qu
 	}
 
 	FSovereignInventoryItemInstance* Slot = GetSlotMutable(InstanceId);
-	if (!Slot)
+	if (!Slot || Quantity > Slot->Quantity)
 	{
 		return false;
 	}
