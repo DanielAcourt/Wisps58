@@ -15,9 +15,26 @@ Once the primary **Male Domain Dragon** reaches adulthood in the Meditation Gard
 
 ## 2. Turn-Based Combat System & Dedicated Battle Arena
 
-### 2.1 Strict Sequential Turn-Based Mechanics
-- **Turn Queue Architecture**: Combat operates on a **strict sequential turn-based system**. Turn order is calculated at the beginning of each turn cycle based on entity **Dexterity (DEX)** and action speed modifiers.
-- **Deterministic Action Selection**: During an entity's turn, time pauses completely while the player selects actions (Attacks, Class Abilities, Spells, Profession Items, Defend, or Flee).
+### 2.1 Active Time Battle (ATB) Mechanics & Turn Execution Flow
+- **ATB Gauge Architecture (FF7-Style)**:
+  - Combat operates on an **Active Time Battle (ATB)** system managed via `USovereignATBComponent`.
+  - Each combatant maintains an ATB meter ($0.0 \to 100.0\%$) filling continuously in real time based on **Dexterity (DEX)** and class speed multipliers:
+    $$\Delta \text{ATB} = \text{DeltaTime} \times \text{BaseATBRate} \times \left(1.0 + \frac{\text{Dexterity}}{50.0}\right) \times \text{ClassSpeedMultiplier}$$
+  - When a combatant's ATB reaches $100.0\%$, they enter the ready queue, prompting action selection.
+- **Wait Mode (Default Operational Setting)**:
+  - Combat defaults to **Wait Mode**: while a player is actively navigating submenus (Skills, Qi Magic, Inventory Items, Target Selection), all combatant ATB meters pause completely, granting tactical breathing room.
+  - While animations are actively executing (e.g. dragon breath sweeps, spell casts), ATB accumulation is globally frozen until resolution.
+- **Qi-Powered Resource Model (No MP Clutter)**:
+  - Spells, martial arts, and dragon abilities consume **Qi** directly from `USovereignQiComponent` rather than a disconnected Mana pool.
+  - This harmonizes in-dungeon combat actions with Meditation Garden cultivation and elemental lineage techniques.
+- **In-Combat Item Consumption**:
+  - Pulls directly from the possessed vessel's `USovereignInventoryComponent`.
+  - Using an item consumes that dragon's entire turn, resetting their ATB to $0\%$.
+  - Items with `USovereignItemFragment_Consumable` and `USovereignItemFragment_Spiritual` can target either friendly allies (healing elixirs, Qi pills, attribute buff teas) or opposing enemy ranks (offensive throwable spirit grenades, alchemy flasks).
+- **Flee Mechanic & Boss Restrictions**:
+  - Escape attempts are calculated via Party DEX/Luck versus Enemy Encounter DEX with a charging escape bar fallback.
+  - Boss battles, Dungeon Gatekeepers, and Vault Guardians have escape disabled (`bIsEscapable = false`).
+  - Successfully fleeing teleports the party back to the dungeon floor with a **5-second mob aggro immunity grace period**.
 - **Damage Calculation Engine (`USovereignCombatCalculationLibrary`)**:
   Combat uses a deterministic percentage mitigation curve rather than flat D&D subtraction:
   $$\text{RawPower} = \left( \text{BasePower} + \text{StatValue} \times \text{StatMultiplier} \right) \times \text{ClassMultiplier}$$
@@ -85,18 +102,29 @@ Distinct from combat classes, entities can develop **Professions** that function
 
 ---
 
-## 5. Party Formation & The 3x3 Rank Matrix
+## 5. Party Formation & Opposing 3x3 Rank Matrices
 
-Combat party deployment utilizes a tactical **3x3 Grid Formation Matrix** (up to 9 total slots) divided into three distinct functional ranks.
+Combat party deployment and enemy encounter composition utilize dual opposing tactical **3x3 Grid Formation Matrices** (up to 9 total slots each) divided into three distinct functional ranks managed by `USovereignPartyComponent` and `ASovereignBattleManager`.
 
 ```text
+    ================== PLAYER PARTY 3x3 GRID ==================
        [ FRONT RANK ]           [ MID RANK ]            [ REAR RANK ]
   +----------------------+ +----------------------+ +----------------------+
-  | Slot 1 | Slot 2 | 3  | | Slot 4 | Slot 5 | 6  | | Slot 7 | Slot 8 | 9  |
+  | Slot 0 | Slot 1 | 2  | | Slot 3 | Slot 4 | 5  | | Slot 6 | Slot 7 | 8  |
   +----------------------+ +----------------------+ +----------------------+
   | +15% Defense         | | +15% Ranged Damage   | | +20% Healing Output  |
-  | +10% Melee Attack    | | +15% Spell Damage    | | +20% Buff Duration   |
+  | +10% Melee Attack    | | +15% Qi Spell Damage | | +20% Buff Duration   |
   | Target Priority 1    | | Target Priority 2    | | Low Target Priority  |
+  +----------------------+ +----------------------+ +----------------------+
+
+                               VS
+
+    ================== ENEMY ENCOUNTER 3x3 GRID ==================
+       [ FRONT RANK ]           [ MID RANK ]            [ REAR RANK ]
+  +----------------------+ +----------------------+ +----------------------+
+  | Slot 0 | Slot 1 | 2  | | Slot 3 | Slot 4 | 5  | | Slot 6 | Slot 7 | 8  |
+  +----------------------+ +----------------------+ +----------------------+
+  | Frontline Defenders  | | Ranged & Spellcasters| | Support & Boss Units  |
   +----------------------+ +----------------------+ +----------------------+
 ```
 
@@ -115,11 +143,14 @@ Combat party deployment utilizes a tactical **3x3 Grid Formation Matrix** (up to
    - **Obstruction Exceptions**: Spells (INT/WIS) and Ranged attacks (DEX) bypass front-line melee obstruction, directly targeting any active slot.
    - **AOE & Piercing**: `FrontRowSweep` targets all living entities in the foremost active rank; `ColumnPierce` strikes through the target column (Front -> Mid -> Rear); `FullMatrixAOE` strikes all active units.
 
-### 5.2 Milestone Rank Unlocks
-- **Initial State**: Players begin Phase 2 with only **Rank 1 (Front Rank, up to 3 units)** unlocked.
-- **Progression Milestones**:
-  - Unlocking **Rank 2 (Mid Rank)** requires taming/hatching 3 distinct dragon species and completing the *Trial of the Unseen Weave* dungeon.
-  - Unlocking **Rank 3 (Rear Rank)** requires raising a total of 6 dragons to adult maturity and defeating the *Vault Guardian of Realms*.
+### 5.2 Milestone Rank Unlocks & Party Scaling
+- **Initial State**:
+  - Expeditions begin with **1 active party member** (the wisp-possessed dragon).
+  - Only **Rank 1 (Front Rank, Slots 0–2)** is unlocked initially.
+- **Party Scaling to 9 Slots**:
+  - As player lineage grows, additional dragons and cultivated beasts can be assigned to the battle party.
+  - **Milestone 1**: Unlocking **Rank 2 (Mid Rank, Slots 3–5)** expands deployable party slots up to 6 units. Requires cultivating 3 distinct dragon species and conquering the *Trial of the Unseen Weave*.
+  - **Milestone 2**: Unlocking **Rank 3 (Rear Rank, Slots 6–8)** unlocks all 9 grid slots for full legion deployment. Requires raising 6 adult dragons and defeating the *Vault Guardian of Realms*.
 
 ---
 
