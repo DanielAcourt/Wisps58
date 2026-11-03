@@ -32,3 +32,12 @@ try:
     unreal.log("🏛️ Sovereign Framework: Agnostic CSV DataAsset Importer Suite (B-056) registered into Python builtins context.")
 except Exception as e:
     unreal.log_warning(f"🏛️ Sovereign Framework: CSV Importer pre-load notice: {e}")
+
+try:
+    import import_item_definitions
+    builtins.import_item_definitions = import_item_definitions
+    builtins.import_items = import_item_definitions.import_item_definitions_to_assets
+    builtins.execute_item_importer_ui = import_item_definitions.execute_item_importer_ui
+    unreal.log("🏛️ Sovereign Framework: Automated Item Definition Synthesizer Suite (B-070) registered into Python builtins context.")
+except Exception as e:
+    unreal.log_warning(f"🏛️ Sovereign Framework: Item Synthesizer pre-load notice: {e}")
