@@ -13,6 +13,7 @@
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignInventoryBroker.h"
 #include "Components/SovereignClassComponent.h"
+#include "Components/SovereignSkillComponent.h"
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "Components/CapsuleComponent.h"
@@ -50,6 +51,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
 	InventoryComponent = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("InventoryComponent"));
 	ClassComponent = CreateDefaultSubobject<USovereignClassComponent>(TEXT("ClassComponent"));
+	SkillComponent = CreateDefaultSubobject<USovereignSkillComponent>(TEXT("SkillComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
@@ -86,6 +88,12 @@ void ASovereignBaseCharacter::BeginPlay()
 	if (SaveDataComponent && ClassComponent)
 	{
 		SaveDataComponent->RegisterBroker(ClassComponent);
+	}
+
+	// Register SkillComponent with SaveDataComponent hub
+	if (SaveDataComponent && SkillComponent)
+	{
+		SaveDataComponent->RegisterBroker(SkillComponent);
 	}
 
 	// Only run this if we are controlled by a Human (Local Player)

@@ -24,6 +24,7 @@ class USovereignBioComponent;
 class USovereignInventoryComponent;
 class USovereignInventoryBroker;
 class USovereignClassComponent;
+class USovereignSkillComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -77,6 +78,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignClassComponent* GetClassComponent() const { return ClassComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
 
 	/** Base interaction trace distance in Unreal units */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
@@ -211,6 +215,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignClassComponent* ClassComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignSkillComponent* SkillComponent;
 
 	/** Inventory broker connecting inventory component to the SaveDataComponent hub */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Inventory")
