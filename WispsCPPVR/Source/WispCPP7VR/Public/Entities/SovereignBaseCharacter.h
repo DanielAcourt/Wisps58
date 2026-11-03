@@ -21,6 +21,7 @@ class USovereignAttributeComponent;
 class USovereignLevelComponent;
 class USovereignBioComponent;
 class USovereignInventoryComponent;
+class USovereignInventoryBroker;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -186,6 +187,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignInventoryComponent* InventoryComponent;
+
+	/** Inventory broker connecting inventory component to the SaveDataComponent hub */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Inventory")
+	USovereignInventoryBroker* InventoryBroker;
 
 	/** Performs a sphere trace to find the actor the player is looking at this is the i think wrong way to do this Blueprint callable */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Components")

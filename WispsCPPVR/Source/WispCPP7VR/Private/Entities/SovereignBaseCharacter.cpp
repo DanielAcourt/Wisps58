@@ -11,6 +11,7 @@
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignLevelComponent.h"
 #include "Inventory/SovereignInventoryComponent.h"
+#include "Inventory/SovereignInventoryBroker.h"
 #include "TimerManager.h"
 
 //Entinty framework to save information
@@ -68,6 +69,14 @@ void ASovereignBaseCharacter::BeginPlay()
 	}
 
 	SetActorTickEnabled(UpdateFrequency == EUpdateFrequency::Realtime);
+
+	// Register InventoryBroker with the SaveDataComponent hub for atomic world manifest persistence
+	if (SaveDataComponent && InventoryComponent)
+	{
+		InventoryBroker = NewObject<USovereignInventoryBroker>(this, TEXT("InventoryBroker"));
+		InventoryBroker->Initialize(InventoryComponent);
+		SaveDataComponent->RegisterBroker(InventoryBroker);
+	}
 
 	// Only run this if we are controlled by a Human (Local Player)
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
