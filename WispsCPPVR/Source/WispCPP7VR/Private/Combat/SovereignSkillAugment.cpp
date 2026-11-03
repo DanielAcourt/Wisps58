@@ -10,7 +10,7 @@ USovereignSkillAugment::USovereignSkillAugment()
 	AdditionalBasePower = 10.0f;
 	bOverrideTargetPattern = false;
 	NewTargetPattern = ESovereignSkillTargetPattern::FrontRowSweep;
-	InfusedElement = ESovereignElement::Neutral;
+	InfusedElement = ESovereignElement::None;
 }
 
 ESovereignSkillTargetPattern FSovereignSkillInstance::GetEffectiveTargetPattern() const

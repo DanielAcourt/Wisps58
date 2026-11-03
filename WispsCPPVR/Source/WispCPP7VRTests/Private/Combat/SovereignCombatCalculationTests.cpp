@@ -7,7 +7,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSovereignCombatCalculationDamageTest, "WispsGame.Combat.DamageCalculationFormula", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSovereignCombatCalculationDamageTest, "Sovereign.Combat.DamageCalculationFormula", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FSovereignCombatCalculationDamageTest::RunTest(const FString& Parameters)
 {
@@ -62,7 +62,7 @@ bool FSovereignCombatCalculationDamageTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSovereignCombatTargetEvaluationTest, "WispsGame.Combat.RankMatrixTargetEvaluation", EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::ProductFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSovereignCombatTargetEvaluationTest, "Sovereign.Combat.RankMatrixTargetEvaluation", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FSovereignCombatTargetEvaluationTest::RunTest(const FString& Parameters)
 {

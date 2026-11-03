@@ -352,16 +352,20 @@ FSovereignCombatEntitySnapshot USovereignCombatCalculationLibrary::CreateSnapsho
 		return Snapshot;
 	}
 
-	Snapshot.bIsAlive = (Character->GetBioComponent() != nullptr) ? (Character->GetBioComponent()->GetHealth() > 0.0f) : true;
-
-	if (USovereignAttributeComponent* AttrComp = Character->GetAttributeComponent())
+	USovereignAttributeComponent* AttrComp = Character->GetAttributeComponent();
+	if (AttrComp)
 	{
-		Snapshot.Strength = AttrComp->GetStrength();
-		Snapshot.Dexterity = AttrComp->GetDexterity();
-		Snapshot.Constitution = AttrComp->GetConstitution();
-		Snapshot.Intelligence = AttrComp->GetIntelligence();
-		Snapshot.Wisdom = AttrComp->GetWisdom();
-		Snapshot.Luck = AttrComp->GetLuck();
+		Snapshot.bIsAlive = (AttrComp->CurrentHealth > 0.0f);
+		Snapshot.Strength = AttrComp->Strength;
+		Snapshot.Dexterity = AttrComp->Dexterity;
+		Snapshot.Constitution = AttrComp->Constitution;
+		Snapshot.Intelligence = AttrComp->Intelligence;
+		Snapshot.Wisdom = AttrComp->Wisdom;
+		Snapshot.Luck = AttrComp->Luck;
+	}
+	else
+	{
+		Snapshot.bIsAlive = true;
 	}
 
 	if (USovereignClassComponent* ClassComp = Character->GetClassComponent())

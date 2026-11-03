@@ -68,7 +68,7 @@ public:
 
 	/** Draconic elemental type infused into the skill */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Skill|Augment")
-	ESovereignElement InfusedElement = ESovereignElement::Neutral;
+	ESovereignElement InfusedElement = ESovereignElement::None;
 };
 
 /**

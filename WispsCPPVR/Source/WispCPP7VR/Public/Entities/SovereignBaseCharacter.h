@@ -71,6 +71,9 @@ public:
 	USovereignLevelComponent* GetLevelComponent() const { return LevelComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignAttributeComponent* GetAttributeComponent() const { return AttributeComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
