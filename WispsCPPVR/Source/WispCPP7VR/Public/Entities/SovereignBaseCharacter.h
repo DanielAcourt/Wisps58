@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-03
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -72,6 +73,22 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	/** Base interaction trace distance in Unreal units */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
+	float BaseInteractionRange = 500.0f;
+
+	/** Radius of the interaction sphere sweep */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
+	float InteractionRadius = 30.0f;
+
+	/** Toggle to render the visual interaction raycast line and impact sphere */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
+	bool bShowDebugInteractionRaycast = true;
+
+	/** Calculates effective interaction distance dynamically scaled by character bounds/scale */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Interaction")
+	float GetScaledInteractionRange() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }

@@ -4,8 +4,8 @@
 **Sprint ID:** `SR_20261026`
 **Start Date:** `07/10/2026`
 **Target End Date:** `21/10/2026` (2-Week Recovery Baseline)
-**Planned Capacity:** 61 Points (Expanded with Sovereign Fragment Inventory Architecture Suite)
-**Completed Capacity / Velocity:** 57 Points
+**Planned Capacity:** 66 Points (Expanded with Sovereign Fragment Inventory & Vessel Interaction Suite)
+**Completed Capacity / Velocity:** 62 Points
 
 > 🎯 **Core Sprint Goal:**
 > **"Telemetry Subsystem Decoupling, Entity Registration Hardening, Base Entity Modularization & Dynamic Vessel Infusion"**
@@ -44,9 +44,10 @@
 | B-068 | Modular Fragment Domain Library Suite | 5 | Completed | DevOps/C++ | Different game subsystems (vitals, spiritual cultivation, equipment visuals, weight, UI) require modular, decoupled item behaviors without cross-system coupling. | Implement domain fragments: `USovereignItemFragment_UIData` (Icon, Tooltip, Lore, Rarity), `USovereignItemFragment_Weight` (UnitWeight, MaxStack, Overburdened tag check), `USovereignItemFragment_Consumable` (`USovereignBioComponent` hunger/hydration and `USovereignLevelComponent` attribute XP rollover), `USovereignItemFragment_Spiritual` (`USovereignQiComponent` QiGive/Take, AuraRadius, Training Focus resonance), and `USovereignItemFragment_Equippable` (Skeletal/Static mesh socket attachment on `ASovereignBaseCharacter`). |
 | B-069 | Sovereign Inventory Persistence Broker & Save System Pipeline | 3 | Completed | DevOps/C++ | Inventory items, stack quantities, and custom item properties on character vessels must persist cleanly across game sessions without subobject serialization corruption. | Implement `USovereignInventoryBroker` implementing `ISovereignBrokerInterface`. Register with `USovereignSaveableEntityComponent` on character spawn, serializing active slots, quantities, and dynamic properties into atomic `"Sovereign.Inventory"` JSON on save, and reconstructing items/equipment on load. |
 | B-070 | Automated Item Definition Synthesis from Master CSV Template | 3 | Completed | DevOps/Tools | Manually authoring individual `USovereignItemDefinition` DataAssets for dozens of items in `DT_SovereignSpeciesTemplate.csv` creates unnecessary manual friction during content iteration. | Extend Python asset importer to read `DT_SovereignSpeciesTemplate.csv`, automatically synthesizing `USovereignItemDefinition` Primary DataAssets in `/Game/Data/ItemAssets/` with auto-attached Weight, Consumable, Spiritual, and UI fragments. |
+| B-071 | Vessel-Aware First-Person Interaction Raycast & Visual Feedback Protocol | 5 | Completed | DevOps/C++ | When a player possesses large vessels (e.g. Dragons), the fixed 500u interaction trace fails to reach ground items from the third-person camera, and players lack visual raycast feedback indicating what object is being targeted for pickup. | Implement scale-adaptive interaction range (`GetScaledInteractionRange`), gate per-frame sweeps to locally controlled player pawns, and render real-time debug raycast lines and target hit indicators (Cyan for interactables/items, Red for terrain). |
 
 ---
 
 ## 🏛️ Strategic Alignment
-- **Active Iteration Load:** **43 Points** (Expanded with Sovereign Fragment Inventory Architecture Suite)
+- **Active Iteration Load:** **48 Points** (Expanded with Sovereign Fragment Inventory & Vessel Interaction Suite)
 - **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260928.md` (135 Points Delivered)
