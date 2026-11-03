@@ -18,12 +18,19 @@ Once the primary **Male Domain Dragon** reaches adulthood in the Meditation Gard
 ### 2.1 Strict Sequential Turn-Based Mechanics
 - **Turn Queue Architecture**: Combat operates on a **strict sequential turn-based system**. Turn order is calculated at the beginning of each turn cycle based on entity **Dexterity (DEX)** and action speed modifiers.
 - **Deterministic Action Selection**: During an entity's turn, time pauses completely while the player selects actions (Attacks, Class Abilities, Spells, Profession Items, Defend, or Flee).
-- **Damage & Ability Formula**:
-  $$\text{Final Output} = \left( \text{Base Ability Power} + \text{Class Multiplier} \right) \times f(\text{D&D Attributes})$$
-  - Physical abilities scale primarily with **Strength (STR)** and **Dexterity (DEX)**.
-  - Spells and Qi abilities scale with **Intelligence (INT)** and **Wisdom (WIS)**.
-  - Health/Durability scaling derives from **Constitution (CON)**.
-  - Critical hits and rare status procs scale with **Luck (LCK)**.
+- **Damage Calculation Engine (`USovereignCombatCalculationLibrary`)**:
+  Combat uses a deterministic percentage mitigation curve rather than flat D&D subtraction:
+  $$\text{RawPower} = \left( \text{BasePower} + \text{StatValue} \times \text{StatMultiplier} \right) \times \text{ClassMultiplier}$$
+  $$\text{ScaledOffense} = \text{RawPower} \times \text{AttackerRankModifier}$$
+  $$\text{EffectiveDefense} = (\text{Target.Constitution} + \text{Target.EquipmentDefense}) \times \text{TargetRankDefenseModifier}$$
+  $$\text{MitigationFactor} = \frac{100}{100 + \text{EffectiveDefense}}$$
+  $$\text{FinalDamage} = \max\left(1.0, \text{round}\left(\text{ScaledOffense} \times \text{MitigationFactor} \times \text{CritMultiplier}\right)\right)$$
+  - **Attribute Scaling**:
+    - Physical abilities scale with **Strength (STR)** (Melee) or **Dexterity (DEX)** (Ranged / Finesse).
+    - Spells and Qi abilities scale with **Intelligence (INT)** (Arcana) or **Wisdom (WIS)** (Spiritual Qi / Restoration).
+    - Physical defense scales from **Constitution (CON)** and equipment armor.
+  - **Critical Hits**: Base $5\% + (\text{Attacker.Luck} - \text{Target.Luck}) \times 0.5\%$, clamped between $5\%$ and $50\%$. Critical hits apply a **1.5x multiplier**.
+  - **Damage Floor**: Net damage is floored at minimum **1.0** on any successful hit.
 
 ### 2.2 Dedicated 3D Battle Arena Transition
 - **Field Navigation vs. Battle Arena**:
@@ -89,20 +96,24 @@ Combat party deployment utilizes a tactical **3x3 Grid Formation Matrix** (up to
   +----------------------+ +----------------------+ +----------------------+
   | +15% Defense         | | +15% Ranged Damage   | | +20% Healing Output  |
   | +10% Melee Attack    | | +15% Spell Damage    | | +20% Buff Duration   |
-  | Target Priority 1    | | Target Priority 2    | | Low Target Priority|
+  | Target Priority 1    | | Target Priority 2    | | Low Target Priority  |
   +----------------------+ +----------------------+ +----------------------+
 ```
 
-### 5.1 Rank Matrix Modifiers
+### 5.1 Rank Matrix Modifiers & Obstruction Rules
 1. **Front Rank (Slots 1–3)**:
    - **Role**: Tanks and Melee Damage Dealers.
    - **Modifiers**: **+15% Physical Defense**, **+10% Melee Attack Power**. Draws highest enemy targeting priority.
 2. **Mid Rank (Slots 4–6)**:
    - **Role**: Ranged Attackers and Offensive Spellcasters.
    - **Modifiers**: **+15% Ranged Physical Damage**, **+15% Spell & Qi Damage**.
+   - **Protection Rule**: Shielded from direct single-target melee strikes while any living defenders occupy the Front Rank.
 3. **Rear Rank (Slots 7–9)**:
    - **Role**: Support, Healers, and Buffer Units.
-   - **Modifiers**: **+20% Healing Output**, **+20% Buff Duration & Potency**. Shielded behind front/mid ranks from direct single-target melee strikes.
+   - **Modifiers**: **+20% Healing Output**, **+20% Buff Duration & Potency**.
+   - **Rank-Wide Protection Rule**: Shielded from direct single-target melee strikes until **both Front and Mid ranks are completely cleared of living units**.
+   - **Obstruction Exceptions**: Spells (INT/WIS) and Ranged attacks (DEX) bypass front-line melee obstruction, directly targeting any active slot.
+   - **AOE & Piercing**: `FrontRowSweep` targets all living entities in the foremost active rank; `ColumnPierce` strikes through the target column (Front -> Mid -> Rear); `FullMatrixAOE` strikes all active units.
 
 ### 5.2 Milestone Rank Unlocks
 - **Initial State**: Players begin Phase 2 with only **Rank 1 (Front Rank, up to 3 units)** unlocked.
@@ -142,7 +153,12 @@ Phase 2 gameplay introduces three modular C++ Actor Components attaching directl
 |:---|:---|:---|
 | `USovereignClassComponent` | Manages active/unlocked classes, CP allocation, class levels, equipped active spells & passive ability slots. | `USovereignLevelComponent`, `USovereignAttributeComponent` |
 | `USovereignProfessionComponent` | Tracks profession levels (Mining, Lumbering, Alchemy, Smithing), craft recipes, and yield multipliers. | `USovereignBioComponent`, `USovereignSaveableEntityComponent` |
-| `USovereignSkillComponent` | Accumulates action usage counters (e.g., physical strikes, spell casts) to trigger class unlocks; handles skill cooldowns and damage formulas. | `USovereignClassComponent`, `USovereignLevelComponent` |
+| `USovereignSkillComponent` | Manages equipped skill instances, custom Qi augment slots, action accumulation for class unlocks, and cooldowns. | `USovereignClassComponent`, `USovereignQiComponent`, `USovereignLevelComponent` |
+| `USovereignSkillDefinition` | Primary DataAsset defining base ability power, scaling attribute, cooldowns, and base target pattern. | AssetManager (`"SovereignSkill"`), `USovereignSkillComponent` |
+| `USovereignSkillAugment` | Instanced DataAsset modifier attached to skills by spending Qi: alters target shapes, stat multipliers, and elemental affinity. | `USovereignSkillComponent`, `USovereignQiComponent` |
+| `USovereignCombatCalculationLibrary` | Deterministic BlueprintFunctionLibrary executing percentage-mitigated damage formulas, crit rolls, and 3x3 rank matrix target evaluation. | Battle Arena Turn Manager, UI previews, AI Behavior Trees |
+| `USovereignPolymorphComponent` | Modular shapeshifting component for adult dragons: toggles TrueForm vs. Humanoid Visage, swapping mesh/materials and capsule dimensions. | `ASovereignBaseCharacter`, Party Formations, Dungeon Navigation |
+| `USovereignInventoryComponent` | Physical vessel container managing 24+ item slots, stack logic, dynamic item tags/properties, and fragment execution. | `ASovereignBaseCharacter`, `USovereignInventoryBroker`, World Pickups |
 | `USovereignLevelComponent` | Single Source of Truth for experience accumulators (`StrengthXP` ... `LuckXP`) and `ESovereignTrainingFocus`. | `USovereignAttributeComponent`, `USovereignQiComponent` |
 | `USovereignAttributeComponent` | Core D&D attributes (STR, DEX, CON, INT, WIS, CHA, LCK); feeds raw stat inputs into turn-based combat damage formulas. | All combat & skill components |
 

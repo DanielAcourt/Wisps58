@@ -169,11 +169,15 @@ The design directly leverages existing Sovereign Framework C++ subsystems:
 |:---|:---|:---|
 | **Wisp Spirit Control** | `ASovereignPlayerWisp` | First-person flight controls, targeting line-of-sight sweep, possession trigger. |
 | **Possession SOP** | `IInteractionInterface` | `AttemptPossession()`, `EjectFromHost()`, `SnapToTargetNotIncludingScale`. |
-| **Entity Core & Soul** | `USovereignSaveableEntityComponent` | Soul Hub mediator serializing `Bio`, `Qi`, `Attribute`, `Level`, `Class`, `Profession` brokers under named JSON tags. |
+| **Entity Core & Soul** | `USovereignSaveableEntityComponent` | Soul Hub mediator serializing `Bio`, `Qi`, `Attribute`, `Level`, `Class`, `Profession`, `Inventory`, `Skills` brokers under named JSON tags. |
 | **Training States & Level** | `USovereignLevelComponent` | `ESovereignTrainingFocus`, `TrainAttribute()` integer stat rollover, XP accumulators. |
 | **Class System & CP** | `USovereignClassComponent` | Unlocked class records, CP budget validation, equipped spellbooks and passive ability slots. |
 | **Professions System** | `USovereignProfessionComponent` | Tracks Mining, Lumbering, Alchemy, Smithing skill levels, recipes, and yield multipliers. |
-| **Skill & Action Tracker**| `USovereignSkillComponent` | Action accumulation counters for class unlocks, skill cooldowns, and damage formulas. |
+| **Skill & Action Tracker**| `USovereignSkillComponent` | Action accumulation counters for class unlocks, skill cooldowns, and Qi-infused skill augment pipeline. |
+| **Skill Archetypes & Augments** | `USovereignSkillDefinition`, `USovereignSkillAugment` | Composable Primary DataAssets and instanced shape/stat modifiers funded by Qi. |
+| **Combat Calculations** | `USovereignCombatCalculationLibrary` | Deterministic percentage defense mitigation (`100 / (100 + Def)`), crit rolls, and 3x3 rank matrix target evaluation. |
+| **Dragon Polymorphing** | `USovereignPolymorphComponent` | Modular Adult Dragon TrueForm vs Humanoid Visage transformation, capsule resizing, and speed swapping. |
+| **Vessel Inventory** | `USovereignInventoryComponent`, `USovereignItemFragment` | Composable fragment items (Weight, Consumable, Spiritual, Equippable) and character vessel inventory. |
 | **Attributes & Stats** | `USovereignAttributeComponent` | D&D core stats (STR, DEX, CON, INT, WIS, CHA, LCK), `SyncStatsFromEntity()`, health scaling. |
 | **Spatial Qi Aura** | `USovereignQiComponent` | Low-frequency `OnSovereignHeartbeat` spatial queries, `QiAuraRadius`, `QiGive`/`QiTake` flow. |
 | **Biological Metabolism** | `USovereignBioComponent` | Vitals (Hunger, Hydration), growth maturity accumulation, gestation rate for breeding. |
