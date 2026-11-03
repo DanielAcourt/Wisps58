@@ -32,6 +32,11 @@ bool FSovereignClassComponentTest::RunTest(const FString& Parameters)
 
 	ClassComp->MaxCP = 5;
 
+	// Ensure tags are added to manager if running in isolated automation harness
+	UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Class.Combat.Warrior"));
+	UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Class.Combat.Ninja"));
+	UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Class.Combat.Archmage"));
+
 	// 1. Define Test Classes
 	FGameplayTag WarriorTag = FGameplayTag::RequestGameplayTag(TEXT("Class.Combat.Warrior"), false);
 	FSovereignClassData WarriorData;
@@ -110,7 +115,12 @@ bool FSovereignClassComponentTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Restored UnlockedClasses count is 3"), ClassComp->UnlockedClasses.Num(), 3);
 	TestTrue(TEXT("Restored EquippedClasses has NinjaTag"), ClassComp->IsClassEquipped(NinjaTag));
 	TestFalse(TEXT("Restored EquippedClasses does not have WarriorTag"), ClassComp->IsClassEquipped(WarriorTag));
-	TestEqual(TEXT("Restored Ninja ClassLevel is 3"), ClassComp->UnlockedClasses[NinjaTag].ClassLevel, 3);
+	const FSovereignClassData* RestoredNinja = ClassComp->UnlockedClasses.Find(NinjaTag);
+	TestNotNull(TEXT("Restored Ninja ClassData should be found in UnlockedClasses"), RestoredNinja);
+	if (RestoredNinja)
+	{
+		TestEqual(TEXT("Restored Ninja ClassLevel is 3"), RestoredNinja->ClassLevel, 3);
+	}
 
 	return true;
 }

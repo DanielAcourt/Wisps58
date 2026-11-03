@@ -21,7 +21,7 @@ struct WISPCPP7VR_API FSovereignInventoryItemInstance
 	GENERATED_BODY()
 
 	/** Unique identifier for this runtime instance */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Inventory")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Inventory", meta = (IgnoreForMemberInitializationTest))
 	FGuid InstanceId;
 
 	/** Soft object pointer to the immutable archetype definition */

@@ -81,7 +81,7 @@ struct WISPCPP7VR_API FSovereignSkillInstance
 	GENERATED_BODY()
 
 	/** Unique runtime instance identifier */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Skill")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Skill", meta = (IgnoreForMemberInitializationTest))
 	FGuid SkillInstanceId;
 
 	/** Soft reference to the base immutable archetype definition */

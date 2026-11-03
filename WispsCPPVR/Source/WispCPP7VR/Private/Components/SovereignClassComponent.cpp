@@ -224,6 +224,12 @@ void USovereignClassComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 			FSovereignClassData Data;
 			FString TagStr = ItemObj->GetStringField(TEXT("ClassTag"));
 			Data.ClassTag = FGameplayTag::RequestGameplayTag(FName(*TagStr), false);
+			if (!Data.ClassTag.IsValid())
+			{
+				// In automation tests or standalone execution where tags might not be pre-registered in INI:
+				UGameplayTagsManager::Get().AddNativeGameplayTag(FName(*TagStr));
+				Data.ClassTag = FGameplayTag::RequestGameplayTag(FName(*TagStr), false);
+			}
 			Data.ClassDisplayName = FText::FromString(ItemObj->GetStringField(TEXT("DisplayName")));
 			Data.ClassLevel = ItemObj->GetIntegerField(TEXT("ClassLevel"));
 			Data.CPCost = ItemObj->GetIntegerField(TEXT("CPCost"));
@@ -248,6 +254,11 @@ void USovereignClassComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 		{
 			FString TagStr = Val->AsString();
 			FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName(*TagStr), false);
+			if (!Tag.IsValid())
+			{
+				UGameplayTagsManager::Get().AddNativeGameplayTag(FName(*TagStr));
+				Tag = FGameplayTag::RequestGameplayTag(FName(*TagStr), false);
+			}
 			if (Tag.IsValid())
 			{
 				EquippedClasses.AddTag(Tag);
