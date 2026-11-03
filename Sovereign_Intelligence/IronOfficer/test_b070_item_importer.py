@@ -32,15 +32,16 @@ class TestB070ItemImporter(unittest.TestCase):
         names = [r["RawName"] for r in records]
         self.assertIn("Species_SilverDragon", names)
         self.assertIn("Species_AncientOak", names)
-        self.assertIn("Object_IronOre", names)
+        self.assertIn("Item_IronOre", names)
+        self.assertIn("Item_BronzeIngot", names)
         self.assertIn("Species_Mushroom", names)
 
     def test_determine_required_fragments_for_mineral(self):
         # Iron ore should have UIData, Weight, and Spiritual (since QiGive=5.0), but NOT Consumable
         record = {
-            "RawName": "Object_IronOre",
+            "RawName": "Item_IronOre",
             "AssetName": "DA_IronOre",
-            "ItemTag": "Material.Ore.Iron",
+            "ItemTag": "Item.Material.Ore.Iron",
             "DisplayName": "Iron Ore",
             "Weight": 10.0,
             "MaxHunger": 0.0,
