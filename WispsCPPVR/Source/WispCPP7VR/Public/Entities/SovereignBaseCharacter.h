@@ -25,6 +25,7 @@ class USovereignInventoryComponent;
 class USovereignInventoryBroker;
 class USovereignClassComponent;
 class USovereignSkillComponent;
+class USovereignATBComponent;
 class USovereignPartyComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
@@ -85,6 +86,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignATBComponent* GetATBComponent() const { return ATBComponent; }
 
 	/**
 	 * Accesses the active party component.
@@ -230,6 +234,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignSkillComponent* SkillComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignATBComponent* ATBComponent;
 
 	/** Inventory broker connecting inventory component to the SaveDataComponent hub */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Inventory")

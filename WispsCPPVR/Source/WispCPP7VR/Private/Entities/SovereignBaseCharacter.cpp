@@ -15,6 +15,7 @@
 #include "Components/SovereignClassComponent.h"
 #include "Components/SovereignSkillComponent.h"
 #include "Components/SovereignPartyComponent.h"
+#include "Components/SovereignATBComponent.h"
 #include "TimerManager.h"
 #include "DrawDebugHelpers.h"
 #include "Components/CapsuleComponent.h"
@@ -53,6 +54,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	InventoryComponent = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("InventoryComponent"));
 	ClassComponent = CreateDefaultSubobject<USovereignClassComponent>(TEXT("ClassComponent"));
 	SkillComponent = CreateDefaultSubobject<USovereignSkillComponent>(TEXT("SkillComponent"));
+	ATBComponent = CreateDefaultSubobject<USovereignATBComponent>(TEXT("ATBComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
