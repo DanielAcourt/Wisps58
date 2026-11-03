@@ -41,7 +41,6 @@ bool FSovereignPolymorphComponentTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Character->AddInstanceComponent(PolymorphComp);
-	PolymorphComp->RegisterComponent();
 
 	// 3. Verify Initial Defaults
 	TestTrue(TEXT("Initial form should be TrueForm"), PolymorphComp->CurrentForm == ESovereignVesselForm::TrueForm);

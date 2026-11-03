@@ -71,6 +71,8 @@ bool FSovereignSkillAugmentTest::RunTest(const FString& Parameters)
 	CleaveAugment->AugmentTag = FGameplayTag::RequestGameplayTag(TEXT("Augment.Shape.RankCleave"), false);
 	CleaveAugment->AugmentName = FText::FromString(TEXT("Front Rank Cleave"));
 	CleaveAugment->AugmentType = ESovereignAugmentType::ShapeSpread;
+	CleaveAugment->AdditionalStatMultiplier = 0.0f;
+	CleaveAugment->AdditionalBasePower = 0.0f;
 	CleaveAugment->QiCostToInfuse = 25.0f;
 	CleaveAugment->bOverrideTargetPattern = true;
 	CleaveAugment->NewTargetPattern = ESovereignSkillTargetPattern::FrontRowSweep;

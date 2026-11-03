@@ -3,6 +3,7 @@
 #include "Inventory/SovereignInventoryBroker.h"
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "GameplayTagsManager.h"
 #include "Dom/JsonObject.h"
 
 USovereignInventoryBroker::USovereignInventoryBroker()
@@ -110,7 +111,16 @@ void USovereignInventoryBroker::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 				for (const TSharedPtr<FJsonValue>& TagVal : *TagsArrayPtr)
 				{
 					FString TagStr = TagVal->AsString();
-					LoadedSlot.DynamicTags.AddTag(FGameplayTag::RequestGameplayTag(FName(*TagStr), false));
+					FGameplayTag Tag = FGameplayTag::RequestGameplayTag(FName(*TagStr), false);
+					if (!Tag.IsValid())
+					{
+						UGameplayTagsManager::Get().AddNativeGameplayTag(FName(*TagStr));
+						Tag = FGameplayTag::RequestGameplayTag(FName(*TagStr), false);
+					}
+					if (Tag.IsValid())
+					{
+						LoadedSlot.DynamicTags.AddTag(Tag);
+					}
 				}
 			}
 

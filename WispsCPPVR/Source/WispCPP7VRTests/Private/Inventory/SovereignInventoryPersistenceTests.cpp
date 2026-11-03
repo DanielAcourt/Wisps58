@@ -4,6 +4,7 @@
 #include "Inventory/SovereignInventoryBroker.h"
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "GameplayTagsManager.h"
 #include "Dom/JsonObject.h"
 #include "Tests/AutomationCommon.h"
 
@@ -46,6 +47,9 @@ bool FSovereignInventoryPersistenceTest::RunTest(const FString& Parameters)
 
 	SourceInv->AddItem(DragonEggDef, 1);
 	SourceInv->AddItem(HealingSalveDef, 5);
+
+	// Ensure gameplay tag is registered in automation test context
+	UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Item.State.Equipped"));
 
 	// Add dynamic tags and custom properties to slot 0
 	FGuid EggGuid = SourceInv->InventorySlots[0].InstanceId;

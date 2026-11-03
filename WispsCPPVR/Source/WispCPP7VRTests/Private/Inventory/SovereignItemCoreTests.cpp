@@ -3,6 +3,7 @@
 #include "Misc/AutomationTest.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemFragment.h"
+#include "Inventory/SovereignItemDomainFragments.h"
 #include "Tests/AutomationCommon.h"
 
 /**
@@ -38,20 +39,24 @@ bool FSovereignItemCoreTest::RunTest(const FString& Parameters)
 	const USovereignItemFragment* MissingFragment = ItemDef->FindFragment<USovereignItemFragment>();
 	TestNull(TEXT("Searching empty fragments array should return nullptr"), MissingFragment);
 
-	// 4. Attach base fragment subobject
-	USovereignItemFragment* BaseFragment = NewObject<USovereignItemFragment>(ItemDef);
-	if (!BaseFragment)
+	// 4. Attach concrete UI fragment subobject (abstract base cannot be instantiated directly)
+	USovereignItemFragment_UIData* ConcreteFragment = NewObject<USovereignItemFragment_UIData>(ItemDef);
+	if (!ConcreteFragment)
 	{
-		AddError(TEXT("Failed to instantiate USovereignItemFragment"));
+		AddError(TEXT("Failed to instantiate USovereignItemFragment_UIData"));
 		return false;
 	}
-	ItemDef->Fragments.Add(BaseFragment);
+	ConcreteFragment->Description = FText::FromString(TEXT("Test Description"));
+	ItemDef->Fragments.Add(ConcreteFragment);
 
 	TestEqual(TEXT("Fragments array count should be 1"), ItemDef->Fragments.Num(), 1);
 
-	// 5. Test templated FindFragment<T>()
-	const USovereignItemFragment* FoundFragment = ItemDef->FindFragment<USovereignItemFragment>();
-	TestNotNull(TEXT("FindFragment<USovereignItemFragment> should find the attached fragment"), FoundFragment);
+	// 5. Test templated FindFragment<T>() for concrete type and base type
+	const USovereignItemFragment_UIData* FoundConcrete = ItemDef->FindFragment<USovereignItemFragment_UIData>();
+	TestNotNull(TEXT("FindFragment<USovereignItemFragment_UIData> should find the attached fragment"), FoundConcrete);
+
+	const USovereignItemFragment* FoundBase = ItemDef->FindFragment<USovereignItemFragment>();
+	TestNotNull(TEXT("FindFragment<USovereignItemFragment> should find base fragment"), FoundBase);
 
 	// 6. Test Blueprint-callable GetFragmentByClass()
 	const USovereignItemFragment* FoundByClass = ItemDef->GetFragmentByClass(USovereignItemFragment::StaticClass());
@@ -63,9 +68,9 @@ bool FSovereignItemCoreTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("GetFragmentByClass with nullptr should return nullptr"), NullSearch);
 
 	// 8. Test lifecycle default virtual method execution
-	TestFalse(TEXT("Default OnConsumed should return false"), BaseFragment->OnConsumed(nullptr, 1));
-	TestFalse(TEXT("Default OnEquipped should return false"), BaseFragment->OnEquipped(nullptr, NAME_None));
-	TestFalse(TEXT("Default OnUnequipped should return false"), BaseFragment->OnUnequipped(nullptr, NAME_None));
+	TestFalse(TEXT("Default OnConsumed should return false"), ConcreteFragment->OnConsumed(nullptr, 1));
+	TestFalse(TEXT("Default OnEquipped should return false"), ConcreteFragment->OnEquipped(nullptr, NAME_None));
+	TestFalse(TEXT("Default OnUnequipped should return false"), ConcreteFragment->OnUnequipped(nullptr, NAME_None));
 
 	return true;
 }

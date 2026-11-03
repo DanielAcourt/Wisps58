@@ -72,8 +72,12 @@ bool FSovereignConsumableFragmentTest::RunTest(const FString& Parameters)
 	// 5. Verify Bio Hunger increased from 20 to 55 (20 + 35)
 	TestEqual(TEXT("Hunger should replenish by 35.0f"), Bio->Hunger, 55.0f);
 
-	// 6. Verify LevelComponent StrengthXP increased by 2.5
-	TestEqual(TEXT("StrengthXP should increment by 2.5"), Level->StrengthXP, 2.5);
+	// 6. Verify LevelComponent rollover: 2.5 XP awards 2 full levels into Strength and leaves 0.5 XP in accumulator
+	TestEqual(TEXT("StrengthXP after rollover should be 0.5"), Level->StrengthXP, 0.5);
+	if (USovereignAttributeComponent* AttrComp = Character->GetAttributeComponent())
+	{
+		TestEqual(TEXT("Strength attribute increased by 2 from integer rollover"), AttrComp->Strength, 12);
+	}
 
 	// 7. Verify inventory quantity decremented from 2 to 1
 	TestEqual(TEXT("Remaining quantity should be 1"), Inv->InventorySlots[0].Quantity, 1);
