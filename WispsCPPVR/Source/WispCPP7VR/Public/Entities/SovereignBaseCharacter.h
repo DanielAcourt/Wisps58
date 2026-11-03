@@ -20,6 +20,7 @@ class USovereignControllerComponent;
 class USovereignAttributeComponent;
 class USovereignLevelComponent;
 class USovereignBioComponent;
+class USovereignInventoryComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -67,6 +68,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }
@@ -179,6 +183,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignBioComponent* BioComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignInventoryComponent* InventoryComponent;
 
 	/** Performs a sphere trace to find the actor the player is looking at this is the i think wrong way to do this Blueprint callable */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Components")

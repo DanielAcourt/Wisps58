@@ -10,6 +10,7 @@
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignLevelComponent.h"
+#include "Inventory/SovereignInventoryComponent.h"
 #include "TimerManager.h"
 
 //Entinty framework to save information
@@ -43,6 +44,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
 	LevelComponent = CreateDefaultSubobject<USovereignLevelComponent>(TEXT("LevelComponent"));
 	BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
+	InventoryComponent = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("InventoryComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
