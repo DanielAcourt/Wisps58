@@ -425,7 +425,37 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Distance from node to itself is 0"), LoopGen->CalculateGraphDistance(0, 0), 0);
 	TestTrue(TEXT("Distance from Entrance to Boss is positive"), LoopGen->CalculateGraphDistance(0, LoopGen->BossNodeIndex) >= LoopGen->MinSpineLength);
 
-	// 11. Test Subsystem Regression Compatibility
+	// 11. Test Ticket B-099 Guaranteed Boss Chamber & Gate on Scaled/Mega Dungeons
+	ASovereignDungeonGenerator* MegaGen = NewObject<ASovereignDungeonGenerator>();
+	MegaGen->TargetRoomCount = 50; // Scaled large dungeon test
+	MegaGen->GenerationSeed = 9999;
+	MegaGen->MaxLoopCount = 2;
+	MegaGen->bSpawnPhysicalGeometry = false;
+	MegaGen->bAutoSpawnDefaultLighting = false;
+	const bool bMegaSuccess = MegaGen->GenerateDungeon();
+
+	TestTrue(TEXT("Mega dungeon generation succeeds"), bMegaSuccess);
+	TestTrue(TEXT("Mega dungeon BossNodeIndex is valid (Guaranteed Boss Chamber)"), MegaGen->BossNodeIndex != INDEX_NONE);
+	TestEqual(TEXT("Mega dungeon terminal node is BossChamber"), MegaGen->DungeonNodes[MegaGen->BossNodeIndex].TileType, EDungeonTileType::BossChamber);
+
+	// Verify exactly 1 sealed elite gate edge leading to Boss Chamber
+	int32 MegaBossEdgeCount = 0;
+	bool bHasSealedGate = false;
+	for (const FSovereignDungeonEdge& Edge : MegaGen->DungeonEdges)
+	{
+		if (Edge.Connects(MegaGen->BossNodeIndex))
+		{
+			MegaBossEdgeCount++;
+			if (Edge.DoorState == EDoorState::SealedEliteGate)
+			{
+				bHasSealedGate = true;
+			}
+		}
+	}
+	TestEqual(TEXT("Mega dungeon Boss Chamber strictly has 1 edge"), MegaBossEdgeCount, 1);
+	TestTrue(TEXT("Mega dungeon Boss Chamber entrance is SealedEliteGate"), bHasSealedGate);
+
+	// 12. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;
