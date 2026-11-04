@@ -336,6 +336,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> WallMesh;
 
+	/** Static Mesh for modular doorway openings/frames (Option A: If null, connected faces remain open cutouts) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> DoorwayMesh;
+
+	/** Optional specialized mesh for sealed Boss Gate barrier actor */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> BossGateMesh;
+
 	/** Optional specialized mesh for terminal Boss Chamber altar / centerpiece */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> BossAltarMesh;
@@ -347,6 +355,10 @@ public:
 	/** Instanced Static Mesh Component for rendering all boundary wall tiles in a single draw call */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<class UInstancedStaticMeshComponent> WallInstancedComponent;
+
+	/** Instanced Static Mesh Component for rendering modular doorway frames in a single draw call */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<class UInstancedStaticMeshComponent> DoorwayInstancedComponent;
 
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")

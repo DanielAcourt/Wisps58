@@ -94,9 +94,10 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);
 	TestEqual(TEXT("Total generated nodes should equal TargetRoomCount"), Generator->DungeonNodes.Num(), 6);
 
-	// Verify Ticket B-089 & B-094 3D geometry & multi-cell footprint spawning
+	// Verify Ticket B-089, B-094 & B-095 3D geometry & multi-cell footprint spawning
 	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent.Get());
 	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent.Get());
+	TestNotNull(TEXT("DoorwayInstancedComponent exists"), Generator->DoorwayInstancedComponent.Get());
 	TestTrue(TEXT("Floor instances match or exceed node count due to multi-cell footprints"),
 		Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() >= 6 : false);
 	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() > 0 : false);
@@ -179,22 +180,30 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Node has non-zero connected passage mask"), Node.ConnectedPassageMask > 0);
 	}
 
-	// 6. Test Ticket B-092 Edge-Aware Geometry & Cleanup Lifecycle
-	// Edge-aware invariant: Total walls + Total open passages across all nodes == Nodes * 4
-	int32 OpenPassageTotal = 0;
+	// 6. Test Ticket B-095 Multi-Cell Perimeter Boundary & Edge-Aware Snapping Invariants
+	// Invariant: Total wall instances strictly equals the sum of unconnected perimeter sockets across all nodes
+	// Invariant: Zero internal walls inside multi-cell rooms (only perimeter sockets spawn walls)
+	int32 TotalUnconnectedSockets = 0;
+	int32 TotalConnectedSockets = 0;
 	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
 	{
-		for (int32 b = 0; b < 4; ++b)
+		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
 		{
-			if ((Node.ConnectedPassageMask & (1 << b)) != 0)
+			if (!Socket.bIsConnected)
 			{
-				OpenPassageTotal++;
+				TotalUnconnectedSockets++;
+			}
+			else
+			{
+				TotalConnectedSockets++;
 			}
 		}
 	}
-	const int32 ExpectedWallCount = (Generator->DungeonNodes.Num() * 4) - OpenPassageTotal;
-	TestEqual(TEXT("Wall instance count matches expected edge-aware boundary formula"),
-		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, ExpectedWallCount);
+	TestEqual(TEXT("Wall instances strictly equal unconnected perimeter socket count (zero interior walls)"),
+		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, TotalUnconnectedSockets);
+	// Option A: DoorwayMesh is default null in testing, so connected faces remain open cutouts (0 instances)
+	TestEqual(TEXT("Doorway instances is 0 when DoorwayMesh is null (Option A open passage)"),
+		Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
 
 	// Test CleanupDungeon idempotency (running multiple times clears cleanly)
 	Generator->CleanupDungeon();
@@ -202,6 +211,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Edges cleared after cleanup"), Generator->DungeonEdges.Num(), 0);
 	TestEqual(TEXT("Floor instances cleared after cleanup"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 0);
 	TestEqual(TEXT("Wall instances cleared after cleanup"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, 0);
+	TestEqual(TEXT("Doorway instances cleared after cleanup"), Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
 
 	// Re-run generation to ensure clean rebuild
 	const bool bRebuilt = Generator->GenerateDungeon();

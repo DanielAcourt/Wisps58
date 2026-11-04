@@ -54,12 +54,16 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	WallInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("WallInstancedComponent"));
 	WallInstancedComponent->SetupAttachment(FloorInstancedComponent);
 
+	DoorwayInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("DoorwayInstancedComponent"));
+	DoorwayInstancedComponent->SetupAttachment(FloorInstancedComponent);
+
 	// Default fallback mesh finder for basic cube/floor shapes if custom modular assets aren't yet loaded
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultCubeObj(TEXT("/Engine/BasicShapes/Cube"));
 	if (DefaultCubeObj.Succeeded())
 	{
 		FloorMesh = DefaultCubeObj.Object;
 		WallMesh = DefaultCubeObj.Object;
+		BossGateMesh = DefaultCubeObj.Object;
 	}
 }
 
@@ -306,27 +310,50 @@ void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 				const uint8 DirBitB = (1 << OppDir);
 				DungeonNodes[Edge.NodeIndexB].ConnectedPassageMask |= DirBitB;
 
-				// 3. Update Socket state on Node A (Ticket B-094.2)
+				// Cardinal offset matching DirA
+				FIntPoint OffsetAtoB(0, 0);
+				switch (DirA)
+				{
+				case EDungeonDirection::North: OffsetAtoB = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  OffsetAtoB = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: OffsetAtoB = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  OffsetAtoB = FIntPoint(0, -1); break;
+				default: break;
+				}
+
+				const TArray<FIntPoint> OccupiedCellsA = DungeonNodes[Edge.NodeIndexA].GetOccupiedCells();
+				const TArray<FIntPoint> OccupiedCellsB = DungeonNodes[Edge.NodeIndexB].GetOccupiedCells();
+
+				// 3. Update Socket state on Node A (Ticket B-095 coordinate-exact binding)
 				for (FSovereignDoorwaySocket& SockA : DungeonNodes[Edge.NodeIndexA].PerimeterSockets)
 				{
 					if (!SockA.bIsConnected && SockA.FacingDirection == DirA)
 					{
-						SockA.bIsConnected = true;
-						SockA.ConnectedEdgeId = Edge.EdgeId;
-						SockA.ConnectedNodeIndex = Edge.NodeIndexB;
-						break;
+						const FIntPoint TargetNeighborCoord = SockA.CellCoord + OffsetAtoB;
+						if (OccupiedCellsB.Contains(TargetNeighborCoord))
+						{
+							SockA.bIsConnected = true;
+							SockA.ConnectedEdgeId = Edge.EdgeId;
+							SockA.ConnectedNodeIndex = Edge.NodeIndexB;
+							break;
+						}
 					}
 				}
 
-				// 4. Update Socket state on Node B (Ticket B-094.2)
+				// 4. Update Socket state on Node B (Ticket B-095 coordinate-exact binding)
+				const FIntPoint OffsetBtoA = -OffsetAtoB;
 				for (FSovereignDoorwaySocket& SockB : DungeonNodes[Edge.NodeIndexB].PerimeterSockets)
 				{
 					if (!SockB.bIsConnected && SockB.FacingDirection == (EDungeonDirection)OppDir)
 					{
-						SockB.bIsConnected = true;
-						SockB.ConnectedEdgeId = Edge.EdgeId;
-						SockB.ConnectedNodeIndex = Edge.NodeIndexA;
-						break;
+						const FIntPoint TargetNeighborCoord = SockB.CellCoord + OffsetBtoA;
+						if (OccupiedCellsA.Contains(TargetNeighborCoord))
+						{
+							SockB.bIsConnected = true;
+							SockB.ConnectedEdgeId = Edge.EdgeId;
+							SockB.ConnectedNodeIndex = Edge.NodeIndexA;
+							break;
+						}
 					}
 				}
 			}
@@ -344,6 +371,10 @@ void ASovereignDungeonGenerator::CleanupDungeon()
 	if (WallInstancedComponent)
 	{
 		WallInstancedComponent->ClearInstances();
+	}
+	if (DoorwayInstancedComponent)
+	{
+		DoorwayInstancedComponent->ClearInstances();
 	}
 
 	// 2. Destroy strictly generator-spawned discrete actors (boss altar, props)
@@ -682,9 +713,18 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			WallInstancedComponent->RegisterComponent();
 		}
 	}
+	if (!DoorwayInstancedComponent)
+	{
+		DoorwayInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeDoorwayInstancedComponent"));
+		if (GetWorld())
+		{
+			DoorwayInstancedComponent->RegisterComponent();
+		}
+	}
 
 	FloorInstancedComponent->ClearInstances();
 	WallInstancedComponent->ClearInstances();
+	DoorwayInstancedComponent->ClearInstances();
 
 	if (FloorMesh)
 	{
@@ -694,23 +734,19 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 	{
 		WallInstancedComponent->SetStaticMesh(WallMesh);
 	}
-
-	TSet<FIntPoint> OccupiedCoords;
-	for (const FSovereignDungeonNode& Node : DungeonNodes)
+	if (DoorwayMesh)
 	{
-		OccupiedCoords.Add(Node.GridCoord);
+		DoorwayInstancedComponent->SetStaticMesh(DoorwayMesh);
 	}
 
 	const FVector Origin = GetActorLocation();
 
-	// 2. Spawn Floor Tiles and Boundary Walls for Each Node & Occupied Cells (Ticket B-094)
+	// 2. Spawn Floor Tiles for Each Room (Multi-cell aware)
 	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
 	{
 		const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
-		const FVector AnchorPos = Node.WorldTransform.GetLocation();
 		const TArray<FIntPoint> OccupiedCells = Node.GetOccupiedCells();
 
-		// Spawn 1000cm x 1000cm floor tiles for every occupied grid cell in this room
 		for (const FIntPoint& Cell : OccupiedCells)
 		{
 			const FVector CellPos = Origin + FVector(Cell.X * TILE_SIZE, Cell.Y * TILE_SIZE, 0.0f);
@@ -721,46 +757,115 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 			FloorInstancedComponent->AddInstance(FloorTransform);
 		}
+	}
 
-		// Check 4 cardinal directions matching EDungeonDirection order
-		const TArray<TPair<FIntPoint, FVector>> CardinalOffsets = {
-			TPair<FIntPoint, FVector>(FIntPoint(1, 0), FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f)),   // Index 0: North (+X)
-			TPair<FIntPoint, FVector>(FIntPoint(0, 1), FVector(0.0f, TILE_SIZE * 0.5f, 300.0f)),   // Index 1: East (+Y)
-			TPair<FIntPoint, FVector>(FIntPoint(-1, 0), FVector(-TILE_SIZE * 0.5f, 0.0f, 300.0f)),  // Index 2: South (-X)
-			TPair<FIntPoint, FVector>(FIntPoint(0, -1), FVector(0.0f, -TILE_SIZE * 0.5f, 300.0f))   // Index 3: West (-Y)
-		};
+	// 3. Multi-Cell Perimeter Boundary & Edge-Aware Doorway Snapping (Ticket B-095)
+	// Iterate strictly over Node.PerimeterSockets - internal cells have zero sockets, guaranteeing zero interior walls!
+	TSet<int32> ProcessedSealedGates;
 
-		const TArray<FRotator> CardinalRotations = {
-			FRotator(0.0f, 0.0f, 0.0f),   // North
-			FRotator(0.0f, 90.0f, 0.0f),   // East
-			FRotator(0.0f, 180.0f, 0.0f),  // South
-			FRotator(0.0f, -90.0f, 0.0f)   // West
-		};
+	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
+	{
+		const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
+		const FVector AnchorPos = Node.WorldTransform.GetLocation();
 
-		for (int32 DirIdx = 0; DirIdx < CardinalOffsets.Num(); ++DirIdx)
+		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
 		{
-			const uint8 DirBit = (1 << DirIdx);
-			const bool bHasEdgePassage = (Node.ConnectedPassageMask & DirBit) != 0;
+			// World coordinate of this specific perimeter cell
+			const FVector CellPos = Origin + FVector(Socket.CellCoord.X * TILE_SIZE, Socket.CellCoord.Y * TILE_SIZE, 0.0f);
 
-			if (!bHasEdgePassage)
+			// Cardinal offset and rotation based on socket facing direction
+			FVector DirectionOffset = FVector::ZeroVector;
+			FRotator FaceRotation = FRotator::ZeroRotator;
+			bool bIsNorthSouth = false;
+
+			switch (Socket.FacingDirection)
 			{
-				FTransform WallTransform;
-				WallTransform.SetLocation(AnchorPos + CardinalOffsets[DirIdx].Value);
-				WallTransform.SetRotation(CardinalRotations[DirIdx].Quaternion());
-				if (CardinalOffsets[DirIdx].Key.X != 0)
+			case EDungeonDirection::North:
+				DirectionOffset = FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f);
+				FaceRotation = FRotator(0.0f, 0.0f, 0.0f);
+				bIsNorthSouth = true;
+				break;
+			case EDungeonDirection::East:
+				DirectionOffset = FVector(0.0f, TILE_SIZE * 0.5f, 300.0f);
+				FaceRotation = FRotator(0.0f, 90.0f, 0.0f);
+				bIsNorthSouth = false;
+				break;
+			case EDungeonDirection::South:
+				DirectionOffset = FVector(-TILE_SIZE * 0.5f, 0.0f, 300.0f);
+				FaceRotation = FRotator(0.0f, 180.0f, 0.0f);
+				bIsNorthSouth = true;
+				break;
+			case EDungeonDirection::West:
+				DirectionOffset = FVector(0.0f, -TILE_SIZE * 0.5f, 300.0f);
+				FaceRotation = FRotator(0.0f, -90.0f, 0.0f);
+				bIsNorthSouth = false;
+				break;
+			default:
+				break;
+			}
+
+			FTransform FaceTransform;
+			FaceTransform.SetLocation(CellPos + DirectionOffset);
+			FaceTransform.SetRotation(FaceRotation.Quaternion());
+
+			// Scale standard modular wall (1000cm wide x 30cm thick x 600cm high)
+			if (bIsNorthSouth)
+			{
+				FaceTransform.SetScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
+			}
+			else
+			{
+				FaceTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, 0.3f, 6.0f));
+			}
+
+			if (!Socket.bIsConnected)
+			{
+				// Unconnected perimeter socket: Spawn solid outer boundary wall
+				WallInstancedComponent->AddInstance(FaceTransform);
+			}
+			else
+			{
+				// Connected perimeter socket: Check edge semantics
+				const int32 EdgeId = Socket.ConnectedEdgeId;
+				const FSovereignDungeonEdge* EdgePtr = DungeonEdges.IsValidIndex(EdgeId) ? &DungeonEdges[EdgeId] : nullptr;
+
+				// Spawn Boss Gate if sealed elite gate
+				if (EdgePtr && EdgePtr->DoorState == EDoorState::SealedEliteGate)
 				{
-					WallTransform.SetScale3D(FVector(0.4f, TILE_SIZE / 100.0f, 6.0f));
-				}
-				else
-				{
-					WallTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, 0.4f, 6.0f));
+					if (!ProcessedSealedGates.Contains(EdgeId) && GetWorld())
+					{
+						ProcessedSealedGates.Add(EdgeId);
+
+						FActorSpawnParameters SpawnParams;
+						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+						if (AStaticMeshActor* GateActor = GetWorld()->SpawnActor<AStaticMeshActor>(
+							AStaticMeshActor::StaticClass(), FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
+						{
+							if (GateActor->GetStaticMeshComponent())
+							{
+								if (BossGateMesh)
+								{
+									GateActor->GetStaticMeshComponent()->SetStaticMesh(BossGateMesh);
+								}
+								GateActor->SetActorScale3D(FVector(0.5f, (TILE_SIZE * 0.5f) / 100.0f, 5.0f));
+							}
+							GeneratorSpawnedActors.Add(GateActor);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Sealed Boss Gate Actor at Edge %d."), EdgeId);
+						}
+					}
 				}
 
-				WallInstancedComponent->AddInstance(WallTransform);
+				// If DoorwayMesh is assigned, spawn it in DoorwayInstancedComponent
+				// Option A: If DoorwayMesh is nullptr, leave face open (cutout) for traversal
+				if (DoorwayMesh)
+				{
+					DoorwayInstancedComponent->AddInstance(FaceTransform);
+				}
 			}
 		}
 
-		// 3. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop
+		// 4. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop
 		if (Node.TileType == EDungeonTileType::BossChamber)
 		{
 			if (BossAltarMesh && GetWorld())
@@ -768,8 +873,15 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+				// Place altar in the center of the multi-cell Boss Chamber
+				const FVector BossCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					50.0f
+				);
+
 				if (AStaticMeshActor* AltarActor = GetWorld()->SpawnActor<AStaticMeshActor>(
-					AStaticMeshActor::StaticClass(), AnchorPos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams))
+					AStaticMeshActor::StaticClass(), BossCenterPos, FRotator::ZeroRotator, SpawnParams))
 				{
 					if (AltarActor->GetStaticMeshComponent())
 					{
@@ -781,8 +893,8 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls."),
-		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount());
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls, %d Doorways."),
+		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount(), DoorwayInstancedComponent->GetInstanceCount());
 }
 
 void ASovereignDungeonGenerator::SpawnDefaultLightingRig()
