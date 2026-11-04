@@ -328,6 +328,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	bool bSpawnPhysicalGeometry = true;
 
+	/** True if wall mesh pivot is in the center of the mesh (e.g. Engine/BasicShapes/Cube), false if bottom-center (standard modular kit) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	bool bWallMeshCenterPivot = true;
+
+	/** When DoorwayMesh is null, assembles a 3-part archway (two posts and top lintel) with a 400x500cm opening instead of leaving an empty void */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	bool bProceduralArchwayFallback = false;
+
 	/** Static Mesh for standard 1000cm x 1000cm floor tiles */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> FloorMesh;

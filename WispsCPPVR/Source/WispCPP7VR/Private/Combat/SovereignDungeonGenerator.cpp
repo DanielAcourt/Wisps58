@@ -983,31 +983,31 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			const FVector CellPos = Origin + FVector(Socket.CellCoord.X * TILE_SIZE, Socket.CellCoord.Y * TILE_SIZE, 0.0f);
 
 			// Cardinal offset and rotation based on socket facing direction
+			// Standard Modular convention: Wall faces outward along Local +X; Width is along Local Y; Height is along Local Z.
+			// Rotating by Yaw orients the wall outward cleanly for all 4 cardinal directions.
+			const float WallHeight = 600.0f;
+			const float VerticalOffset = bWallMeshCenterPivot ? (WallHeight * 0.5f) : 0.0f;
+
 			FVector DirectionOffset = FVector::ZeroVector;
 			FRotator FaceRotation = FRotator::ZeroRotator;
-			bool bIsNorthSouth = false;
 
 			switch (Socket.FacingDirection)
 			{
 			case EDungeonDirection::North:
-				DirectionOffset = FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f);
-				FaceRotation = FRotator(0.0f, 0.0f, 0.0f);
-				bIsNorthSouth = true;
+				DirectionOffset = FVector(TILE_SIZE * 0.5f, 0.0f, VerticalOffset);
+				FaceRotation = FRotator(0.0f, 0.0f, 0.0f); // Faces +X
 				break;
 			case EDungeonDirection::East:
-				DirectionOffset = FVector(0.0f, TILE_SIZE * 0.5f, 300.0f);
-				FaceRotation = FRotator(0.0f, 90.0f, 0.0f);
-				bIsNorthSouth = false;
+				DirectionOffset = FVector(0.0f, TILE_SIZE * 0.5f, VerticalOffset);
+				FaceRotation = FRotator(0.0f, 90.0f, 0.0f); // Faces +Y
 				break;
 			case EDungeonDirection::South:
-				DirectionOffset = FVector(-TILE_SIZE * 0.5f, 0.0f, 300.0f);
-				FaceRotation = FRotator(0.0f, 180.0f, 0.0f);
-				bIsNorthSouth = true;
+				DirectionOffset = FVector(-TILE_SIZE * 0.5f, 0.0f, VerticalOffset);
+				FaceRotation = FRotator(0.0f, 180.0f, 0.0f); // Faces -X
 				break;
 			case EDungeonDirection::West:
-				DirectionOffset = FVector(0.0f, -TILE_SIZE * 0.5f, 300.0f);
-				FaceRotation = FRotator(0.0f, -90.0f, 0.0f);
-				bIsNorthSouth = false;
+				DirectionOffset = FVector(0.0f, -TILE_SIZE * 0.5f, VerticalOffset);
+				FaceRotation = FRotator(0.0f, 270.0f, 0.0f); // Faces -Y
 				break;
 			default:
 				break;
@@ -1017,15 +1017,10 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			FaceTransform.SetLocation(CellPos + DirectionOffset);
 			FaceTransform.SetRotation(FaceRotation.Quaternion());
 
-			// Scale standard modular wall (1000cm wide x 30cm thick x 600cm high)
-			if (bIsNorthSouth)
-			{
-				FaceTransform.SetScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
-			}
-			else
-			{
-				FaceTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, 0.3f, 6.0f));
-			}
+			// Scale standard modular wall (Thickness = 30cm in local X, Width = 1000cm in local Y, Height = 600cm in local Z)
+			// Uniform scale across all directions prevents perpendicular slicing into rooms!
+			const FVector StandardWallScale(0.3f, TILE_SIZE / 100.0f, WallHeight / 100.0f);
+			FaceTransform.SetScale3D(StandardWallScale);
 
 			if (!Socket.bIsConnected)
 			{
@@ -1066,10 +1061,33 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				}
 
 				// If DoorwayMesh is assigned, spawn it in DoorwayInstancedComponent
-				// Option A: If DoorwayMesh is nullptr, leave face open (cutout) for traversal
 				if (DoorwayMesh)
 				{
 					DoorwayInstancedComponent->AddInstance(FaceTransform);
+				}
+				else if (bProceduralArchwayFallback && WallInstancedComponent)
+				{
+					// Option 2 Archway Fallback: Construct a 400w x 500h opening using left post, right post, and top lintel
+					// Left Post (Width 300cm, centered at local Y = -350cm)
+					const FVector LeftPostLocal(-350.0f * FaceRotation.RotateVector(FVector::RightVector));
+					FTransform LeftTransform = FaceTransform;
+					LeftTransform.SetLocation(FaceTransform.GetLocation() + LeftPostLocal);
+					LeftTransform.SetScale3D(FVector(0.3f, 3.0f, WallHeight / 100.0f));
+					WallInstancedComponent->AddInstance(LeftTransform);
+
+					// Right Post (Width 300cm, centered at local Y = +350cm)
+					const FVector RightPostLocal(350.0f * FaceRotation.RotateVector(FVector::RightVector));
+					FTransform RightTransform = FaceTransform;
+					RightTransform.SetLocation(FaceTransform.GetLocation() + RightPostLocal);
+					RightTransform.SetScale3D(FVector(0.3f, 3.0f, WallHeight / 100.0f));
+					WallInstancedComponent->AddInstance(RightTransform);
+
+					// Top Lintel (Width 400cm, Height 100cm, centered at Z = 550cm)
+					const float LintelZ = bWallMeshCenterPivot ? 250.0f : 500.0f;
+					FTransform LintelTransform = FaceTransform;
+					LintelTransform.SetLocation(FaceTransform.GetLocation() + FVector(0.0f, 0.0f, LintelZ));
+					LintelTransform.SetScale3D(FVector(0.3f, 4.0f, 1.0f));
+					WallInstancedComponent->AddInstance(LintelTransform);
 				}
 			}
 		}

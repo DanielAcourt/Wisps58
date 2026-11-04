@@ -83,6 +83,8 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	Generator->TargetRoomCount = 6;
 	Generator->GenerationSeed = 42;
 	Generator->MaxLoopCount = 0; // Spanning tree mode for baseline tests
+	TestTrue(TEXT("bWallMeshCenterPivot defaults to true"), Generator->bWallMeshCenterPivot);
+	TestFalse(TEXT("bProceduralArchwayFallback defaults to false"), Generator->bProceduralArchwayFallback);
 	TestTrue(TEXT("bAutoSpawnDefaultLighting defaults to true"), Generator->bAutoSpawnDefaultLighting);
 	TestTrue(TEXT("bSpawnDirectionalLight defaults to true"), Generator->bSpawnDirectionalLight);
 	TestTrue(TEXT("bSpawnPostProcessVolume defaults to true"), Generator->bSpawnPostProcessVolume);
@@ -205,6 +207,28 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Option A: DoorwayMesh is default null in testing, so connected faces remain open cutouts (0 instances)
 	TestEqual(TEXT("Doorway instances is 0 when DoorwayMesh is null (Option A open passage)"),
 		Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
+
+	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances
+	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
+	{
+		FTransform FirstWallTransform;
+		Generator->WallInstancedComponent->GetInstanceTransform(0, FirstWallTransform, true);
+		const FVector WallScale = FirstWallTransform.GetScale3D();
+		TestEqual(TEXT("Wall scale X is 0.3 (thickness)"), WallScale.X, 0.3f);
+		TestEqual(TEXT("Wall scale Y is 10.0 (1000cm width)"), WallScale.Y, 10.0f);
+		TestEqual(TEXT("Wall scale Z is 6.0 (600cm height)"), WallScale.Z, 6.0f);
+	}
+
+	// Test Procedural Archway Fallback
+	Generator->bProceduralArchwayFallback = true;
+	Generator->SpawnDungeonGeometry();
+	const int32 ExpectedArchwayWallCount = TotalUnconnectedSockets + (TotalConnectedSockets * 3);
+	TestEqual(TEXT("Wall instances include 3-part archway posts and lintel when bProceduralArchwayFallback is true"),
+		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, ExpectedArchwayWallCount);
+
+	// Restore Option A
+	Generator->bProceduralArchwayFallback = false;
+	Generator->SpawnDungeonGeometry();
 
 	// Test CleanupDungeon idempotency (running multiple times clears cleanly)
 	Generator->CleanupDungeon();
