@@ -76,6 +76,9 @@ public:
 	USovereignAttributeComponent* GetAttributeComponent() const { return AttributeComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignQiComponent* GetQiComponent() const { return QiComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")

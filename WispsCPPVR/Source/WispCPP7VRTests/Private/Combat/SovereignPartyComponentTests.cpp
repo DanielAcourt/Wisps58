@@ -92,19 +92,19 @@ bool FSovereignPartyComponentTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Active member count is back to 1"), PartyComp->GetActiveMemberCount(), 1);
 
 	// 5. Persistence Broker Serialization / Deserialization
-	TestEqual(TEXT("Broker category must be Sovereign.Party"), PartyComp->GetBrokerCategory(), TEXT("Sovereign.Party"));
+	TSharedPtr<FJsonObject> RootSaveObj = MakeShared<FJsonObject>();
+	PartyComp->OnSave(RootSaveObj);
+	TestTrue(TEXT("RootSaveObj should contain Sovereign.Party"), RootSaveObj->HasField(TEXT("Sovereign.Party")));
 
-	const FString SerializedJson = PartyComp->SerializeBrokerState();
-	TestFalse(TEXT("Serialized JSON should not be empty"), SerializedJson.IsEmpty());
-	TestTrue(TEXT("Serialized JSON should contain UnlockedRanks"), SerializedJson.Contains(TEXT("UnlockedRanks")));
-	TestTrue(TEXT("Serialized JSON should contain GridSlots"), SerializedJson.Contains(TEXT("GridSlots")));
+	TSharedPtr<FJsonObject> PartySaveData = RootSaveObj->GetObjectField(TEXT("Sovereign.Party"));
+	TestTrue(TEXT("PartySaveData should contain UnlockedRanks"), PartySaveData->HasField(TEXT("UnlockedRanks")));
+	TestTrue(TEXT("PartySaveData should contain GridSlots"), PartySaveData->HasField(TEXT("GridSlots")));
 
 	// Create fresh component and restore state
 	USovereignPartyComponent* RestoredComp = NewObject<USovereignPartyComponent>();
 	TestFalse(TEXT("RestoredComp Rank 1 starts locked"), RestoredComp->IsRankUnlocked(1));
 
-	const bool bDeserialized = RestoredComp->DeserializeBrokerState(SerializedJson);
-	TestTrue(TEXT("DeserializeBrokerState should succeed"), bDeserialized);
+	RestoredComp->OnLoad(RootSaveObj);
 	TestTrue(TEXT("RestoredComp Rank 1 should now be unlocked"), RestoredComp->IsRankUnlocked(1));
 	TestFalse(TEXT("RestoredComp Rank 2 should still be locked"), RestoredComp->IsRankUnlocked(2));
 	TestTrue(TEXT("RestoredComp Slot 0 occupied with Leader"), RestoredComp->GridSlots[0].bIsLeader);

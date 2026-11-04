@@ -45,7 +45,7 @@ float USovereignATBComponent::CalculateEffectiveFillRate() const
 		// 2. Class Speed Multiplier from ClassComponent
 		if (const USovereignClassComponent* ClassComp = Character->GetClassComponent())
 		{
-			ClassSpeedMultiplier = FMath::Max(0.1f, ClassComp->DexterityMultiplier);
+			ClassSpeedMultiplier = FMath::Max(0.1f, ClassComp->GetTotalDexterityMultiplier());
 		}
 	}
 

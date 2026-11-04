@@ -160,13 +160,10 @@ bool USovereignPartyComponent::UnlockRank(int32 RankIndex)
 
 // --- Persistence ---
 
-FString USovereignPartyComponent::GetBrokerCategory() const
+void USovereignPartyComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 {
-	return TEXT("Sovereign.Party");
-}
+	if (!OutJson.IsValid()) return;
 
-FString USovereignPartyComponent::SerializeBrokerState() const
-{
 	TSharedPtr<FJsonObject> RootObject = MakeShared<FJsonObject>();
 
 	// Serialize Unlocked Ranks
@@ -198,26 +195,15 @@ FString USovereignPartyComponent::SerializeBrokerState() const
 	}
 	RootObject->SetArrayField(TEXT("GridSlots"), SlotsArray);
 
-	FString OutputString;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
-	FJsonSerializer::Serialize(RootObject.ToSharedRef(), Writer);
-
-	return OutputString;
+	OutJson->SetObjectField(TEXT("Sovereign.Party"), RootObject);
 }
 
-bool USovereignPartyComponent::DeserializeBrokerState(const FString& InJsonState)
+void USovereignPartyComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 {
-	if (InJsonState.IsEmpty())
-	{
-		return false;
-	}
+	if (!InJson.IsValid() || !InJson->HasField(TEXT("Sovereign.Party"))) return;
 
-	TSharedPtr<FJsonObject> RootObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InJsonState);
-	if (!FJsonSerializer::Deserialize(Reader, RootObject) || !RootObject.IsValid())
-	{
-		return false;
-	}
+	TSharedPtr<FJsonObject> RootObject = InJson->GetObjectField(TEXT("Sovereign.Party"));
+	if (!RootObject.IsValid()) return;
 
 	// Restore Unlocked Ranks
 	const TArray<TSharedPtr<FJsonValue>>* RanksArray;
@@ -254,6 +240,9 @@ bool USovereignPartyComponent::DeserializeBrokerState(const FString& InJsonState
 			}
 		}
 	}
+}
 
-	return true;
+void USovereignPartyComponent::OnProcessData(const TMap<FString, FString>& Data)
+{
+	// External telemetry injection hook if needed
 }

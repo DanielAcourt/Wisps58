@@ -151,7 +151,7 @@ public:
 	bool UnlockRank(int32 RankIndex);
 
 	// --- ISovereignBrokerInterface Implementation ---
-	virtual FString GetBrokerCategory() const override;
-	virtual FString SerializeBrokerState() const override;
-	virtual bool DeserializeBrokerState(const FString& InJsonState) override;
+	virtual void OnSave(TSharedPtr<FJsonObject>& OutJson) override;
+	virtual void OnLoad(const TSharedPtr<FJsonObject>& InJson) override;
+	virtual void OnProcessData(const TMap<FString, FString>& Data) override;
 };

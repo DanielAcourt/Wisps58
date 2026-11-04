@@ -476,7 +476,7 @@ bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster
 			float ClassMult = 1.0f;
 			if (const USovereignClassComponent* ClassComp = Caster->GetClassComponent())
 			{
-				ClassMult = ClassComp->MagicDamageMultiplier;
+				ClassMult = ClassComp->GetTotalIntelligenceMultiplier();
 			}
 			float HealAmount = SkillDef->CalculateRawPower(CasterSnapshot.Wisdom, ClassMult);
 			TargetAttr->CurrentHealth = FMath::Clamp(TargetAttr->CurrentHealth + HealAmount, 0.0f, TargetAttr->MaxHealth);
@@ -580,11 +580,11 @@ bool ASovereignBattleManager::ExecuteItemAction(ASovereignBaseCharacter* User, c
 
 	// 3. Execute Item Consumption Hooks on Target
 	bool bExecutionSuccess = false;
-	for (const USovereignItemFragment* Fragment : ItemDef->Fragments)
+	for (const TObjectPtr<USovereignItemFragment>& Fragment : ItemDef->Fragments)
 	{
 		if (Fragment)
 		{
-			if (Fragment->Execute_OnConsumed(Fragment, Target, 1))
+			if (Fragment->OnConsumed(Target, 1))
 			{
 				bExecutionSuccess = true;
 			}
