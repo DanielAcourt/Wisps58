@@ -125,9 +125,11 @@ To test the physical dungeon threshold in your level:
      - Authoritative connectivity is managed through `DungeonEdges` (`FSovereignDungeonEdge`).
      - Pure-data BFS validation (`ValidateTopologicalReachability`) asserts 100% room reachability, boss reachability, minimum spine length (`MinSpineLength`), and sealed elite gate thresholds before world actor construction.
      - Fast rendering lookup bitmask `ConnectedPassageMask` on `FSovereignDungeonNode` is automatically derived from `DungeonEdges`.
-   - **Physical 3D Room & Wall Spawning (Ticket B-089)**:
+   - **Physical 3D Room & Wall Spawning (Ticket B-089 & B-092)**:
      - `bSpawnPhysicalGeometry = true`: Automatically instantiates 3D floor tiles ($1000\text{cm} \times 1000\text{cm}$) and perimeter boundary walls using `UInstancedStaticMeshComponent` (rendering hundreds of room tiles in a single draw call).
      - In the Details panel of `ASovereignDungeonGenerator`, you can assign custom modular meshes to `FloorMesh`, `WallMesh`, and `BossAltarMesh` (defaults to `/Engine/BasicShapes/Cube` scaled to metric dimensions).
+     - **Edge-Aware Enclosure (Ticket B-092)**: Boundary walls spawn strictly on cell faces that have no connecting edge in `DungeonEdges`, ensuring that physically adjacent rooms that are disconnected in the graph have solid separating walls between them.
+     - **Strict Lifecycle Cleanup (Ticket B-092)**: Calling `CleanupDungeon()` clears instanced meshes and destroys only generator-owned actors without touching designer-placed lighting, skyboxes, or level geometry.
    - **Custom SkyLight / Level Lighting**: If your dungeon level template already defines custom SkyLight, atmospheric lighting, or torches, you can simply uncheck `bAutoSpawnDefaultLighting = false` in the Details panel of `ASovereignDungeonGenerator`.
    - `bAutoSpawnDefaultLighting = true` (Default): If loading into a blank or unlit level, the generator auto-spawns fallback ambient lighting (`ADirectionalLight`) and an unbounded `APostProcessVolume` with clamped exposure (0.5 to 2.0 EV100) so the procedural corridors are never pitch black.
    - Individual sub-toggles `bSpawnDirectionalLight` and `bSpawnPostProcessVolume` are also provided for granular control.

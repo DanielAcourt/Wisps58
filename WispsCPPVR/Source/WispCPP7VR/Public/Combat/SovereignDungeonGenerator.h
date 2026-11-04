@@ -229,6 +229,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	int32 BossNodeIndex = INDEX_NONE;
 
+	// --- Explicit Lifecycle Ownership Tracking (Ticket B-092) ---
+
+	/** Discrete actors spawned by the generator (altars, props, chests) */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<AActor>> GeneratorSpawnedActors;
+
+	/** Fallback directional fill light spawned by the generator (nullptr if level has designer lighting) */
+	UPROPERTY(Transient)
+	TObjectPtr<class ADirectionalLight> GeneratorSpawnedLight;
+
+	/** Fallback post process volume spawned by the generator (nullptr if level has designer volume) */
+	UPROPERTY(Transient)
+	TObjectPtr<class APostProcessVolume> GeneratorSpawnedPostProcess;
+
 	// --- Dedicated Battle Arena Array Placement ---
 
 	/** Coordinates for the far-off dedicated Battle Arena cluster */
@@ -287,6 +301,10 @@ public:
 	/** Rebuilds fast-lookup ConnectedPassageMask on nodes strictly derived from DungeonEdges (Ticket B-090) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
 	void RebuildNodeAdjacencyCaches();
+
+	/** Idempotent cleanup of generator-owned actors, components, and arenas without touching level actors (Ticket B-092) */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Lifecycle")
+	void CleanupDungeon();
 
 	/**
 	 * Automatically spawns default ambient directional light and post-process volume

@@ -276,11 +276,62 @@ void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 	}
 }
 
-bool ASovereignDungeonGenerator::GenerateDungeon()
+void ASovereignDungeonGenerator::CleanupDungeon()
 {
+	// 1. Clear Instanced Static Mesh Components
+	if (FloorInstancedComponent)
+	{
+		FloorInstancedComponent->ClearInstances();
+	}
+	if (WallInstancedComponent)
+	{
+		WallInstancedComponent->ClearInstances();
+	}
+
+	// 2. Destroy strictly generator-spawned discrete actors (boss altar, props)
+	for (TObjectPtr<AActor>& SpawnedActor : GeneratorSpawnedActors)
+	{
+		if (IsValid(SpawnedActor.Get()))
+		{
+			SpawnedActor->Destroy();
+		}
+	}
+	GeneratorSpawnedActors.Empty();
+
+	// 3. Destroy strictly generator-spawned battle arenas
+	for (TObjectPtr<ASovereignBattleManager>& Arena : BiomeBattleArenas)
+	{
+		if (IsValid(Arena.Get()))
+		{
+			Arena->Destroy();
+		}
+	}
+	BiomeBattleArenas.Empty();
+
+	// 4. Destroy fallback lighting rig if created by this generator
+	if (IsValid(GeneratorSpawnedLight.Get()))
+	{
+		GeneratorSpawnedLight->Destroy();
+		GeneratorSpawnedLight = nullptr;
+	}
+	if (IsValid(GeneratorSpawnedPostProcess.Get()))
+	{
+		GeneratorSpawnedPostProcess->Destroy();
+		GeneratorSpawnedPostProcess = nullptr;
+	}
+
+	// 5. Reset graph data
 	DungeonNodes.Empty();
 	DungeonEdges.Empty();
 	MainSpineNodeIndices.Empty();
+	BossNodeIndex = INDEX_NONE;
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] CleanupDungeon complete: All generator-owned actors and instances cleared."));
+}
+
+bool ASovereignDungeonGenerator::GenerateDungeon()
+{
+	CleanupDungeon();
 
 	FRandomStream Stream(GenerationSeed != 0 ? GenerationSeed : FMath::Rand());
 	const FVector Origin = GetActorLocation();
@@ -529,27 +580,33 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 		FloorInstancedComponent->AddInstance(FloorTransform);
 
-		// Check 4 cardinal directions (North, South, East, West) for boundary edges
+		// Check 4 cardinal directions matching EDungeonDirection order:
+		// North = 0 (+X), East = 1 (+Y), South = 2 (-X), West = 3 (-Y)
 		const TArray<TPair<FIntPoint, FVector>> CardinalOffsets = {
-			TPair<FIntPoint, FVector>(FIntPoint(1, 0), FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f)),   // North Wall
-			TPair<FIntPoint, FVector>(FIntPoint(-1, 0), FVector(-TILE_SIZE * 0.5f, 0.0f, 300.0f)),  // South Wall
-			TPair<FIntPoint, FVector>(FIntPoint(0, 1), FVector(0.0f, TILE_SIZE * 0.5f, 300.0f)),   // East Wall
-			TPair<FIntPoint, FVector>(FIntPoint(0, -1), FVector(0.0f, -TILE_SIZE * 0.5f, 300.0f))   // West Wall
+			TPair<FIntPoint, FVector>(FIntPoint(1, 0), FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f)),   // Index 0: North (+X)
+			TPair<FIntPoint, FVector>(FIntPoint(0, 1), FVector(0.0f, TILE_SIZE * 0.5f, 300.0f)),   // Index 1: East (+Y)
+			TPair<FIntPoint, FVector>(FIntPoint(-1, 0), FVector(-TILE_SIZE * 0.5f, 0.0f, 300.0f)),  // Index 2: South (-X)
+			TPair<FIntPoint, FVector>(FIntPoint(0, -1), FVector(0.0f, -TILE_SIZE * 0.5f, 300.0f))   // Index 3: West (-Y)
 		};
 
 		const TArray<FRotator> CardinalRotations = {
-			FRotator(0.0f, 0.0f, 0.0f),
-			FRotator(0.0f, 180.0f, 0.0f),
-			FRotator(0.0f, 90.0f, 0.0f),
-			FRotator(0.0f, -90.0f, 0.0f)
+			FRotator(0.0f, 0.0f, 0.0f),   // North
+			FRotator(0.0f, 90.0f, 0.0f),   // East
+			FRotator(0.0f, 180.0f, 0.0f),  // South
+			FRotator(0.0f, -90.0f, 0.0f)   // West
 		};
 
 		for (int32 DirIdx = 0; DirIdx < CardinalOffsets.Num(); ++DirIdx)
 		{
-			const FIntPoint NeighborCoord = Node.GridCoord + CardinalOffsets[DirIdx].Key;
-			if (!OccupiedCoords.Contains(NeighborCoord))
+			// Check if bit for this cardinal direction is set in ConnectedPassageMask
+			const uint8 DirBit = (1 << DirIdx);
+			const bool bHasEdgePassage = (Node.ConnectedPassageMask & DirBit) != 0;
+
+			if (!bHasEdgePassage)
 			{
-				// Unlinked exterior edge: Place a boundary wall instance
+				// No passage edge exists across this boundary face.
+				// Place a solid boundary wall. This correctly encloses exterior perimeters
+				// AND shared boundary walls between physically adjacent nodes that are disconnected!
 				FTransform WallTransform;
 				WallTransform.SetLocation(NodePos + CardinalOffsets[DirIdx].Value);
 				WallTransform.SetRotation(CardinalRotations[DirIdx].Quaternion());
@@ -578,9 +635,13 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				AStaticMeshActor* AltarActor = World->SpawnActor<AStaticMeshActor>(
 					AStaticMeshActor::StaticClass(), NodePos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams
 				);
-				if (AltarActor && AltarActor->GetStaticMeshComponent())
+				if (AltarActor)
 				{
-					AltarActor->GetStaticMeshComponent()->SetStaticMesh(BossAltarMesh);
+					if (AltarActor->GetStaticMeshComponent())
+					{
+						AltarActor->GetStaticMeshComponent()->SetStaticMesh(BossAltarMesh);
+					}
+					GeneratorSpawnedActors.Add(AltarActor);
 				}
 			}
 		}
@@ -626,6 +687,7 @@ void ASovereignDungeonGenerator::SpawnDefaultLightingRig()
 					LightComp->bAtmosphereSunLight = false;
 					LightComp->bCastVolumetricShadow = false;
 				}
+			GeneratorSpawnedLight = DirLight;
 				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Blank level detected: Auto-spawned fallback DirectionalLight."));
 			}
 		}
@@ -649,6 +711,7 @@ void ASovereignDungeonGenerator::SpawnDefaultLightingRig()
 				PPVolume->Settings.bOverride_AutoExposureMaxBrightness = true;
 				PPVolume->Settings.AutoExposureMinBrightness = 0.5f;
 				PPVolume->Settings.AutoExposureMaxBrightness = 2.0f;
+			GeneratorSpawnedPostProcess = PPVolume;
 				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Blank level detected: Auto-spawned fallback PostProcessVolume with exposure bounds."));
 			}
 		}

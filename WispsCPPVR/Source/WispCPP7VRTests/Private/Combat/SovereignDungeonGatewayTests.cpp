@@ -130,6 +130,34 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Node has non-zero connected passage mask"), Node.ConnectedPassageMask > 0);
 	}
 
+	// 6. Test Ticket B-092 Edge-Aware Geometry & Cleanup Lifecycle
+	// Edge-aware invariant: Total walls + Total open passages across all nodes == Nodes * 4
+	int32 OpenPassageTotal = 0;
+	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
+	{
+		for (int32 b = 0; b < 4; ++b)
+		{
+			if ((Node.ConnectedPassageMask & (1 << b)) != 0)
+			{
+				OpenPassageTotal++;
+			}
+		}
+	}
+	const int32 ExpectedWallCount = (Generator->DungeonNodes.Num() * 4) - OpenPassageTotal;
+	TestEqual(TEXT("Wall instance count matches expected edge-aware boundary formula"),
+		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, ExpectedWallCount);
+
+	// Test CleanupDungeon idempotency (running multiple times clears cleanly)
+	Generator->CleanupDungeon();
+	TestEqual(TEXT("Nodes cleared after cleanup"), Generator->DungeonNodes.Num(), 0);
+	TestEqual(TEXT("Edges cleared after cleanup"), Generator->DungeonEdges.Num(), 0);
+	TestEqual(TEXT("Floor instances cleared after cleanup"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 0);
+	TestEqual(TEXT("Wall instances cleared after cleanup"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, 0);
+
+	// Re-run generation to ensure clean rebuild
+	const bool bRebuilt = Generator->GenerateDungeon();
+	TestTrue(TEXT("GenerateDungeon succeeds after cleanup"), bRebuilt);
+
 	// 5. Test Random Step Counter
 	Generator->AccumulatedStepDistance = 0.0f;
 	Generator->StepThresholdDistance = 1000.0f;
