@@ -112,14 +112,20 @@ To test the physical dungeon threshold in your level:
 
 1. **Spawn or Place Generator**:
    - Place an instance of `ASovereignDungeonGenerator` into your dungeon level (or spawn it via Blueprint).
-2. **Configure GameMode & Parameters in Dungeon Map**:
+2. **1-Click Generation in Unreal Editor Details Panel**:
+   - Select the `ASovereignDungeonGenerator` actor in your viewport or World Outliner.
+   - In the Details panel under **"Sovereign | Dungeon | Editor Actions"**, you will see two 1-Click buttons:
+     - **`Generate Dungeon`**: Instantly computes the graph layout, derives the edge-aware passage masks, and physically spawns all $1000\text{cm} \times 1000\text{cm}$ floor tiles and boundary walls in the viewport!
+     - **`Clear Dungeon Geometry`**: Instantly wipes all spawned instanced floors, boundary walls, and generator-owned actors for rapid design iteration.
+3. **Configure GameMode & Parameters in Dungeon Map**:
    - In your dungeon map (`Lvl_Dungeon`), open **World Settings** and set **GameMode Override** to `ASovereignDungeonGameMode` (or a Blueprint child `BP_DungeonGameMode`).
    - `TargetRoomCount = 8` (or 12 for deeper vaults).
+   - `GenerationSeed = 1337` (or change to test new seeded layouts).
    - `bLockPossessionToLeader = true`: Prohibits unpossessing into wisp form while inside the dungeon.
    - `StepThresholdDistance = 1500.0` (triggers random encounter evaluation every ~15 steps).
    - `RandomEncounterChance = 25.0` (25% chance per check).
    - `FarOffArenaOrigin = (50000, 50000, 5000)` (keeps the battle platform isolated).
-3. **Generate Layout, Physical 3D Geometry & Optional Lighting Rig**:
+4. **Runtime Generation & Optional Lighting Rig**:
    - On `BeginPlay()`, the generator automatically executes `GenerateDungeon()`.
    - **Graph Connectivity & BFS Validation (Ticket B-090)**:
      - Authoritative connectivity is managed through `DungeonEdges` (`FSovereignDungeonEdge`).

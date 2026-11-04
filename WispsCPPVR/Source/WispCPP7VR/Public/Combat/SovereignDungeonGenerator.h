@@ -278,9 +278,17 @@ public:
 
 	/**
 	 * Generates the complete procedural dungeon layout and spawns far-off battle arena platforms.
+	 * Can be clicked directly in the Unreal Editor Details Panel via CallInEditor!
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
 	bool GenerateDungeon();
+
+	/**
+	 * Cleans up and clears all spawned dungeon geometry, floors, walls, and arenas.
+	 * Can be clicked directly in the Unreal Editor Details Panel via CallInEditor!
+	 */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
+	void ClearDungeonGeometry() { CleanupDungeon(); }
 
 	/**
 	 * Spawns the dedicated battle arena platform array far off-map.

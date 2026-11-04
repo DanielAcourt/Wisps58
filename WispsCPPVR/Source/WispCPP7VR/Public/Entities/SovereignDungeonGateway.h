@@ -115,8 +115,9 @@ public:
 	 * 3. Records expedition parameters (seed, buff/reward multipliers, return map) in USovereignDungeonSubsystem.
 	 * 4. Consumes sacrifices via ConsumeSacrifices().
 	 * 5. Changes level to DungeonLevelName via OpenLevel.
+	 * Can be clicked directly in the Unreal Editor Details Panel via CallInEditor!
 	 */
-	UFUNCTION(BlueprintCallable, Category = "Sovereign|Gateway")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Gateway|Editor Actions")
 	bool EnterDungeon(ASovereignBaseCharacter* PartyLeader);
 
 	// --- Sovereign Base Interactable Overrides ---
