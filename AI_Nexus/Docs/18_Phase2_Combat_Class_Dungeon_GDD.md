@@ -32,9 +32,9 @@ Once the primary **Male Domain Dragon** reaches adulthood in the Meditation Gard
   - Using an item consumes that dragon's entire turn, resetting their ATB to $0\%$.
   - Items with `USovereignItemFragment_Consumable` and `USovereignItemFragment_Spiritual` can target either friendly allies (healing elixirs, Qi pills, attribute buff teas) or opposing enemy ranks (offensive throwable spirit grenades, alchemy flasks).
 - **Flee Mechanic & Boss Restrictions**:
-  - Escape attempts are calculated via Party DEX/Luck versus Enemy Encounter DEX with a charging escape bar fallback.
+  - Escape attempts are calculated via Party DEX/Luck versus Enemy Encounter DEX with a charging escape bar fallback (+25% per failure).
   - Boss battles, Dungeon Gatekeepers, and Vault Guardians have escape disabled (`bIsEscapable = false`).
-  - Successfully fleeing teleports the party back to the dungeon floor with a **5-second mob aggro immunity grace period**.
+  - Successfully fleeing immediately teleports the party back to the dungeon floor with no grace period, preserving active roaming mob states.
 - **Damage Calculation Engine (`USovereignCombatCalculationLibrary`)**:
   Combat uses a deterministic percentage mitigation curve rather than flat D&D subtraction:
   $$\text{RawPower} = \left( \text{BasePower} + \text{StatValue} \times \text{StatMultiplier} \right) \times \text{ClassMultiplier}$$

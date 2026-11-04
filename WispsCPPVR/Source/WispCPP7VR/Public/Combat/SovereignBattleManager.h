@@ -82,6 +82,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Formations")
 	TArray<TWeakObjectPtr<ASovereignBaseCharacter>> EnemyGrid;
 
+	// --- 3D Spatial Grid Anchors on Arena Platform ---
+
+	/** World transforms for Player party 3x3 slots (0-8) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Spatial")
+	TArray<FTransform> PlayerSlotTransforms;
+
+	/** World transforms for Opposing enemy 3x3 slots (0-8) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Spatial")
+	TArray<FTransform> EnemySlotTransforms;
+
+	/** Transform for cinematic action camera framing the battle arena */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Spatial")
+	FTransform ArenaCameraTransform;
+
 	/** Current operational encounter state */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|State")
 	EBattleState BattleState = EBattleState::EncounterStarting;
@@ -180,6 +194,14 @@ public:
 	/**
 	 * Initializes the encounter with deployed player party and opposing enemy units.
 	 */
+	/** Generates default 200u grid offsets if custom transforms were not placed by designer */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Spatial")
+	void GenerateDefaultGridTransforms();
+
+	/** Positions all assigned combatants onto their physical 3D arena transforms */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Spatial")
+	void PositionCombatantsOnGrid();
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
 	void InitializeEncounter(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, const TArray<ASovereignBaseCharacter*>& InEnemyUnits, bool bCanFlee = true);
 

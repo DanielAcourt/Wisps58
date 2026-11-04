@@ -5,7 +5,7 @@
 **Start Date:** `07/10/2026`
 **Target End Date:** `21/10/2026` (2-Week Recovery Baseline)
 **Planned Capacity:** 126 Points (Expanded with Full Core Turn-Based / ATB Combat System Suite)
-**Completed Capacity / Velocity:** 117 Points
+**Completed Capacity / Velocity:** 122 Points
 
 > 🎯 **Core Sprint Goal:**
 > **"Telemetry Subsystem Decoupling, Entity Registration Hardening, Base Entity Modularization & Dynamic Vessel Infusion"**
@@ -56,10 +56,10 @@
 | B-080 | Qi-Powered Combat Magic & Skill Action Pipeline | 5 | Completed | DevOps/C++ | Combat abilities and spells must draw directly from the character's cultivation Qi pool (`USovereignQiComponent`) without adding redundant Mana (MP) pools, executing damage/healing formulas deterministically. | Implement combat action dispatching connecting active turn selection to `ASovereignBattleManager::ExecuteSkillAction()`. Checks and deducts Qi cost from `USovereignQiComponent`, feeds caster attributes through `USovereignCombatCalculationLibrary`, applies rank matrix offense/defense multipliers, and applies health changes directly to `USovereignAttributeComponent`. |
 | B-081 | In-Combat Inventory Item Bridge & Target Delivery System | 5 | Completed | DevOps/C++ | Players need the ability to use consumable items during battle (consuming the dragon's turn), targeting either friendly party members (healing, Qi potions) or opposing enemy ranks (offensive throwable spirit grenades/catalysts). | Implement in-combat item bridge querying possessed dragon's `USovereignInventoryComponent`. Validates item fragments (`USovereignItemFragment_CombatEffect`, `USovereignItemFragment_Consumable`, `USovereignItemFragment_Spiritual`), enforces single-turn action consumption, executes item effects on designated target actors (friendly heal/buff or offensive damage/debuff), and reduces item stack quantity cleanly. |
 | B-082 | Dynamic Combat Flee System & Boss Escape Restraints | 5 | Completed | DevOps/C++ | Combat requires the ability to flee from difficult random encounters while preventing premature escape from major storyline dungeon bosses and Vault Guardians. | Implement combat escape mechanics on `ASovereignBattleManager`: resolves flee attempts via Party DEX/Luck vs Enemy DEX check with charging escape bar fallback (+25% per failure), consumes turn on failed flight, and rejects flee attempts on boss/guardian encounters (`bIsEscapable = false`). |
-| B-083 | Dedicated 3D Battle Arena Spawner & Seamless Dungeon Transition Pipeline | 5 | Todo | DevOps/C++ | Real-time dungeon exploration must transition smoothly to a dedicated 3D battle platform upon touching roaming mobs to prevent camera clipping and navigation mesh issues, then return to field space upon battle completion. | Implement arena transition pipeline: saves dungeon field transform and pauses roaming dungeon AI, teleports or instances combatants on dedicated 3D arena platform, configures cinematic combat action camera, and smoothly teleports party back to the dungeon floor on victory or successful flight with brief invulnerability grace period. |
+| B-083 | Dedicated 3D Battle Arena Spawner & Seamless Dungeon Transition Pipeline | 5 | Completed | DevOps/C++ | Real-time dungeon exploration must transition smoothly to a dedicated 3D battle platform upon touching roaming mobs to prevent camera clipping and navigation mesh issues, then return to field space upon battle completion. | Implement arena transition pipeline: `USovereignEncounterSubsystem` caches dungeon return transform and hides roaming mob, teleports combatants onto `ASovereignBattleManager` spatial 3x3 grid anchors, binds to battle completion, and returns party to dungeon floor (destroying mob on Victory or restoring mob on Flight). |
 
 ---
 
 ## 🏛️ Strategic Alignment
-- **Active Iteration Load:** **78 Points** (Expanded with Polymorph, Combat Classes, Qi-Infused Custom Skill Suite & Core Combat Tickets B-077–B-083)
+- **Active Iteration Load:** **73 Points** (Expanded with Polymorph, Combat Classes, Qi-Infused Custom Skill Suite & Core Combat Tickets B-077–B-083)
 - **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260928.md` (135 Points Delivered)

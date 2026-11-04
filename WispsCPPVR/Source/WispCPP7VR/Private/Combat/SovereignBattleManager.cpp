@@ -30,6 +30,67 @@ ASovereignBattleManager::ASovereignBattleManager()
 void ASovereignBattleManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+	{
+		GenerateDefaultGridTransforms();
+	}
+}
+
+void ASovereignBattleManager::GenerateDefaultGridTransforms()
+{
+	const FVector Origin = GetActorLocation();
+	const FRotator BaseRotation = GetActorRotation();
+
+	PlayerSlotTransforms.SetNum(GRID_SIZE);
+	EnemySlotTransforms.SetNum(GRID_SIZE);
+
+	// Formation metrics: 3 ranks (X axis: Front, Mid, Rear) x 3 columns (Y axis: Left, Center, Right)
+	// Player party sits at -X (facing +X); Enemies sit at +X (facing -X)
+	constexpr float RankSpacing = 200.0f;
+	constexpr float ColumnSpacing = 180.0f;
+	constexpr float CenterOffset = 400.0f;
+
+	for (int32 Slot = 0; Slot < GRID_SIZE; ++Slot)
+	{
+		const int32 Rank = Slot / 3;    // 0 = Front, 1 = Mid, 2 = Rear
+		const int32 Col = (Slot % 3) - 1; // -1 = Left, 0 = Center, +1 = Right
+
+		// Player Grid
+		FVector PlayerPos = Origin + FVector(-(CenterOffset + (Rank * RankSpacing)), Col * ColumnSpacing, 0.0f);
+		PlayerSlotTransforms[Slot] = FTransform(BaseRotation, PlayerPos);
+
+		// Enemy Grid (Mirrored on +X, rotated 180 degrees)
+		FRotator EnemyRot = BaseRotation;
+		EnemyRot.Yaw += 180.0f;
+		FVector EnemyPos = Origin + FVector(CenterOffset + (Rank * RankSpacing), Col * ColumnSpacing, 0.0f);
+		EnemySlotTransforms[Slot] = FTransform(EnemyRot, EnemyPos);
+	}
+
+	// Action Camera Transform (Side elevated view)
+	FVector CamPos = Origin + FVector(0.0f, -800.0f, 350.0f);
+	FRotator CamRot = FRotationMatrix::MakeFromX(Origin - CamPos).Rotator();
+	ArenaCameraTransform = FTransform(CamRot, CamPos);
+}
+
+void ASovereignBattleManager::PositionCombatantsOnGrid()
+{
+	if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+	{
+		GenerateDefaultGridTransforms();
+	}
+
+	for (int32 i = 0; i < GRID_SIZE; ++i)
+	{
+		if (PlayerGrid[i].IsValid())
+		{
+			PlayerGrid[i]->SetActorTransform(PlayerSlotTransforms[i], false, nullptr, ETeleportType::TeleportPhysics);
+		}
+		if (EnemyGrid[i].IsValid())
+		{
+			EnemyGrid[i]->SetActorTransform(EnemySlotTransforms[i], false, nullptr, ETeleportType::TeleportPhysics);
+		}
+	}
 }
 
 void ASovereignBattleManager::Tick(float DeltaTime)
@@ -64,6 +125,11 @@ void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCha
 	ReadyQueue.Empty();
 	ActiveCombatant = nullptr;
 
+	if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+	{
+		GenerateDefaultGridTransforms();
+	}
+
 	// Populate Player Grid
 	for (int32 i = 0; i < GRID_SIZE; ++i)
 	{
@@ -96,6 +162,7 @@ void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCha
 		}
 	}
 
+	PositionCombatantsOnGrid();
 	SetBattleState(EBattleState::ActiveCombat);
 }
 
