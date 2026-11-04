@@ -4,8 +4,8 @@
 **Sprint ID:** `SR_20261026`
 **Start Date:** `07/10/2026`
 **Target End Date:** `21/10/2026` (2-Week Recovery Baseline)
-**Planned Capacity:** 126 Points (Expanded with Full Core Turn-Based / ATB Combat System Suite)
-**Completed Capacity / Velocity:** 122 Points
+**Planned Capacity:** 141 Points (Expanded with Full Core Turn-Based / ATB Combat & Procedural Dungeon Suite)
+**Completed Capacity / Velocity:** 137 Points
 
 > 🎯 **Core Sprint Goal:**
 > **"Telemetry Subsystem Decoupling, Entity Registration Hardening, Base Entity Modularization & Dynamic Vessel Infusion"**
@@ -57,9 +57,12 @@
 | B-081 | In-Combat Inventory Item Bridge & Target Delivery System | 5 | Completed | DevOps/C++ | Players need the ability to use consumable items during battle (consuming the dragon's turn), targeting either friendly party members (healing, Qi potions) or opposing enemy ranks (offensive throwable spirit grenades/catalysts). | Implement in-combat item bridge querying possessed dragon's `USovereignInventoryComponent`. Validates item fragments (`USovereignItemFragment_CombatEffect`, `USovereignItemFragment_Consumable`, `USovereignItemFragment_Spiritual`), enforces single-turn action consumption, executes item effects on designated target actors (friendly heal/buff or offensive damage/debuff), and reduces item stack quantity cleanly. |
 | B-082 | Dynamic Combat Flee System & Boss Escape Restraints | 5 | Completed | DevOps/C++ | Combat requires the ability to flee from difficult random encounters while preventing premature escape from major storyline dungeon bosses and Vault Guardians. | Implement combat escape mechanics on `ASovereignBattleManager`: resolves flee attempts via Party DEX/Luck vs Enemy DEX check with charging escape bar fallback (+25% per failure), consumes turn on failed flight, and rejects flee attempts on boss/guardian encounters (`bIsEscapable = false`). |
 | B-083 | Dedicated 3D Battle Arena Spawner & Seamless Dungeon Transition Pipeline | 5 | Completed | DevOps/C++ | Real-time dungeon exploration must transition smoothly to a dedicated 3D battle platform upon touching roaming mobs to prevent camera clipping and navigation mesh issues, then return to field space upon battle completion. | Implement arena transition pipeline: `USovereignEncounterSubsystem` caches dungeon return transform and hides roaming mob, teleports combatants onto `ASovereignBattleManager` spatial 3x3 grid anchors, binds to battle completion, and returns party to dungeon floor (destroying mob on Victory or restoring mob on Flight). |
+| B-084 | Meditation Garden Dungeon Gateway Door & Qi Sacrifice Receptacle (ASovereignDungeonGateway) | 5 | Completed | DevOps/C++ | The Meditation Garden requires a physical threshold door that unseals to access procedural dungeons, featuring configurable unlock triggers, an item sacrifice receptacle, and a raw Qi channel for risk vs. reward buffs. | Implement `ASovereignDungeonGateway` inheriting from `ASovereignBaseInteractable`. Features configurable unlock toggles (`bIsUnlocked`, `bAutoUnlockOnHatch`), `USovereignInventoryComponent` for item sacrifice, Qi channeling (`ChannelQiFromCharacter`), and formulas calculating enemy combat buffs and egg mutation rewards. |
+| B-085 | Procedural Modular Dungeon Builder & Far-Off Battle Arena Array (ASovereignDungeonGenerator) | 5 | Completed | DevOps/C++ | Procedural vaults require modular 1000cm x 1000cm graph assembly, guaranteed terminal boss chambers with dragon egg rewards, and dedicated battle platforms spawned far off-map to prevent exploration clipping. | Implement `ASovereignDungeonGenerator` in C++. Assembles modular dungeon nodes (Entrance, Corridors, Chambers, terminal Boss Chamber with dragon egg), spawns an array of dedicated Battle Arena platforms far off-map (at 50000, 50000, 5000 across multiple biomes), and processes player movement distance for random step encounters. |
+| B-086 | Procedural Dungeon Modular 3D Art Kit Specification & Biome Layout Protocol | 5 | Completed | DevOps/Docs | Environment 3D artists require strict metric dimensions, pivot point standards, and required mesh inventories to model and texture snapping assets for the procedural dungeon. | Author `AI_Nexus/Docs/20_Procedural_Dungeon_Modular_Kit_Specification.md` detailing 1000cm x 1000cm tile dimensions, 600cm wall height, doorway socket rules, required modular mesh list, far-off arena clusters across 4 biomes, and roguelike sacrifice stakes. |
 
 ---
 
 ## 🏛️ Strategic Alignment
-- **Active Iteration Load:** **73 Points** (Expanded with Polymorph, Combat Classes, Qi-Infused Custom Skill Suite & Core Combat Tickets B-077–B-083)
+- **Active Iteration Load:** **73 Points** (Expanded with Polymorph, Combat Classes, Qi-Infused Custom Skill Suite, Core ATB Combat & Procedural Dungeon Suite B-077–B-086)
 - **Previous Completed Sprint Review:** `AI_Nexus/Timeline/SprintReviews/SR_20260928.md` (135 Points Delivered)
