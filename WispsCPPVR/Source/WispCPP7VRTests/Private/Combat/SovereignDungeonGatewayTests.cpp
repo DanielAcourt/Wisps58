@@ -214,9 +214,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		FTransform FirstWallTransform;
 		Generator->WallInstancedComponent->GetInstanceTransform(0, FirstWallTransform, true);
 		const FVector WallScale = FirstWallTransform.GetScale3D();
-		TestEqual(TEXT("Wall scale X is 0.3 (thickness)"), WallScale.X, 0.3f);
-		TestEqual(TEXT("Wall scale Y is 10.0 (1000cm width)"), WallScale.Y, 10.0f);
-		TestEqual(TEXT("Wall scale Z is 6.0 (600cm height)"), WallScale.Z, 6.0f);
+		TestEqual(TEXT("Wall scale X is 0.3 (thickness)"), (float)WallScale.X, 0.3f);
+		TestEqual(TEXT("Wall scale Y is 10.0 (1000cm width)"), (float)WallScale.Y, 10.0f);
+		TestEqual(TEXT("Wall scale Z is 6.0 (600cm height)"), (float)WallScale.Z, 6.0f);
 	}
 
 	// Test Procedural Archway Fallback
