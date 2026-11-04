@@ -136,6 +136,48 @@ bool USovereignItemFragment_Equippable::OnEquipped_Implementation(ASovereignBase
 	return true;
 }
 
+// --- USovereignItemFragment_CombatEffect ---
+
+bool USovereignItemFragment_CombatEffect::OnConsumed_Implementation(ASovereignBaseCharacter* TargetCharacter, int32 Quantity) const
+{
+	if (!TargetCharacter || Quantity <= 0)
+	{
+		return false;
+	}
+
+	USovereignAttributeComponent* AttrComp = TargetCharacter->GetAttributeComponent();
+	if (!AttrComp)
+	{
+		return false;
+	}
+
+	// 1. Direct Healing
+	if (DirectHealing > 0.0f)
+	{
+		const float TotalHeal = DirectHealing * Quantity;
+		AttrComp->CurrentHealth = FMath::Clamp(AttrComp->CurrentHealth + TotalHeal, 0.0f, AttrComp->MaxHealth);
+	}
+
+	// 2. Direct Damage
+	if (DirectDamage > 0.0f)
+	{
+		float TotalDmg = DirectDamage * Quantity;
+
+		// Check if target is defending (50% reduction)
+		if (USovereignATBComponent* ATB = TargetCharacter->GetATBComponent())
+		{
+			if (ATB->bIsDefending)
+			{
+				TotalDmg = FMath::Max(1.0f, TotalDmg * ATB->DefendDamageMultiplier);
+			}
+		}
+
+		AttrComp->CurrentHealth = FMath::Max(0.0f, AttrComp->CurrentHealth - TotalDmg);
+	}
+
+	return true;
+}
+
 bool USovereignItemFragment_Equippable::OnUnequipped_Implementation(ASovereignBaseCharacter* TargetCharacter, const FName& SlotName) const
 {
 	if (!TargetCharacter)

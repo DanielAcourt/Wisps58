@@ -160,3 +160,33 @@ public:
 	virtual bool OnEquipped_Implementation(ASovereignBaseCharacter* TargetCharacter, const FName& SlotName) const override;
 	virtual bool OnUnequipped_Implementation(ASovereignBaseCharacter* TargetCharacter, const FName& SlotName) const override;
 };
+
+/**
+ * USovereignItemFragment_CombatEffect
+ * Handles turn-based battle item actions: offensive throwable grenades/alchemy flasks
+ * and tactical combat restoration targeting friendly allies or opposing enemy ranks.
+ */
+UCLASS(BlueprintType, EditInlineNew, meta = (DisplayName = "Combat Effect & Grenade Fragment"))
+class WISPCPP7VR_API USovereignItemFragment_CombatEffect : public USovereignItemFragment
+{
+	GENERATED_BODY()
+
+public:
+	/** Direct flat damage dealt to target health */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Combat")
+	float DirectDamage = 0.0f;
+
+	/** Direct flat health restored to target */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Combat")
+	float DirectHealing = 0.0f;
+
+	/** Whether this item can legally target opposing enemy combatants (e.g. Spirit Grenade) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Combat")
+	bool bCanTargetEnemies = false;
+
+	/** Whether this item can legally target friendly party combatants (e.g. Healing Draught) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Combat")
+	bool bCanTargetAllies = true;
+
+	virtual bool OnConsumed_Implementation(ASovereignBaseCharacter* TargetCharacter, int32 Quantity) const override;
+};

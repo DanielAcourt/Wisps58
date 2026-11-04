@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-03
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -13,6 +14,7 @@ class UWidgetComponent;
 class UNiagaraComponent;
 class UInputMappingContext;
 class UInputAction;
+class USovereignPartyComponent;
 /**
  * 
  */
@@ -78,7 +80,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputAction* GetEjectAction() const { return EjectAction; }
 
+	/** Accessor for the persistent player party component */
+	virtual USovereignPartyComponent* GetPartyComponent() const override { return PartyComponent; }
+
 protected:
+	/** Persistent player party formation component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")
+	USovereignPartyComponent* PartyComponent;
+
 	/** * INTERACTION LOGIC
 		 * This is the raycast that lets you press 'E' to evolve trees/bees Core raycast logic
 		 */
