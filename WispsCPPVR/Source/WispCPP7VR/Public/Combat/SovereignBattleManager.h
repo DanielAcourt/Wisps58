@@ -76,11 +76,11 @@ public:
 
 	/** Player party combatants mapped across the 9 slots (0-2: Front, 3-5: Mid, 6-8: Rear) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Formations")
-	TArray<TWeakObjectPtr<ASovereignBaseCharacter>> PlayerGrid;
+	TArray<TObjectPtr<ASovereignBaseCharacter>> PlayerGrid;
 
 	/** Opposing enemy combatants mapped across the 9 slots (0-2: Front, 3-5: Mid, 6-8: Rear) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Formations")
-	TArray<TWeakObjectPtr<ASovereignBaseCharacter>> EnemyGrid;
+	TArray<TObjectPtr<ASovereignBaseCharacter>> EnemyGrid;
 
 	// --- 3D Spatial Grid Anchors on Arena Platform ---
 
@@ -106,7 +106,7 @@ public:
 
 	/** Currently acting combatant (if in ActionExecuting state) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Queue")
-	TWeakObjectPtr<ASovereignBaseCharacter> ActiveCombatant;
+	TObjectPtr<ASovereignBaseCharacter> ActiveCombatant;
 
 	/** Whether escape/fleeing is allowed in this battle (false for Story Bosses / Vault Guardians) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Config")

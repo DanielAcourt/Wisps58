@@ -37,7 +37,7 @@ public:
 
 	/** Active player party members in the current encounter */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Encounter")
-	TArray<TWeakObjectPtr<ASovereignBaseCharacter>> ActivePlayerParty;
+	TArray<TObjectPtr<ASovereignBaseCharacter>> ActivePlayerParty;
 
 	/** Reference to active battle manager */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Encounter")

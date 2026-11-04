@@ -82,11 +82,11 @@ void ASovereignBattleManager::PositionCombatantsOnGrid()
 
 	for (int32 i = 0; i < GRID_SIZE; ++i)
 	{
-		if (PlayerGrid[i].IsValid())
+		if (PlayerGrid[i])
 		{
 			PlayerGrid[i]->SetActorTransform(PlayerSlotTransforms[i], false, nullptr, ETeleportType::TeleportPhysics);
 		}
-		if (EnemyGrid[i].IsValid())
+		if (EnemyGrid[i])
 		{
 			EnemyGrid[i]->SetActorTransform(EnemySlotTransforms[i], false, nullptr, ETeleportType::TeleportPhysics);
 		}
@@ -100,7 +100,7 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 	if (BattleState == EBattleState::ActiveCombat)
 	{
 		// Process next action in queue if active combatant has finished
-		if (!ActiveCombatant.IsValid() && ReadyQueue.Num() > 0)
+		if (!ActiveCombatant && ReadyQueue.Num() > 0)
 		{
 			if (ASovereignBaseCharacter* NextActor = DequeueNextCombatant())
 			{
@@ -134,7 +134,7 @@ void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCha
 	for (int32 i = 0; i < GRID_SIZE; ++i)
 	{
 		PlayerGrid[i] = (i < InPlayerUnits.Num() && InPlayerUnits[i]) ? InPlayerUnits[i] : nullptr;
-		if (PlayerGrid[i].IsValid())
+		if (PlayerGrid[i])
 		{
 			if (USovereignATBComponent* ATB = PlayerGrid[i]->GetATBComponent())
 			{
@@ -150,7 +150,7 @@ void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCha
 	for (int32 i = 0; i < GRID_SIZE; ++i)
 	{
 		EnemyGrid[i] = (i < InEnemyUnits.Num() && InEnemyUnits[i]) ? InEnemyUnits[i] : nullptr;
-		if (EnemyGrid[i].IsValid())
+		if (EnemyGrid[i])
 		{
 			if (USovereignATBComponent* ATB = EnemyGrid[i]->GetATBComponent())
 			{
@@ -191,14 +191,14 @@ void ASovereignBattleManager::SetBattleState(EBattleState NewState)
 			// Freeze ATB tickers on all combatants
 			for (auto& Member : PlayerGrid)
 			{
-				if (Member.IsValid() && Member->GetATBComponent())
+				if (Member && Member->GetATBComponent())
 				{
 					Member->GetATBComponent()->SetComponentTickEnabled(false);
 				}
 			}
 			for (auto& Enemy : EnemyGrid)
 			{
-				if (Enemy.IsValid() && Enemy->GetATBComponent())
+				if (Enemy && Enemy->GetATBComponent())
 				{
 					Enemy->GetATBComponent()->SetComponentTickEnabled(false);
 				}
@@ -270,14 +270,14 @@ void ASovereignBattleManager::SetAllCombatantsWaitMode(bool bWait)
 {
 	for (auto& Member : PlayerGrid)
 	{
-		if (Member.IsValid() && Member->GetATBComponent())
+		if (Member && Member->GetATBComponent())
 		{
 			Member->GetATBComponent()->SetWaitModeActive(bWait);
 		}
 	}
 	for (auto& Enemy : EnemyGrid)
 	{
-		if (Enemy.IsValid() && Enemy->GetATBComponent())
+		if (Enemy && Enemy->GetATBComponent())
 		{
 			Enemy->GetATBComponent()->SetWaitModeActive(bWait);
 		}
@@ -286,7 +286,7 @@ void ASovereignBattleManager::SetAllCombatantsWaitMode(bool bWait)
 
 void ASovereignBattleManager::ConcludeActiveTurn()
 {
-	if (ActiveCombatant.IsValid())
+	if (ActiveCombatant)
 	{
 		if (USovereignATBComponent* ATB = ActiveCombatant->GetATBComponent())
 		{
@@ -347,7 +347,7 @@ TArray<ASovereignBaseCharacter*> ASovereignBattleManager::GetLivingPlayerUnits()
 	TArray<ASovereignBaseCharacter*> Living;
 	for (const auto& Unit : PlayerGrid)
 	{
-		if (Unit.IsValid() && IsCombatantAlive(Unit.Get()))
+		if (Unit && IsCombatantAlive(Unit.Get()))
 		{
 			Living.Add(Unit.Get());
 		}
@@ -714,7 +714,7 @@ TArray<ASovereignBaseCharacter*> ASovereignBattleManager::GetLivingEnemyUnits() 
 	TArray<ASovereignBaseCharacter*> Living;
 	for (const auto& Unit : EnemyGrid)
 	{
-		if (Unit.IsValid() && IsCombatantAlive(Unit.Get()))
+		if (Unit && IsCombatantAlive(Unit.Get()))
 		{
 			Living.Add(Unit.Get());
 		}

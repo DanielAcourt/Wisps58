@@ -111,7 +111,7 @@ void USovereignEncounterSubsystem::ReturnPartyToDungeon(EBattleState Outcome)
 	// 1. Teleport Living Party Members Back to Dungeon Floor
 	for (int32 i = 0; i < ActivePlayerParty.Num(); ++i)
 	{
-		if (ActivePlayerParty[i].IsValid())
+		if (ActivePlayerParty[i])
 		{
 			// Offset party members slightly around the leader return transform
 			FVector Offset = (i == 0) ? FVector::ZeroVector : FVector(0.0f, (i % 2 == 0 ? 1.0f : -1.0f) * ((i + 1) / 2) * 100.0f, 0.0f);
