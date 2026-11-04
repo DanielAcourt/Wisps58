@@ -23,14 +23,18 @@ bool USovereignEncounterSubsystem::TriggerEncounter(
 	}
 
 	UWorld* World = GetWorld();
-	if (!World)
+	if (!World && PlayerLeader)
 	{
-		return false;
+		World = PlayerLeader->GetWorld();
+	}
+	if (!World && CustomBattleManager)
+	{
+		World = CustomBattleManager->GetWorld();
 	}
 
 	// 1. Locate or Spawn Battle Manager
 	ASovereignBattleManager* BattleMgr = CustomBattleManager;
-	if (!BattleMgr)
+	if (!BattleMgr && World)
 	{
 		for (TActorIterator<ASovereignBattleManager> It(World); It; ++It)
 		{
@@ -42,7 +46,7 @@ bool USovereignEncounterSubsystem::TriggerEncounter(
 		{
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			// Spawn 1000 units above player as default arena platform if none exists in level
+			// Spawn 5000 units above player as default arena platform if none exists in level
 			FVector ArenaPos = PlayerLeader->GetActorLocation() + FVector(0.0f, 0.0f, 5000.0f);
 			BattleMgr = World->SpawnActor<ASovereignBattleManager>(ASovereignBattleManager::StaticClass(), ArenaPos, FRotator::ZeroRotator, SpawnParams);
 		}

@@ -43,21 +43,32 @@ bool FSovereignEncounterTransitionTest::RunTest(const FString& Parameters)
 	const FVector PlayerMidPos = BattleMgr->PlayerSlotTransforms[3].GetLocation();
 	TestTrue(TEXT("Mid rank is spaced behind Front rank by 200 units on X"), FMath::IsNearlyEqual(FMath::Abs(PlayerFrontPos.X - PlayerMidPos.X), 200.0f, 1.0f));
 
-	// 2. Setup Subsystem and Combatants
-	USovereignEncounterSubsystem* Subsystem = NewObject<USovereignEncounterSubsystem>();
+	// 2. Setup Subsystem and Combatants with a valid World context if available
+	UWorld* World = nullptr;
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		World = GEngine->GetWorldContexts()[0].World();
+	}
+
+	USovereignEncounterSubsystem* Subsystem = World ? World->GetSubsystem<USovereignEncounterSubsystem>() : nullptr;
+	if (!Subsystem)
+	{
+		Subsystem = NewObject<USovereignEncounterSubsystem>();
+	}
+
 	if (!Subsystem)
 	{
 		AddError(TEXT("Failed to instantiate USovereignEncounterSubsystem"));
 		return false;
 	}
 
-	ASovereignBaseCharacter* DragonLeader = NewObject<ASovereignBaseCharacter>();
-	DragonLeader->SetActorLocation(FVector(100.0f, 100.0f, 0.0f));
+	ASovereignBaseCharacter* DragonLeader = World ? World->SpawnActor<ASovereignBaseCharacter>() : NewObject<ASovereignBaseCharacter>();
+	DragonLeader->SetActorTransform(FTransform(FRotator::ZeroRotator, FVector(100.0f, 100.0f, 0.0f)));
 
-	ASovereignBaseCharacter* DungeonMob = NewObject<ASovereignBaseCharacter>();
-	DungeonMob->SetActorLocation(FVector(150.0f, 100.0f, 0.0f));
+	ASovereignBaseCharacter* DungeonMob = World ? World->SpawnActor<ASovereignBaseCharacter>() : NewObject<ASovereignBaseCharacter>();
+	DungeonMob->SetActorTransform(FTransform(FRotator::ZeroRotator, FVector(150.0f, 100.0f, 0.0f)));
 
-	ASovereignBaseCharacter* ArenaEnemy = NewObject<ASovereignBaseCharacter>();
+	ASovereignBaseCharacter* ArenaEnemy = World ? World->SpawnActor<ASovereignBaseCharacter>() : NewObject<ASovereignBaseCharacter>();
 
 	// 3. Test TriggerEncounter
 	const bool bTriggerSuccess = Subsystem->TriggerEncounter(
@@ -72,8 +83,16 @@ bool FSovereignEncounterTransitionTest::RunTest(const FString& Parameters)
 	// 4. Test ReturnPartyToDungeon on Fled
 	Subsystem->ReturnPartyToDungeon(EBattleState::Fled);
 	TestFalse(TEXT("bIsEncounterActive is false after return"), Subsystem->bIsEncounterActive);
-	TestEqual(TEXT("DragonLeader returned to dungeon location (100, 100, 0)"), DragonLeader->GetActorLocation(), FVector(100.0f, 100.0f, 0.0f));
+	TestEqual(TEXT("DragonLeader returned to dungeon location (100, 100, 0)"), DragonLeader->GetActorTransform().GetLocation(), FVector(100.0f, 100.0f, 0.0f));
 	TestFalse(TEXT("DungeonMob is unhidden on Fled"), DungeonMob->IsHidden());
+
+	// Cleanup test-spawned actors if in world
+	if (World)
+	{
+		DragonLeader->Destroy();
+		DungeonMob->Destroy();
+		ArenaEnemy->Destroy();
+	}
 
 	return true;
 }
