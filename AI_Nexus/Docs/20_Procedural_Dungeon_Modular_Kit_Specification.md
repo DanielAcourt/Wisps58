@@ -37,8 +37,12 @@ Environment artists need to create the following foundational meshes:
 | Asset Name | Dimensions ($X \times Y \times Z$) | Description / Socket Rules |
 |:---|:---|:---|
 | `SM_Dungeon_Floor_10x10` | $1000 \times 1000 \times 20$ | Flat stone/brick floor with subtle Qi rune grooves. |
-| `SM_Dungeon_Wall_Straight_10x6` | $1000 \times 40 \times 600$ | Solid perimeter boundary wall. |
-| `SM_Dungeon_Doorway_10x6` | $1000 \times 60 \times 600$ | Archway opening ($400\text{w} \times 500\text{h}$) connecting rooms to corridors. Contains sockets `Socket_Door_N`, `Socket_Door_S`, etc. |
+| `SM_Dungeon_Wall_Straight_10x6` | $1000 \times 30 \times 600$ | Solid perimeter boundary wall ($30\text{cm}$ thick, $600\text{cm}$ high). |
+| `SM_Dungeon_Doorway_10x6` | $1000 \times 30 \times 600$ | Archway opening ($400\text{w} \times 500\text{h}$) connecting rooms to corridors. |
+| `SM_Dungeon_Door_Frame` | $400 \times 30 \times 500$ | Structural frame fitted into doorway opening. |
+| `SM_Dungeon_Door_Leaf` | $380 \times 10 \times 480$ | Interactive door leaf with $10\text{cm}$ reveal margin per side. |
+| `SM_Dungeon_Wall_Pillar` | $50 \times 50 \times 600$ | Vertical corner seam pillar hiding 90-degree wall junctions. |
+| `SM_Dungeon_Wall_Trim` | $1000 \times 10 \times 20$ | Perimeter baseboard trim running along floor/wall baseline. |
 | `SM_Dungeon_Corridor_Straight_10x10` | $1000 \times 1000 \times 600$ | Pre-assembled corridor segment with left and right walls and ceiling. |
 | `SM_Dungeon_Corridor_Corner_10x10` | $1000 \times 1000 \times 600$ | 90-degree corner corridor piece. |
 | `SM_Dungeon_Corridor_TJunction_10x10` | $1000 \times 1000 \times 600$ | 3-way branching intersection. |
