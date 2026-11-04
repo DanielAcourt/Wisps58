@@ -84,6 +84,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Config")
 	float RewardMultiplier = 1.0f;
 
+	// --- Visuals & Lighting Rig Settings ---
+
+	/** Whether to automatically spawn ambient lighting and post-processing if world lacks them */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting")
+	bool bAutoSpawnDefaultLighting = true;
+
+	/** Intensity for ambient directional fill light in procedural dungeons */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting")
+	float AmbientLightIntensity = 1000.0f;
+
+	/** Color tint for subterranean ambient lighting */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting")
+	FColor AmbientLightColor = FColor(180, 205, 235);
+
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
@@ -136,6 +150,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon")
 	void SpawnFarOffBattleArenas();
+
+	/**
+	 * Automatically spawns default ambient directional light and post-process volume
+	 * if the current level lacks them, preventing pitch black / blank world rendering.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Lighting")
+	void SpawnDefaultLightingRig();
 
 	/**
 	 * Updates player movement distance and evaluates random step encounter rolls.

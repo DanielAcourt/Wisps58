@@ -36,6 +36,7 @@ The suite is composed of 6 modular pillars:
    - Gateway door holds a sacrifice inventory receptacle and Qi funnel ("Risk it for the biscuit").
    - `EnterDungeon(PartyLeader)` saves the Garden to `"Garden_AutoSave"` JSON via `USaveManager`, caches expedition parameters (seed, buff/reward multipliers, return map name) in `USovereignDungeonSubsystem`, consumes sacrifices, and transitions to the procedural dungeon map via `OpenLevel`.
    - Generator ingests expedition parameters on `BeginPlay` and builds modular 1000cm x 1000cm rooms/corridors, placing the terminal Boss Chamber at the furthest point.
+   - `SpawnDefaultLightingRig()` ensures that even in completely blank/empty levels without lights, an ambient DirectionalLight and unbounded PostProcessVolume (with auto-exposure min/max bounds) are auto-spawned so the dungeon is never pitch black.
    - Calling `ReturnToGarden()` re-opens the Garden map and restores the exact `"Garden_AutoSave"` JSON world state.
    - Dedicated battle arena platforms are spawned far off-map at `(50000, 50000, 5000)`.
 
@@ -115,8 +116,9 @@ To test the physical dungeon threshold in your level:
    - `StepThresholdDistance = 1500.0` (triggers random encounter evaluation every ~15 steps).
    - `RandomEncounterChance = 25.0` (25% chance per check).
    - `FarOffArenaOrigin = (50000, 50000, 5000)` (keeps the battle platform isolated).
-3. **Generate Layout**:
+3. **Generate Layout & Lighting Rig**:
    - On `BeginPlay()`, the generator automatically executes `GenerateDungeon()`.
+   - `bAutoSpawnDefaultLighting = true`: If the loaded level is blank or lacks lighting, the generator automatically spawns a soft ambient `ADirectionalLight` and an unbounded `APostProcessVolume` with clamped exposure (0.5 to 2.0 EV100) so you can immediately see the dungeon layout without manual lighting setup.
    - You can inspect `DungeonNodes` array in the Details panel:
      - `DungeonNodes[0]` is always `EntranceRoom` at `(0, 0)`.
      - `DungeonNodes[BossNodeIndex]` is the terminal `BossChamber` at the furthest coordinates with `bHasFixedEliteMob = true`.

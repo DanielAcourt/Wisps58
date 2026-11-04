@@ -80,6 +80,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	Generator->TargetRoomCount = 6;
 	Generator->GenerationSeed = 42;
+	TestTrue(TEXT("bAutoSpawnDefaultLighting defaults to true"), Generator->bAutoSpawnDefaultLighting);
 	const bool bGenerated = Generator->GenerateDungeon();
 
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);

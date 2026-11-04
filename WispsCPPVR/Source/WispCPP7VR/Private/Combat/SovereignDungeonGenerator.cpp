@@ -6,6 +6,10 @@
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
+#include "Engine/DirectionalLight.h"
+#include "Engine/PostProcessVolume.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 {
@@ -21,6 +25,10 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	RandomEncounterChance = 25.0f;
 	AccumulatedStepDistance = 0.0f;
 	BossNodeIndex = INDEX_NONE;
+
+	bAutoSpawnDefaultLighting = true;
+	AmbientLightIntensity = 1000.0f;
+	AmbientLightColor = FColor(180, 205, 235);
 }
 
 void ASovereignDungeonGenerator::BeginPlay()
@@ -128,8 +136,68 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 	// 4. Spawn/Configure Far-Off Battle Arenas
 	SpawnFarOffBattleArenas();
 
+	// 5. Spawn Default Lighting Rig if world is blank/unlit
+	if (bAutoSpawnDefaultLighting)
+	{
+		SpawnDefaultLightingRig();
+	}
+
 	OnDungeonGenerated.Broadcast(DungeonNodes.Num());
 	return true;
+}
+
+void ASovereignDungeonGenerator::SpawnDefaultLightingRig()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 1. Check if DirectionalLight already exists
+	TArray<AActor*> ExistingLights;
+	UGameplayStatics::GetAllActorsOfClass(World, ADirectionalLight::StaticClass(), ExistingLights);
+
+	if (ExistingLights.Num() == 0)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		const FVector LightPos = GetActorLocation() + FVector(0.0f, 0.0f, 3000.0f);
+		const FRotator LightRot = FRotator(-50.0f, -45.0f, 0.0f); // Angled down
+
+		if (ADirectionalLight* DirLight = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), LightPos, LightRot, SpawnParams))
+		{
+			if (UDirectionalLightComponent* LightComp = Cast<UDirectionalLightComponent>(DirLight->GetLightComponent()))
+			{
+				LightComp->SetIntensity(AmbientLightIntensity);
+				LightComp->SetLightColor(FLinearColor(AmbientLightColor));
+				LightComp->bAtmosphereSunLight = false;
+				LightComp->bCastVolumetricShadow = false;
+			}
+			UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Blank level detected: Auto-spawned fallback DirectionalLight."));
+		}
+	}
+
+	// 2. Check if PostProcessVolume exists with bounded exposure
+	TArray<AActor*> ExistingPostProcess;
+	UGameplayStatics::GetAllActorsOfClass(World, APostProcessVolume::StaticClass(), ExistingPostProcess);
+
+	if (ExistingPostProcess.Num() == 0)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if (APostProcessVolume* PPVolume = World->SpawnActor<APostProcessVolume>(APostProcessVolume::StaticClass(), GetActorLocation(), FRotator::ZeroRotator, SpawnParams))
+		{
+			PPVolume->bUnbound = true; // Applies globally across the whole dungeon
+			PPVolume->Settings.bOverride_AutoExposureMinBrightness = true;
+			PPVolume->Settings.bOverride_AutoExposureMaxBrightness = true;
+			PPVolume->Settings.AutoExposureMinBrightness = 0.5f;
+			PPVolume->Settings.AutoExposureMaxBrightness = 2.0f;
+			UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Blank level detected: Auto-spawned fallback PostProcessVolume with exposure bounds."));
+		}
+	}
 }
 
 void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
