@@ -341,7 +341,7 @@ void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 				}
 
 				// 4. Update Socket state on Node B (Ticket B-095 coordinate-exact binding)
-				const FIntPoint OffsetBtoA = -OffsetAtoB;
+				const FIntPoint OffsetBtoA(-OffsetAtoB.X, -OffsetAtoB.Y);
 				for (FSovereignDoorwaySocket& SockB : DungeonNodes[Edge.NodeIndexB].PerimeterSockets)
 				{
 					if (!SockB.bIsConnected && SockB.FacingDirection == (EDungeonDirection)OppDir)
