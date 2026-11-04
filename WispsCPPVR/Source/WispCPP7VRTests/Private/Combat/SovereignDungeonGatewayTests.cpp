@@ -82,6 +82,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	Generator->TargetRoomCount = 6;
 	Generator->GenerationSeed = 42;
+	Generator->MaxLoopCount = 0; // Spanning tree mode for baseline tests
 	TestTrue(TEXT("bAutoSpawnDefaultLighting defaults to true"), Generator->bAutoSpawnDefaultLighting);
 	TestTrue(TEXT("bSpawnDirectionalLight defaults to true"), Generator->bSpawnDirectionalLight);
 	TestTrue(TEXT("bSpawnPostProcessVolume defaults to true"), Generator->bSpawnPostProcessVolume);
@@ -150,9 +151,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Floor instances match total occupied cell count"),
 		Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, Generator->MasterGridOccupancy.Num());
 
-	// 5. Test Ticket B-090 Graph Data Model, Edge Representation & BFS Validation
+	// 5. Test Ticket B-090 & B-096 Graph Data Model, Edge Representation & BFS Validation
 	TestTrue(TEXT("DungeonEdges populated"), Generator->DungeonEdges.Num() > 0);
-	TestEqual(TEXT("Spanning tree edge count invariant |E| == |V| - 1"), Generator->DungeonEdges.Num(), Generator->DungeonNodes.Num() - 1);
+	TestEqual(TEXT("Spanning tree edge count invariant |E| == |V| - 1 when MaxLoopCount == 0"), Generator->DungeonEdges.Num(), Generator->DungeonNodes.Num() - 1);
 
 	// Validate topological reachability via pure BFS
 	const bool bGraphValid = Generator->ValidateTopologicalReachability(0, Generator->BossNodeIndex);
@@ -358,7 +359,49 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	// 10. Test Subsystem Regression Compatibility
+	// 10. Test Ticket B-096 Controlled Shortcut Loops
+	ASovereignDungeonGenerator* LoopGen = NewObject<ASovereignDungeonGenerator>();
+	LoopGen->TargetRoomCount = 10;
+	LoopGen->GenerationSeed = 1337;
+	LoopGen->MaxLoopCount = 2;
+	LoopGen->bSpawnPhysicalGeometry = false;
+	LoopGen->bAutoSpawnDefaultLighting = false;
+	const bool bLoopGenSuccess = LoopGen->GenerateDungeon();
+
+	TestTrue(TEXT("Loop generation succeeds"), bLoopGenSuccess);
+	TestTrue(TEXT("Loop reachability validation succeeds"), LoopGen->ValidateTopologicalReachability(0, LoopGen->BossNodeIndex));
+
+	// Verify loop edge bounds: |E| >= |V| - 1 and |E| <= (|V| - 1) + MaxLoopCount
+	TestTrue(TEXT("Loop edge count >= |V| - 1"), LoopGen->DungeonEdges.Num() >= LoopGen->DungeonNodes.Num() - 1);
+	TestTrue(TEXT("Loop edge count <= (|V| - 1) + MaxLoopCount"), LoopGen->DungeonEdges.Num() <= (LoopGen->DungeonNodes.Num() - 1) + LoopGen->MaxLoopCount);
+
+	// Verify Boss Chamber invariant: strictly 1 edge connected to Boss
+	int32 BossEdgeCount = 0;
+	for (const FSovereignDungeonEdge& Edge : LoopGen->DungeonEdges)
+	{
+		if (Edge.Connects(LoopGen->BossNodeIndex))
+		{
+			BossEdgeCount++;
+		}
+	}
+	TestEqual(TEXT("Boss Chamber strictly retains 1 entrance edge even with shortcut loops"), BossEdgeCount, 1);
+
+	// Verify Entrance Room invariant: no loop edges connected to Entrance (Entrance only has forward spine edge)
+	int32 EntranceEdgeCount = 0;
+	for (const FSovereignDungeonEdge& Edge : LoopGen->DungeonEdges)
+	{
+		if (Edge.Connects(0))
+		{
+			EntranceEdgeCount++;
+		}
+	}
+	TestTrue(TEXT("Entrance Room has at most 2 connections and never an invalid loop shortcut"), EntranceEdgeCount <= 2);
+
+	// Test CalculateGraphDistance helper
+	TestEqual(TEXT("Distance from node to itself is 0"), LoopGen->CalculateGraphDistance(0, 0), 0);
+	TestTrue(TEXT("Distance from Entrance to Boss is positive"), LoopGen->CalculateGraphDistance(0, LoopGen->BossNodeIndex) >= LoopGen->MinSpineLength);
+
+	// 11. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;

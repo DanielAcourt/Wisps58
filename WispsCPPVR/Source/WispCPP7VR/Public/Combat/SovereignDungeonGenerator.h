@@ -283,9 +283,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 MinSpineLength = 4;
 
-	/** Max controlled loop count (default 0 enforces spanning-tree invariant |E| = |V| - 1) */
+	/** Max controlled loop count (Ticket B-096: allows controlled shortcut loops between non-critical rooms) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
-	int32 MaxLoopCount = 0;
+	int32 MaxLoopCount = 1;
 
 	/** Max deterministic generation retries if layout fails validation */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
@@ -488,6 +488,14 @@ public:
 	/** Validates if a rectangular footprint can fit without overlapping already occupied cells (Ticket B-094) */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Footprints")
 	bool CanFitRoomFootprint(const FIntPoint& Anchor, const FIntPoint& Dims) const;
+
+	/** Calculates the shortest topological graph distance (number of hops) between two nodes in DungeonEdges (Ticket B-096) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Validation")
+	int32 CalculateGraphDistance(int32 NodeA, int32 NodeB) const;
+
+	/** Generates controlled shortcut loops between candidate adjacent rooms with TreeDistance >= 3 (Ticket B-096) */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Generation")
+	int32 GenerateControlledLoops(FRandomStream& Stream);
 
 	/** Validates structural reachability and gameplay pacing via pure-data BFS (Ticket B-090) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")

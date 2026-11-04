@@ -118,6 +118,209 @@ bool ASovereignDungeonGenerator::CanFitRoomFootprint(const FIntPoint& Anchor, co
 	return true;
 }
 
+int32 ASovereignDungeonGenerator::CalculateGraphDistance(int32 NodeA, int32 NodeB) const
+{
+	if (NodeA == NodeB)
+	{
+		return 0;
+	}
+	if (!DungeonNodes.IsValidIndex(NodeA) || !DungeonNodes.IsValidIndex(NodeB))
+	{
+		return INDEX_NONE;
+	}
+
+	TSet<int32> Visited;
+	TQueue<int32> Queue;
+	TMap<int32, int32> Distances;
+
+	Visited.Add(NodeA);
+	Queue.Enqueue(NodeA);
+	Distances.Add(NodeA, 0);
+
+	while (!Queue.IsEmpty())
+	{
+		int32 Current = INDEX_NONE;
+		Queue.Dequeue(Current);
+
+		const int32 CurrentDist = Distances[Current];
+		if (Current == NodeB)
+		{
+			return CurrentDist;
+		}
+
+		for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+		{
+			if (Edge.Connects(Current))
+			{
+				const int32 Neighbor = Edge.GetOtherNode(Current);
+				if (!Visited.Contains(Neighbor))
+				{
+					Visited.Add(Neighbor);
+					Distances.Add(Neighbor, CurrentDist + 1);
+					Queue.Enqueue(Neighbor);
+				}
+			}
+		}
+	}
+
+	return INDEX_NONE; // Not reachable
+}
+
+int32 ASovereignDungeonGenerator::GenerateControlledLoops(FRandomStream& Stream)
+{
+	if (MaxLoopCount <= 0 || DungeonNodes.Num() < 4)
+	{
+		return 0;
+	}
+
+	int32 LoopsAdded = 0;
+
+	// Collect candidate pairs of nodes
+	// Invariants:
+	// 1. Neither node can be BossChamber or EntranceRoom (strict protection)
+	// 2. Neither node can be TreasureRoom (dead-end leaf protection)
+	// 3. Both nodes must have CanAcceptConnection() == true
+	// 4. TreeDistance(u, v) >= 3 (meaningful shortcut)
+	// 5. Must have matching adjacent unconnected sockets facing each other
+
+	struct FLoopCandidate
+	{
+		int32 NodeU;
+		int32 NodeV;
+		int32 SocketIndexU;
+		int32 SocketIndexV;
+		EDungeonDirection DirUtoV;
+		int32 GraphDist;
+	};
+
+	TArray<FLoopCandidate> Candidates;
+
+	for (int32 u = 0; u < DungeonNodes.Num(); ++u)
+	{
+		const FSovereignDungeonNode& NodeU = DungeonNodes[u];
+		if (NodeU.TileType == EDungeonTileType::EntranceRoom ||
+			NodeU.TileType == EDungeonTileType::BossChamber ||
+			NodeU.TileType == EDungeonTileType::TreasureRoom ||
+			!NodeU.CanAcceptConnection())
+		{
+			continue;
+		}
+
+		for (int32 v = u + 1; v < DungeonNodes.Num(); ++v)
+		{
+			const FSovereignDungeonNode& NodeV = DungeonNodes[v];
+			if (NodeV.TileType == EDungeonTileType::EntranceRoom ||
+				NodeV.TileType == EDungeonTileType::BossChamber ||
+				NodeV.TileType == EDungeonTileType::TreasureRoom ||
+				!NodeV.CanAcceptConnection())
+			{
+				continue;
+			}
+
+			// Check if already directly connected by an existing edge
+			bool bAlreadyConnected = false;
+			for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+			{
+				if (Edge.Connects(u) && Edge.Connects(v))
+				{
+					bAlreadyConnected = true;
+					break;
+				}
+			}
+			if (bAlreadyConnected)
+			{
+				continue;
+			}
+
+			// Check topological distance >= 3
+			const int32 Dist = CalculateGraphDistance(u, v);
+			if (Dist < 3)
+			{
+				continue;
+			}
+
+			// Check if there are matching adjacent unconnected sockets
+			for (int32 sU = 0; sU < NodeU.PerimeterSockets.Num(); ++sU)
+			{
+				const FSovereignDoorwaySocket& SockU = NodeU.PerimeterSockets[sU];
+				if (SockU.bIsConnected)
+				{
+					continue;
+				}
+
+				FIntPoint OffsetU(0, 0);
+				EDungeonDirection RequiredFacingV = EDungeonDirection::None;
+				switch (SockU.FacingDirection)
+				{
+				case EDungeonDirection::North: OffsetU = FIntPoint(1, 0);  RequiredFacingV = EDungeonDirection::South; break;
+				case EDungeonDirection::East:  OffsetU = FIntPoint(0, 1);  RequiredFacingV = EDungeonDirection::West; break;
+				case EDungeonDirection::South: OffsetU = FIntPoint(-1, 0); RequiredFacingV = EDungeonDirection::North; break;
+				case EDungeonDirection::West:  OffsetU = FIntPoint(0, -1); RequiredFacingV = EDungeonDirection::East; break;
+				default: break;
+				}
+
+				const FIntPoint TargetCoordV = SockU.CellCoord + OffsetU;
+
+				for (int32 sV = 0; sV < NodeV.PerimeterSockets.Num(); ++sV)
+				{
+					const FSovereignDoorwaySocket& SockV = NodeV.PerimeterSockets[sV];
+					if (!SockV.bIsConnected && SockV.CellCoord == TargetCoordV && SockV.FacingDirection == RequiredFacingV)
+					{
+						FLoopCandidate Cand;
+						Cand.NodeU = u;
+						Cand.NodeV = v;
+						Cand.SocketIndexU = sU;
+						Cand.SocketIndexV = sV;
+						Cand.DirUtoV = SockU.FacingDirection;
+						Cand.GraphDist = Dist;
+						Candidates.Add(Cand);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// Shuffle candidates for procedural variety
+	for (int32 i = 0; i < Candidates.Num(); ++i)
+	{
+		const int32 SwapIdx = Stream.RandRange(0, Candidates.Num() - 1);
+		Candidates.Swap(i, SwapIdx);
+	}
+
+	// Add up to MaxLoopCount shortcut loops
+	for (const FLoopCandidate& Cand : Candidates)
+	{
+		if (LoopsAdded >= MaxLoopCount)
+		{
+			break;
+		}
+
+		// Re-verify both nodes can still accept a connection
+		if (!DungeonNodes[Cand.NodeU].CanAcceptConnection() || !DungeonNodes[Cand.NodeV].CanAcceptConnection())
+		{
+			continue;
+		}
+
+		// Create the shortcut loop edge
+		FSovereignDungeonEdge LoopEdge;
+		LoopEdge.EdgeId = DungeonEdges.Num();
+		LoopEdge.NodeIndexA = Cand.NodeU;
+		LoopEdge.NodeIndexB = Cand.NodeV;
+		LoopEdge.DirectionAtoB = Cand.DirUtoV;
+		LoopEdge.PassageType = EPassageType::StandardDoorway;
+		LoopEdge.DoorState = EDoorState::Open;
+
+		DungeonEdges.Add(LoopEdge);
+		LoopsAdded++;
+
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Created Shortcut Loop Edge %d between Node %d and Node %d (Topological Dist: %d)."),
+			LoopEdge.EdgeId, Cand.NodeU, Cand.NodeV, Cand.GraphDist);
+	}
+
+	return LoopsAdded;
+}
+
 bool ASovereignDungeonGenerator::ValidateTopologicalReachability(int32 EntranceIdx, int32 BossIdx) const
 {
 	if (!DungeonNodes.IsValidIndex(EntranceIdx) || !DungeonNodes.IsValidIndex(BossIdx))
@@ -670,6 +873,12 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		DungeonEdges.Add(BranchEdge);
 
 		RoomsRemaining--;
+	}
+
+	// 4.5. Generate Controlled Shortcut Loops (Ticket B-096)
+	if (MaxLoopCount > 0)
+	{
+		GenerateControlledLoops(Stream);
 	}
 
 	// 5. Derive Node Adjacency Caches
