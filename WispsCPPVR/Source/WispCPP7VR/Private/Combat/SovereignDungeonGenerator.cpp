@@ -528,22 +528,22 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 
 void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 {
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
 	// 1. Prepare Instanced Static Mesh Components
 	if (!FloorInstancedComponent)
 	{
 		FloorInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeFloorInstancedComponent"));
-		FloorInstancedComponent->RegisterComponent();
+		if (GetWorld())
+		{
+			FloorInstancedComponent->RegisterComponent();
+		}
 	}
 	if (!WallInstancedComponent)
 	{
 		WallInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeWallInstancedComponent"));
-		WallInstancedComponent->RegisterComponent();
+		if (GetWorld())
+		{
+			WallInstancedComponent->RegisterComponent();
+		}
 	}
 
 	FloorInstancedComponent->ClearInstances();
@@ -627,15 +627,13 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 		// 3. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop
 		if (Node.TileType == EDungeonTileType::BossChamber)
 		{
-			if (BossAltarMesh)
+			if (BossAltarMesh && GetWorld())
 			{
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-				AStaticMeshActor* AltarActor = World->SpawnActor<AStaticMeshActor>(
-					AStaticMeshActor::StaticClass(), NodePos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams
-				);
-				if (AltarActor)
+				if (AStaticMeshActor* AltarActor = GetWorld()->SpawnActor<AStaticMeshActor>(
+					AStaticMeshActor::StaticClass(), NodePos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams))
 				{
 					if (AltarActor->GetStaticMeshComponent())
 					{

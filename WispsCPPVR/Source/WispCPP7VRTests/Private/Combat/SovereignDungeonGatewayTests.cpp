@@ -193,9 +193,27 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("InfusedQi reset to 0.0 after entering dungeon"), EnterGateway->InfusedQi, 0.0f);
 
 	// 7. Test SovereignDungeonSubsystem Persistent Expedition State
-	USovereignDungeonSubsystem* DungeonSubsystem = NewObject<USovereignDungeonSubsystem>();
-	if (TestNotNull(TEXT("DungeonSubsystem created"), DungeonSubsystem))
+	// UGameInstanceSubsystem requires a UGameInstance outer to satisfy ClassWithin = GameInstance
+	UWorld* TestWorld = nullptr;
+	if (GEngine && GEngine->GetWorldContexts().Num() > 0)
 	{
+		TestWorld = GEngine->GetWorldContexts()[0].World();
+	}
+	UGameInstance* GI = TestWorld ? TestWorld->GetGameInstance() : nullptr;
+	if (!GI)
+	{
+		GI = NewObject<UGameInstance>();
+	}
+
+	USovereignDungeonSubsystem* DungeonSubsystem = GI->GetSubsystem<USovereignDungeonSubsystem>();
+	if (!DungeonSubsystem)
+	{
+		DungeonSubsystem = NewObject<USovereignDungeonSubsystem>(GI);
+	}
+
+	if (TestNotNull(TEXT("DungeonSubsystem created with GameInstance outer"), DungeonSubsystem))
+	{
+		DungeonSubsystem->ClearExpedition();
 		TestFalse(TEXT("Expedition starts inactive"), DungeonSubsystem->bHasActiveExpedition);
 
 		DungeonSubsystem->RecordExpedition(777, 2.5f, 3.0f, FName(TEXT("Garden_Level")), TEXT("Garden_AutoSave"));
