@@ -63,12 +63,12 @@ void ASovereignDungeonGameMode::SetupPartyLeaderAtEntrance(APlayerController* PC
 		if (bLockPossessionToLeader)
 		{
 			// Prevent unpossession keybind from releasing the wisp in the dungeon
-			Wisp->bIsPossessing = true;
+			Wisp->SetIsPossessing(true);
 		}
 
-		if (Wisp->CurrentHost)
+		if (AActor* Host = Wisp->GetCurrentHost())
 		{
-			DungeonPartyLeader = Cast<ASovereignBaseCharacter>(Wisp->CurrentHost);
+			DungeonPartyLeader = Cast<ASovereignBaseCharacter>(Host);
 		}
 	}
 	else if (ASovereignBaseCharacter* Character = Cast<ASovereignBaseCharacter>(ControlledPawn))
@@ -108,15 +108,15 @@ void ASovereignDungeonGameMode::ConfigurePartyForExploration()
 
 	ASovereignBattleManager* BattleArena = ActiveDungeonGenerator ? ActiveDungeonGenerator->GetBattleArenaForBiome(0) : nullptr;
 
-	for (int32 SlotIdx = 0; SlotIdx < PartyComp->PartyMembers.Num(); ++SlotIdx)
+	for (int32 SlotIdx = 0; SlotIdx < PartyComp->GridSlots.Num(); ++SlotIdx)
 	{
-		const FSovereignPartySlot& Slot = PartyComp->PartyMembers[SlotIdx];
-		if (!Slot.bIsOccupied || !Slot.AssignedCharacter.IsValid())
+		const FSovereignPartySlot& Slot = PartyComp->GridSlots[SlotIdx];
+		if (!Slot.IsOccupied() || !Slot.MemberCharacter.IsValid())
 		{
 			continue;
 		}
 
-		ASovereignBaseCharacter* Member = Slot.AssignedCharacter.Get();
+		ASovereignBaseCharacter* Member = Slot.MemberCharacter.Get();
 		if (Member == DungeonPartyLeader)
 		{
 			// Leader is visible and active exploring the dungeon corridors

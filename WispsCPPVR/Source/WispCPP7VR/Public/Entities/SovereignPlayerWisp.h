@@ -83,6 +83,14 @@ public:
 	/** Accessor for the persistent player party component */
 	virtual USovereignPartyComponent* GetPartyComponent() const override { return PartyComponent; }
 
+	/** Accessor for current possessed host actor */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Possession")
+	AActor* GetCurrentHost() const { return CurrentHost; }
+
+	/** Sets the possession state flag */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Possession")
+	void SetIsPossessing(bool bNewPossessing) { bIsPossessing = bNewPossessing; }
+
 protected:
 	/** Persistent player party formation component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")

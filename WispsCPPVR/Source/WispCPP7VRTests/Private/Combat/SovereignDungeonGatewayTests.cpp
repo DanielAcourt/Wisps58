@@ -7,6 +7,7 @@
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
 #include "Tests/AutomationCommon.h"
@@ -94,10 +95,10 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Total generated nodes should equal TargetRoomCount"), Generator->DungeonNodes.Num(), 6);
 
 	// Verify Ticket B-089 3D geometry spawning
-	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent);
-	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent);
-	TestEqual(TEXT("Floor instance count matches node count"), Generator->FloorInstancedComponent->GetInstanceCount(), 6);
-	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent->GetInstanceCount() > 0);
+	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent.Get());
+	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent.Get());
+	TestEqual(TEXT("Floor instance count matches node count"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 6);
+	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() > 0 : false);
 
 	// Node 0 must be EntranceRoom
 	TestEqual(TEXT("Node 0 is EntranceRoom"), Generator->DungeonNodes[0].TileType, EDungeonTileType::EntranceRoom);
@@ -165,12 +166,12 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	if (TestNotNull(TEXT("DungeonGM created"), DungeonGM))
 	{
 		TestTrue(TEXT("bLockPossessionToLeader defaults to true"), DungeonGM->bLockPossessionToLeader);
-		TestEqual(TEXT("DefaultPawnClass is ASovereignBaseCharacter"), DungeonGM->DefaultPawnClass, ASovereignBaseCharacter::StaticClass());
+		TestTrue(TEXT("DefaultPawnClass is ASovereignBaseCharacter"), DungeonGM->DefaultPawnClass == ASovereignBaseCharacter::StaticClass());
 
 		DungeonGM->ActiveDungeonGenerator = Generator;
 		DungeonGM->DungeonPartyLeader = Cultivator;
 		DungeonGM->ConfigurePartyForExploration();
-		TestNotNull(TEXT("DungeonPartyLeader registered"), DungeonGM->DungeonPartyLeader);
+		TestNotNull(TEXT("DungeonPartyLeader registered"), DungeonGM->DungeonPartyLeader.Get());
 	}
 
 	return true;
