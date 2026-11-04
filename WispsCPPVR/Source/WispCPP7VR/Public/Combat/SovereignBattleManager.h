@@ -51,6 +51,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombatantTurnReady, ASovereignBas
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleEnded, EBattleState, Outcome);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnSkillActionExecuted, ASovereignBaseCharacter*, Caster, const FGameplayTag&, SkillTag, float, Value, bool, bIsHealing);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemActionExecuted, ASovereignBaseCharacter*, User, const FGameplayTag&, ItemTag, ASovereignBaseCharacter*, Target);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFleeAttemptFailed, ASovereignBaseCharacter*, Fleer, float, CurrentEscapeProgress);
 
 /**
  * ASovereignBattleManager
@@ -97,6 +98,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Config")
 	bool bIsEscapable = true;
 
+	/** Accumulated escape bar progress towards guaranteed flight (0.0 to 100.0) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Escape")
+	float CurrentEscapeProgress = 0.0f;
+
+	/** Percentage added to CurrentEscapeProgress each time an escape attempt fails (Default 25.0%) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Escape")
+	float EscapeProgressIncrementPerFail = 25.0f;
+
 	// --- Delegates ---
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
 	FOnBattleStateChanged OnBattleStateChanged;
@@ -112,6 +121,29 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
 	FOnItemActionExecuted OnItemActionExecuted;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
+	FOnFleeAttemptFailed OnFleeAttemptFailed;
+
+	// --- Flee API ---
+
+	/**
+	 * Calculates the percentage chance (0.0 to 100.0) for a combatant to flee successfully.
+	 * Formula: 50% + (PartyAverageDEX - EnemyAverageDEX) * 2% + FleerLuck * 0.5% + CurrentEscapeProgress.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Battle")
+	float CalculateEscapeChance(const ASovereignBaseCharacter* Fleer) const;
+
+	/**
+	 * Executes an escape attempt for the acting combatant.
+	 * If battle is unescapable, rejects immediately without ending turn.
+	 * If roll succeeds, sets state to Fled.
+	 * If roll fails, increments escape progress by EscapeProgressIncrementPerFail and ends turn.
+	 * @param Fleer The acting character attempting to run.
+	 * @param ForcedRoll Optional deterministic roll between 0.0 and 100.0 for unit testing (-1.0 uses random).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
+	bool AttemptFlee(ASovereignBaseCharacter* Fleer, float ForcedRoll = -1.0f);
 
 	// --- Skill & Item Execution API ---
 

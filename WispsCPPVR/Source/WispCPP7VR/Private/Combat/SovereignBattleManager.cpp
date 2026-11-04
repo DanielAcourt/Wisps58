@@ -23,6 +23,8 @@ ASovereignBattleManager::ASovereignBattleManager()
 	EnemyGrid.SetNum(GRID_SIZE);
 	BattleState = EBattleState::EncounterStarting;
 	bIsEscapable = true;
+	CurrentEscapeProgress = 0.0f;
+	EscapeProgressIncrementPerFail = 25.0f;
 }
 
 void ASovereignBattleManager::BeginPlay()
@@ -58,6 +60,7 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, const TArray<ASovereignBaseCharacter*>& InEnemyUnits, bool bCanFlee)
 {
 	bIsEscapable = bCanFlee;
+	CurrentEscapeProgress = 0.0f;
 	ReadyQueue.Empty();
 	ActiveCombatant = nullptr;
 
@@ -544,6 +547,99 @@ bool ASovereignBattleManager::ExecuteItemAction(ASovereignBaseCharacter* User, c
 	// 5. Conclude Active Turn
 	ConcludeActiveTurn();
 	return true;
+}
+
+float ASovereignBattleManager::CalculateEscapeChance(const ASovereignBaseCharacter* Fleer) const
+{
+	if (!bIsEscapable)
+	{
+		return 0.0f;
+	}
+
+	// 1. Calculate Player Party Average DEX
+	const TArray<ASovereignBaseCharacter*> LivingPlayers = GetLivingPlayerUnits();
+	float PlayerAvgDex = 10.0f;
+	if (LivingPlayers.Num() > 0)
+	{
+		float TotalDex = 0.0f;
+		for (const auto* Char : LivingPlayers)
+		{
+			if (const USovereignAttributeComponent* Attr = Char->GetAttributeComponent())
+			{
+				TotalDex += Attr->Dexterity;
+			}
+		}
+		PlayerAvgDex = TotalDex / LivingPlayers.Num();
+	}
+
+	// 2. Calculate Enemy Average DEX
+	const TArray<ASovereignBaseCharacter*> LivingEnemies = GetLivingEnemyUnits();
+	float EnemyAvgDex = 10.0f;
+	if (LivingEnemies.Num() > 0)
+	{
+		float TotalDex = 0.0f;
+		for (const auto* Char : LivingEnemies)
+		{
+			if (const USovereignAttributeComponent* Attr = Char->GetAttributeComponent())
+			{
+				TotalDex += Attr->Dexterity;
+			}
+		}
+		EnemyAvgDex = TotalDex / LivingEnemies.Num();
+	}
+
+	// 3. Fleer Luck Contribution
+	float FleerLuck = 10.0f;
+	if (Fleer)
+	{
+		if (const USovereignAttributeComponent* Attr = Fleer->GetAttributeComponent())
+		{
+			FleerLuck = Attr->Luck;
+		}
+	}
+
+	// Formula: 50% base + (PartyAvgDex - EnemyAvgDex) * 2% + FleerLuck * 0.5% + CurrentEscapeProgress
+	const float BaseChance = 50.0f + ((PlayerAvgDex - EnemyAvgDex) * 2.0f) + (FleerLuck * 0.5f) + CurrentEscapeProgress;
+	return FMath::Clamp(BaseChance, 5.0f, 100.0f);
+}
+
+bool ASovereignBattleManager::AttemptFlee(ASovereignBaseCharacter* Fleer, float ForcedRoll)
+{
+	if (!Fleer)
+	{
+		return false;
+	}
+
+	// 1. Boss / Story Restraint Check
+	if (!bIsEscapable)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BattleManager] Cannot flee from this boss/guardian encounter!"));
+		OnFleeAttemptFailed.Broadcast(Fleer, CurrentEscapeProgress);
+		return false; // Turn is retained when attempting to flee an unescapable boss
+	}
+
+	// 2. Roll Escape
+	const float EscapeChance = CalculateEscapeChance(Fleer);
+	const float Roll = (ForcedRoll >= 0.0f) ? ForcedRoll : FMath::FRandRange(0.0f, 100.0f);
+
+	if (Roll <= EscapeChance)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[BattleManager] %s successfully fled combat! (Roll: %f <= Chance: %f)"),
+			*Fleer->GetName(), Roll, EscapeChance);
+		SetBattleState(EBattleState::Fled);
+		return true;
+	}
+
+	// 3. Escape Failed: Increment escape bar fallback and consume turn
+	CurrentEscapeProgress = FMath::Clamp(CurrentEscapeProgress + EscapeProgressIncrementPerFail, 0.0f, 100.0f);
+	UE_LOG(LogTemp, Log, TEXT("[BattleManager] %s failed to flee! (Roll: %f > Chance: %f). Escape bar now %f%%"),
+		*Fleer->GetName(), Roll, EscapeChance, CurrentEscapeProgress);
+
+	OnFleeAttemptFailed.Broadcast(Fleer, CurrentEscapeProgress);
+
+	// Consumes the acting dragon's turn (resets ATB to 0%)
+	ConcludeActiveTurn();
+	return false;
 }
 
 TArray<ASovereignBaseCharacter*> ASovereignBattleManager::GetLivingEnemyUnits() const
