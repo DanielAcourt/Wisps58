@@ -111,10 +111,33 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Test GetOccupiedCells cell counts
 	FSovereignDungeonNode CellTestNode;
 	CellTestNode.GridCoord = FIntPoint(5, 5);
+	CellTestNode.FootprintDimensions = FIntPoint(1, 1);
+	CellTestNode.GeneratePerimeterSockets();
+	TestEqual(TEXT("1x1 footprint has 4 perimeter sockets"), CellTestNode.PerimeterSockets.Num(), 4);
+
 	CellTestNode.FootprintDimensions = FIntPoint(2, 2);
+	CellTestNode.GeneratePerimeterSockets();
 	TestEqual(TEXT("2x2 footprint has 4 occupied cells"), CellTestNode.GetOccupiedCells().Num(), 4);
+	TestEqual(TEXT("2x2 footprint has 8 perimeter sockets"), CellTestNode.PerimeterSockets.Num(), 8);
+
 	CellTestNode.FootprintDimensions = FIntPoint(4, 4);
+	CellTestNode.GeneratePerimeterSockets();
 	TestEqual(TEXT("4x4 footprint has 16 occupied cells"), CellTestNode.GetOccupiedCells().Num(), 16);
+	TestEqual(TEXT("4x4 footprint has 16 perimeter sockets"), CellTestNode.PerimeterSockets.Num(), 16);
+
+	// Test Ticket B-094.2 MaxConnections capacity checks
+	CellTestNode.MaxConnections = 2;
+	TestTrue(TEXT("Initially can accept connections"), CellTestNode.CanAcceptConnection());
+	CellTestNode.PerimeterSockets[0].bIsConnected = true;
+	CellTestNode.PerimeterSockets[1].bIsConnected = true;
+	TestFalse(TEXT("Cannot accept connection once MaxConnections reached"), CellTestNode.CanAcceptConnection());
+
+	// Verify connected sockets in generated dungeon
+	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
+	{
+		TestTrue(TEXT("Room node perimeter sockets populated"), Node.PerimeterSockets.Num() >= 4);
+		TestTrue(TEXT("Node connected sockets within MaxConnections"), Node.GetConnectedSocketCount() <= Node.MaxConnections);
+	}
 
 	// Verify zero spatial overlap in MasterGridOccupancy
 	TSet<FIntPoint> VerifyUniqueCells;

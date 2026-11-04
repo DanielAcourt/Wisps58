@@ -131,10 +131,11 @@ To test the physical dungeon threshold in your level:
      - Authoritative connectivity is managed through `DungeonEdges` (`FSovereignDungeonEdge`).
      - Pure-data BFS validation (`ValidateTopologicalReachability`) asserts 100% room reachability, boss reachability, minimum spine length (`MinSpineLength`), and sealed elite gate thresholds before world actor construction.
      - Fast rendering lookup bitmask `ConnectedPassageMask` on `FSovereignDungeonNode` is automatically derived from `DungeonEdges`.
-   - **Multi-Cell Room Footprints (Ticket B-094)**:
+   - **Multi-Cell Room Footprints & Perimeter Sockets (Ticket B-094 & B-094.2)**:
      - The generator supports multi-cell footprints: Entrance Room ($1 \times 1$), Corridors ($1 \times 1$), Treasure Rooms ($1 \times 1$), Elite Chambers ($2 \times 2 = 2000\text{cm} \times 2000\text{cm}$), and Boss Vaults ($4 \times 4 = 4000\text{cm} \times 4000\text{cm}$).
      - `MasterGridOccupancy` maps every individual constituent cell coordinate to its owning room index, guaranteeing zero spatial overlap.
      - `CanFitRoomFootprint()` validates multi-tile clearance prior to room placement, with automatic fallback to 1x1 if space is constrained.
+     - **Perimeter Sockets & Connection Caps (Ticket B-094.2)**: Every room generates its outer boundary sockets via `GeneratePerimeterSockets()` (4 for 1x1, 8 for 2x2, 16 for 4x4) and enforces `MaxConnections` (Treasure=1, Boss=1, Corridor=2, Chamber=4). Sockets connected to a graph edge spawn doorway openings; unused perimeter sockets automatically receive solid boundary walls.
    - **Physical 3D Room & Wall Spawning (Ticket B-089 & B-092)**:
      - `bSpawnPhysicalGeometry = true`: Automatically instantiates 3D floor tiles for every occupied grid cell ($1000\text{cm} \times 1000\text{cm}$) and perimeter boundary walls using `UInstancedStaticMeshComponent` (rendering hundreds of room tiles in a single draw call).
      - In the Details panel of `ASovereignDungeonGenerator`, you can assign custom modular meshes to `FloorMesh`, `WallMesh`, and `BossAltarMesh` (defaults to `/Engine/BasicShapes/Cube` scaled to metric dimensions).

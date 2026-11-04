@@ -85,8 +85,41 @@ struct WISPCPP7VR_API FSovereignDungeonEdge
 };
 
 /**
+ * FSovereignDoorwaySocket
+ * Represents an individual connection socket along the outer perimeter of a room footprint (Ticket B-094.2).
+ */
+USTRUCT(BlueprintType)
+struct WISPCPP7VR_API FSovereignDoorwaySocket
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 SocketId = INDEX_NONE;
+
+	/** Specific 1000cm grid cell coordinate on the room perimeter where this socket resides */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
+	FIntPoint CellCoord = FIntPoint::ZeroValue;
+
+	/** Outward facing cardinal direction of this doorway opening */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
+	EDungeonDirection FacingDirection = EDungeonDirection::None;
+
+	/** Whether this socket is actively connected to an edge leading to another room */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	bool bIsConnected = false;
+
+	/** ID of the connecting edge in DungeonEdges */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 ConnectedEdgeId = INDEX_NONE;
+
+	/** Index of the adjacent room node connected via this socket */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 ConnectedNodeIndex = INDEX_NONE;
+};
+
+/**
  * FSovereignDungeonNode
- * Represents an individual uniform 1000cm x 1000cm tile node in the procedural layout.
+ * Represents an individual room node with footprint dimensions and perimeter connection sockets (Ticket B-094 & B-094.2).
  */
 USTRUCT(BlueprintType)
 struct WISPCPP7VR_API FSovereignDungeonNode
@@ -104,6 +137,10 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
 	FIntPoint FootprintDimensions = FIntPoint(1, 1);
 
+	/** Maximum allowed concurrent connections to other rooms (Treasure=1, Boss=1, Corridor=2, Chamber=4) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
+	int32 MaxConnections = 4;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
 	EDungeonTileType TileType = EDungeonTileType::Corridor;
 
@@ -116,6 +153,10 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 	/** Transient bitmask cache derived strictly from DungeonEdges (Bit 0=N, 1=E, 2=S, 3=W) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
 	uint8 ConnectedPassageMask = 0;
+
+	/** Available perimeter sockets along the outer boundary of this room (Ticket B-094.2) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	TArray<FSovereignDoorwaySocket> PerimeterSockets;
 
 	/** Returns all individual 1000cm grid cell coordinates occupied by this room footprint (Ticket B-094) */
 	TArray<FIntPoint> GetOccupiedCells() const
@@ -132,6 +173,78 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 			}
 		}
 		return Cells;
+	}
+
+	/** Returns how many perimeter sockets are currently connected */
+	int32 GetConnectedSocketCount() const
+	{
+		int32 Count = 0;
+		for (const FSovereignDoorwaySocket& Socket : PerimeterSockets)
+		{
+			if (Socket.bIsConnected)
+			{
+				Count++;
+			}
+		}
+		return Count;
+	}
+
+	/** Whether this room has capacity to accept more connections */
+	bool CanAcceptConnection() const
+	{
+		return GetConnectedSocketCount() < MaxConnections;
+	}
+
+	/**
+	 * Automatically populates all 2*(W+H) outer boundary perimeter sockets based on footprint dimensions.
+	 */
+	void GeneratePerimeterSockets()
+	{
+		PerimeterSockets.Empty();
+		const int32 W = FMath::Max(1, FootprintDimensions.X);
+		const int32 H = FMath::Max(1, FootprintDimensions.Y);
+
+		int32 CurrentId = 0;
+
+		// 1. South perimeter: (X, 0) facing South
+		for (int32 X = 0; X < W; ++X)
+		{
+			FSovereignDoorwaySocket Sock;
+			Sock.SocketId = CurrentId++;
+			Sock.CellCoord = GridCoord + FIntPoint(X, 0);
+			Sock.FacingDirection = EDungeonDirection::South;
+			PerimeterSockets.Add(Sock);
+		}
+
+		// 2. North perimeter: (X, H-1) facing North
+		for (int32 X = 0; X < W; ++X)
+		{
+			FSovereignDoorwaySocket Sock;
+			Sock.SocketId = CurrentId++;
+			Sock.CellCoord = GridCoord + FIntPoint(X, H - 1);
+			Sock.FacingDirection = EDungeonDirection::North;
+			PerimeterSockets.Add(Sock);
+		}
+
+		// 3. West perimeter: (0, Y) facing West
+		for (int32 Y = 0; Y < H; ++Y)
+		{
+			FSovereignDoorwaySocket Sock;
+			Sock.SocketId = CurrentId++;
+			Sock.CellCoord = GridCoord + FIntPoint(0, Y);
+			Sock.FacingDirection = EDungeonDirection::West;
+			PerimeterSockets.Add(Sock);
+		}
+
+		// 4. East perimeter: (W-1, Y) facing East
+		for (int32 Y = 0; Y < H; ++Y)
+		{
+			FSovereignDoorwaySocket Sock;
+			Sock.SocketId = CurrentId++;
+			Sock.CellCoord = GridCoord + FIntPoint(W - 1, Y);
+			Sock.FacingDirection = EDungeonDirection::East;
+			PerimeterSockets.Add(Sock);
+		}
 	}
 };
 
@@ -341,6 +454,22 @@ public:
 		case EDungeonTileType::EliteChamber: return FIntPoint(2, 2);
 		case EDungeonTileType::BossChamber:  return FIntPoint(4, 4);
 		default:                             return FIntPoint(1, 1);
+		}
+	}
+
+	/** Returns default max connection capacity for each room type (Ticket B-094.2) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Footprints")
+	static int32 GetDefaultMaxConnectionsForTileType(EDungeonTileType Type)
+	{
+		switch (Type)
+		{
+		case EDungeonTileType::EntranceRoom: return 2;
+		case EDungeonTileType::Corridor:     return 2;
+		case EDungeonTileType::Chamber:      return 4;
+		case EDungeonTileType::TreasureRoom: return 1; // Strict dead-end leaf
+		case EDungeonTileType::EliteChamber: return 2; // Linear gatekeeper
+		case EDungeonTileType::BossChamber:  return 1; // Single entrance strictly
+		default:                             return 2;
 		}
 	}
 

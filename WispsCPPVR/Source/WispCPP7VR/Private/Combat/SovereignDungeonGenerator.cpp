@@ -266,21 +266,36 @@ void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 	{
 		DungeonNodes[i].ConnectedPassageMask = 0;
 		DungeonNodes[i].NodeIndex = i;
+
+		// Ensure perimeter sockets are initialized
+		if (DungeonNodes[i].PerimeterSockets.Num() == 0)
+		{
+			DungeonNodes[i].GeneratePerimeterSockets();
+		}
+
+		// Reset connection states on sockets prior to sync
+		for (FSovereignDoorwaySocket& Socket : DungeonNodes[i].PerimeterSockets)
+		{
+			Socket.bIsConnected = false;
+			Socket.ConnectedEdgeId = INDEX_NONE;
+			Socket.ConnectedNodeIndex = INDEX_NONE;
+		}
 	}
 
 	for (const FSovereignDungeonEdge& Edge : DungeonEdges)
 	{
 		if (DungeonNodes.IsValidIndex(Edge.NodeIndexA) && DungeonNodes.IsValidIndex(Edge.NodeIndexB))
 		{
-			// Set bit for DirectionAtoB on Node A
-			if (Edge.DirectionAtoB != EDungeonDirection::None)
+			const EDungeonDirection DirA = Edge.DirectionAtoB;
+			if (DirA != EDungeonDirection::None)
 			{
-				const uint8 DirBitA = (1 << (uint8)Edge.DirectionAtoB);
+				// 1. Bitmask update on Node A
+				const uint8 DirBitA = (1 << (uint8)DirA);
 				DungeonNodes[Edge.NodeIndexA].ConnectedPassageMask |= DirBitA;
 
-				// Opposite direction on Node B
+				// 2. Bitmask update on Node B (Opposite direction)
 				uint8 OppDir = 0;
-				switch (Edge.DirectionAtoB)
+				switch (DirA)
 				{
 				case EDungeonDirection::North: OppDir = (uint8)EDungeonDirection::South; break;
 				case EDungeonDirection::East:  OppDir = (uint8)EDungeonDirection::West; break;
@@ -290,6 +305,30 @@ void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 				}
 				const uint8 DirBitB = (1 << OppDir);
 				DungeonNodes[Edge.NodeIndexB].ConnectedPassageMask |= DirBitB;
+
+				// 3. Update Socket state on Node A (Ticket B-094.2)
+				for (FSovereignDoorwaySocket& SockA : DungeonNodes[Edge.NodeIndexA].PerimeterSockets)
+				{
+					if (!SockA.bIsConnected && SockA.FacingDirection == DirA)
+					{
+						SockA.bIsConnected = true;
+						SockA.ConnectedEdgeId = Edge.EdgeId;
+						SockA.ConnectedNodeIndex = Edge.NodeIndexB;
+						break;
+					}
+				}
+
+				// 4. Update Socket state on Node B (Ticket B-094.2)
+				for (FSovereignDoorwaySocket& SockB : DungeonNodes[Edge.NodeIndexB].PerimeterSockets)
+				{
+					if (!SockB.bIsConnected && SockB.FacingDirection == (EDungeonDirection)OppDir)
+					{
+						SockB.bIsConnected = true;
+						SockB.ConnectedEdgeId = Edge.EdgeId;
+						SockB.ConnectedNodeIndex = Edge.NodeIndexA;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -361,9 +400,11 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 	EntranceNode.NodeIndex = 0;
 	EntranceNode.GridCoord = FIntPoint(0, 0);
 	EntranceNode.FootprintDimensions = GetDefaultFootprintForTileType(EDungeonTileType::EntranceRoom);
+	EntranceNode.MaxConnections = GetDefaultMaxConnectionsForTileType(EDungeonTileType::EntranceRoom);
 	EntranceNode.TileType = EDungeonTileType::EntranceRoom;
 	EntranceNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin);
 	EntranceNode.bHasFixedEliteMob = false;
+	EntranceNode.GeneratePerimeterSockets();
 
 	DungeonNodes.Add(EntranceNode);
 	MainSpineNodeIndices.Add(0);
@@ -430,9 +471,11 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		Node.NodeIndex = NextIndex;
 		Node.GridCoord = CurrentCoord;
 		Node.FootprintDimensions = DimsToUse;
+		Node.MaxConnections = GetDefaultMaxConnectionsForTileType(NextType);
 		Node.TileType = NextType;
 		Node.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(CurrentCoord.X * TILE_SIZE, CurrentCoord.Y * TILE_SIZE, 0.0f));
 		Node.bHasFixedEliteMob = (Node.TileType == EDungeonTileType::EliteChamber);
+		Node.GeneratePerimeterSockets();
 
 		DungeonNodes.Add(Node);
 		MainSpineNodeIndices.Add(NextIndex);
@@ -499,9 +542,12 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		BossNode.NodeIndex = BossIndex;
 		BossNode.GridCoord = CurrentCoord;
 		BossNode.FootprintDimensions = BossDimsToUse;
+		BossNode.MaxConnections = GetDefaultMaxConnectionsForTileType(EDungeonTileType::BossChamber); // Strict single entrance
 		BossNode.TileType = EDungeonTileType::BossChamber;
 		BossNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(CurrentCoord.X * TILE_SIZE, CurrentCoord.Y * TILE_SIZE, 0.0f));
 		BossNode.bHasFixedEliteMob = true; // Boss entity
+		BossNode.GeneratePerimeterSockets();
+
 		DungeonNodes.Add(BossNode);
 		MainSpineNodeIndices.Add(BossIndex);
 		BossNodeIndex = BossIndex;
@@ -558,14 +604,24 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		const auto ChosenBranch = BranchOpen[Stream.RandRange(0, BranchOpen.Num() - 1)];
 		const FIntPoint BranchCoord = ParentCoord + ChosenBranch.Value;
 
+		// Check that parent node can accept more connections (Ticket B-094.2)
+		if (!DungeonNodes[ParentIdx].CanAcceptConnection())
+		{
+			EligibleSpineParents.Remove(ParentIdx);
+			continue;
+		}
+
 		const int32 BranchIdx = DungeonNodes.Num();
 		FSovereignDungeonNode BranchNode;
 		BranchNode.NodeIndex = BranchIdx;
 		BranchNode.GridCoord = BranchCoord;
 		BranchNode.FootprintDimensions = BranchDims;
+		BranchNode.MaxConnections = GetDefaultMaxConnectionsForTileType(BranchType);
 		BranchNode.TileType = BranchType;
 		BranchNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(BranchCoord.X * TILE_SIZE, BranchCoord.Y * TILE_SIZE, 0.0f));
 		BranchNode.bHasFixedEliteMob = false;
+		BranchNode.GeneratePerimeterSockets();
+
 		DungeonNodes.Add(BranchNode);
 
 		for (const FIntPoint& Cell : BranchNode.GetOccupiedCells())
