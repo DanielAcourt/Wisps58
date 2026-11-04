@@ -100,14 +100,35 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Floor instance count matches node count"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 6);
 	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() > 0 : false);
 
-	// Node 0 must be EntranceRoom
+	// 5. Test Ticket B-090 Graph Data Model, Edge Representation & BFS Validation
+	TestTrue(TEXT("DungeonEdges populated"), Generator->DungeonEdges.Num() > 0);
+	TestEqual(TEXT("Spanning tree edge count invariant |E| == |V| - 1"), Generator->DungeonEdges.Num(), Generator->DungeonNodes.Num() - 1);
+
+	// Validate topological reachability via pure BFS
+	const bool bGraphValid = Generator->ValidateTopologicalReachability(0, Generator->BossNodeIndex);
+	TestTrue(TEXT("ValidateTopologicalReachability should succeed on generated graph"), bGraphValid);
+
+	// Verify Node 0 (Entrance Room)
 	TestEqual(TEXT("Node 0 is EntranceRoom"), Generator->DungeonNodes[0].TileType, EDungeonTileType::EntranceRoom);
 	TestEqual(TEXT("Node 0 grid coord is (0, 0)"), Generator->DungeonNodes[0].GridCoord, FIntPoint(0, 0));
 
-	// Furthest node must be BossChamber
+	// Verify Terminal Boss Chamber
 	TestTrue(TEXT("BossNodeIndex is valid"), Generator->BossNodeIndex >= 0);
 	TestEqual(TEXT("Terminal node is BossChamber"), Generator->DungeonNodes[Generator->BossNodeIndex].TileType, EDungeonTileType::BossChamber);
 	TestTrue(TEXT("Boss chamber has fixed elite mob"), Generator->DungeonNodes[Generator->BossNodeIndex].bHasFixedEliteMob);
+
+	// Verify Edge Adjacency Helper methods
+	FSovereignDungeonEdge SampleEdge = Generator->DungeonEdges[0];
+	TestTrue(TEXT("Edge connects Node A"), SampleEdge.Connects(SampleEdge.NodeIndexA));
+	TestTrue(TEXT("Edge connects Node B"), SampleEdge.Connects(SampleEdge.NodeIndexB));
+	TestEqual(TEXT("GetOtherNode returns Node B from Node A"), SampleEdge.GetOtherNode(SampleEdge.NodeIndexA), SampleEdge.NodeIndexB);
+	TestEqual(TEXT("GetOtherNode returns Node A from Node B"), SampleEdge.GetOtherNode(SampleEdge.NodeIndexB), SampleEdge.NodeIndexA);
+
+	// Verify ConnectedPassageMask cache derived on nodes
+	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
+	{
+		TestTrue(TEXT("Node has non-zero connected passage mask"), Node.ConnectedPassageMask > 0);
+	}
 
 	// 5. Test Random Step Counter
 	Generator->AccumulatedStepDistance = 0.0f;

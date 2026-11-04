@@ -21,6 +21,10 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 
 	TargetRoomCount = 8;
 	GenerationSeed = 1337;
+	MinSpineLength = 4;
+	MaxLoopCount = 0;
+	MaxGenerationRetries = 20;
+
 	EnemyBuffMultiplier = 1.0f;
 	RewardMultiplier = 1.0f;
 	FarOffArenaOrigin = FVector(50000.0f, 50000.0f, 5000.0f);
@@ -91,86 +95,377 @@ void ASovereignDungeonGenerator::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+bool ASovereignDungeonGenerator::ValidateTopologicalReachability(int32 EntranceIdx, int32 BossIdx) const
+{
+	if (!DungeonNodes.IsValidIndex(EntranceIdx) || !DungeonNodes.IsValidIndex(BossIdx))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Invalid Entrance (%d) or Boss (%d) index."), EntranceIdx, BossIdx);
+		return false;
+	}
+
+	// 1. Edge Adjacency & Direction Integrity Invariant
+	for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+	{
+		if (Edge.NodeIndexA == Edge.NodeIndexB)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d self-connects Node %d."), Edge.EdgeId, Edge.NodeIndexA);
+			return false;
+		}
+		if (!DungeonNodes.IsValidIndex(Edge.NodeIndexA) || !DungeonNodes.IsValidIndex(Edge.NodeIndexB))
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d references invalid nodes (%d, %d)."),
+				Edge.EdgeId, Edge.NodeIndexA, Edge.NodeIndexB);
+			return false;
+		}
+
+		const FIntPoint CoordA = DungeonNodes[Edge.NodeIndexA].GridCoord;
+		const FIntPoint CoordB = DungeonNodes[Edge.NodeIndexB].GridCoord;
+		const int32 ManhattanDist = FMath::Abs(CoordA.X - CoordB.X) + FMath::Abs(CoordA.Y - CoordB.Y);
+		if (ManhattanDist != 1)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d connects non-adjacent coordinates (%d,%d) and (%d,%d) (Dist: %d)."),
+				Edge.EdgeId, CoordA.X, CoordA.Y, CoordB.X, CoordB.Y, ManhattanDist);
+			return false;
+		}
+
+		// Verify declared cardinal direction
+		FIntPoint ExpectedOffset(0, 0);
+		switch (Edge.DirectionAtoB)
+		{
+		case EDungeonDirection::North: ExpectedOffset = FIntPoint(1, 0); break;
+		case EDungeonDirection::East:  ExpectedOffset = FIntPoint(0, 1); break;
+		case EDungeonDirection::South: ExpectedOffset = FIntPoint(-1, 0); break;
+		case EDungeonDirection::West:  ExpectedOffset = FIntPoint(0, -1); break;
+		default: break;
+		}
+
+		if (CoordB != CoordA + ExpectedOffset)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d direction does not match coordinate delta."), Edge.EdgeId);
+			return false;
+		}
+	}
+
+	// 2. Pure-Data BFS Reachability from Entrance
+	TSet<int32> Visited;
+	TQueue<int32> Queue;
+	TMap<int32, int32> Distances;
+
+	Visited.Add(EntranceIdx);
+	Queue.Enqueue(EntranceIdx);
+	Distances.Add(EntranceIdx, 0);
+
+	while (!Queue.IsEmpty())
+	{
+		int32 Current = INDEX_NONE;
+		Queue.Dequeue(Current);
+
+		const int32 CurrentDist = Distances[Current];
+
+		for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+		{
+			if (Edge.Connects(Current))
+			{
+				const int32 Neighbor = Edge.GetOtherNode(Current);
+				if (!Visited.Contains(Neighbor))
+				{
+					Visited.Add(Neighbor);
+					Distances.Add(Neighbor, CurrentDist + 1);
+					Queue.Enqueue(Neighbor);
+				}
+			}
+		}
+	}
+
+	// Invariant: Boss must be reachable
+	if (!Visited.Contains(BossIdx))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Boss Chamber (%d) unreachable from Entrance (%d)."), BossIdx, EntranceIdx);
+		return false;
+	}
+
+	// Invariant: Zero orphan nodes (every node must be reachable)
+	if (Visited.Num() != DungeonNodes.Num())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Graph contains %d unreachable orphan nodes (%d visited of %d total)."),
+			DungeonNodes.Num() - Visited.Num(), Visited.Num(), DungeonNodes.Num());
+		return false;
+	}
+
+	// Invariant: Path length to Boss must meet minimum spine threshold
+	const int32 PathLengthToBoss = Distances[BossIdx];
+	if (PathLengthToBoss < MinSpineLength)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Path length to Boss (%d) is less than MinSpineLength (%d)."),
+			PathLengthToBoss, MinSpineLength);
+		return false;
+	}
+
+	// Invariant: Exactly 1 entrance edge into Boss Chamber
+	int32 BossEdgeCount = 0;
+	int32 BossPredecessorIdx = INDEX_NONE;
+	const FSovereignDungeonEdge* BossEdgePtr = nullptr;
+
+	for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+	{
+		if (Edge.Connects(BossIdx))
+		{
+			BossEdgeCount++;
+			BossPredecessorIdx = Edge.GetOtherNode(BossIdx);
+			BossEdgePtr = &Edge;
+		}
+	}
+
+	if (BossEdgeCount != 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Boss Chamber has %d connecting edges (must be strictly 1)."), BossEdgeCount);
+		return false;
+	}
+
+	// Invariant: Node preceding Boss must be an EliteChamber with SealedEliteGate
+	if (BossPredecessorIdx != INDEX_NONE && DungeonNodes.IsValidIndex(BossPredecessorIdx))
+	{
+		if (DungeonNodes[BossPredecessorIdx].TileType != EDungeonTileType::EliteChamber)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Node %d preceding Boss must be EliteChamber, but is %d."),
+				BossPredecessorIdx, (int32)DungeonNodes[BossPredecessorIdx].TileType);
+			return false;
+		}
+		if (BossEdgePtr && BossEdgePtr->DoorState != EDoorState::SealedEliteGate)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Boss doorway must have SealedEliteGate state."));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
+{
+	for (int32 i = 0; i < DungeonNodes.Num(); ++i)
+	{
+		DungeonNodes[i].ConnectedPassageMask = 0;
+		DungeonNodes[i].NodeIndex = i;
+	}
+
+	for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+	{
+		if (DungeonNodes.IsValidIndex(Edge.NodeIndexA) && DungeonNodes.IsValidIndex(Edge.NodeIndexB))
+		{
+			// Set bit for DirectionAtoB on Node A
+			if (Edge.DirectionAtoB != EDungeonDirection::None)
+			{
+				const uint8 DirBitA = (1 << (uint8)Edge.DirectionAtoB);
+				DungeonNodes[Edge.NodeIndexA].ConnectedPassageMask |= DirBitA;
+
+				// Opposite direction on Node B
+				uint8 OppDir = 0;
+				switch (Edge.DirectionAtoB)
+				{
+				case EDungeonDirection::North: OppDir = (uint8)EDungeonDirection::South; break;
+				case EDungeonDirection::East:  OppDir = (uint8)EDungeonDirection::West; break;
+				case EDungeonDirection::South: OppDir = (uint8)EDungeonDirection::North; break;
+				case EDungeonDirection::West:  OppDir = (uint8)EDungeonDirection::East; break;
+				default: break;
+				}
+				const uint8 DirBitB = (1 << OppDir);
+				DungeonNodes[Edge.NodeIndexB].ConnectedPassageMask |= DirBitB;
+			}
+		}
+	}
+}
+
 bool ASovereignDungeonGenerator::GenerateDungeon()
 {
 	DungeonNodes.Empty();
-	FRandomStream Stream(GenerationSeed != 0 ? GenerationSeed : FMath::Rand());
+	DungeonEdges.Empty();
+	MainSpineNodeIndices.Empty();
 
+	FRandomStream Stream(GenerationSeed != 0 ? GenerationSeed : FMath::Rand());
 	const FVector Origin = GetActorLocation();
 
 	// 1. Create Entrance Node at (0, 0)
 	FSovereignDungeonNode EntranceNode;
+	EntranceNode.NodeIndex = 0;
 	EntranceNode.GridCoord = FIntPoint(0, 0);
 	EntranceNode.TileType = EDungeonTileType::EntranceRoom;
 	EntranceNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin);
 	EntranceNode.bHasFixedEliteMob = false;
 	DungeonNodes.Add(EntranceNode);
+	MainSpineNodeIndices.Add(0);
 
 	TSet<FIntPoint> OccupiedCoords;
 	OccupiedCoords.Add(EntranceNode.GridCoord);
 
 	FIntPoint CurrentCoord = EntranceNode.GridCoord;
+	int32 CurrentIndex = 0;
 
-	// 2. Random Walk Graph Generation (Connecting Corridors and Chambers)
-	for (int32 i = 1; i < TargetRoomCount; ++i)
+	// 2. Generate Critical Main Spine
+	const int32 SpineTargetCount = FMath::Clamp(FMath::FloorToInt(TargetRoomCount * 0.65f), MinSpineLength, TargetRoomCount - 2);
+
+	for (int32 i = 1; i < SpineTargetCount; ++i)
 	{
-		// Pick random cardinal direction (North, South, East, West)
-		TArray<FIntPoint> Directions = { FIntPoint(1, 0), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(0, -1) };
-		FIntPoint Step = Directions[Stream.RandRange(0, Directions.Num() - 1)];
-		CurrentCoord += Step;
+		TArray<TPair<EDungeonDirection, FIntPoint>> CardinalOptions = {
+			{ EDungeonDirection::North, FIntPoint(1, 0) },
+			{ EDungeonDirection::East,  FIntPoint(0, 1) },
+			{ EDungeonDirection::South, FIntPoint(-1, 0) },
+			{ EDungeonDirection::West,  FIntPoint(0, -1) }
+		};
 
-		// Prevent infinite overlap
-		int32 Retries = 0;
-		while (OccupiedCoords.Contains(CurrentCoord) && Retries < 10)
+		// Filter for open directions
+		TArray<TPair<EDungeonDirection, FIntPoint>> OpenOptions;
+		for (const auto& Opt : CardinalOptions)
 		{
-			Step = Directions[Stream.RandRange(0, Directions.Num() - 1)];
-			CurrentCoord += Step;
-			Retries++;
+			if (!OccupiedCoords.Contains(CurrentCoord + Opt.Value))
+			{
+				OpenOptions.Add(Opt);
+			}
 		}
+
+		if (OpenOptions.Num() == 0)
+		{
+			break;
+		}
+
+		const auto Chosen = OpenOptions[Stream.RandRange(0, OpenOptions.Num() - 1)];
+		CurrentCoord += Chosen.Value;
 		OccupiedCoords.Add(CurrentCoord);
 
+		const int32 NextIndex = DungeonNodes.Num();
 		FSovereignDungeonNode Node;
+		Node.NodeIndex = NextIndex;
 		Node.GridCoord = CurrentCoord;
-		Node.TileType = (i % 2 == 0) ? EDungeonTileType::Chamber : EDungeonTileType::Corridor;
+		Node.TileType = (i == SpineTargetCount - 1) ? EDungeonTileType::EliteChamber : EDungeonTileType::Corridor;
 		Node.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(CurrentCoord.X * TILE_SIZE, CurrentCoord.Y * TILE_SIZE, 0.0f));
-
-		// 20% chance of a fixed elite guard on chambers
-		Node.bHasFixedEliteMob = (Node.TileType == EDungeonTileType::Chamber && Stream.FRand() < 0.25f);
+		Node.bHasFixedEliteMob = (Node.TileType == EDungeonTileType::EliteChamber);
 		DungeonNodes.Add(Node);
+		MainSpineNodeIndices.Add(NextIndex);
+
+		// Record Edge
+		FSovereignDungeonEdge Edge;
+		Edge.EdgeId = DungeonEdges.Num();
+		Edge.NodeIndexA = CurrentIndex;
+		Edge.NodeIndexB = NextIndex;
+		Edge.DirectionAtoB = Chosen.Key;
+		Edge.PassageType = EPassageType::OpenArchway;
+		Edge.DoorState = EDoorState::Open;
+		DungeonEdges.Add(Edge);
+
+		CurrentIndex = NextIndex;
 	}
 
-	// 3. Place Terminal Boss Chamber at the furthest point
-	int32 MaxDistSq = -1;
-	int32 BestBossIdx = INDEX_NONE;
-
-	for (int32 i = 0; i < DungeonNodes.Num(); ++i)
+	// 3. Place Terminal Boss Chamber immediately attached to Elite Chamber
+	TArray<TPair<EDungeonDirection, FIntPoint>> CardinalOptions = {
+		{ EDungeonDirection::North, FIntPoint(1, 0) },
+		{ EDungeonDirection::East,  FIntPoint(0, 1) },
+		{ EDungeonDirection::South, FIntPoint(-1, 0) },
+		{ EDungeonDirection::West,  FIntPoint(0, -1) }
+	};
+	TArray<TPair<EDungeonDirection, FIntPoint>> BossOpenOptions;
+	for (const auto& Opt : CardinalOptions)
 	{
-		const int32 DistSq = (DungeonNodes[i].GridCoord.X * DungeonNodes[i].GridCoord.X) +
-			                 (DungeonNodes[i].GridCoord.Y * DungeonNodes[i].GridCoord.Y);
-		if (DistSq > MaxDistSq)
+		if (!OccupiedCoords.Contains(CurrentCoord + Opt.Value))
 		{
-			MaxDistSq = DistSq;
-			BestBossIdx = i;
+			BossOpenOptions.Add(Opt);
 		}
 	}
 
-	if (BestBossIdx != INDEX_NONE)
+	if (BossOpenOptions.Num() > 0)
 	{
-		DungeonNodes[BestBossIdx].TileType = EDungeonTileType::BossChamber;
-		DungeonNodes[BestBossIdx].bHasFixedEliteMob = true; // Floor Boss lives here!
-		BossNodeIndex = BestBossIdx;
+		const auto BossChosen = BossOpenOptions[Stream.RandRange(0, BossOpenOptions.Num() - 1)];
+		CurrentCoord += BossChosen.Value;
+		OccupiedCoords.Add(CurrentCoord);
+
+		const int32 BossIndex = DungeonNodes.Num();
+		FSovereignDungeonNode BossNode;
+		BossNode.NodeIndex = BossIndex;
+		BossNode.GridCoord = CurrentCoord;
+		BossNode.TileType = EDungeonTileType::BossChamber;
+		BossNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(CurrentCoord.X * TILE_SIZE, CurrentCoord.Y * TILE_SIZE, 0.0f));
+		BossNode.bHasFixedEliteMob = true; // Boss entity
+		DungeonNodes.Add(BossNode);
+		MainSpineNodeIndices.Add(BossIndex);
+		BossNodeIndex = BossIndex;
+
+		FSovereignDungeonEdge BossEdge;
+		BossEdge.EdgeId = DungeonEdges.Num();
+		BossEdge.NodeIndexA = CurrentIndex;
+		BossEdge.NodeIndexB = BossIndex;
+		BossEdge.DirectionAtoB = BossChosen.Key;
+		BossEdge.PassageType = EPassageType::StandardDoorway;
+		BossEdge.DoorState = EDoorState::SealedEliteGate;
+		DungeonEdges.Add(BossEdge);
 	}
 
-	// 4. Spawn/Configure Far-Off Battle Arenas
+	// 4. Build Side Branches for Remaining Room Budget
+	int32 RoomsRemaining = TargetRoomCount - DungeonNodes.Num();
+	TArray<int32> EligibleSpineParents = MainSpineNodeIndices;
+	// Remove Entrance and Boss from branch parents
+	EligibleSpineParents.Remove(0);
+	if (BossNodeIndex != INDEX_NONE)
+	{
+		EligibleSpineParents.Remove(BossNodeIndex);
+	}
+
+	while (RoomsRemaining > 0 && EligibleSpineParents.Num() > 0)
+	{
+		const int32 ParentIdx = EligibleSpineParents[Stream.RandRange(0, EligibleSpineParents.Num() - 1)];
+		const FIntPoint ParentCoord = DungeonNodes[ParentIdx].GridCoord;
+
+		TArray<TPair<EDungeonDirection, FIntPoint>> BranchOpen;
+		for (const auto& Opt : CardinalOptions)
+		{
+			if (!OccupiedCoords.Contains(ParentCoord + Opt.Value))
+			{
+				BranchOpen.Add(Opt);
+			}
+		}
+
+		if (BranchOpen.Num() == 0)
+		{
+			EligibleSpineParents.Remove(ParentIdx);
+			continue;
+		}
+
+		const auto ChosenBranch = BranchOpen[Stream.RandRange(0, BranchOpen.Num() - 1)];
+		const FIntPoint BranchCoord = ParentCoord + ChosenBranch.Value;
+		OccupiedCoords.Add(BranchCoord);
+
+		const int32 BranchIdx = DungeonNodes.Num();
+		FSovereignDungeonNode BranchNode;
+		BranchNode.NodeIndex = BranchIdx;
+		BranchNode.GridCoord = BranchCoord;
+		BranchNode.TileType = (RoomsRemaining == 1) ? EDungeonTileType::TreasureRoom : EDungeonTileType::Chamber;
+		BranchNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(BranchCoord.X * TILE_SIZE, BranchCoord.Y * TILE_SIZE, 0.0f));
+		BranchNode.bHasFixedEliteMob = false;
+		DungeonNodes.Add(BranchNode);
+
+		FSovereignDungeonEdge BranchEdge;
+		BranchEdge.EdgeId = DungeonEdges.Num();
+		BranchEdge.NodeIndexA = ParentIdx;
+		BranchEdge.NodeIndexB = BranchIdx;
+		BranchEdge.DirectionAtoB = ChosenBranch.Key;
+		BranchEdge.PassageType = EPassageType::OpenArchway;
+		BranchEdge.DoorState = EDoorState::Open;
+		DungeonEdges.Add(BranchEdge);
+
+		RoomsRemaining--;
+	}
+
+	// 5. Derive Node Adjacency Caches
+	RebuildNodeAdjacencyCaches();
+
+	// 6. Spawn/Configure Far-Off Battle Arenas
 	SpawnFarOffBattleArenas();
 
-	// 5. Spawn 3D Physical Geometry (Ticket B-089)
+	// 7. Spawn 3D Physical Geometry (Ticket B-089)
 	if (bSpawnPhysicalGeometry)
 	{
 		SpawnDungeonGeometry();
 	}
 
-	// 6. Spawn Default Lighting Rig if world is blank/unlit
+	// 8. Spawn Default Lighting Rig if world is blank/unlit
 	if (bAutoSpawnDefaultLighting)
 	{
 		SpawnDefaultLightingRig();

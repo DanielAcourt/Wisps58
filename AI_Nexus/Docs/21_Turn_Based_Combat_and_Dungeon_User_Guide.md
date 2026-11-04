@@ -121,6 +121,10 @@ To test the physical dungeon threshold in your level:
    - `FarOffArenaOrigin = (50000, 50000, 5000)` (keeps the battle platform isolated).
 3. **Generate Layout, Physical 3D Geometry & Optional Lighting Rig**:
    - On `BeginPlay()`, the generator automatically executes `GenerateDungeon()`.
+   - **Graph Connectivity & BFS Validation (Ticket B-090)**:
+     - Authoritative connectivity is managed through `DungeonEdges` (`FSovereignDungeonEdge`).
+     - Pure-data BFS validation (`ValidateTopologicalReachability`) asserts 100% room reachability, boss reachability, minimum spine length (`MinSpineLength`), and sealed elite gate thresholds before world actor construction.
+     - Fast rendering lookup bitmask `ConnectedPassageMask` on `FSovereignDungeonNode` is automatically derived from `DungeonEdges`.
    - **Physical 3D Room & Wall Spawning (Ticket B-089)**:
      - `bSpawnPhysicalGeometry = true`: Automatically instantiates 3D floor tiles ($1000\text{cm} \times 1000\text{cm}$) and perimeter boundary walls using `UInstancedStaticMeshComponent` (rendering hundreds of room tiles in a single draw call).
      - In the Details panel of `ASovereignDungeonGenerator`, you can assign custom modular meshes to `FloorMesh`, `WallMesh`, and `BossAltarMesh` (defaults to `/Engine/BasicShapes/Cube` scaled to metric dimensions).

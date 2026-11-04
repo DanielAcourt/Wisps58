@@ -10,6 +10,34 @@
 class ASovereignBaseCharacter;
 class UStaticMesh;
 
+// --- Direction, Passage, and Door Enums (Ticket B-090) ---
+
+UENUM(BlueprintType)
+enum class EDungeonDirection : uint8
+{
+	North = 0 UMETA(DisplayName = "North (+X)"),
+	East  = 1 UMETA(DisplayName = "East (+Y)"),
+	South = 2 UMETA(DisplayName = "South (-X)"),
+	West  = 3 UMETA(DisplayName = "West (-Y)"),
+	None  = 4 UMETA(DisplayName = "None")
+};
+
+UENUM(BlueprintType)
+enum class EPassageType : uint8
+{
+	OpenArchway     UMETA(DisplayName = "Open Archway"),
+	SolidWall       UMETA(DisplayName = "Solid Wall"),
+	StandardDoorway UMETA(DisplayName = "Standard Doorway")
+};
+
+UENUM(BlueprintType)
+enum class EDoorState : uint8
+{
+	Open            UMETA(DisplayName = "Open"),
+	ClosedUnlocked  UMETA(DisplayName = "Closed Unlocked"),
+	SealedEliteGate UMETA(DisplayName = "Sealed Elite Gate")
+};
+
 /**
  * EDungeonTileType
  * Modular room and corridor types assembled by the procedural generator.
@@ -20,17 +48,53 @@ enum class EDungeonTileType : uint8
 	EntranceRoom    UMETA(DisplayName = "Entrance Room"),
 	Corridor        UMETA(DisplayName = "Corridor"),
 	Chamber         UMETA(DisplayName = "Chamber"),
+	EliteChamber    UMETA(DisplayName = "Elite Chamber"),
+	TreasureRoom    UMETA(DisplayName = "Treasure Room"),
 	BossChamber     UMETA(DisplayName = "Boss Chamber")
 };
 
 /**
+ * FSovereignDungeonEdge
+ * Authoritative Single Source of Truth (SSoT) for connectivity between two rooms (Ticket B-090).
+ */
+USTRUCT(BlueprintType)
+struct WISPCPP7VR_API FSovereignDungeonEdge
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 EdgeId = INDEX_NONE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 NodeIndexA = INDEX_NONE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 NodeIndexB = INDEX_NONE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	EDungeonDirection DirectionAtoB = EDungeonDirection::None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	EPassageType PassageType = EPassageType::OpenArchway;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	EDoorState DoorState = EDoorState::Open;
+
+	bool Connects(int32 NodeIdx) const { return NodeIndexA == NodeIdx || NodeIndexB == NodeIdx; }
+	int32 GetOtherNode(int32 NodeIdx) const { return (NodeIndexA == NodeIdx) ? NodeIndexB : (NodeIndexB == NodeIdx ? NodeIndexA : INDEX_NONE); }
+};
+
+/**
  * FSovereignDungeonNode
- * Represents an individual 1000cm x 1000cm tile node in the procedural layout.
+ * Represents an individual uniform 1000cm x 1000cm tile node in the procedural layout.
  */
 USTRUCT(BlueprintType)
 struct WISPCPP7VR_API FSovereignDungeonNode
 {
 	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 NodeIndex = INDEX_NONE;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
 	FIntPoint GridCoord = FIntPoint::ZeroValue;
@@ -43,6 +107,10 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
 	bool bHasFixedEliteMob = false;
+
+	/** Transient bitmask cache derived strictly from DungeonEdges (Bit 0=N, 1=E, 2=S, 3=W) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	uint8 ConnectedPassageMask = 0;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonGenerated, int32, TotalTilesGenerated);
@@ -75,6 +143,18 @@ public:
 	/** Random generation seed (0 = random) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 GenerationSeed = 1337;
+
+	/** Minimum required path distance from Entrance to Boss Chamber */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
+	int32 MinSpineLength = 4;
+
+	/** Max controlled loop count (default 0 enforces spanning-tree invariant |E| = |V| - 1) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
+	int32 MaxLoopCount = 0;
+
+	/** Max deterministic generation retries if layout fails validation */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
+	int32 MaxGenerationRetries = 20;
 
 	/** Active combat enemy buff multiplier inherited from expedition gateway */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Config")
@@ -137,6 +217,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
 
+	/** Authoritative Single Source of Truth for dungeon connectivity (Ticket B-090) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
+	TArray<FSovereignDungeonEdge> DungeonEdges;
+
+	/** Ordered node indices along the primary critical spine */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
+	TArray<int32> MainSpineNodeIndices;
+
 	/** Index of the terminal Boss Chamber node */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	int32 BossNodeIndex = INDEX_NONE;
@@ -191,6 +279,14 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Geometry")
 	void SpawnDungeonGeometry();
+
+	/** Validates structural reachability and gameplay pacing via pure-data BFS (Ticket B-090) */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
+	bool ValidateTopologicalReachability(int32 EntranceIdx, int32 BossIdx) const;
+
+	/** Rebuilds fast-lookup ConnectedPassageMask on nodes strictly derived from DungeonEdges (Ticket B-090) */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
+	void RebuildNodeAdjacencyCaches();
 
 	/**
 	 * Automatically spawns default ambient directional light and post-process volume
