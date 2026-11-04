@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Entities/SovereignBaseInteractable.h"
 #include "Inventory/SovereignInventoryComponent.h"
+#include "Inventory/SovereignInventoryBroker.h"
 #include "SovereignDungeonGateway.generated.h"
 
 class ASovereignBaseCharacter;
@@ -43,6 +44,10 @@ public:
 	/** Receptacle inventory for sacrificing extra items to buff dungeon enemies & loot */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Gateway|Empowerment")
 	USovereignInventoryComponent* SacrificeInventory;
+
+	/** Inventory broker connecting sacrifice inventory to the SaveDataComponent hub */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Gateway|Empowerment")
+	USovereignInventoryBroker* SacrificeInventoryBroker;
 
 	/** Static mesh for the gateway frame / door */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Gateway|Visual")
@@ -94,7 +99,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Gateway")
 	void ConsumeSacrifices();
 
+	// --- Lifecycle ---
+	virtual void BeginPlay() override;
+
 	// --- Sovereign Base Interactable Overrides ---
 	virtual void OnInteract_Implementation(AActor* Interactor) override;
 	virtual FString GetInteractionHint_Implementation() override;
+	virtual TMap<FString, FString> GetSaveData() override;
+	virtual void RestoreSaveData(const TMap<FString, FString>& Data) override;
 };

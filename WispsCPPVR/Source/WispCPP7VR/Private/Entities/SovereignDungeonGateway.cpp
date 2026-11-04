@@ -5,6 +5,8 @@
 #include "Components/SovereignQiComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
+#include "Inventory/SovereignInventoryBroker.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/StaticMeshComponent.h"
 
 ASovereignDungeonGateway::ASovereignDungeonGateway()
@@ -25,6 +27,19 @@ ASovereignDungeonGateway::ASovereignDungeonGateway()
 
 	SacrificeInventory = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("SacrificeInventory"));
 	SacrificeInventory->MaxSlotCount = 10;
+}
+
+void ASovereignDungeonGateway::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// Register SacrificeInventoryBroker with SaveDataComponent hub for atomic save persistence
+	if (SaveDataComponent && SacrificeInventory)
+	{
+		SacrificeInventoryBroker = NewObject<USovereignInventoryBroker>(this, TEXT("SacrificeInventoryBroker"));
+		SacrificeInventoryBroker->Initialize(SacrificeInventory);
+		SaveDataComponent->RegisterBroker(SacrificeInventoryBroker);
+	}
 }
 
 void ASovereignDungeonGateway::SetGatewayUnlocked(bool bNewUnlocked)
@@ -146,4 +161,24 @@ void ASovereignDungeonGateway::OnInteract_Implementation(AActor* Interactor)
 FString ASovereignDungeonGateway::GetInteractionHint_Implementation()
 {
 	return bIsUnlocked ? TEXT("Embark into Dungeon") : TEXT("Unseal Dungeon Gateway");
+}
+
+TMap<FString, FString> ASovereignDungeonGateway::GetSaveData()
+{
+	TMap<FString, FString> Data;
+	Data.Add(TEXT("Gateway.bIsUnlocked"), bIsUnlocked ? TEXT("true") : TEXT("false"));
+	Data.Add(TEXT("Gateway.InfusedQi"), FString::SanitizeFloat(InfusedQi));
+	return Data;
+}
+
+void ASovereignDungeonGateway::RestoreSaveData(const TMap<FString, FString>& Data)
+{
+	if (const FString* UnlockedStr = Data.Find(TEXT("Gateway.bIsUnlocked")))
+	{
+		SetGatewayUnlocked(UnlockedStr->Equals(TEXT("true"), ESearchCase::IgnoreCase));
+	}
+	if (const FString* QiStr = Data.Find(TEXT("Gateway.InfusedQi")))
+	{
+		InfusedQi = FCString::Atof(**QiStr);
+	}
 }
