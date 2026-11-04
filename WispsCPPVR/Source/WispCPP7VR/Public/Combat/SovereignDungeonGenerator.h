@@ -107,6 +107,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting", meta = (EditCondition = "bAutoSpawnDefaultLighting && bSpawnDirectionalLight"))
 	FColor AmbientLightColor = FColor(180, 205, 235);
 
+	// --- 3D Modular Mesh Assets (Ticket B-089) ---
+
+	/** Whether to physically instantiate 3D geometry components and spawn world meshes */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	bool bSpawnPhysicalGeometry = true;
+
+	/** Static Mesh for standard 1000cm x 1000cm floor tiles */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> FloorMesh;
+
+	/** Static Mesh for perimeter walls */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> WallMesh;
+
+	/** Optional specialized mesh for terminal Boss Chamber altar / centerpiece */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> BossAltarMesh;
+
+	/** Instanced Static Mesh Component for rendering all floor tiles in a single draw call */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<class UInstancedStaticMeshComponent> FloorInstancedComponent;
+
+	/** Instanced Static Mesh Component for rendering all boundary wall tiles in a single draw call */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<class UInstancedStaticMeshComponent> WallInstancedComponent;
+
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
@@ -159,6 +185,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon")
 	void SpawnFarOffBattleArenas();
+
+	/**
+	 * Physically instantiates 3D floors, boundary walls, and boss altar meshes (Ticket B-089).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Geometry")
+	void SpawnDungeonGeometry();
 
 	/**
 	 * Automatically spawns default ambient directional light and post-process volume

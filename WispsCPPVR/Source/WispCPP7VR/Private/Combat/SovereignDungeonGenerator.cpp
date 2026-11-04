@@ -9,6 +9,9 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Engine/StaticMeshActor.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
 
 ASovereignDungeonGenerator::ASovereignDungeonGenerator()
@@ -29,8 +32,31 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	bAutoSpawnDefaultLighting = true;
 	bSpawnDirectionalLight = true;
 	bSpawnPostProcessVolume = true;
+	bSpawnPhysicalGeometry = true;
 	AmbientLightIntensity = 1000.0f;
 	AmbientLightColor = FColor(180, 205, 235);
+
+	// Setup instanced mesh components for draw call efficiency
+	FloorInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorInstancedComponent"));
+	if (!RootComponent)
+	{
+		SetRootComponent(FloorInstancedComponent);
+	}
+	else
+	{
+		FloorInstancedComponent->SetupAttachment(RootComponent);
+	}
+
+	WallInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("WallInstancedComponent"));
+	WallInstancedComponent->SetupAttachment(FloorInstancedComponent);
+
+	// Default fallback mesh finder for basic cube/floor shapes if custom modular assets aren't yet loaded
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultCubeObj(TEXT("/Engine/BasicShapes/Cube"));
+	if (DefaultCubeObj.Succeeded())
+	{
+		FloorMesh = DefaultCubeObj.Object;
+		WallMesh = DefaultCubeObj.Object;
+	}
 }
 
 void ASovereignDungeonGenerator::BeginPlay()
@@ -138,7 +164,13 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 	// 4. Spawn/Configure Far-Off Battle Arenas
 	SpawnFarOffBattleArenas();
 
-	// 5. Spawn Default Lighting Rig if world is blank/unlit
+	// 5. Spawn 3D Physical Geometry (Ticket B-089)
+	if (bSpawnPhysicalGeometry)
+	{
+		SpawnDungeonGeometry();
+	}
+
+	// 6. Spawn Default Lighting Rig if world is blank/unlit
 	if (bAutoSpawnDefaultLighting)
 	{
 		SpawnDefaultLightingRig();
@@ -146,6 +178,121 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 
 	OnDungeonGenerated.Broadcast(DungeonNodes.Num());
 	return true;
+}
+
+void ASovereignDungeonGenerator::SpawnDungeonGeometry()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 1. Prepare Instanced Static Mesh Components
+	if (!FloorInstancedComponent)
+	{
+		FloorInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeFloorInstancedComponent"));
+		FloorInstancedComponent->RegisterComponent();
+	}
+	if (!WallInstancedComponent)
+	{
+		WallInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeWallInstancedComponent"));
+		WallInstancedComponent->RegisterComponent();
+	}
+
+	FloorInstancedComponent->ClearInstances();
+	WallInstancedComponent->ClearInstances();
+
+	if (FloorMesh)
+	{
+		FloorInstancedComponent->SetStaticMesh(FloorMesh);
+	}
+	if (WallMesh)
+	{
+		WallInstancedComponent->SetStaticMesh(WallMesh);
+	}
+
+	TSet<FIntPoint> OccupiedCoords;
+	for (const FSovereignDungeonNode& Node : DungeonNodes)
+	{
+		OccupiedCoords.Add(Node.GridCoord);
+	}
+
+	const FVector Origin = GetActorLocation();
+
+	// 2. Spawn Floor Tiles and Boundary Walls for Each Node
+	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
+	{
+		const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
+		const FVector NodePos = Node.WorldTransform.GetLocation();
+
+		// Add Floor Instance: Scale standard 100cm cube to 1000cm x 1000cm x 20cm
+		FTransform FloorTransform;
+		FloorTransform.SetLocation(NodePos - FVector(0.0f, 0.0f, 10.0f));
+		FloorTransform.SetRotation(FQuat::Identity);
+		FloorTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
+
+		FloorInstancedComponent->AddInstance(FloorTransform);
+
+		// Check 4 cardinal directions (North, South, East, West) for boundary edges
+		const TArray<TPair<FIntPoint, FVector>> CardinalOffsets = {
+			TPair<FIntPoint, FVector>(FIntPoint(1, 0), FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f)),   // North Wall
+			TPair<FIntPoint, FVector>(FIntPoint(-1, 0), FVector(-TILE_SIZE * 0.5f, 0.0f, 300.0f)),  // South Wall
+			TPair<FIntPoint, FVector>(FIntPoint(0, 1), FVector(0.0f, TILE_SIZE * 0.5f, 300.0f)),   // East Wall
+			TPair<FIntPoint, FVector>(FIntPoint(0, -1), FVector(0.0f, -TILE_SIZE * 0.5f, 300.0f))   // West Wall
+		};
+
+		const TArray<FRotator> CardinalRotations = {
+			FRotator(0.0f, 0.0f, 0.0f),
+			FRotator(0.0f, 180.0f, 0.0f),
+			FRotator(0.0f, 90.0f, 0.0f),
+			FRotator(0.0f, -90.0f, 0.0f)
+		};
+
+		for (int32 DirIdx = 0; DirIdx < CardinalOffsets.Num(); ++DirIdx)
+		{
+			const FIntPoint NeighborCoord = Node.GridCoord + CardinalOffsets[DirIdx].Key;
+			if (!OccupiedCoords.Contains(NeighborCoord))
+			{
+				// Unlinked exterior edge: Place a boundary wall instance
+				FTransform WallTransform;
+				WallTransform.SetLocation(NodePos + CardinalOffsets[DirIdx].Value);
+				WallTransform.SetRotation(CardinalRotations[DirIdx].Quaternion());
+				// Scale standard 100cm cube to 0.4m thick, 10m long, 6m high
+				if (CardinalOffsets[DirIdx].Key.X != 0)
+				{
+					WallTransform.SetScale3D(FVector(0.4f, TILE_SIZE / 100.0f, 6.0f));
+				}
+				else
+				{
+					WallTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, 0.4f, 6.0f));
+				}
+
+				WallInstancedComponent->AddInstance(WallTransform);
+			}
+		}
+
+		// 3. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop
+		if (Node.TileType == EDungeonTileType::BossChamber)
+		{
+			if (BossAltarMesh)
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				AStaticMeshActor* AltarActor = World->SpawnActor<AStaticMeshActor>(
+					AStaticMeshActor::StaticClass(), NodePos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams
+				);
+				if (AltarActor && AltarActor->GetStaticMeshComponent())
+				{
+					AltarActor->GetStaticMeshComponent()->SetStaticMesh(BossAltarMesh);
+				}
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls."),
+		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount());
 }
 
 void ASovereignDungeonGenerator::SpawnDefaultLightingRig()

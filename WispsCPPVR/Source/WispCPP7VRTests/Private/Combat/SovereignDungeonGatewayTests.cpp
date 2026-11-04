@@ -84,6 +84,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("bAutoSpawnDefaultLighting defaults to true"), Generator->bAutoSpawnDefaultLighting);
 	TestTrue(TEXT("bSpawnDirectionalLight defaults to true"), Generator->bSpawnDirectionalLight);
 	TestTrue(TEXT("bSpawnPostProcessVolume defaults to true"), Generator->bSpawnPostProcessVolume);
+	TestTrue(TEXT("bSpawnPhysicalGeometry defaults to true"), Generator->bSpawnPhysicalGeometry);
 
 	// Toggle lighting off to test optional override when level defines custom SkyLight
 	Generator->bAutoSpawnDefaultLighting = false;
@@ -91,6 +92,12 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);
 	TestEqual(TEXT("Total generated nodes should equal TargetRoomCount"), Generator->DungeonNodes.Num(), 6);
+
+	// Verify Ticket B-089 3D geometry spawning
+	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent);
+	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent);
+	TestEqual(TEXT("Floor instance count matches node count"), Generator->FloorInstancedComponent->GetInstanceCount(), 6);
+	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent->GetInstanceCount() > 0);
 
 	// Node 0 must be EntranceRoom
 	TestEqual(TEXT("Node 0 is EntranceRoom"), Generator->DungeonNodes[0].TileType, EDungeonTileType::EntranceRoom);
