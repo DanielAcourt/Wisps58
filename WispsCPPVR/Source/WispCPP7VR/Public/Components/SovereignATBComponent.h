@@ -23,7 +23,7 @@ enum class EATBState : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnATBProgressChanged, float, CurrentATB, float, MaxATB);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnATBReady);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnATBReady, ASovereignBaseCharacter*, Combatant);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnATBStateChanged, EATBState, OldState, EATBState, NewState);
 
 /**

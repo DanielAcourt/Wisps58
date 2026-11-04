@@ -66,7 +66,7 @@ void USovereignATBComponent::AdvanceATB(float DeltaTime)
 	if (CurrentATB >= MAX_ATB)
 	{
 		SetATBState(EATBState::Ready);
-		OnATBReady.Broadcast();
+		OnATBReady.Broadcast(Cast<ASovereignBaseCharacter>(GetOwner()));
 	}
 }
 
