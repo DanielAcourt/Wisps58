@@ -4,6 +4,7 @@
 #include "Entities/SovereignDungeonGateway.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
+#include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignQiComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
@@ -145,6 +146,19 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		DungeonSubsystem->ClearExpedition();
 		TestFalse(TEXT("Expedition cleared"), DungeonSubsystem->bHasActiveExpedition);
 		TestEqual(TEXT("Enemy buff reset to 1.0"), DungeonSubsystem->ActiveEnemyBuffMultiplier, 1.0f);
+	}
+
+	// 8. Test SovereignDungeonGameMode Configuration & Entrance Alignment
+	ASovereignDungeonGameMode* DungeonGM = NewObject<ASovereignDungeonGameMode>();
+	if (TestNotNull(TEXT("DungeonGM created"), DungeonGM))
+	{
+		TestTrue(TEXT("bLockPossessionToLeader defaults to true"), DungeonGM->bLockPossessionToLeader);
+		TestEqual(TEXT("DefaultPawnClass is ASovereignBaseCharacter"), DungeonGM->DefaultPawnClass, ASovereignBaseCharacter::StaticClass());
+
+		DungeonGM->ActiveDungeonGenerator = Generator;
+		DungeonGM->DungeonPartyLeader = Cultivator;
+		DungeonGM->ConfigurePartyForExploration();
+		TestNotNull(TEXT("DungeonPartyLeader registered"), DungeonGM->DungeonPartyLeader);
 	}
 
 	return true;

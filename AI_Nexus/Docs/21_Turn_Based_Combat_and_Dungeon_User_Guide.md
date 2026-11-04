@@ -32,9 +32,10 @@ The suite is composed of 6 modular pillars:
    - Escape roll based on: $50\% + (\text{PartyDEX} - \text{EnemyDEX}) \times 2\% + \text{PlayerLuck} \times 0.5\% + \text{EscapeProgress}$.
    - Failed flee attempts increment the escape bar by $+25\%$ (guaranteeing flight at 100%) and consume the acting dragon's turn.
    - Boss encounters strictly reject flight (`bIsEscapable = false`).
-6. **Meditation Garden Gateway & Procedural Dungeon (`ASovereignDungeonGateway`, `ASovereignDungeonGenerator` & `USovereignDungeonSubsystem`)**:
+6. **Meditation Garden Gateway & Procedural Dungeon (`ASovereignDungeonGateway`, `ASovereignDungeonGenerator`, `USovereignDungeonSubsystem` & `ASovereignDungeonGameMode`)**:
    - Gateway door holds a sacrifice inventory receptacle and Qi funnel ("Risk it for the biscuit").
    - `EnterDungeon(PartyLeader)` saves the Garden to `"Garden_AutoSave"` JSON via `USaveManager`, caches expedition parameters (seed, buff/reward multipliers, return map name) in `USovereignDungeonSubsystem`, consumes sacrifices, and transitions to the procedural dungeon map via `OpenLevel`.
+   - `ASovereignDungeonGameMode` manages the dungeon level: enforces uniform controller bindings, locks the player into their possessed party leader dragon (`bLockPossessionToLeader = true`), spawns/teleports the leader to `DungeonGenerator->GetEntranceTransform()`, and keeps non-leader party members hidden on the battle arena grid until combat begins.
    - Generator ingests expedition parameters on `BeginPlay` and builds modular 1000cm x 1000cm rooms/corridors, placing the terminal Boss Chamber at the furthest point.
    - `SpawnDefaultLightingRig()` ensures that even in completely blank/empty levels without lights, an ambient DirectionalLight and unbounded PostProcessVolume (with auto-exposure min/max bounds) are auto-spawned so the dungeon is never pitch black.
    - Calling `ReturnToGarden()` re-opens the Garden map and restores the exact `"Garden_AutoSave"` JSON world state.
@@ -111,8 +112,10 @@ To test the physical dungeon threshold in your level:
 
 1. **Spawn or Place Generator**:
    - Place an instance of `ASovereignDungeonGenerator` into your dungeon level (or spawn it via Blueprint).
-2. **Configure Parameters**:
+2. **Configure GameMode & Parameters in Dungeon Map**:
+   - In your dungeon map (`Lvl_Dungeon`), open **World Settings** and set **GameMode Override** to `ASovereignDungeonGameMode` (or a Blueprint child `BP_DungeonGameMode`).
    - `TargetRoomCount = 8` (or 12 for deeper vaults).
+   - `bLockPossessionToLeader = true`: Prohibits unpossessing into wisp form while inside the dungeon.
    - `StepThresholdDistance = 1500.0` (triggers random encounter evaluation every ~15 steps).
    - `RandomEncounterChance = 25.0` (25% chance per check).
    - `FarOffArenaOrigin = (50000, 50000, 5000)` (keeps the battle platform isolated).
