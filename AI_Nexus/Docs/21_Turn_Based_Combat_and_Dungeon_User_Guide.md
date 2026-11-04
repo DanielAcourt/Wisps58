@@ -119,9 +119,11 @@ To test the physical dungeon threshold in your level:
    - `StepThresholdDistance = 1500.0` (triggers random encounter evaluation every ~15 steps).
    - `RandomEncounterChance = 25.0` (25% chance per check).
    - `FarOffArenaOrigin = (50000, 50000, 5000)` (keeps the battle platform isolated).
-3. **Generate Layout & Lighting Rig**:
+3. **Generate Layout & Optional Lighting Rig**:
    - On `BeginPlay()`, the generator automatically executes `GenerateDungeon()`.
-   - `bAutoSpawnDefaultLighting = true`: If the loaded level is blank or lacks lighting, the generator automatically spawns a soft ambient `ADirectionalLight` and an unbounded `APostProcessVolume` with clamped exposure (0.5 to 2.0 EV100) so you can immediately see the dungeon layout without manual lighting setup.
+   - **Custom SkyLight / Level Lighting**: If your dungeon level template already defines custom SkyLight, atmospheric lighting, or torches, you can simply uncheck `bAutoSpawnDefaultLighting = false` in the Details panel of `ASovereignDungeonGenerator`.
+   - `bAutoSpawnDefaultLighting = true` (Default): If loading into a blank or unlit level, the generator auto-spawns fallback ambient lighting (`ADirectionalLight`) and an unbounded `APostProcessVolume` with clamped exposure (0.5 to 2.0 EV100) so the procedural corridors are never pitch black.
+   - Individual sub-toggles `bSpawnDirectionalLight` and `bSpawnPostProcessVolume` are also provided for granular control.
    - You can inspect `DungeonNodes` array in the Details panel:
      - `DungeonNodes[0]` is always `EntranceRoom` at `(0, 0)`.
      - `DungeonNodes[BossNodeIndex]` is the terminal `BossChamber` at the furthest coordinates with `bHasFixedEliteMob = true`.

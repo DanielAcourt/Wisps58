@@ -82,6 +82,11 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	Generator->TargetRoomCount = 6;
 	Generator->GenerationSeed = 42;
 	TestTrue(TEXT("bAutoSpawnDefaultLighting defaults to true"), Generator->bAutoSpawnDefaultLighting);
+	TestTrue(TEXT("bSpawnDirectionalLight defaults to true"), Generator->bSpawnDirectionalLight);
+	TestTrue(TEXT("bSpawnPostProcessVolume defaults to true"), Generator->bSpawnPostProcessVolume);
+
+	// Toggle lighting off to test optional override when level defines custom SkyLight
+	Generator->bAutoSpawnDefaultLighting = false;
 	const bool bGenerated = Generator->GenerateDungeon();
 
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);

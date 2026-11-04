@@ -86,16 +86,25 @@ public:
 
 	// --- Visuals & Lighting Rig Settings ---
 
-	/** Whether to automatically spawn ambient lighting and post-processing if world lacks them */
+	/** Master toggle: Whether to automatically spawn fallback ambient lighting and post-processing.
+	 * Disable this if your dungeon level template already defines custom SkyLight, DirectionalLight, or environment lighting. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting")
 	bool bAutoSpawnDefaultLighting = true;
 
+	/** If true and bAutoSpawnDefaultLighting is enabled, spawns an ambient directional fill light if none exists */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting", meta = (EditCondition = "bAutoSpawnDefaultLighting"))
+	bool bSpawnDirectionalLight = true;
+
+	/** If true and bAutoSpawnDefaultLighting is enabled, spawns an unbounded post-process volume with auto-exposure bounds if none exists */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting", meta = (EditCondition = "bAutoSpawnDefaultLighting"))
+	bool bSpawnPostProcessVolume = true;
+
 	/** Intensity for ambient directional fill light in procedural dungeons */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting", meta = (EditCondition = "bAutoSpawnDefaultLighting && bSpawnDirectionalLight"))
 	float AmbientLightIntensity = 1000.0f;
 
 	/** Color tint for subterranean ambient lighting */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Lighting", meta = (EditCondition = "bAutoSpawnDefaultLighting && bSpawnDirectionalLight"))
 	FColor AmbientLightColor = FColor(180, 205, 235);
 
 	/** Active layout nodes */
