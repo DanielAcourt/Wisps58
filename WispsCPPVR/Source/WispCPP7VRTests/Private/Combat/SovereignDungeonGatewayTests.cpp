@@ -223,5 +223,66 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestNotNull(TEXT("DungeonPartyLeader registered"), DungeonGM->DungeonPartyLeader.Get());
 	}
 
+	// 9. Test Ticket B-093 Multi-Seed Determinism & Invariant Fuzzing
+	ASovereignDungeonGenerator* DetGenA = NewObject<ASovereignDungeonGenerator>();
+	DetGenA->TargetRoomCount = 8;
+	DetGenA->GenerationSeed = 1337;
+	DetGenA->bSpawnPhysicalGeometry = false;
+	DetGenA->bAutoSpawnDefaultLighting = false;
+	DetGenA->GenerateDungeon();
+
+	ASovereignDungeonGenerator* DetGenB = NewObject<ASovereignDungeonGenerator>();
+	DetGenB->TargetRoomCount = 8;
+	DetGenB->GenerationSeed = 1337;
+	DetGenB->bSpawnPhysicalGeometry = false;
+	DetGenB->bAutoSpawnDefaultLighting = false;
+	DetGenB->GenerateDungeon();
+
+	// Identical Seed Determinism check
+	TestEqual(TEXT("Deterministic node counts match"), DetGenA->DungeonNodes.Num(), DetGenB->DungeonNodes.Num());
+	TestEqual(TEXT("Deterministic edge counts match"), DetGenA->DungeonEdges.Num(), DetGenB->DungeonEdges.Num());
+	TestEqual(TEXT("Deterministic boss node indices match"), DetGenA->BossNodeIndex, DetGenB->BossNodeIndex);
+
+	for (int32 i = 0; i < DetGenA->DungeonNodes.Num(); ++i)
+	{
+		TestEqual(TEXT("Deterministic node grid coords match"), DetGenA->DungeonNodes[i].GridCoord, DetGenB->DungeonNodes[i].GridCoord);
+		TestEqual(TEXT("Deterministic node tile types match"), DetGenA->DungeonNodes[i].TileType, DetGenB->DungeonNodes[i].TileType);
+	}
+
+	for (int32 e = 0; e < DetGenA->DungeonEdges.Num(); ++e)
+	{
+		TestEqual(TEXT("Deterministic edge NodeA matches"), DetGenA->DungeonEdges[e].NodeIndexA, DetGenB->DungeonEdges[e].NodeIndexA);
+		TestEqual(TEXT("Deterministic edge NodeB matches"), DetGenA->DungeonEdges[e].NodeIndexB, DetGenB->DungeonEdges[e].NodeIndexB);
+		TestEqual(TEXT("Deterministic edge directions match"), DetGenA->DungeonEdges[e].DirectionAtoB, DetGenB->DungeonEdges[e].DirectionAtoB);
+	}
+
+	// Multi-Seed Invariant Fuzzing (10 distinct seeds)
+	for (int32 SeedIdx = 101; SeedIdx <= 110; ++SeedIdx)
+	{
+		ASovereignDungeonGenerator* FuzzGen = NewObject<ASovereignDungeonGenerator>();
+		FuzzGen->TargetRoomCount = 8;
+		FuzzGen->GenerationSeed = SeedIdx;
+		FuzzGen->bSpawnPhysicalGeometry = false;
+		FuzzGen->bAutoSpawnDefaultLighting = false;
+		const bool bFuzzSuccess = FuzzGen->GenerateDungeon();
+
+		TestTrue(TEXT("Fuzz generation succeeds"), bFuzzSuccess);
+		TestTrue(TEXT("Fuzz reachability validation succeeds"), FuzzGen->ValidateTopologicalReachability(0, FuzzGen->BossNodeIndex));
+		TestEqual(TEXT("Fuzz spanning tree invariant holds (|E| == |V| - 1)"), FuzzGen->DungeonEdges.Num(), FuzzGen->DungeonNodes.Num() - 1);
+		TestTrue(TEXT("Fuzz entrance is EntranceRoom"), FuzzGen->DungeonNodes[0].TileType == EDungeonTileType::EntranceRoom);
+		TestTrue(TEXT("Fuzz boss is BossChamber"), FuzzGen->DungeonNodes[FuzzGen->BossNodeIndex].TileType == EDungeonTileType::BossChamber);
+
+		// Zero coordinate duplicates check
+		TSet<FIntPoint> UniqueCoords;
+		for (const FSovereignDungeonNode& Node : FuzzGen->DungeonNodes)
+		{
+			TestFalse(TEXT("Fuzz unique grid coordinates"), UniqueCoords.Contains(Node.GridCoord));
+			UniqueCoords.Add(Node.GridCoord);
+		}
+	}
+
+	// 10. Test Subsystem Regression Compatibility
+	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
+
 	return true;
 }

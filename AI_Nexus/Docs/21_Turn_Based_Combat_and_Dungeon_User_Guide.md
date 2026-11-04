@@ -65,7 +65,7 @@ All systems include native automation test suites with zero external dependencie
    - `Sovereign.Combat.PartyComponentOperations`
    - `Sovereign.Combat.RankMatrixTargetEvaluation`
    - `Sovereign.Combat.SkillPipelineOperations`
-   - `Sovereign.Dungeon.GatewayAndGeneratorOperations`
+   - `Sovereign.Dungeon.GatewayAndGeneratorOperations` (Verifies B-084 gateway, B-087 lighting, B-088 GameMode, B-089 geometry, B-090 graph model & BFS validation, B-092 edge-aware boundary enclosure and cleanup, and B-093 multi-seed determinism fuzzing)
 3. Check the root checkbox and click **Start Tests** (green play icon).
 4. All tests will execute in milliseconds and display green checkmarks!
 
