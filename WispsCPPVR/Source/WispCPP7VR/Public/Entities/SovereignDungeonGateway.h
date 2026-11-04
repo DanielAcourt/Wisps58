@@ -95,5 +95,6 @@ public:
 	void ConsumeSacrifices();
 
 	// --- Sovereign Base Interactable Overrides ---
-	virtual void Interact(const FInputActionValue& Value) override;
+	virtual void OnInteract_Implementation(AActor* Interactor) override;
+	virtual FString GetInteractionHint_Implementation() override;
 };

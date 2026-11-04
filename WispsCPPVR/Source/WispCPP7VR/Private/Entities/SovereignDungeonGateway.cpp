@@ -132,13 +132,18 @@ void ASovereignDungeonGateway::ConsumeSacrifices()
 	OnGatewayEmpowered.Broadcast(1.0f, 1.0f);
 }
 
-void ASovereignDungeonGateway::Interact(const FInputActionValue& Value)
+void ASovereignDungeonGateway::OnInteract_Implementation(AActor* Interactor)
 {
-	Super::Interact(Value);
+	Super::OnInteract_Implementation(Interactor);
 
 	// Toggle/unlock if interacting player has unlocked authority
 	if (!bIsUnlocked)
 	{
 		SetGatewayUnlocked(true);
 	}
+}
+
+FString ASovereignDungeonGateway::GetInteractionHint_Implementation()
+{
+	return bIsUnlocked ? TEXT("Embark into Dungeon") : TEXT("Unseal Dungeon Gateway");
 }
