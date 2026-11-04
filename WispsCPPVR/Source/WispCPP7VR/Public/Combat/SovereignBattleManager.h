@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Components/SovereignATBComponent.h"
 #include "Components/SovereignPartyComponent.h"
+#include "Combat/SovereignSkillAugment.h"
+#include "Combat/SovereignCombatCalculationLibrary.h"
 #include "SovereignBattleManager.generated.h"
 
 class ASovereignBaseCharacter;
@@ -47,6 +49,7 @@ enum class EBattleState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBattleStateChanged, EBattleState, OldState, EBattleState, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombatantTurnReady, ASovereignBaseCharacter*, Combatant);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleEnded, EBattleState, Outcome);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnSkillActionExecuted, ASovereignBaseCharacter*, Caster, const FGameplayTag&, SkillTag, float, Value, bool, bIsHealing);
 
 /**
  * ASovereignBattleManager
@@ -102,6 +105,31 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
 	FOnBattleEnded OnBattleEnded;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
+	FOnSkillActionExecuted OnSkillActionExecuted;
+
+	// --- Skill Execution API ---
+
+	/**
+	 * Checks if a caster has sufficient Qi to cast the given skill definition.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Battle")
+	bool CanCastSkill(const ASovereignBaseCharacter* Caster, const USovereignSkillDefinition* SkillDef) const;
+
+	/**
+	 * Executes a combat skill instance against one or more targets.
+	 * Deducts Qi from Caster, computes percentage-mitigated damage or Wisdom healing,
+	 * applies changes to target attributes, checks Defend mitigation, and concludes turn.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
+	bool ExecuteSkillAction(ASovereignBaseCharacter* Caster, const FSovereignSkillInstance& SkillInstance, const TArray<ASovereignBaseCharacter*>& Targets);
+
+	/**
+	 * Creates a combat snapshot from an active character vessel and their grid slot.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Battle")
+	FSovereignCombatEntitySnapshot CreateSnapshotForCombatant(const ASovereignBaseCharacter* Combatant, int32 SlotIndex) const;
 
 	// --- Encounter API ---
 

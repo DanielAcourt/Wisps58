@@ -4,6 +4,11 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignATBComponent.h"
+#include "Components/SovereignQiComponent.h"
+#include "Components/SovereignClassComponent.h"
+#include "Combat/SovereignSkillDefinition.h"
+#include "Combat/SovereignSkillAugment.h"
+#include "Combat/SovereignCombatCalculationLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
 
 ASovereignBattleManager::ASovereignBattleManager()
@@ -275,6 +280,163 @@ TArray<ASovereignBaseCharacter*> ASovereignBattleManager::GetLivingPlayerUnits()
 		}
 	}
 	return Living;
+}
+
+bool ASovereignBattleManager::CanCastSkill(const ASovereignBaseCharacter* Caster, const USovereignSkillDefinition* SkillDef) const
+{
+	if (!Caster || !SkillDef)
+	{
+		return false;
+	}
+
+	if (SkillDef->QiCost <= 0.0f)
+	{
+		return true;
+	}
+
+	if (const USovereignQiComponent* QiComp = Caster->GetQiComponent())
+	{
+		return QiComp->CurrentQi >= SkillDef->QiCost;
+	}
+
+	return false;
+}
+
+FSovereignCombatEntitySnapshot ASovereignBattleManager::CreateSnapshotForCombatant(const ASovereignBaseCharacter* Combatant, int32 SlotIndex) const
+{
+	FSovereignCombatEntitySnapshot Snapshot;
+	// Libraries use 1-based slots (1-9)
+	Snapshot.FormationSlot = SlotIndex + 1;
+	Snapshot.bIsAlive = IsCombatantAlive(Combatant);
+
+	if (Combatant)
+	{
+		if (const USovereignAttributeComponent* Attr = Combatant->GetAttributeComponent())
+		{
+			Snapshot.Strength = Attr->Strength;
+			Snapshot.Dexterity = Attr->Dexterity;
+			Snapshot.Constitution = Attr->Constitution;
+			Snapshot.Intelligence = Attr->Intelligence;
+			Snapshot.Wisdom = Attr->Wisdom;
+			Snapshot.Luck = Attr->Luck;
+		}
+	}
+	return Snapshot;
+}
+
+bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster, const FSovereignSkillInstance& SkillInstance, const TArray<ASovereignBaseCharacter*>& Targets)
+{
+	if (!Caster || Targets.Num() == 0)
+	{
+		return false;
+	}
+
+	const USovereignSkillDefinition* SkillDef = SkillInstance.SkillDefinition.Get();
+	if (!SkillDef)
+	{
+		SkillDef = SkillInstance.SkillDefinition.LoadSynchronous();
+	}
+	if (!SkillDef)
+	{
+		return false;
+	}
+
+	// 1. Verify and deduct Qi
+	if (SkillDef->QiCost > 0.0f)
+	{
+		USovereignQiComponent* QiComp = Caster->GetQiComponent();
+		if (!QiComp || QiComp->CurrentQi < SkillDef->QiCost)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[BattleManager] %s has insufficient Qi (%f / %f) for skill %s"),
+				*Caster->GetName(), QiComp ? QiComp->CurrentQi : 0.0f, SkillDef->QiCost, *SkillDef->SkillDisplayName.ToString());
+			return false; // Turn is retained, action rejected
+		}
+		QiComp->CurrentQi = FMath::Max(0.0f, QiComp->CurrentQi - SkillDef->QiCost);
+	}
+
+	// 2. Identify Caster Slot in their formation
+	int32 CasterSlot = 0;
+	bool bIsPlayerCaster = false;
+	for (int32 i = 0; i < GRID_SIZE; ++i)
+	{
+		if (PlayerGrid[i].Get() == Caster)
+		{
+			CasterSlot = i;
+			bIsPlayerCaster = true;
+			break;
+		}
+		if (EnemyGrid[i].Get() == Caster)
+		{
+			CasterSlot = i;
+			break;
+		}
+	}
+	FSovereignCombatEntitySnapshot CasterSnapshot = CreateSnapshotForCombatant(Caster, CasterSlot);
+
+	// 3. Determine if Healing vs Damaging
+	const bool bIsHealing = (SkillDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
+		(SkillDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly || SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies));
+
+	float TotalActionResult = 0.0f;
+
+	for (ASovereignBaseCharacter* Target : Targets)
+	{
+		if (!Target) continue;
+
+		USovereignAttributeComponent* TargetAttr = Target->GetAttributeComponent();
+		if (!TargetAttr) continue;
+
+		int32 TargetSlot = 0;
+		for (int32 i = 0; i < GRID_SIZE; ++i)
+		{
+			if (PlayerGrid[i].Get() == Target || EnemyGrid[i].Get() == Target)
+			{
+				TargetSlot = i;
+				break;
+			}
+		}
+		FSovereignCombatEntitySnapshot TargetSnapshot = CreateSnapshotForCombatant(Target, TargetSlot);
+
+		if (bIsHealing)
+		{
+			// Healing calculation: raw wisdom power
+			float ClassMult = 1.0f;
+			if (const USovereignClassComponent* ClassComp = Caster->GetClassComponent())
+			{
+				ClassMult = ClassComp->MagicDamageMultiplier;
+			}
+			float HealAmount = SkillDef->CalculateRawPower(CasterSnapshot.Wisdom, ClassMult);
+			TargetAttr->CurrentHealth = FMath::Clamp(TargetAttr->CurrentHealth + HealAmount, 0.0f, TargetAttr->MaxHealth);
+			TotalActionResult += HealAmount;
+		}
+		else
+		{
+			// Damage calculation with percentage mitigation curve
+			FSovereignDamageCalculationResult Result = USovereignCombatCalculationLibrary::CalculateCombatDamage(
+				CasterSnapshot, TargetSnapshot, SkillInstance
+			);
+
+			float FinalDmg = Result.FinalDamage;
+
+			// Check target Defend stance mitigation
+			if (USovereignATBComponent* TargetATB = Target->GetATBComponent())
+			{
+				if (TargetATB->bIsDefending)
+				{
+					FinalDmg = FMath::Max(1.0f, FinalDmg * TargetATB->DefendDamageMultiplier);
+				}
+			}
+
+			TargetAttr->CurrentHealth = FMath::Max(0.0f, TargetAttr->CurrentHealth - FinalDmg);
+			TotalActionResult += FinalDmg;
+		}
+	}
+
+	OnSkillActionExecuted.Broadcast(Caster, SkillDef->SkillTag, TotalActionResult, bIsHealing);
+
+	// Conclude turn and cycle combat state
+	ConcludeActiveTurn();
+	return true;
 }
 
 TArray<ASovereignBaseCharacter*> ASovereignBattleManager::GetLivingEnemyUnits() const
