@@ -95,6 +95,25 @@ void ASovereignDungeonGenerator::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+bool ASovereignDungeonGenerator::CanFitRoomFootprint(const FIntPoint& Anchor, const FIntPoint& Dims) const
+{
+	const int32 W = FMath::Max(1, Dims.X);
+	const int32 H = FMath::Max(1, Dims.Y);
+
+	for (int32 X = 0; X < W; ++X)
+	{
+		for (int32 Y = 0; Y < H; ++Y)
+		{
+			const FIntPoint TestCoord = Anchor + FIntPoint(X, Y);
+			if (MasterGridOccupancy.Contains(TestCoord))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
 bool ASovereignDungeonGenerator::ValidateTopologicalReachability(int32 EntranceIdx, int32 BossIdx) const
 {
 	if (!DungeonNodes.IsValidIndex(EntranceIdx) || !DungeonNodes.IsValidIndex(BossIdx))
@@ -323,6 +342,7 @@ void ASovereignDungeonGenerator::CleanupDungeon()
 	// 5. Reset graph data
 	DungeonNodes.Empty();
 	DungeonEdges.Empty();
+	MasterGridOccupancy.Empty();
 	MainSpineNodeIndices.Empty();
 	BossNodeIndex = INDEX_NONE;
 
@@ -336,18 +356,22 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 	FRandomStream Stream(GenerationSeed != 0 ? GenerationSeed : FMath::Rand());
 	const FVector Origin = GetActorLocation();
 
-	// 1. Create Entrance Node at (0, 0)
+	// 1. Create Entrance Node at (0, 0) (Footprint 1x1)
 	FSovereignDungeonNode EntranceNode;
 	EntranceNode.NodeIndex = 0;
 	EntranceNode.GridCoord = FIntPoint(0, 0);
+	EntranceNode.FootprintDimensions = GetDefaultFootprintForTileType(EDungeonTileType::EntranceRoom);
 	EntranceNode.TileType = EDungeonTileType::EntranceRoom;
 	EntranceNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin);
 	EntranceNode.bHasFixedEliteMob = false;
+
 	DungeonNodes.Add(EntranceNode);
 	MainSpineNodeIndices.Add(0);
 
-	TSet<FIntPoint> OccupiedCoords;
-	OccupiedCoords.Add(EntranceNode.GridCoord);
+	for (const FIntPoint& Cell : EntranceNode.GetOccupiedCells())
+	{
+		MasterGridOccupancy.Add(Cell, 0);
+	}
 
 	FIntPoint CurrentCoord = EntranceNode.GridCoord;
 	int32 CurrentIndex = 0;
@@ -357,6 +381,9 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 
 	for (int32 i = 1; i < SpineTargetCount; ++i)
 	{
+		const EDungeonTileType NextType = (i == SpineTargetCount - 1) ? EDungeonTileType::EliteChamber : EDungeonTileType::Corridor;
+		const FIntPoint NextDims = GetDefaultFootprintForTileType(NextType);
+
 		TArray<TPair<EDungeonDirection, FIntPoint>> CardinalOptions = {
 			{ EDungeonDirection::North, FIntPoint(1, 0) },
 			{ EDungeonDirection::East,  FIntPoint(0, 1) },
@@ -364,13 +391,29 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			{ EDungeonDirection::West,  FIntPoint(0, -1) }
 		};
 
-		// Filter for open directions
+		// Filter for open directions capable of accommodating the room's footprint
 		TArray<TPair<EDungeonDirection, FIntPoint>> OpenOptions;
 		for (const auto& Opt : CardinalOptions)
 		{
-			if (!OccupiedCoords.Contains(CurrentCoord + Opt.Value))
+			const FIntPoint CandidateAnchor = CurrentCoord + Opt.Value;
+			if (CanFitRoomFootprint(CandidateAnchor, NextDims))
 			{
 				OpenOptions.Add(Opt);
+			}
+		}
+
+		// Fallback to 1x1 footprint if multi-cell space is constrained
+		FIntPoint DimsToUse = NextDims;
+		if (OpenOptions.Num() == 0 && (NextDims.X > 1 || NextDims.Y > 1))
+		{
+			DimsToUse = FIntPoint(1, 1);
+			for (const auto& Opt : CardinalOptions)
+			{
+				const FIntPoint CandidateAnchor = CurrentCoord + Opt.Value;
+				if (CanFitRoomFootprint(CandidateAnchor, DimsToUse))
+				{
+					OpenOptions.Add(Opt);
+				}
 			}
 		}
 
@@ -381,17 +424,23 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 
 		const auto Chosen = OpenOptions[Stream.RandRange(0, OpenOptions.Num() - 1)];
 		CurrentCoord += Chosen.Value;
-		OccupiedCoords.Add(CurrentCoord);
 
 		const int32 NextIndex = DungeonNodes.Num();
 		FSovereignDungeonNode Node;
 		Node.NodeIndex = NextIndex;
 		Node.GridCoord = CurrentCoord;
-		Node.TileType = (i == SpineTargetCount - 1) ? EDungeonTileType::EliteChamber : EDungeonTileType::Corridor;
+		Node.FootprintDimensions = DimsToUse;
+		Node.TileType = NextType;
 		Node.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(CurrentCoord.X * TILE_SIZE, CurrentCoord.Y * TILE_SIZE, 0.0f));
 		Node.bHasFixedEliteMob = (Node.TileType == EDungeonTileType::EliteChamber);
+
 		DungeonNodes.Add(Node);
 		MainSpineNodeIndices.Add(NextIndex);
+
+		for (const FIntPoint& Cell : Node.GetOccupiedCells())
+		{
+			MasterGridOccupancy.Add(Cell, NextIndex);
+		}
 
 		// Record Edge
 		FSovereignDungeonEdge Edge;
@@ -406,7 +455,10 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		CurrentIndex = NextIndex;
 	}
 
-	// 3. Place Terminal Boss Chamber immediately attached to Elite Chamber
+	// 3. Place Terminal Boss Chamber immediately attached to Elite Chamber (Default 4x4)
+	const FIntPoint BossTargetDims = GetDefaultFootprintForTileType(EDungeonTileType::BossChamber);
+	FIntPoint BossDimsToUse = BossTargetDims;
+
 	TArray<TPair<EDungeonDirection, FIntPoint>> CardinalOptions = {
 		{ EDungeonDirection::North, FIntPoint(1, 0) },
 		{ EDungeonDirection::East,  FIntPoint(0, 1) },
@@ -416,9 +468,24 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 	TArray<TPair<EDungeonDirection, FIntPoint>> BossOpenOptions;
 	for (const auto& Opt : CardinalOptions)
 	{
-		if (!OccupiedCoords.Contains(CurrentCoord + Opt.Value))
+		const FIntPoint CandidateBossAnchor = CurrentCoord + Opt.Value;
+		if (CanFitRoomFootprint(CandidateBossAnchor, BossDimsToUse))
 		{
 			BossOpenOptions.Add(Opt);
+		}
+	}
+
+	// Fallback to 1x1 if space constrained
+	if (BossOpenOptions.Num() == 0)
+	{
+		BossDimsToUse = FIntPoint(1, 1);
+		for (const auto& Opt : CardinalOptions)
+		{
+			const FIntPoint CandidateBossAnchor = CurrentCoord + Opt.Value;
+			if (CanFitRoomFootprint(CandidateBossAnchor, BossDimsToUse))
+			{
+				BossOpenOptions.Add(Opt);
+			}
 		}
 	}
 
@@ -426,18 +493,23 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 	{
 		const auto BossChosen = BossOpenOptions[Stream.RandRange(0, BossOpenOptions.Num() - 1)];
 		CurrentCoord += BossChosen.Value;
-		OccupiedCoords.Add(CurrentCoord);
 
 		const int32 BossIndex = DungeonNodes.Num();
 		FSovereignDungeonNode BossNode;
 		BossNode.NodeIndex = BossIndex;
 		BossNode.GridCoord = CurrentCoord;
+		BossNode.FootprintDimensions = BossDimsToUse;
 		BossNode.TileType = EDungeonTileType::BossChamber;
 		BossNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(CurrentCoord.X * TILE_SIZE, CurrentCoord.Y * TILE_SIZE, 0.0f));
 		BossNode.bHasFixedEliteMob = true; // Boss entity
 		DungeonNodes.Add(BossNode);
 		MainSpineNodeIndices.Add(BossIndex);
 		BossNodeIndex = BossIndex;
+
+		for (const FIntPoint& Cell : BossNode.GetOccupiedCells())
+		{
+			MasterGridOccupancy.Add(Cell, BossIndex);
+		}
 
 		FSovereignDungeonEdge BossEdge;
 		BossEdge.EdgeId = DungeonEdges.Num();
@@ -464,10 +536,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		const int32 ParentIdx = EligibleSpineParents[Stream.RandRange(0, EligibleSpineParents.Num() - 1)];
 		const FIntPoint ParentCoord = DungeonNodes[ParentIdx].GridCoord;
 
+		const EDungeonTileType BranchType = (RoomsRemaining == 1) ? EDungeonTileType::TreasureRoom : EDungeonTileType::Chamber;
+		const FIntPoint BranchDims = GetDefaultFootprintForTileType(BranchType);
+
 		TArray<TPair<EDungeonDirection, FIntPoint>> BranchOpen;
 		for (const auto& Opt : CardinalOptions)
 		{
-			if (!OccupiedCoords.Contains(ParentCoord + Opt.Value))
+			const FIntPoint CandidateBranchAnchor = ParentCoord + Opt.Value;
+			if (CanFitRoomFootprint(CandidateBranchAnchor, BranchDims))
 			{
 				BranchOpen.Add(Opt);
 			}
@@ -481,16 +557,21 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 
 		const auto ChosenBranch = BranchOpen[Stream.RandRange(0, BranchOpen.Num() - 1)];
 		const FIntPoint BranchCoord = ParentCoord + ChosenBranch.Value;
-		OccupiedCoords.Add(BranchCoord);
 
 		const int32 BranchIdx = DungeonNodes.Num();
 		FSovereignDungeonNode BranchNode;
 		BranchNode.NodeIndex = BranchIdx;
 		BranchNode.GridCoord = BranchCoord;
-		BranchNode.TileType = (RoomsRemaining == 1) ? EDungeonTileType::TreasureRoom : EDungeonTileType::Chamber;
+		BranchNode.FootprintDimensions = BranchDims;
+		BranchNode.TileType = BranchType;
 		BranchNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(BranchCoord.X * TILE_SIZE, BranchCoord.Y * TILE_SIZE, 0.0f));
 		BranchNode.bHasFixedEliteMob = false;
 		DungeonNodes.Add(BranchNode);
+
+		for (const FIntPoint& Cell : BranchNode.GetOccupiedCells())
+		{
+			MasterGridOccupancy.Add(Cell, BranchIdx);
+		}
 
 		FSovereignDungeonEdge BranchEdge;
 		BranchEdge.EdgeId = DungeonEdges.Num();
@@ -566,22 +647,26 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 	const FVector Origin = GetActorLocation();
 
-	// 2. Spawn Floor Tiles and Boundary Walls for Each Node
+	// 2. Spawn Floor Tiles and Boundary Walls for Each Node & Occupied Cells (Ticket B-094)
 	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
 	{
 		const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
-		const FVector NodePos = Node.WorldTransform.GetLocation();
+		const FVector AnchorPos = Node.WorldTransform.GetLocation();
+		const TArray<FIntPoint> OccupiedCells = Node.GetOccupiedCells();
 
-		// Add Floor Instance: Scale standard 100cm cube to 1000cm x 1000cm x 20cm
-		FTransform FloorTransform;
-		FloorTransform.SetLocation(NodePos - FVector(0.0f, 0.0f, 10.0f));
-		FloorTransform.SetRotation(FQuat::Identity);
-		FloorTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
+		// Spawn 1000cm x 1000cm floor tiles for every occupied grid cell in this room
+		for (const FIntPoint& Cell : OccupiedCells)
+		{
+			const FVector CellPos = Origin + FVector(Cell.X * TILE_SIZE, Cell.Y * TILE_SIZE, 0.0f);
+			FTransform FloorTransform;
+			FloorTransform.SetLocation(CellPos - FVector(0.0f, 0.0f, 10.0f));
+			FloorTransform.SetRotation(FQuat::Identity);
+			FloorTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
 
-		FloorInstancedComponent->AddInstance(FloorTransform);
+			FloorInstancedComponent->AddInstance(FloorTransform);
+		}
 
-		// Check 4 cardinal directions matching EDungeonDirection order:
-		// North = 0 (+X), East = 1 (+Y), South = 2 (-X), West = 3 (-Y)
+		// Check 4 cardinal directions matching EDungeonDirection order
 		const TArray<TPair<FIntPoint, FVector>> CardinalOffsets = {
 			TPair<FIntPoint, FVector>(FIntPoint(1, 0), FVector(TILE_SIZE * 0.5f, 0.0f, 300.0f)),   // Index 0: North (+X)
 			TPair<FIntPoint, FVector>(FIntPoint(0, 1), FVector(0.0f, TILE_SIZE * 0.5f, 300.0f)),   // Index 1: East (+Y)
@@ -598,19 +683,14 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 		for (int32 DirIdx = 0; DirIdx < CardinalOffsets.Num(); ++DirIdx)
 		{
-			// Check if bit for this cardinal direction is set in ConnectedPassageMask
 			const uint8 DirBit = (1 << DirIdx);
 			const bool bHasEdgePassage = (Node.ConnectedPassageMask & DirBit) != 0;
 
 			if (!bHasEdgePassage)
 			{
-				// No passage edge exists across this boundary face.
-				// Place a solid boundary wall. This correctly encloses exterior perimeters
-				// AND shared boundary walls between physically adjacent nodes that are disconnected!
 				FTransform WallTransform;
-				WallTransform.SetLocation(NodePos + CardinalOffsets[DirIdx].Value);
+				WallTransform.SetLocation(AnchorPos + CardinalOffsets[DirIdx].Value);
 				WallTransform.SetRotation(CardinalRotations[DirIdx].Quaternion());
-				// Scale standard 100cm cube to 0.4m thick, 10m long, 6m high
 				if (CardinalOffsets[DirIdx].Key.X != 0)
 				{
 					WallTransform.SetScale3D(FVector(0.4f, TILE_SIZE / 100.0f, 6.0f));
@@ -633,7 +713,7 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 				if (AStaticMeshActor* AltarActor = GetWorld()->SpawnActor<AStaticMeshActor>(
-					AStaticMeshActor::StaticClass(), NodePos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams))
+					AStaticMeshActor::StaticClass(), AnchorPos + FVector(0.0f, 0.0f, 50.0f), FRotator::ZeroRotator, SpawnParams))
 				{
 					if (AltarActor->GetStaticMeshComponent())
 					{

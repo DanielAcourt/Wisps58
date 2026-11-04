@@ -94,11 +94,37 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);
 	TestEqual(TEXT("Total generated nodes should equal TargetRoomCount"), Generator->DungeonNodes.Num(), 6);
 
-	// Verify Ticket B-089 3D geometry spawning
+	// Verify Ticket B-089 & B-094 3D geometry & multi-cell footprint spawning
 	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent.Get());
 	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent.Get());
-	TestEqual(TEXT("Floor instance count matches node count"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 6);
+	TestTrue(TEXT("Floor instances match or exceed node count due to multi-cell footprints"),
+		Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() >= 6 : false);
 	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() > 0 : false);
+
+	// 5. Test Ticket B-094 Multi-Cell Footprint Reservation Engine
+	TestEqual(TEXT("Default footprint for Entrance is 1x1"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::EntranceRoom), FIntPoint(1, 1));
+	TestEqual(TEXT("Default footprint for Corridor is 1x1"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::Corridor), FIntPoint(1, 1));
+	TestEqual(TEXT("Default footprint for Treasure is 1x1"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::TreasureRoom), FIntPoint(1, 1));
+	TestEqual(TEXT("Default footprint for EliteChamber is 2x2"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::EliteChamber), FIntPoint(2, 2));
+	TestEqual(TEXT("Default footprint for BossChamber is 4x4"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::BossChamber), FIntPoint(4, 4));
+
+	// Test GetOccupiedCells cell counts
+	FSovereignDungeonNode CellTestNode;
+	CellTestNode.GridCoord = FIntPoint(5, 5);
+	CellTestNode.FootprintDimensions = FIntPoint(2, 2);
+	TestEqual(TEXT("2x2 footprint has 4 occupied cells"), CellTestNode.GetOccupiedCells().Num(), 4);
+	CellTestNode.FootprintDimensions = FIntPoint(4, 4);
+	TestEqual(TEXT("4x4 footprint has 16 occupied cells"), CellTestNode.GetOccupiedCells().Num(), 16);
+
+	// Verify zero spatial overlap in MasterGridOccupancy
+	TSet<FIntPoint> VerifyUniqueCells;
+	for (const auto& Pair : Generator->MasterGridOccupancy)
+	{
+		TestFalse(TEXT("MasterGridOccupancy cell is unique without overlap"), VerifyUniqueCells.Contains(Pair.Key));
+		VerifyUniqueCells.Add(Pair.Key);
+	}
+	TestEqual(TEXT("Floor instances match total occupied cell count"),
+		Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, Generator->MasterGridOccupancy.Num());
 
 	// 5. Test Ticket B-090 Graph Data Model, Edge Representation & BFS Validation
 	TestTrue(TEXT("DungeonEdges populated"), Generator->DungeonEdges.Num() > 0);

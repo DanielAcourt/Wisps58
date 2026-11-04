@@ -96,8 +96,13 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
 	int32 NodeIndex = INDEX_NONE;
 
+	/** Bottom-Left anchor cell coordinate */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
 	FIntPoint GridCoord = FIntPoint::ZeroValue;
+
+	/** Footprint dimensions in 1000cm grid cells (e.g., 1x1, 2x2, 4x4) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
+	FIntPoint FootprintDimensions = FIntPoint(1, 1);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
 	EDungeonTileType TileType = EDungeonTileType::Corridor;
@@ -111,6 +116,23 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 	/** Transient bitmask cache derived strictly from DungeonEdges (Bit 0=N, 1=E, 2=S, 3=W) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
 	uint8 ConnectedPassageMask = 0;
+
+	/** Returns all individual 1000cm grid cell coordinates occupied by this room footprint (Ticket B-094) */
+	TArray<FIntPoint> GetOccupiedCells() const
+	{
+		TArray<FIntPoint> Cells;
+		const int32 W = FMath::Max(1, FootprintDimensions.X);
+		const int32 H = FMath::Max(1, FootprintDimensions.Y);
+		Cells.Reserve(W * H);
+		for (int32 X = 0; X < W; ++X)
+		{
+			for (int32 Y = 0; Y < H; ++Y)
+			{
+				Cells.Add(GridCoord + FIntPoint(X, Y));
+			}
+		}
+		return Cells;
+	}
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonGenerated, int32, TotalTilesGenerated);
@@ -217,6 +239,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
 
+	/** Master spatial cell reservation map mapping each occupied 1000cm grid cell to its owning room index (Ticket B-094) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
+	TMap<FIntPoint, int32> MasterGridOccupancy;
+
 	/** Authoritative Single Source of Truth for dungeon connectivity (Ticket B-090) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonEdge> DungeonEdges;
@@ -301,6 +327,26 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Geometry")
 	void SpawnDungeonGeometry();
+
+	/** Returns default footprint dimensions for each room semantic type (Ticket B-094) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Footprints")
+	static FIntPoint GetDefaultFootprintForTileType(EDungeonTileType Type)
+	{
+		switch (Type)
+		{
+		case EDungeonTileType::EntranceRoom: return FIntPoint(1, 1);
+		case EDungeonTileType::Corridor:     return FIntPoint(1, 1);
+		case EDungeonTileType::Chamber:      return FIntPoint(1, 1);
+		case EDungeonTileType::TreasureRoom: return FIntPoint(1, 1);
+		case EDungeonTileType::EliteChamber: return FIntPoint(2, 2);
+		case EDungeonTileType::BossChamber:  return FIntPoint(4, 4);
+		default:                             return FIntPoint(1, 1);
+		}
+	}
+
+	/** Validates if a rectangular footprint can fit without overlapping already occupied cells (Ticket B-094) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Footprints")
+	bool CanFitRoomFootprint(const FIntPoint& Anchor, const FIntPoint& Dims) const;
 
 	/** Validates structural reachability and gameplay pacing via pure-data BFS (Ticket B-090) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
