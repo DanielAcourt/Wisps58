@@ -9,6 +9,9 @@
 #include "Combat/SovereignSkillDefinition.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
+#include "Inventory/SovereignInventoryComponent.h"
+#include "Inventory/SovereignItemDefinition.h"
+#include "Inventory/SovereignItemDomainFragments.h"
 #include "Kismet/KismetMathLibrary.h"
 
 ASovereignBattleManager::ASovereignBattleManager()
@@ -435,6 +438,110 @@ bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster
 	OnSkillActionExecuted.Broadcast(Caster, SkillDef->SkillTag, TotalActionResult, bIsHealing);
 
 	// Conclude turn and cycle combat state
+	ConcludeActiveTurn();
+	return true;
+}
+
+bool ASovereignBattleManager::ExecuteItemAction(ASovereignBaseCharacter* User, const FGuid& ItemInstanceId, ASovereignBaseCharacter* Target)
+{
+	if (!User || !Target || !ItemInstanceId.IsValid())
+	{
+		return false;
+	}
+
+	USovereignInventoryComponent* Inventory = User->GetInventoryComponent();
+	if (!Inventory)
+	{
+		return false;
+	}
+
+	// 1. Locate Item Slot in User's Inventory
+	FSovereignInventoryItemInstance* FoundSlot = nullptr;
+	for (FSovereignInventoryItemInstance& Slot : Inventory->InventorySlots)
+	{
+		if (Slot.InstanceId == ItemInstanceId)
+		{
+			FoundSlot = &Slot;
+			break;
+		}
+	}
+
+	if (!FoundSlot || FoundSlot->Quantity <= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BattleManager] %s attempted to use item instance %s but has none."),
+			*User->GetName(), *ItemInstanceId.ToString());
+		return false;
+	}
+
+	const USovereignItemDefinition* ItemDef = FoundSlot->ItemDefinition.Get();
+	if (!ItemDef)
+	{
+		ItemDef = FoundSlot->ItemDefinition.LoadSynchronous();
+	}
+	if (!ItemDef)
+	{
+		return false;
+	}
+
+	// 2. Validate Target Alignment (Friendly vs Enemy)
+	bool bIsTargetFriendly = false;
+	for (const auto& Member : PlayerGrid)
+	{
+		if (Member.Get() == Target)
+		{
+			bIsTargetFriendly = true;
+			break;
+		}
+	}
+
+	if (const USovereignItemFragment_CombatEffect* CombatFragment = ItemDef->FindFragment<USovereignItemFragment_CombatEffect>())
+	{
+		if (bIsTargetFriendly && !CombatFragment->bCanTargetAllies)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[BattleManager] Item %s cannot target friendly allies!"), *ItemDef->DisplayName.ToString());
+			return false; // Retain turn
+		}
+		if (!bIsTargetFriendly && !CombatFragment->bCanTargetEnemies)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[BattleManager] Item %s cannot target enemies!"), *ItemDef->DisplayName.ToString());
+			return false; // Retain turn
+		}
+	}
+
+	// 3. Execute Item Consumption Hooks on Target
+	bool bExecutionSuccess = false;
+	for (const USovereignItemFragment* Fragment : ItemDef->Fragments)
+	{
+		if (Fragment)
+		{
+			if (Fragment->Execute_OnConsumed(Fragment, Target, 1))
+			{
+				bExecutionSuccess = true;
+			}
+		}
+	}
+
+	if (!bExecutionSuccess)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BattleManager] Item %s produced no effect on target %s."),
+			*ItemDef->DisplayName.ToString(), *Target->GetName());
+		return false;
+	}
+
+	// 4. Decrement 1 Quantity from User Inventory
+	FoundSlot->Quantity -= 1;
+	if (FoundSlot->Quantity <= 0)
+	{
+		Inventory->RemoveItemByInstanceId(ItemInstanceId, 1);
+	}
+	else
+	{
+		Inventory->OnInventoryUpdated.Broadcast();
+	}
+
+	OnItemActionExecuted.Broadcast(User, ItemDef->ItemTag, Target);
+
+	// 5. Conclude Active Turn
 	ConcludeActiveTurn();
 	return true;
 }

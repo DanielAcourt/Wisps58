@@ -50,6 +50,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBattleStateChanged, EBattleState
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombatantTurnReady, ASovereignBaseCharacter*, Combatant);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleEnded, EBattleState, Outcome);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnSkillActionExecuted, ASovereignBaseCharacter*, Caster, const FGameplayTag&, SkillTag, float, Value, bool, bIsHealing);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemActionExecuted, ASovereignBaseCharacter*, User, const FGameplayTag&, ItemTag, ASovereignBaseCharacter*, Target);
 
 /**
  * ASovereignBattleManager
@@ -109,7 +110,18 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
 	FOnSkillActionExecuted OnSkillActionExecuted;
 
-	// --- Skill Execution API ---
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
+	FOnItemActionExecuted OnItemActionExecuted;
+
+	// --- Skill & Item Execution API ---
+
+	/**
+	 * Executes an inventory item action against a designated target during battle.
+	 * Consumes 1 quantity from User's USovereignInventoryComponent, applies fragment effects,
+	 * and concludes the active turn.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
+	bool ExecuteItemAction(ASovereignBaseCharacter* User, const FGuid& ItemInstanceId, ASovereignBaseCharacter* Target);
 
 	/**
 	 * Checks if a caster has sufficient Qi to cast the given skill definition.
