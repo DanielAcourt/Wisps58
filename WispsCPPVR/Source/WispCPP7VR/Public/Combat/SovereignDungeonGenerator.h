@@ -76,6 +76,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 GenerationSeed = 1337;
 
+	/** Active combat enemy buff multiplier inherited from expedition gateway */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Config")
+	float EnemyBuffMultiplier = 1.0f;
+
+	/** Active reward multiplier inherited from expedition gateway */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Config")
+	float RewardMultiplier = 1.0f;
+
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
@@ -146,4 +154,10 @@ public:
 	/** Selects an active battle manager from the biome arenas array */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
 	ASovereignBattleManager* GetBattleArenaForBiome(int32 BiomeIndex = 0) const;
+
+	/**
+	 * Returns party back to the saved Meditation Garden and restores world state.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon")
+	bool ReturnToGarden();
 };

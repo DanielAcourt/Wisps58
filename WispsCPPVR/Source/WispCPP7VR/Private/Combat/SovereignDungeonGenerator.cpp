@@ -3,7 +3,9 @@
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Combat/SovereignEncounterSubsystem.h"
+#include "Combat/SovereignDungeonSubsystem.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 
 ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 {
@@ -12,6 +14,8 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 
 	TargetRoomCount = 8;
 	GenerationSeed = 1337;
+	EnemyBuffMultiplier = 1.0f;
+	RewardMultiplier = 1.0f;
 	FarOffArenaOrigin = FVector(50000.0f, 50000.0f, 5000.0f);
 	StepThresholdDistance = 1500.0f;
 	RandomEncounterChance = 25.0f;
@@ -22,6 +26,27 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 void ASovereignDungeonGenerator::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Ingest expedition parameters from GameInstance Subsystem if arriving from gateway transition
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSubsystem = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSubsystem->bHasActiveExpedition)
+				{
+					GenerationSeed = DungeonSubsystem->ActiveExpeditionSeed;
+					EnemyBuffMultiplier = DungeonSubsystem->ActiveEnemyBuffMultiplier;
+					RewardMultiplier = DungeonSubsystem->ActiveRewardMultiplier;
+
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Expedition parameters ingested: Seed=%d, EnemyBuff=x%f, RewardMult=x%f"),
+						GenerationSeed, EnemyBuffMultiplier, RewardMultiplier);
+				}
+			}
+		}
+	}
+
 	GenerateDungeon();
 }
 
@@ -206,4 +231,19 @@ ASovereignBattleManager* ASovereignDungeonGenerator::GetBattleArenaForBiome(int3
 		return BiomeBattleArenas[SafeIdx];
 	}
 	return nullptr;
+}
+
+bool ASovereignDungeonGenerator::ReturnToGarden()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSubsystem = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				return DungeonSubsystem->ReturnToGarden(this);
+			}
+		}
+	}
+	return false;
 }

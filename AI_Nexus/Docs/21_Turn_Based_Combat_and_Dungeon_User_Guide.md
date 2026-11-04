@@ -32,9 +32,11 @@ The suite is composed of 6 modular pillars:
    - Escape roll based on: $50\% + (\text{PartyDEX} - \text{EnemyDEX}) \times 2\% + \text{PlayerLuck} \times 0.5\% + \text{EscapeProgress}$.
    - Failed flee attempts increment the escape bar by $+25\%$ (guaranteeing flight at 100%) and consume the acting dragon's turn.
    - Boss encounters strictly reject flight (`bIsEscapable = false`).
-6. **Meditation Garden Gateway & Procedural Dungeon (`ASovereignDungeonGateway` & `ASovereignDungeonGenerator`)**:
+6. **Meditation Garden Gateway & Procedural Dungeon (`ASovereignDungeonGateway`, `ASovereignDungeonGenerator` & `USovereignDungeonSubsystem`)**:
    - Gateway door holds a sacrifice inventory receptacle and Qi funnel ("Risk it for the biscuit").
-   - Generator builds modular 1000cm x 1000cm rooms and corridors, placing the terminal Boss Chamber at the furthest point.
+   - `EnterDungeon(PartyLeader)` saves the Garden to `"Garden_AutoSave"` JSON via `USaveManager`, caches expedition parameters (seed, buff/reward multipliers, return map name) in `USovereignDungeonSubsystem`, consumes sacrifices, and transitions to the procedural dungeon map via `OpenLevel`.
+   - Generator ingests expedition parameters on `BeginPlay` and builds modular 1000cm x 1000cm rooms/corridors, placing the terminal Boss Chamber at the furthest point.
+   - Calling `ReturnToGarden()` re-opens the Garden map and restores the exact `"Garden_AutoSave"` JSON world state.
    - Dedicated battle arena platforms are spawned far off-map at `(50000, 50000, 5000)`.
 
 ---
@@ -86,6 +88,21 @@ To test the physical dungeon threshold in your level:
      Gateway->ChannelQiFromCharacter(PlayerDragon, 50.0);
      ```
    - In the Details Panel, observe `InfusedQi` incrementing, and call `CalculateEnemyBuffMultiplier()` and `CalculateRewardMultiplier()` to see the risk-vs-reward buffs update live!
+5. **Triggering "Enter Dungeon" & Level Transition**:
+   - In the Details Panel of `ASovereignDungeonGateway`, configure:
+     - `DungeonLevelName`: Name of your target dungeon map (default: `Lvl_Dungeon`).
+     - `GardenSaveSlot`: Name of save slot for the garden (default: `Garden_AutoSave`).
+     - `ExpeditionSeed`: Generation seed (set to 0 for random seed).
+   - In Blueprint or from interaction, call:
+     ```blueprint
+     Gateway->EnterDungeon(PlayerDragon);
+     ```
+   - **What happens under the hood**:
+     1. Verifies `bIsUnlocked == true`.
+     2. Calls `USaveManager->SaveWorldState("Garden_AutoSave", true)` to persist all garden entities, dragons, eggs, and items into JSON.
+     3. Records expedition parameters in `USovereignDungeonSubsystem` (`ActiveExpeditionSeed`, `ActiveEnemyBuffMultiplier`, `ActiveRewardMultiplier`, `GardenReturnMapName`).
+     4. Consumes sacrificed items and infused Qi.
+     5. Calls `UGameplayStatics::OpenLevel(World, DungeonLevelName)`.
 
 ---
 
@@ -110,6 +127,14 @@ To test the physical dungeon threshold in your level:
      DungeonGenerator->ProcessPlayerMovement(PlayerCharacter, MovementDeltaDistance);
      ```
    - Walking through corridors accumulates distance; when it passes `StepThresholdDistance`, it rolls for a sudden Pokemon/FF7-style battle transition!
+5. **Returning to the Garden & Restoring Saved State**:
+   - When the expedition ends (boss defeated or party flees), call:
+     ```blueprint
+     DungeonGenerator->ReturnToGarden();
+     // or directly:
+     GetGameInstance()->GetSubsystem<USovereignDungeonSubsystem>()->ReturnToGarden(WorldContextObject);
+     ```
+   - This transitions the level back to the saved garden map and restores the exact `"Garden_AutoSave"` state via `USaveManager->LoadWorldState("Garden_AutoSave", true)`.
 
 ---
 

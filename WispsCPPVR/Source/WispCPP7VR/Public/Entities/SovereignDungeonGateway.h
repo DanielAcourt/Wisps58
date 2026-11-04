@@ -94,6 +94,31 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Gateway")
 	void ConsumeSacrifices();
 
+	// --- Level Transition & Dungeon Expedition Entry ---
+
+	/** Target dungeon level map to load (e.g. Lvl_Dungeon) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	FName DungeonLevelName = FName(TEXT("Lvl_Dungeon"));
+
+	/** Save slot name used to auto-save the garden state before transitioning */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	FString GardenSaveSlot = TEXT("Garden_AutoSave");
+
+	/** Generation seed for procedural dungeon generation (0 = random) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	int32 ExpeditionSeed = 0;
+
+	/**
+	 * Enters the procedural dungeon:
+	 * 1. Checks if gateway is unlocked (fails if locked).
+	 * 2. Saves current garden state to GardenSaveSlot JSON via USaveManager.
+	 * 3. Records expedition parameters (seed, buff/reward multipliers, return map) in USovereignDungeonSubsystem.
+	 * 4. Consumes sacrifices via ConsumeSacrifices().
+	 * 5. Changes level to DungeonLevelName via OpenLevel.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Gateway")
+	bool EnterDungeon(ASovereignBaseCharacter* PartyLeader);
+
 	// --- Sovereign Base Interactable Overrides ---
 	virtual void OnInteract_Implementation(AActor* Interactor) override;
 	virtual FString GetInteractionHint_Implementation() override;

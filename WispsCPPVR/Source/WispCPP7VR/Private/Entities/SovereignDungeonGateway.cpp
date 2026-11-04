@@ -3,9 +3,14 @@
 #include "Entities/SovereignDungeonGateway.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignQiComponent.h"
+#include "Combat/SovereignDungeonSubsystem.h"
+#include "SaveSystem/SovereignSaveManager.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Engine/GameInstance.h"
 
 ASovereignDungeonGateway::ASovereignDungeonGateway()
 {
@@ -132,18 +137,84 @@ void ASovereignDungeonGateway::ConsumeSacrifices()
 	OnGatewayEmpowered.Broadcast(1.0f, 1.0f);
 }
 
+bool ASovereignDungeonGateway::EnterDungeon(ASovereignBaseCharacter* PartyLeader)
+{
+	if (!bIsUnlocked)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGateway] Cannot enter dungeon: Gateway is sealed/locked."));
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World && PartyLeader)
+	{
+		World = PartyLeader->GetWorld();
+	}
+
+	// 1. Calculate Multipliers prior to consuming sacrifices
+	const float EnemyBuff = CalculateEnemyBuffMultiplier();
+	const float RewardMult = CalculateRewardMultiplier();
+
+	// 2. Generate or fetch expedition seed
+	const int32 SeedToUse = (ExpeditionSeed != 0) ? ExpeditionSeed : FMath::RandRange(1, 999999);
+
+	// Determine current level name to store as Garden return map
+	FName CurrentMapName = NAME_None;
+	if (World)
+	{
+		FString RawMapName = World->GetMapName();
+		RawMapName.RemoveFromStart(World->StreamingLevelsPrefix);
+		CurrentMapName = FName(*RawMapName);
+	}
+
+	// 3. Save Garden World State
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	if (GI)
+	{
+		if (USaveManager* SaveManager = GI->GetSubsystem<USaveManager>())
+		{
+			UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] Auto-saving Garden state to slot [%s] (JSON)..."), *GardenSaveSlot);
+			SaveManager->SaveWorldState(GardenSaveSlot, true);
+		}
+
+		// 4. Record Expedition parameters in GameInstance Subsystem
+		if (USovereignDungeonSubsystem* DungeonSubsystem = GI->GetSubsystem<USovereignDungeonSubsystem>())
+		{
+			DungeonSubsystem->RecordExpedition(SeedToUse, EnemyBuff, RewardMult, CurrentMapName, GardenSaveSlot);
+		}
+	}
+
+	// 5. Consume sacrifices
+	ConsumeSacrifices();
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] EnterDungeon: Transitioning to level [%s] with Seed %d (EnemyBuff: x%f, RewardMult: x%f)"),
+		*DungeonLevelName.ToString(), SeedToUse, EnemyBuff, RewardMult);
+
+	// 6. Transition level
+	if (World && !DungeonLevelName.IsNone())
+	{
+		UGameplayStatics::OpenLevel(World, DungeonLevelName);
+	}
+
+	return true;
+}
+
 void ASovereignDungeonGateway::OnInteract_Implementation(AActor* Interactor)
 {
 	Super::OnInteract_Implementation(Interactor);
 
-	// Toggle/unlock if interacting player has unlocked authority
 	if (!bIsUnlocked)
 	{
 		SetGatewayUnlocked(true);
+	}
+	else
+	{
+		ASovereignBaseCharacter* InteractingCharacter = Cast<ASovereignBaseCharacter>(Interactor);
+		EnterDungeon(InteractingCharacter);
 	}
 }
 
 FString ASovereignDungeonGateway::GetInteractionHint_Implementation()
 {
-	return bIsUnlocked ? TEXT("Embark into Dungeon") : TEXT("Unseal Dungeon Gateway");
+	return bIsUnlocked ? TEXT("Enter Procedural Dungeon") : TEXT("Unseal Dungeon Gateway");
 }
