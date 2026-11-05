@@ -50,6 +50,9 @@ enum class EDungeonTileType : uint8
 	Chamber         UMETA(DisplayName = "Chamber"),
 	EliteChamber    UMETA(DisplayName = "Elite Chamber"),
 	TreasureRoom    UMETA(DisplayName = "Treasure Room"),
+	RestSanctuary   UMETA(DisplayName = "Rest Sanctuary"),
+	GrandChamber    UMETA(DisplayName = "Grand Chamber"),
+	Colosseum       UMETA(DisplayName = "Trial Colosseum"),
 	BossChamber     UMETA(DisplayName = "Boss Chamber")
 };
 
@@ -284,6 +287,44 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 GenerationSeed = 1337;
 
+	// --- Special Room Budgeting & Ratios (Tickets B-102, B-103, B-104) ---
+
+	/** Percentage of Total Rooms allocated to Special Rooms (Default 20%, strictly capped by MaxSpecialRoomCapPercentage) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms", meta = (ClampMin = "0.0", ClampMax = "50.0"))
+	float SpecialRoomPercentage = 20.0f;
+
+	/** Hard maximum cap on special room allocation (Strict 50% cap prevents runaway special room bloat) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float MaxSpecialRoomCapPercentage = 50.0f;
+
+	/** Ratio of special room budget allocated to Treasure Rooms (1x1 dead-end loot vault) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float TreasureRoomRatio = 0.40f;
+
+	/** Ratio of special room budget allocated to Rest Sanctuaries (2x2 healing camp) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float RestSanctuaryRatio = 0.30f;
+
+	/** Ratio of special room budget allocated to Grand Chambers (4x6 large pillar halls) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float GrandChamberRatio = 0.20f;
+
+	/** Ratio of special room budget allocated to Trial Colosseums (8x8 massive battle arenas) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float ColosseumRatio = 0.10f;
+
+	/** Optional custom actor class spawned in Rest Sanctuaries (Defaults to ASovereignRestTerminal) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	TSubclassOf<class ASovereignRestTerminal> RestTerminalClass;
+
+	/** Default rest charges for spawned rest terminals */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	int32 DefaultRestCharges = 3;
+
+	/** If true, randomizes rest charges between 1 and 5 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	bool bRandomizeRestCharges = false;
+
 	/** Minimum required path distance from Entrance to Boss Chamber */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 MinSpineLength = 4;
@@ -500,29 +541,35 @@ public:
 	{
 		switch (Type)
 		{
-		case EDungeonTileType::EntranceRoom: return FIntPoint(1, 1);
-		case EDungeonTileType::Corridor:     return FIntPoint(1, 1);
-		case EDungeonTileType::Chamber:      return FIntPoint(1, 1);
-		case EDungeonTileType::TreasureRoom: return FIntPoint(1, 1);
-		case EDungeonTileType::EliteChamber: return FIntPoint(2, 2);
-		case EDungeonTileType::BossChamber:  return FIntPoint(4, 4);
-		default:                             return FIntPoint(1, 1);
+		case EDungeonTileType::EntranceRoom:  return FIntPoint(1, 1);
+		case EDungeonTileType::Corridor:      return FIntPoint(1, 1);
+		case EDungeonTileType::Chamber:       return FIntPoint(1, 1);
+		case EDungeonTileType::TreasureRoom:  return FIntPoint(1, 1);
+		case EDungeonTileType::RestSanctuary: return FIntPoint(2, 2);
+		case EDungeonTileType::GrandChamber:  return FIntPoint(4, 6);
+		case EDungeonTileType::Colosseum:     return FIntPoint(8, 8);
+		case EDungeonTileType::EliteChamber:  return FIntPoint(2, 2);
+		case EDungeonTileType::BossChamber:   return FIntPoint(4, 4);
+		default:                              return FIntPoint(1, 1);
 		}
 	}
 
-	/** Returns default max connection capacity for each room type (Ticket B-094.2) */
+	/** Returns default max connection capacity for each room type (Ticket B-094.2 & B-102) */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Footprints")
 	static int32 GetDefaultMaxConnectionsForTileType(EDungeonTileType Type)
 	{
 		switch (Type)
 		{
-		case EDungeonTileType::EntranceRoom: return 2;
-		case EDungeonTileType::Corridor:     return 2;
-		case EDungeonTileType::Chamber:      return 4;
-		case EDungeonTileType::TreasureRoom: return 1; // Strict dead-end leaf
-		case EDungeonTileType::EliteChamber: return 2; // Linear gatekeeper
-		case EDungeonTileType::BossChamber:  return 1; // Single entrance strictly
-		default:                             return 2;
+		case EDungeonTileType::EntranceRoom:  return 2;
+		case EDungeonTileType::Corridor:      return 2;
+		case EDungeonTileType::Chamber:       return 4;
+		case EDungeonTileType::TreasureRoom:  return 1; // Strict dead-end leaf
+		case EDungeonTileType::RestSanctuary: return 2; // Safe retreat / midway
+		case EDungeonTileType::GrandChamber:  return 4; // Multiple branch connections
+		case EDungeonTileType::Colosseum:     return 4; // Major trial hub
+		case EDungeonTileType::EliteChamber:  return 2; // Linear gatekeeper
+		case EDungeonTileType::BossChamber:   return 1; // Single entrance strictly
+		default:                              return 2;
 		}
 	}
 

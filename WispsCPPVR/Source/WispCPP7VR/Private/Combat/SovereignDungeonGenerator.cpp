@@ -9,6 +9,7 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/PointLight.h"
+#include "Entities/SovereignRestTerminal.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -680,9 +681,20 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		const int32 DesiredSpineCount = FMath::FloorToInt(TargetRoomCount * 0.65f);
 		const int32 SpineTargetCount = FMath::Clamp(DesiredSpineCount, MinSpineLength, MaxSpineBound);
 
+		// Place a Rest Sanctuary along the critical spine at roughly the midway point (Ticket B-102 & B-103)
+		const int32 MidwaySpineIdx = (SpineTargetCount >= 6) ? (SpineTargetCount / 2) : INDEX_NONE;
+
 		for (int32 i = 1; i < SpineTargetCount; ++i)
 		{
-			const EDungeonTileType NextType = (i == SpineTargetCount - 1) ? EDungeonTileType::EliteChamber : EDungeonTileType::Corridor;
+			EDungeonTileType NextType = EDungeonTileType::Corridor;
+			if (i == SpineTargetCount - 1)
+			{
+				NextType = EDungeonTileType::EliteChamber;
+			}
+			else if (i == MidwaySpineIdx)
+			{
+				NextType = EDungeonTileType::RestSanctuary;
+			}
 			const FIntPoint NextDims = GetDefaultFootprintForTileType(NextType);
 
 			// Filter for open directions capable of accommodating the room's footprint
@@ -873,8 +885,18 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			continue;
 		}
 
-		// 4. Build Deep Branching Network for Remaining Room Budget (Ticket B-099 Option A)
+		// 4. Build Deep Branching Network with Proportional Special Room Quotas (Tickets B-102, B-103, B-104)
 		int32 RoomsRemaining = TargetRoomCount - DungeonNodes.Num();
+
+		// Calculate capped special room budget: strictly capped at MaxSpecialRoomCapPercentage (default 50%)
+		const float EffectiveSpecialPct = FMath::Clamp(SpecialRoomPercentage, 0.0f, FMath::Min(50.0f, MaxSpecialRoomCapPercentage));
+		const int32 TotalSpecialBudget = FMath::Clamp(FMath::RoundToInt(TargetRoomCount * (EffectiveSpecialPct / 100.0f)), 1, FMath::Max(1, TargetRoomCount / 2));
+
+		int32 TreasureCount = FMath::Max(1, FMath::RoundToInt(TotalSpecialBudget * TreasureRoomRatio));
+		int32 RestSanctuaryCount = FMath::RoundToInt(TotalSpecialBudget * RestSanctuaryRatio);
+		int32 GrandChamberCount = FMath::RoundToInt(TotalSpecialBudget * GrandChamberRatio);
+		int32 ColosseumCount = FMath::RoundToInt(TotalSpecialBudget * ColosseumRatio);
+
 		TArray<int32> EligibleBranchParents;
 		for (int32 i = 1; i < DungeonNodes.Num(); ++i)
 		{
@@ -896,8 +918,30 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				continue;
 			}
 
-			const EDungeonTileType BranchType = (RoomsRemaining == 1) ? EDungeonTileType::TreasureRoom : EDungeonTileType::Chamber;
-			const FIntPoint BranchDims = GetDefaultFootprintForTileType(BranchType);
+			// Select special room type based on budget quotas
+			EDungeonTileType BranchType = EDungeonTileType::Chamber;
+			if (ColosseumCount > 0 && TargetRoomCount >= 30)
+			{
+				BranchType = EDungeonTileType::Colosseum;
+			}
+			else if (GrandChamberCount > 0 && TargetRoomCount >= 15)
+			{
+				BranchType = EDungeonTileType::GrandChamber;
+			}
+			else if (RestSanctuaryCount > 0)
+			{
+				BranchType = EDungeonTileType::RestSanctuary;
+			}
+			else if (TreasureCount > 0)
+			{
+				BranchType = EDungeonTileType::TreasureRoom;
+			}
+			else
+			{
+				BranchType = EDungeonTileType::Chamber;
+			}
+
+			FIntPoint BranchDims = GetDefaultFootprintForTileType(BranchType);
 
 			TArray<TPair<EDungeonDirection, FIntPoint>> BranchOpen;
 			for (const auto& Opt : CardinalOptions)
@@ -945,8 +989,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			BranchEdge.DoorState = EDoorState::Open;
 			DungeonEdges.Add(BranchEdge);
 
-			// Add new branch room to eligible parents if it's a chamber
-			if (BranchType == EDungeonTileType::Chamber)
+			// Decrement budget counters
+			if (BranchType == EDungeonTileType::Colosseum) ColosseumCount--;
+			else if (BranchType == EDungeonTileType::GrandChamber) GrandChamberCount--;
+			else if (BranchType == EDungeonTileType::RestSanctuary) RestSanctuaryCount--;
+			else if (BranchType == EDungeonTileType::TreasureRoom) TreasureCount--;
+
+			// Add new branch room to eligible parents if it can accept further branches
+			if (BranchType == EDungeonTileType::Chamber || BranchType == EDungeonTileType::GrandChamber || BranchType == EDungeonTileType::Colosseum)
 			{
 				EligibleBranchParents.Add(BranchIdx);
 			}
@@ -1203,6 +1253,31 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 						AltarActor->GetStaticMeshComponent()->SetStaticMesh(BossAltarMesh);
 					}
 					GeneratorSpawnedActors.Add(AltarActor);
+				}
+			}
+		}
+		// 5. For Rest Sanctuary: Spawn ASovereignRestTerminal (Ticket B-103)
+		else if (Node.TileType == EDungeonTileType::RestSanctuary)
+		{
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FVector RestCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					30.0f
+				);
+
+				UClass* TerminalClassToSpawn = RestTerminalClass ? RestTerminalClass.Get() : ASovereignRestTerminal::StaticClass();
+				if (ASovereignRestTerminal* Terminal = GetWorld()->SpawnActor<ASovereignRestTerminal>(TerminalClassToSpawn, RestCenterPos, FRotator::ZeroRotator, SpawnParams))
+				{
+					Terminal->MaxRestCharges = DefaultRestCharges;
+					Terminal->RemainingRestCharges = DefaultRestCharges;
+					Terminal->bRandomizeCharges = bRandomizeRestCharges;
+					GeneratorSpawnedActors.Add(Terminal);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignRestTerminal in RestSanctuary Node %d."), NodeIdx);
 				}
 			}
 		}

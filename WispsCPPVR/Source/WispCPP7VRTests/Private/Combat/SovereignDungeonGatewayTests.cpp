@@ -2,11 +2,13 @@
 
 #include "Misc/AutomationTest.h"
 #include "Entities/SovereignDungeonGateway.h"
+#include "Entities/SovereignRestTerminal.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignAttributeComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
@@ -482,7 +484,49 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	ArenaGen->CleanupDungeon();
 	TestEqual(TEXT("Biome arenas cleared after cleanup"), ArenaGen->BiomeBattleArenas.Num(), 0);
 
-	// 13. Test Subsystem Regression Compatibility
+	// 13. Test Tickets B-102, B-103, B-104 Special Rooms, Rest Terminal & Custom Footprints
+	ASovereignDungeonGenerator* SpecialGen = NewObject<ASovereignDungeonGenerator>();
+	SpecialGen->TargetRoomCount = 35;
+	SpecialGen->GenerationSeed = 7777;
+	SpecialGen->SpecialRoomPercentage = 20.0f;
+	SpecialGen->MaxSpecialRoomCapPercentage = 50.0f;
+	SpecialGen->bSpawnPhysicalGeometry = false;
+	SpecialGen->bAutoSpawnDefaultLighting = false;
+	const bool bSpecialSuccess = SpecialGen->GenerateDungeon();
+
+	TestTrue(TEXT("Special room generation succeeds"), bSpecialSuccess);
+
+	// Verify Footprints
+	TestEqual(TEXT("RestSanctuary footprint is 2x2"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::RestSanctuary), FIntPoint(2, 2));
+	TestEqual(TEXT("GrandChamber footprint is 4x6"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::GrandChamber), FIntPoint(4, 6));
+	TestEqual(TEXT("Colosseum footprint is 8x8"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::Colosseum), FIntPoint(8, 8));
+
+	// Test ASovereignRestTerminal Interaction & Charge Depletion
+	ASovereignRestTerminal* RestTerminal = NewObject<ASovereignRestTerminal>();
+	TestNotNull(TEXT("RestTerminal created"), RestTerminal);
+	RestTerminal->MaxRestCharges = 3;
+	RestTerminal->RemainingRestCharges = 3;
+	RestTerminal->bAutoDestroyOnDepletion = false; // keep in memory for assertion
+
+	// Hurt cultivator
+	Cultivator->GetAttributeComponent()->CurrentHealth = 10.0f;
+	Cultivator->GetQiComponent()->CurrentQi = 10.0f;
+
+	const bool bRested = RestTerminal->RestParty(Cultivator);
+	TestTrue(TEXT("RestParty succeeds"), bRested);
+	TestEqual(TEXT("Remaining charges decremented to 2"), RestTerminal->RemainingRestCharges, 2);
+	TestEqual(TEXT("Cultivator Health fully restored"), Cultivator->GetAttributeComponent()->CurrentHealth, Cultivator->GetAttributeComponent()->MaxHealth);
+	TestEqual(TEXT("Cultivator Qi fully restored"), Cultivator->GetQiComponent()->CurrentQi, Cultivator->GetQiComponent()->MaxQiCapacity);
+
+	// Exhaust remaining charges
+	RestTerminal->RestParty(Cultivator);
+	RestTerminal->RestParty(Cultivator);
+	TestEqual(TEXT("Remaining charges now 0"), RestTerminal->RemainingRestCharges, 0);
+
+	const bool bFailedRest = RestTerminal->RestParty(Cultivator);
+	TestFalse(TEXT("Cannot rest when depleted"), bFailedRest);
+
+	// 14. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;
