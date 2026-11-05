@@ -250,9 +250,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	{
 		FTransform MetricWallTransform;
 		Generator->WallInstancedComponent->GetInstanceTransform(0, MetricWallTransform, true);
-		TestNearlyEqual(TEXT("Metric wall scale X is 1.0"), MetricWallTransform.GetScale3D().X, 1.0f, 0.01f);
-		TestNearlyEqual(TEXT("Metric wall scale Y is 1.0"), MetricWallTransform.GetScale3D().Y, 1.0f, 0.01f);
-		TestNearlyEqual(TEXT("Metric wall scale Z is 1.0"), MetricWallTransform.GetScale3D().Z, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale X is 1.0"), (float)MetricWallTransform.GetScale3D().X, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale Y is 1.0"), (float)MetricWallTransform.GetScale3D().Y, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale Z is 1.0"), (float)MetricWallTransform.GetScale3D().Z, 1.0f, 0.01f);
 	}
 	Generator->CleanupDungeon();
 
