@@ -206,42 +206,47 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 
 		int32 CurrentId = 0;
 
-		// 1. South perimeter: (X, 0) facing South
-		for (int32 X = 0; X < W; ++X)
-		{
-			FSovereignDoorwaySocket Sock;
-			Sock.SocketId = CurrentId++;
-			Sock.CellCoord = GridCoord + FIntPoint(X, 0);
-			Sock.FacingDirection = EDungeonDirection::South;
-			PerimeterSockets.Add(Sock);
-		}
+		// In WispsGame coordinate system:
+		// +X is North, -X is South
+		// +Y is East,  -Y is West
+		// FootprintDimensions: X spans [0, W-1] (North-South depth), Y spans [0, H-1] (East-West width)
 
-		// 2. North perimeter: (X, H-1) facing North
-		for (int32 X = 0; X < W; ++X)
-		{
-			FSovereignDoorwaySocket Sock;
-			Sock.SocketId = CurrentId++;
-			Sock.CellCoord = GridCoord + FIntPoint(X, H - 1);
-			Sock.FacingDirection = EDungeonDirection::North;
-			PerimeterSockets.Add(Sock);
-		}
-
-		// 3. West perimeter: (0, Y) facing West
+		// 1. South perimeter (-X boundary): X = 0, for all Y in [0, H-1], facing South (-X)
 		for (int32 Y = 0; Y < H; ++Y)
 		{
 			FSovereignDoorwaySocket Sock;
 			Sock.SocketId = CurrentId++;
 			Sock.CellCoord = GridCoord + FIntPoint(0, Y);
-			Sock.FacingDirection = EDungeonDirection::West;
+			Sock.FacingDirection = EDungeonDirection::South;
 			PerimeterSockets.Add(Sock);
 		}
 
-		// 4. East perimeter: (W-1, Y) facing East
+		// 2. North perimeter (+X boundary): X = W - 1, for all Y in [0, H-1], facing North (+X)
 		for (int32 Y = 0; Y < H; ++Y)
 		{
 			FSovereignDoorwaySocket Sock;
 			Sock.SocketId = CurrentId++;
 			Sock.CellCoord = GridCoord + FIntPoint(W - 1, Y);
+			Sock.FacingDirection = EDungeonDirection::North;
+			PerimeterSockets.Add(Sock);
+		}
+
+		// 3. West perimeter (-Y boundary): Y = 0, for all X in [0, W-1], facing West (-Y)
+		for (int32 X = 0; X < W; ++X)
+		{
+			FSovereignDoorwaySocket Sock;
+			Sock.SocketId = CurrentId++;
+			Sock.CellCoord = GridCoord + FIntPoint(X, 0);
+			Sock.FacingDirection = EDungeonDirection::West;
+			PerimeterSockets.Add(Sock);
+		}
+
+		// 4. East perimeter (+Y boundary): Y = H - 1, for all X in [0, W-1], facing East (+Y)
+		for (int32 X = 0; X < W; ++X)
+		{
+			FSovereignDoorwaySocket Sock;
+			Sock.SocketId = CurrentId++;
+			Sock.CellCoord = GridCoord + FIntPoint(X, H - 1);
 			Sock.FacingDirection = EDungeonDirection::East;
 			PerimeterSockets.Add(Sock);
 		}

@@ -168,6 +168,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Verify Terminal Boss Chamber
 	TestTrue(TEXT("BossNodeIndex is valid"), Generator->BossNodeIndex >= 0);
 	TestEqual(TEXT("Terminal node is BossChamber"), Generator->DungeonNodes[Generator->BossNodeIndex].TileType, EDungeonTileType::BossChamber);
+	TestEqual(TEXT("Boss chamber is strictly 4x4 in dimensions (Ticket B-101)"), Generator->DungeonNodes[Generator->BossNodeIndex].FootprintDimensions, FIntPoint(4, 4));
+	TestEqual(TEXT("Boss chamber has 16 occupied floor cells"), Generator->DungeonNodes[Generator->BossNodeIndex].GetOccupiedCells().Num(), 16);
+	TestEqual(TEXT("Boss chamber has 16 outer boundary perimeter sockets"), Generator->DungeonNodes[Generator->BossNodeIndex].PerimeterSockets.Num(), 16);
 	TestTrue(TEXT("Boss chamber has fixed elite mob"), Generator->DungeonNodes[Generator->BossNodeIndex].bHasFixedEliteMob);
 
 	// Verify Edge Adjacency Helper methods
@@ -437,6 +440,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Mega dungeon generation succeeds"), bMegaSuccess);
 	TestTrue(TEXT("Mega dungeon BossNodeIndex is valid (Guaranteed Boss Chamber)"), MegaGen->BossNodeIndex != INDEX_NONE);
 	TestEqual(TEXT("Mega dungeon terminal node is BossChamber"), MegaGen->DungeonNodes[MegaGen->BossNodeIndex].TileType, EDungeonTileType::BossChamber);
+	TestEqual(TEXT("Mega dungeon Boss chamber is strictly 4x4 in dimensions (Ticket B-101)"), MegaGen->DungeonNodes[MegaGen->BossNodeIndex].FootprintDimensions, FIntPoint(4, 4));
 
 	// Verify exactly 1 sealed elite gate edge leading to Boss Chamber
 	int32 MegaBossEdgeCount = 0;

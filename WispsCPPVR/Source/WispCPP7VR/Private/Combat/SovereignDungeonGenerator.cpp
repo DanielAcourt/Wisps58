@@ -352,17 +352,7 @@ bool ASovereignDungeonGenerator::ValidateTopologicalReachability(int32 EntranceI
 			return false;
 		}
 
-		const FIntPoint CoordA = DungeonNodes[Edge.NodeIndexA].GridCoord;
-		const FIntPoint CoordB = DungeonNodes[Edge.NodeIndexB].GridCoord;
-		const int32 ManhattanDist = FMath::Abs(CoordA.X - CoordB.X) + FMath::Abs(CoordA.Y - CoordB.Y);
-		if (ManhattanDist != 1)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d connects non-adjacent coordinates (%d,%d) and (%d,%d) (Dist: %d)."),
-				Edge.EdgeId, CoordA.X, CoordA.Y, CoordB.X, CoordB.Y, ManhattanDist);
-			return false;
-		}
-
-		// Verify declared cardinal direction
+		// Multi-cell edge contact invariant: verify that at least one occupied cell in NodeA touches an occupied cell in NodeB in DirectionAtoB
 		FIntPoint ExpectedOffset(0, 0);
 		switch (Edge.DirectionAtoB)
 		{
@@ -373,9 +363,23 @@ bool ASovereignDungeonGenerator::ValidateTopologicalReachability(int32 EntranceI
 		default: break;
 		}
 
-		if (CoordB != CoordA + ExpectedOffset)
+		const TArray<FIntPoint> CellsA = DungeonNodes[Edge.NodeIndexA].GetOccupiedCells();
+		const TArray<FIntPoint> CellsB = DungeonNodes[Edge.NodeIndexB].GetOccupiedCells();
+
+		bool bHasAdjacencyContact = false;
+		for (const FIntPoint& CellA : CellsA)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d direction does not match coordinate delta."), Edge.EdgeId);
+			if (CellsB.Contains(CellA + ExpectedOffset))
+			{
+				bHasAdjacencyContact = true;
+				break;
+			}
+		}
+
+		if (!bHasAdjacencyContact)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Validation Failed: Edge %d does not have adjacent occupied cell contact between Node %d and Node %d in direction %d."),
+				Edge.EdgeId, Edge.NodeIndexA, Edge.NodeIndexB, (int32)Edge.DirectionAtoB);
 			return false;
 		}
 	}
@@ -747,13 +751,12 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			CurrentIndex = NextIndex;
 		}
 
-		// 3. Guaranteed Boss Placement (Ticket B-099)
-		// Try placing adjacent to CurrentIndex first; if trapped, search backwards along deepest spine nodes
-		const FIntPoint BossTargetDims = GetDefaultFootprintForTileType(EDungeonTileType::BossChamber);
+		// 3. Guaranteed 4x4 Boss Placement with Sliding Socket Clearance Alignment (Ticket B-101)
+		// Strict 4x4 enforcement: Searches all candidate parents across all 4 sliding socket offsets along each face.
+		const FIntPoint BossDims = FIntPoint(4, 4); // Strict 4x4 grand hall
 
 		int32 ChosenEliteParentIdx = INDEX_NONE;
 		FIntPoint ChosenBossCoord = FIntPoint::ZeroValue;
-		FIntPoint ChosenBossDims = BossTargetDims;
 		EDungeonDirection ChosenBossDir = EDungeonDirection::None;
 
 		// Candidate parent nodes ordered from deepest spine tip backward to Entrance
@@ -765,39 +768,61 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 
 		for (int32 ParentCandidate : CandidateParents)
 		{
-			const FIntPoint ParentAnchor = DungeonNodes[ParentCandidate].GridCoord;
+			const FSovereignDungeonNode& ParentNode = DungeonNodes[ParentCandidate];
+			const FIntPoint ParentCoord = ParentNode.GridCoord;
 
-			// Try 4x4 first
+			// Check all 4 cardinal directions leaving the parent
 			for (const auto& Opt : CardinalOptions)
 			{
-				const FIntPoint CandidateBossAnchor = ParentAnchor + Opt.Value;
-				if (CanFitRoomFootprint(CandidateBossAnchor, BossTargetDims))
+				const EDungeonDirection OutgoingDir = Opt.Key;
+				const FIntPoint TargetContactCell = ParentCoord + Opt.Value;
+
+				// For a 4x4 Boss Chamber, the doorway can connect to any of the 4 perimeter sockets on the opposing face:
+				// If OutgoingDir is North (+X), Boss South perimeter faces South (-X). Sockets are at relative (X_offset, 0) where X_offset in [0, 3].
+				// Therefore Boss Anchor X = TargetContactCell.X, Boss Anchor Y = TargetContactCell.Y - SlideOffset.
+				// If OutgoingDir is South (-X), Boss North perimeter faces North (+X). Relative coords are (X_offset, 3).
+				// Therefore Boss Anchor X = TargetContactCell.X, Boss Anchor Y = TargetContactCell.Y - SlideOffset.
+				// If OutgoingDir is East (+Y), Boss West perimeter faces West (-Y). Relative coords are (0, Y_offset).
+				// Therefore Boss Anchor X = TargetContactCell.X - SlideOffset, Boss Anchor Y = TargetContactCell.Y.
+				// If OutgoingDir is West (-Y), Boss East perimeter faces East (+Y). Relative coords are (3, Y_offset).
+				// Therefore Boss Anchor X = TargetContactCell.X - SlideOffset, Boss Anchor Y = TargetContactCell.Y.
+
+				for (int32 Slide = 0; Slide < 4; ++Slide)
 				{
-					ChosenEliteParentIdx = ParentCandidate;
-					ChosenBossCoord = CandidateBossAnchor;
-					ChosenBossDims = BossTargetDims;
-					ChosenBossDir = Opt.Key;
+					FIntPoint TestBossAnchor = FIntPoint::ZeroValue;
+					switch (OutgoingDir)
+					{
+					case EDungeonDirection::North:
+						TestBossAnchor = FIntPoint(TargetContactCell.X, TargetContactCell.Y - Slide);
+						break;
+					case EDungeonDirection::South:
+						TestBossAnchor = FIntPoint(TargetContactCell.X - 3, TargetContactCell.Y - Slide);
+						break;
+					case EDungeonDirection::East:
+						TestBossAnchor = FIntPoint(TargetContactCell.X - Slide, TargetContactCell.Y);
+						break;
+					case EDungeonDirection::West:
+						TestBossAnchor = FIntPoint(TargetContactCell.X - Slide, TargetContactCell.Y - 3);
+						break;
+					default:
+						break;
+					}
+
+					if (CanFitRoomFootprint(TestBossAnchor, BossDims))
+					{
+						ChosenEliteParentIdx = ParentCandidate;
+						ChosenBossCoord = TestBossAnchor;
+						ChosenBossDir = OutgoingDir;
+						break;
+					}
+				}
+
+				if (ChosenEliteParentIdx != INDEX_NONE)
+				{
 					break;
 				}
 			}
-			if (ChosenEliteParentIdx != INDEX_NONE)
-			{
-				break;
-			}
 
-			// Try 1x1 fallback if 4x4 couldn't fit
-			for (const auto& Opt : CardinalOptions)
-			{
-				const FIntPoint CandidateBossAnchor = ParentAnchor + Opt.Value;
-				if (CanFitRoomFootprint(CandidateBossAnchor, FIntPoint(1, 1)))
-				{
-					ChosenEliteParentIdx = ParentCandidate;
-					ChosenBossCoord = CandidateBossAnchor;
-					ChosenBossDims = FIntPoint(1, 1);
-					ChosenBossDir = Opt.Key;
-					break;
-				}
-			}
 			if (ChosenEliteParentIdx != INDEX_NONE)
 			{
 				break;
@@ -814,7 +839,7 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			FSovereignDungeonNode BossNode;
 			BossNode.NodeIndex = BossIndex;
 			BossNode.GridCoord = ChosenBossCoord;
-			BossNode.FootprintDimensions = ChosenBossDims;
+			BossNode.FootprintDimensions = BossDims; // Guaranteed 4x4!
 			BossNode.MaxConnections = GetDefaultMaxConnectionsForTileType(EDungeonTileType::BossChamber); // Strict single entrance
 			BossNode.TileType = EDungeonTileType::BossChamber;
 			BossNode.WorldTransform = FTransform(FRotator::ZeroRotator, Origin + FVector(ChosenBossCoord.X * TILE_SIZE, ChosenBossCoord.Y * TILE_SIZE, 0.0f));
@@ -837,10 +862,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			BossEdge.PassageType = EPassageType::StandardDoorway;
 			BossEdge.DoorState = EDoorState::SealedEliteGate;
 			DungeonEdges.Add(BossEdge);
+
+			UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Guaranteed 4x4 Boss Chamber Placed at Anchor (%d, %d) connected to Elite Chamber %d facing %d."),
+				ChosenBossCoord.X, ChosenBossCoord.Y, ChosenEliteParentIdx, (int32)ChosenBossDir);
 		}
 		else
 		{
-			// If even fallback placement failed, retry with next seed
+			// Strict 4x4 requirement: If 4x4 could not fit, retry generation with next seed
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGenerator] Attempt %d: Could not place 4x4 Boss Chamber. Retrying with next seed..."), Attempt + 1);
 			continue;
 		}
 
