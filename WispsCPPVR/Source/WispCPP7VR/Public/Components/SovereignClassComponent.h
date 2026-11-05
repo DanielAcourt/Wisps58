@@ -114,6 +114,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Class")
 	bool UnlockClass(const FSovereignClassData& NewClassData);
 
+	/** Unlocks a class directly from a USovereignClassDefinition Primary DataAsset */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Class")
+	bool UnlockClassFromDefinition(const class USovereignClassDefinition* ClassDef);
+
 	/** Equips an unlocked class if sufficient CP is available */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Class")
 	bool EquipClass(const FGameplayTag& ClassTag);
