@@ -12,6 +12,8 @@
 #include "Entities/SovereignRestTerminal.h"
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
+#include "Entities/SovereignKeyPickup.h"
+#include "Inventory/SovereignItemDefinition.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -32,6 +34,9 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 
 	TargetRoomCount = 8;
 	GenerationSeed = 1337;
+	bRequireBossKey = true;
+	bSpawnKeyAsWorldPickup = true;
+	BossKeyItemTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
 	MinSpineLength = 4;
 	MaxLoopCount = 0;
 	MaxGenerationRetries = 20;
@@ -1189,9 +1194,18 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 							GateClass, FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
 						{
 							GateDoor->bIsLocked = true;
-							GateDoor->UnlockCondition = EBossGateUnlockCondition::DefeatEliteGuardian;
+							if (bRequireBossKey)
+							{
+								GateDoor->UnlockCondition = EBossGateUnlockCondition::RequiresBossKey;
+								GateDoor->RequiredKeyTag = BossKeyItemTag.IsValid() ? BossKeyItemTag : FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+							}
+							else
+							{
+								GateDoor->UnlockCondition = EBossGateUnlockCondition::DefeatEliteGuardian;
+							}
 							GeneratorSpawnedActors.Add(GateDoor);
-							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Interactive Sealed Boss Gate Actor at Edge %d."), EdgeId);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Interactive Sealed Boss Gate Actor at Edge %d (Condition: %d)."),
+								EdgeId, (int32)GateDoor->UnlockCondition);
 						}
 					}
 					else if (DoorBlueprintClass)
@@ -1304,9 +1318,67 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				UClass* ChestClassToSpawn = TreasureChestBlueprintClass ? TreasureChestBlueprintClass.Get() : ASovereignTreasureChest::StaticClass();
 				if (ASovereignTreasureChest* Chest = GetWorld()->SpawnActor<ASovereignTreasureChest>(ChestClassToSpawn, ChestCenterPos, FRotator::ZeroRotator, SpawnParams))
 				{
+					// If Boss Key required and Option C routes key into chest, add key item
+					if (bRequireBossKey && !bSpawnKeyAsWorldPickup && Chest->LootInventory)
+					{
+						USovereignItemDefinition* KeyDefToUse = BossKeyItemDefinition ? BossKeyItemDefinition.Get() : NewObject<USovereignItemDefinition>(this);
+						if (!BossKeyItemDefinition)
+						{
+							KeyDefToUse->ItemTag = BossKeyItemTag.IsValid() ? BossKeyItemTag : FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+							KeyDefToUse->DisplayName = NSLOCTEXT("Sovereign", "BossKeyItemName", "Vault Guardian Key");
+						}
+						Chest->LootInventory->AddItem(KeyDefToUse, 1);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Placed Boss Key inside Treasure Chest in Node %d."), NodeIdx);
+					}
+
 					GeneratorSpawnedActors.Add(Chest);
 					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignTreasureChest in TreasureRoom Node %d."), NodeIdx);
 				}
+			}
+		}
+	}
+
+	// 5. Boss Key Physical World Pickup Routing (Option C: bSpawnKeyAsWorldPickup == true)
+	if (bRequireBossKey && bSpawnKeyAsWorldPickup && GetWorld())
+	{
+		// Find a suitable pre-boss room along the spine or branch (RestSanctuary or middle Corridor/Chamber)
+		int32 KeyRoomIdx = INDEX_NONE;
+
+		// Prioritize RestSanctuary
+		for (int32 i = 0; i < DungeonNodes.Num(); ++i)
+		{
+			if (DungeonNodes[i].TileType == EDungeonTileType::RestSanctuary)
+			{
+				KeyRoomIdx = i;
+				break;
+			}
+		}
+
+		// Fallback to middle spine room
+		if (KeyRoomIdx == INDEX_NONE && MainSpineNodeIndices.Num() > 1)
+		{
+			KeyRoomIdx = MainSpineNodeIndices[MainSpineNodeIndices.Num() / 2];
+		}
+
+		if (KeyRoomIdx != INDEX_NONE && DungeonNodes.IsValidIndex(KeyRoomIdx))
+		{
+			const FSovereignDungeonNode& KeyRoom = DungeonNodes[KeyRoomIdx];
+			const FVector KeyPos = KeyRoom.WorldTransform.GetLocation() + FVector(
+				(KeyRoom.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+				(KeyRoom.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f + 250.0f,
+				80.0f
+			);
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			UClass* KeyClassToSpawn = KeyPickupBlueprintClass ? KeyPickupBlueprintClass.Get() : ASovereignKeyPickup::StaticClass();
+			if (ASovereignKeyPickup* KeyPickup = GetWorld()->SpawnActor<ASovereignKeyPickup>(KeyClassToSpawn, KeyPos, FRotator::ZeroRotator, SpawnParams))
+			{
+				KeyPickup->KeyTag = BossKeyItemTag.IsValid() ? BossKeyItemTag : FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+				KeyPickup->KeyItemDefinition = BossKeyItemDefinition;
+				GeneratorSpawnedActors.Add(KeyPickup);
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned physical ASovereignKeyPickup on pedestal in Node %d."), KeyRoomIdx);
 			}
 		}
 	}

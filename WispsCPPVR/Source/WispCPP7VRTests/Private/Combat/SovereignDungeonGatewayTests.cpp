@@ -5,6 +5,7 @@
 #include "Entities/SovereignRestTerminal.h"
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
+#include "Entities/SovereignKeyPickup.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
@@ -563,7 +564,30 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Chest loot inventory emptied"), TestChest->LootInventory->InventorySlots.Num(), 0);
 	TestFalse(TEXT("Chest cannot be looted a second time"), TestChest->OpenChest(Cultivator));
 
-	// 15. Test Subsystem Regression Compatibility
+	// 15. Test Ticket B-108 Key Pickup & Option C Key Routing Suite
+	ASovereignKeyPickup* TestKeyPickup = NewObject<ASovereignKeyPickup>();
+	TestNotNull(TEXT("KeyPickup created"), TestKeyPickup);
+	TestKeyPickup->KeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+
+	// Pick up key with cultivator
+	const int32 InitialKeyCount = Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag);
+	const bool bKeyPickedUp = TestKeyPickup->PickupKey(Cultivator);
+	TestTrue(TEXT("PickupKey succeeds"), bKeyPickedUp);
+	TestEqual(TEXT("Cultivator inventory has key item"),
+		Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag), InitialKeyCount + 1);
+
+	// Test key unlocking the Boss Gate
+	ASovereignDungeonDoor* BossGateDoor = NewObject<ASovereignDungeonDoor>();
+	BossGateDoor->bIsLocked = true;
+	BossGateDoor->UnlockCondition = EBossGateUnlockCondition::RequiresBossKey;
+	BossGateDoor->RequiredKeyTag = TestKeyPickup->KeyTag;
+
+	// Interactor possesses key -> opens door
+	BossGateDoor->OnInteract_Implementation(Cultivator);
+	TestFalse(TEXT("Boss Gate unlocked after interactor with key presents it"), BossGateDoor->bIsLocked);
+	TestTrue(TEXT("Boss Gate open after unlocked interaction"), BossGateDoor->bIsOpen);
+
+	// 16. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;

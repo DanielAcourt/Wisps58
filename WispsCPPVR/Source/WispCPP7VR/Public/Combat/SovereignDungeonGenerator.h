@@ -287,6 +287,28 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 GenerationSeed = 1337;
 
+	// --- Boss Key Configuration & Routing (Ticket B-108) ---
+
+	/** Whether the Boss Gate requires a Key Item to unlock */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys")
+	bool bRequireBossKey = true;
+
+	/** Option C: If true, spawns a physical 3D key pickup actor on a pedestal. If false, places key inside a Treasure Chest. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys", meta = (EditCondition = "bRequireBossKey"))
+	bool bSpawnKeyAsWorldPickup = true;
+
+	/** GameplayTag identifying the key item required to unlock the Boss Gate */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys", meta = (EditCondition = "bRequireBossKey"))
+	FGameplayTag BossKeyItemTag;
+
+	/** Optional custom item definition DataAsset for the Boss Key */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys", meta = (EditCondition = "bRequireBossKey"))
+	TObjectPtr<class USovereignItemDefinition> BossKeyItemDefinition;
+
+	/** Optional custom Blueprint class for the physical world key pickup actor (inherits ASovereignKeyPickup) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignKeyPickup> KeyPickupBlueprintClass;
+
 	// --- Special Room Budgeting & Ratios (Tickets B-102, B-103, B-104) ---
 
 	/** Percentage of Total Rooms allocated to Special Rooms (Default 20%, strictly capped by MaxSpecialRoomCapPercentage) */
