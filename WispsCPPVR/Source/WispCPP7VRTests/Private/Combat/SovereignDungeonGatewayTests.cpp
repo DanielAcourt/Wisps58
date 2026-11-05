@@ -455,7 +455,30 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Mega dungeon Boss Chamber strictly has 1 edge"), MegaBossEdgeCount, 1);
 	TestTrue(TEXT("Mega dungeon Boss Chamber entrance is SealedEliteGate"), bHasSealedGate);
 
-	// 12. Test Subsystem Regression Compatibility
+	// 12. Test Ticket B-100 Physical 3D Battle Arena Theater Stage Spawner
+	ASovereignDungeonGenerator* ArenaGen = NewObject<ASovereignDungeonGenerator>();
+	ArenaGen->TargetRoomCount = 6;
+	ArenaGen->GenerationSeed = 5555;
+	ArenaGen->bSpawnPhysicalGeometry = false;
+	ArenaGen->bAutoSpawnDefaultLighting = false;
+	ArenaGen->bSpawnPhysicalArenaGeometry = true;
+	ArenaGen->FarOffArenaOrigin = FVector(20000.0f, 20000.0f, 3000.0f);
+	ArenaGen->ArenaSpacing = 4000.0f;
+
+	const bool bArenaGenSuccess = ArenaGen->GenerateDungeon();
+	TestTrue(TEXT("Arena dungeon generation succeeds"), bArenaGenSuccess);
+	TestEqual(TEXT("4 Biome battle arenas spawned"), ArenaGen->BiomeBattleArenas.Num(), 4);
+
+	// Verify Combat Camera Viewpoint Transform facing stage from open front (-X)
+	const FTransform CombatCamTransform = ArenaGen->GetCombatCameraTransform(0);
+	TestTrue(TEXT("Combat camera is positioned in front of arena (-X relative)"),
+		CombatCamTransform.GetLocation().X < ArenaGen->FarOffArenaOrigin.X);
+
+	// Test clean idempotent cleanup of battle arenas
+	ArenaGen->CleanupDungeon();
+	TestEqual(TEXT("Biome arenas cleared after cleanup"), ArenaGen->BiomeBattleArenas.Num(), 0);
+
+	// 13. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;

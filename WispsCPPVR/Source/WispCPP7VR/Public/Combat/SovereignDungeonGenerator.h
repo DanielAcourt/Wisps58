@@ -404,9 +404,25 @@ public:
 
 	// --- Dedicated Battle Arena Array Placement ---
 
-	/** Coordinates for the far-off dedicated Battle Arena cluster */
+	/** Master toggle: Whether to physically spawn 3D visual platform floors, 3-sided theater walls, and stage lighting for battle arenas (Ticket B-100) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Arena")
-	FVector FarOffArenaOrigin = FVector(50000.0f, 50000.0f, 5000.0f);
+	bool bSpawnPhysicalArenaGeometry = true;
+
+	/** Configurable world location origin for dedicated Battle Arena stage clusters */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Arena")
+	FVector FarOffArenaOrigin = FVector(20000.0f, 20000.0f, 3000.0f);
+
+	/** Spacing distance between individual biome arenas */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Arena")
+	float ArenaSpacing = 5000.0f;
+
+	/** Optional custom static mesh for battle arena stage floor platform (fallback: FloorMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Arena")
+	TObjectPtr<UStaticMesh> ArenaPlatformMesh;
+
+	/** Optional custom static mesh for battle arena 3-sided theater perimeter walls (fallback: WallMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Arena")
+	TObjectPtr<UStaticMesh> ArenaWallMesh;
 
 	/** Spawned or configured battle managers across distinct biomes (Earth, Lava, Crystal, Forest) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Arena")
@@ -449,11 +465,23 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
 	void ClearDungeonGeometry() { CleanupDungeon(); }
 
+	/** Teleports the active Level Editor viewport camera to look directly at the primary Battle Arena theater stage! (Ticket B-100) */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
+	void InspectBattleArena();
+
+	/** Teleports the active Level Editor viewport camera to look directly at the Dungeon Entrance! */
+	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
+	void InspectEntrance();
+
 	/**
-	 * Spawns the dedicated battle arena platform array far off-map.
+	 * Spawns the dedicated battle arena platform array with physical 3D theater stages.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon")
 	void SpawnFarOffBattleArenas();
+
+	/** Returns ideal combat camera viewpoint transform facing the theater stage from the open front */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Arena")
+	FTransform GetCombatCameraTransform(int32 BiomeIndex = 0) const;
 
 	/**
 	 * Physically instantiates 3D floors, boundary walls, and boss altar meshes (Ticket B-089).

@@ -8,11 +8,19 @@
 #include "Engine/GameInstance.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
+#include "Engine/PointLight.h"
 #include "Components/DirectionalLightComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
+
+#if WITH_EDITOR
+#include "Editor.h"
+#include "Editor/EditorEngine.h"
+#include "LevelEditorViewport.h"
+#endif
 
 ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 {
@@ -1253,19 +1261,24 @@ void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 	BiomeBattleArenas.Empty();
 
 	// 4 Biomes: Earth Cave, Lava Vault, Crystal Sanctum, Spirit Forest
-	// Offset each arena platform by 5,000 units so they never touch or bleed visual effects
+	const TArray<FString> BiomeNames = { TEXT("Earth"), TEXT("Lava"), TEXT("Crystal"), TEXT("Forest") };
+
+	const float Spacing = FMath::Max(2000.0f, ArenaSpacing);
 	TArray<FVector> BiomeOffsets = {
-		FVector(0.0f, 0.0f, 0.0f),       // Earth
-		FVector(5000.0f, 0.0f, 0.0f),    // Lava
-		FVector(0.0f, 5000.0f, 0.0f),    // Crystal
-		FVector(5000.0f, 5000.0f, 0.0f)  // Forest
+		FVector(0.0f, 0.0f, 0.0f),           // Earth
+		FVector(Spacing, 0.0f, 0.0f),        // Lava
+		FVector(0.0f, Spacing, 0.0f),        // Crystal
+		FVector(Spacing, Spacing, 0.0f)      // Forest
 	};
+
+	UStaticMesh* PlatformMeshToUse = ArenaPlatformMesh ? ArenaPlatformMesh.Get() : FloorMesh.Get();
+	UStaticMesh* WallMeshToUse = ArenaWallMesh ? ArenaWallMesh.Get() : WallMesh.Get();
 
 	for (int32 i = 0; i < BiomeOffsets.Num(); ++i)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		FVector ArenaPos = FarOffArenaOrigin + BiomeOffsets[i];
+		const FVector ArenaPos = FarOffArenaOrigin + BiomeOffsets[i];
 
 		ASovereignBattleManager* Arena = World->SpawnActor<ASovereignBattleManager>(
 			ASovereignBattleManager::StaticClass(), ArenaPos, FRotator::ZeroRotator, SpawnParams
@@ -1273,10 +1286,175 @@ void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 
 		if (Arena)
 		{
+#if WITH_EDITOR
+			Arena->SetActorLabel(FString::Printf(TEXT("BattleArena_%s"), *BiomeNames[i]));
+#endif
 			Arena->GenerateDefaultGridTransforms();
 			BiomeBattleArenas.Add(Arena);
+
+			// Physically build 3D theater stage (Ticket B-100)
+			if (bSpawnPhysicalArenaGeometry)
+			{
+				// 1. Stage Floor Platform (3x3 grid of 1000cm tiles = 3000cm x 3000cm)
+				// Center of stage is ArenaPos; tiles span X from -1 to +1, Y from -1 to +1
+				for (int32 X = -1; X <= 1; ++X)
+				{
+					for (int32 Y = -1; Y <= 1; ++Y)
+					{
+						const FVector TilePos = ArenaPos + FVector(X * TILE_SIZE, Y * TILE_SIZE, 0.0f);
+						if (AStaticMeshActor* FloorActor = World->SpawnActor<AStaticMeshActor>(
+							AStaticMeshActor::StaticClass(), TilePos - FVector(0.0f, 0.0f, 10.0f), FRotator::ZeroRotator, SpawnParams))
+						{
+							if (FloorActor->GetStaticMeshComponent() && PlatformMeshToUse)
+							{
+								FloorActor->GetStaticMeshComponent()->SetStaticMesh(PlatformMeshToUse);
+								FloorActor->SetActorScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
+							}
+#if WITH_EDITOR
+							FloorActor->SetActorLabel(FString::Printf(TEXT("Arena_%s_Floor_%d_%d"), *BiomeNames[i], X, Y));
+#endif
+							GeneratorSpawnedActors.Add(FloorActor);
+						}
+					}
+				}
+
+				// 2. 3-Sided Theater Perimeter Walls: Back (+X), Left (+Y), Right (-Y), Open Front (-X)
+				const float WallZ = bWallMeshCenterPivot ? 300.0f : 0.0f;
+
+				// Back Wall: along +X face (X = +1.5 * TILE_SIZE = +1500cm), spanning Y = -1, 0, +1
+				for (int32 Y = -1; Y <= 1; ++Y)
+				{
+					const FVector WallPos = ArenaPos + FVector(TILE_SIZE * 1.5f, Y * TILE_SIZE, WallZ);
+					if (AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(
+						AStaticMeshActor::StaticClass(), WallPos, FRotator::ZeroRotator, SpawnParams))
+					{
+						if (WallActor->GetStaticMeshComponent() && WallMeshToUse)
+						{
+							WallActor->GetStaticMeshComponent()->SetStaticMesh(WallMeshToUse);
+							WallActor->SetActorScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
+						}
+#if WITH_EDITOR
+						WallActor->SetActorLabel(FString::Printf(TEXT("Arena_%s_BackWall_%d"), *BiomeNames[i], Y));
+#endif
+						GeneratorSpawnedActors.Add(WallActor);
+					}
+				}
+
+				// Left Wall: along +Y face (Y = +1.5 * TILE_SIZE = +1500cm), spanning X = -1, 0, +1 (Yaw = 90)
+				for (int32 X = -1; X <= 1; ++X)
+				{
+					const FVector WallPos = ArenaPos + FVector(X * TILE_SIZE, TILE_SIZE * 1.5f, WallZ);
+					if (AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(
+						AStaticMeshActor::StaticClass(), WallPos, FRotator(0.0f, 90.0f, 0.0f), SpawnParams))
+					{
+						if (WallActor->GetStaticMeshComponent() && WallMeshToUse)
+						{
+							WallActor->GetStaticMeshComponent()->SetStaticMesh(WallMeshToUse);
+							WallActor->SetActorScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
+						}
+#if WITH_EDITOR
+						WallActor->SetActorLabel(FString::Printf(TEXT("Arena_%s_LeftWall_%d"), *BiomeNames[i], X));
+#endif
+						GeneratorSpawnedActors.Add(WallActor);
+					}
+				}
+
+				// Right Wall: along -Y face (Y = -1.5 * TILE_SIZE = -1500cm), spanning X = -1, 0, +1 (Yaw = 270)
+				for (int32 X = -1; X <= 1; ++X)
+				{
+					const FVector WallPos = ArenaPos + FVector(X * TILE_SIZE, -TILE_SIZE * 1.5f, WallZ);
+					if (AStaticMeshActor* WallActor = World->SpawnActor<AStaticMeshActor>(
+						AStaticMeshActor::StaticClass(), WallPos, FRotator(0.0f, 270.0f, 0.0f), SpawnParams))
+					{
+						if (WallActor->GetStaticMeshComponent() && WallMeshToUse)
+						{
+							WallActor->GetStaticMeshComponent()->SetStaticMesh(WallMeshToUse);
+							WallActor->SetActorScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
+						}
+#if WITH_EDITOR
+						WallActor->SetActorLabel(FString::Printf(TEXT("Arena_%s_RightWall_%d"), *BiomeNames[i], X));
+#endif
+						GeneratorSpawnedActors.Add(WallActor);
+					}
+				}
+				// Front (-X face) remains 100% open like a stage!
+
+				// 3. Local Stage Illumination Light
+				if (APointLight* StageLight = World->SpawnActor<APointLight>(
+					APointLight::StaticClass(), ArenaPos + FVector(0.0f, 0.0f, 800.0f), FRotator::ZeroRotator, SpawnParams))
+				{
+					if (UPointLightComponent* LightComp = Cast<UPointLightComponent>(StageLight->GetLightComponent()))
+					{
+						LightComp->SetIntensity(5000.0f);
+						LightComp->SetAttenuationRadius(3500.0f);
+						LightComp->SetLightColor(FLinearColor(1.0f, 0.95f, 0.85f));
+					}
+#if WITH_EDITOR
+					StageLight->SetActorLabel(FString::Printf(TEXT("Arena_%s_StageLight"), *BiomeNames[i]));
+#endif
+					GeneratorSpawnedActors.Add(StageLight);
+				}
+			}
 		}
 	}
+}
+
+FTransform ASovereignDungeonGenerator::GetCombatCameraTransform(int32 BiomeIndex) const
+{
+	FVector ArenaCenter = FarOffArenaOrigin;
+	if (BiomeBattleArenas.IsValidIndex(BiomeIndex) && BiomeBattleArenas[BiomeIndex])
+	{
+		ArenaCenter = BiomeBattleArenas[BiomeIndex]->GetActorLocation();
+	}
+
+	// Camera stands in front of the open stage looking toward +X
+	const FVector CamLocation = ArenaCenter + FVector(-2500.0f, 0.0f, 650.0f);
+	const FRotator CamRotation = FRotator(-12.0f, 0.0f, 0.0f); // Angled slightly down looking across the stage
+
+	return FTransform(CamRotation, CamLocation);
+}
+
+void ASovereignDungeonGenerator::InspectBattleArena()
+{
+#if WITH_EDITOR
+	if (GEditor && GEditor->GetActiveViewport())
+	{
+		const FTransform CamTransform = GetCombatCameraTransform(0);
+		for (FLevelEditorViewportClient* ViewportClient : GEditor->GetLevelViewportClients())
+		{
+			if (ViewportClient)
+			{
+				ViewportClient->SetViewLocation(CamTransform.GetLocation());
+				ViewportClient->SetViewRotation(CamTransform.GetRotation().Rotator());
+				ViewportClient->Invalidate();
+			}
+		}
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Active editor viewport focused on Battle Arena Stage."));
+	}
+#endif
+}
+
+void ASovereignDungeonGenerator::InspectEntrance()
+{
+#if WITH_EDITOR
+	if (GEditor && GEditor->GetActiveViewport())
+	{
+		const FTransform EntranceTransform = GetEntranceTransform();
+		const FVector CamPos = EntranceTransform.GetLocation() + FVector(-1200.0f, 0.0f, 600.0f);
+		const FRotator CamRot = FRotator(-20.0f, 0.0f, 0.0f);
+
+		for (FLevelEditorViewportClient* ViewportClient : GEditor->GetLevelViewportClients())
+		{
+			if (ViewportClient)
+			{
+				ViewportClient->SetViewLocation(CamPos);
+				ViewportClient->SetViewRotation(CamRot);
+				ViewportClient->Invalidate();
+			}
+		}
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Active editor viewport focused on Dungeon Entrance."));
+	}
+#endif
 }
 
 void ASovereignDungeonGenerator::ProcessPlayerMovement(ASovereignBaseCharacter* PlayerLeader, float DeltaDistance)
