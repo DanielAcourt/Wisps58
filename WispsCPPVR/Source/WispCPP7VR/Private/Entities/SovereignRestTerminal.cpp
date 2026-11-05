@@ -24,10 +24,10 @@ ASovereignRestTerminal::ASovereignRestTerminal()
 	bAutoDestroyOnDepletion = true;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultCylinder(TEXT("/Engine/BasicShapes/Cylinder"));
-	if (DefaultCylinder.Succeeded() && StaticMeshComponent)
+	if (DefaultCylinder.Succeeded() && PhysicalVessel)
 	{
-		StaticMeshComponent->SetStaticMesh(DefaultCylinder.Object);
-		StaticMeshComponent->SetWorldScale3D(FVector(1.2f, 1.2f, 0.6f));
+		PhysicalVessel->SetStaticMesh(DefaultCylinder.Object);
+		PhysicalVessel->SetWorldScale3D(FVector(1.2f, 1.2f, 0.6f));
 	}
 }
 
