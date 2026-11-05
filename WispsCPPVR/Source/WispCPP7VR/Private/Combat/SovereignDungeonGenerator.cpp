@@ -10,6 +10,8 @@
 #include "Engine/PostProcessVolume.h"
 #include "Engine/PointLight.h"
 #include "Entities/SovereignRestTerminal.h"
+#include "Entities/SovereignDungeonDoor.h"
+#include "Entities/SovereignTreasureChest.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -1171,29 +1173,36 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				const int32 EdgeId = Socket.ConnectedEdgeId;
 				const FSovereignDungeonEdge* EdgePtr = DungeonEdges.IsValidIndex(EdgeId) ? &DungeonEdges[EdgeId] : nullptr;
 
-				// Spawn Boss Gate if sealed elite gate
-				if (EdgePtr && EdgePtr->DoorState == EDoorState::SealedEliteGate)
+				// Spawn Interactive Door / Boss Gate Actor (Ticket B-105)
+				if (EdgePtr && !ProcessedSealedGates.Contains(EdgeId) && GetWorld())
 				{
-					if (!ProcessedSealedGates.Contains(EdgeId) && GetWorld())
+					ProcessedSealedGates.Add(EdgeId);
+
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+					if (EdgePtr->DoorState == EDoorState::SealedEliteGate)
 					{
-						ProcessedSealedGates.Add(EdgeId);
-
-						FActorSpawnParameters SpawnParams;
-						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-						if (AStaticMeshActor* GateActor = GetWorld()->SpawnActor<AStaticMeshActor>(
-							AStaticMeshActor::StaticClass(), FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
+						// Boss Gate spawning: Use BossGateBlueprintClass if assigned, else fallback
+						UClass* GateClass = BossGateBlueprintClass ? BossGateBlueprintClass.Get() : ASovereignDungeonDoor::StaticClass();
+						if (ASovereignDungeonDoor* GateDoor = GetWorld()->SpawnActor<ASovereignDungeonDoor>(
+							GateClass, FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
 						{
-							if (GateActor->GetStaticMeshComponent())
-							{
-								if (BossGateMesh)
-								{
-									GateActor->GetStaticMeshComponent()->SetStaticMesh(BossGateMesh);
-								}
-								GateActor->SetActorScale3D(FVector(0.5f, (TILE_SIZE * 0.5f) / 100.0f, 5.0f));
-							}
-							GeneratorSpawnedActors.Add(GateActor);
-							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Sealed Boss Gate Actor at Edge %d."), EdgeId);
+							GateDoor->bIsLocked = true;
+							GateDoor->UnlockCondition = EBossGateUnlockCondition::DefeatEliteGuardian;
+							GeneratorSpawnedActors.Add(GateDoor);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Interactive Sealed Boss Gate Actor at Edge %d."), EdgeId);
+						}
+					}
+					else if (DoorBlueprintClass)
+					{
+						// Standard Doorway Blueprint Actor
+						if (ASovereignDungeonDoor* StandardDoor = GetWorld()->SpawnActor<ASovereignDungeonDoor>(
+							DoorBlueprintClass, FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
+						{
+							StandardDoor->bIsLocked = false;
+							GeneratorSpawnedActors.Add(StandardDoor);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Interactive Door Actor at Edge %d."), EdgeId);
 						}
 					}
 				}
@@ -1206,21 +1215,18 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				else if (bProceduralArchwayFallback && WallInstancedComponent)
 				{
 					// Option 2 Archway Fallback: Construct a 400w x 500h opening using left post, right post, and top lintel
-					// Left Post (Width 300cm, centered at local Y = -350cm)
 					const FVector LeftPostLocal(-350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform LeftTransform = FaceTransform;
 					LeftTransform.SetLocation(FaceTransform.GetLocation() + LeftPostLocal);
 					LeftTransform.SetScale3D(FVector(0.3f, 3.0f, WallHeight / 100.0f));
 					WallInstancedComponent->AddInstance(LeftTransform);
 
-					// Right Post (Width 300cm, centered at local Y = +350cm)
 					const FVector RightPostLocal(350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform RightTransform = FaceTransform;
 					RightTransform.SetLocation(FaceTransform.GetLocation() + RightPostLocal);
 					RightTransform.SetScale3D(FVector(0.3f, 3.0f, WallHeight / 100.0f));
 					WallInstancedComponent->AddInstance(RightTransform);
 
-					// Top Lintel (Width 400cm, Height 100cm, centered at Z = 550cm)
 					const float LintelZ = bWallMeshCenterPivot ? 250.0f : 500.0f;
 					FTransform LintelTransform = FaceTransform;
 					LintelTransform.SetLocation(FaceTransform.GetLocation() + FVector(0.0f, 0.0f, LintelZ));
@@ -1256,7 +1262,7 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				}
 			}
 		}
-		// 5. For Rest Sanctuary: Spawn ASovereignRestTerminal (Ticket B-103)
+		// 5. For Rest Sanctuary: Spawn ASovereignRestTerminal (Ticket B-103 & B-106)
 		else if (Node.TileType == EDungeonTileType::RestSanctuary)
 		{
 			if (GetWorld())
@@ -1278,6 +1284,28 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 					Terminal->bRandomizeCharges = bRandomizeRestCharges;
 					GeneratorSpawnedActors.Add(Terminal);
 					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignRestTerminal in RestSanctuary Node %d."), NodeIdx);
+				}
+			}
+		}
+		// 6. For Treasure Room: Spawn ASovereignTreasureChest (Ticket B-107)
+		else if (Node.TileType == EDungeonTileType::TreasureRoom)
+		{
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FVector ChestCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					30.0f
+				);
+
+				UClass* ChestClassToSpawn = TreasureChestBlueprintClass ? TreasureChestBlueprintClass.Get() : ASovereignTreasureChest::StaticClass();
+				if (ASovereignTreasureChest* Chest = GetWorld()->SpawnActor<ASovereignTreasureChest>(ChestClassToSpawn, ChestCenterPos, FRotator::ZeroRotator, SpawnParams))
+				{
+					GeneratorSpawnedActors.Add(Chest);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignTreasureChest in TreasureRoom Node %d."), NodeIdx);
 				}
 			}
 		}

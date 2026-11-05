@@ -56,6 +56,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Rest")
 	bool bAutoDestroyOnDepletion = true;
 
+	/** Whether resting triggers a level-isolated checkpoint save in the dungeon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Rest")
+	bool bTriggerCheckpointSave = true;
+
+	/** Isolated checkpoint save slot (Strictly separate from Garden_AutoSave so garden state is never overwritten!) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Rest")
+	FString CheckpointSaveSlot = TEXT("Dungeon_Checkpoint");
+
 	// --- Events ---
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Dungeon|Rest")
 	FOnRestTerminalUsed OnRestTerminalUsed;

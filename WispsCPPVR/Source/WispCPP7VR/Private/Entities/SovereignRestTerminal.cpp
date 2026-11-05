@@ -7,6 +7,7 @@
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignPartyComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "SaveSystem/SaveManager.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/World.h"
 
@@ -121,6 +122,18 @@ bool ASovereignRestTerminal::RestParty(ASovereignBaseCharacter* InteractingChara
 	RemainingRestCharges--;
 	UE_LOG(LogTemp, Log, TEXT("[RestTerminal] Party rested successfully! %d charges remaining."), RemainingRestCharges);
 	OnRestTerminalUsed.Broadcast(RemainingRestCharges);
+
+	// Trigger isolated dungeon checkpoint save (Ticket B-106)
+	if (bTriggerCheckpointSave && GetWorld())
+	{
+		if (USaveManager* SaveManager = USaveManager::Get(GetWorld()))
+		{
+			// Strictly save into "Dungeon_Checkpoint" without touching "Garden_AutoSave"
+			const bool bSaved = SaveManager->SaveWorldState(CheckpointSaveSlot, true);
+			UE_LOG(LogTemp, Log, TEXT("[RestTerminal] Dungeon Checkpoint saved to slot '%s' (Result: %s). Garden state remains isolated."),
+				*CheckpointSaveSlot, bSaved ? TEXT("Success") : TEXT("Failed"));
+		}
+	}
 
 	if (RemainingRestCharges <= 0)
 	{

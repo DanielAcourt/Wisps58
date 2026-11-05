@@ -3,6 +3,8 @@
 #include "Misc/AutomationTest.h"
 #include "Entities/SovereignDungeonGateway.h"
 #include "Entities/SovereignRestTerminal.h"
+#include "Entities/SovereignDungeonDoor.h"
+#include "Entities/SovereignTreasureChest.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
@@ -10,6 +12,7 @@
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
 #include "Tests/AutomationCommon.h"
@@ -526,7 +529,41 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	const bool bFailedRest = RestTerminal->RestParty(Cultivator);
 	TestFalse(TEXT("Cannot rest when depleted"), bFailedRest);
 
-	// 14. Test Subsystem Regression Compatibility
+	// 14. Test Tickets B-105 & B-107 Door and Treasure Chest Entities
+	ASovereignDungeonDoor* TestDoor = NewObject<ASovereignDungeonDoor>();
+	TestNotNull(TEXT("DungeonDoor created"), TestDoor);
+	TestFalse(TEXT("Door starts closed"), TestDoor->bIsOpen);
+	TestDoor->OpenDoor();
+	TestTrue(TEXT("Door is open after OpenDoor()"), TestDoor->bIsOpen);
+
+	// Test locked gate
+	TestDoor->CloseDoor();
+	TestDoor->bStayOpenOnceOpened = false;
+	TestDoor->bIsLocked = true;
+	TestDoor->UnlockCondition = EBossGateUnlockCondition::RequiresQiEmpowerment;
+	TestDoor->RequiredQiToUnlock = 30.0f;
+	TestDoor->ChanneledQi = 0.0f;
+
+	Cultivator->GetQiComponent()->CurrentQi = 100.0f;
+	TestDoor->ChannelQiToUnlock(Cultivator, 30.0f);
+	TestFalse(TEXT("Door unlocked after channeling required Qi"), TestDoor->bIsLocked);
+
+	// Test ASovereignTreasureChest
+	ASovereignTreasureChest* TestChest = NewObject<ASovereignTreasureChest>();
+	TestNotNull(TEXT("TreasureChest created"), TestChest);
+	TestFalse(TEXT("Chest starts unopened"), TestChest->bHasBeenOpened);
+
+	// Put loot in chest
+	TestChest->LootInventory->AddItem(HeavyOre, 2);
+	TestEqual(TEXT("Chest contains 2 items"), TestChest->LootInventory->InventorySlots.Num(), 1);
+
+	const bool bChestOpened = TestChest->OpenChest(Cultivator);
+	TestTrue(TEXT("OpenChest succeeds"), bChestOpened);
+	TestTrue(TEXT("Chest is marked opened"), TestChest->bHasBeenOpened);
+	TestEqual(TEXT("Chest loot inventory emptied"), TestChest->LootInventory->InventorySlots.Num(), 0);
+	TestFalse(TEXT("Chest cannot be looted a second time"), TestChest->OpenChest(Cultivator));
+
+	// 15. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;

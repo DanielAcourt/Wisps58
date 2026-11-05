@@ -394,7 +394,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> DoorwayMesh;
 
-	/** Optional specialized mesh for sealed Boss Gate barrier actor */
+	/** Optional custom Blueprint actor class for interactive swinging doors (Ticket B-105, inherits ASovereignDungeonDoor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonDoor> DoorBlueprintClass;
+
+	/** Optional custom Blueprint actor class for sealed Boss Gates (Ticket B-105, inherits ASovereignDungeonDoor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonDoor> BossGateBlueprintClass;
+
+	/** Optional custom Blueprint actor class for treasure chests (Ticket B-107, inherits ASovereignTreasureChest) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignTreasureChest> TreasureChestBlueprintClass;
+
+	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> BossGateMesh;
 
