@@ -15,8 +15,16 @@ AWispsGameModeBase::AWispsGameModeBase()
 {
 
     // 1. Point to the BLUEPRINT version of the Wisp
-        // Note the "_C" at the end of the path - this tells Unreal we want the GENERATED class
-    static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Blueprints/Entities/BP_PlayerWisp_C"));
+    // Checks primary blueprint paths
+    static ConstructorHelpers::FClassFinder<APawn> PlayerPawnBPClass(TEXT("/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C"));
+    if (!PlayerPawnBPClass.Class)
+    {
+        static ConstructorHelpers::FClassFinder<APawn> AltPlayerPawnBPClass(TEXT("/Game/Blueprints/Entities/BP_PlayerWisp_C"));
+        if (AltPlayerPawnBPClass.Class)
+        {
+            PlayerPawnBPClass = AltPlayerPawnBPClass;
+        }
+    }
 
     if (PlayerPawnBPClass.Class != nullptr)
     {
@@ -24,9 +32,9 @@ AWispsGameModeBase::AWispsGameModeBase()
     }
     else
     {
-        // If the BP isn't found, we fall back to C++, but we log a warning
+        // If the BP isn't found, fallback to C++ class
         DefaultPawnClass = ASovereignPlayerWisp::StaticClass();
-        UE_LOG(LogTemp, Error, TEXT("GameMode: Could not find BP_PlayerWisp. Controls will be NULL!"));
+        UE_LOG(LogTemp, Warning, TEXT("GameMode: BP_PlayerWisp not loaded in current context; falling back to ASovereignPlayerWisp."));
     }
     // 2. Optional: Auto-load the Data Table if you know the path
     static ConstructorHelpers::FObjectFinder<UDataTable> TableObj(TEXT("/Game/Data/DT_SovereignItems"));

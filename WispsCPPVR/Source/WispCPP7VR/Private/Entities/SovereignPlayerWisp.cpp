@@ -1,9 +1,11 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-03
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Entities/SovereignPlayerWisp.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignPartyComponent.h"
 
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -54,6 +56,9 @@ ASovereignPlayerWisp::ASovereignPlayerWisp()
 
 	// 3. Ghostly Physics
 	ConfigureSpiritPhysics();
+
+	// 4. Party Formation Component
+	PartyComponent = CreateDefaultSubobject<USovereignPartyComponent>(TEXT("PartyComponent"));
 }
 
 void ASovereignPlayerWisp::BeginPlay()
@@ -81,6 +86,11 @@ void ASovereignPlayerWisp::BeginPlay()
 		QiComponent->MaxQiCapacity = 500.0f;
 		QiComponent->CurrentQi = 500.0f;
 		QiComponent->QiPurity = 0.8f; // Very pure by default
+	}
+
+	if (SaveDataComponent && PartyComponent)
+	{
+		SaveDataComponent->RegisterBroker(PartyComponent);
 	}
 
 	// This makes the Wisp an 'active listener' even when it's just an attached child

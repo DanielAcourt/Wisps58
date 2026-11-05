@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-03
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -20,6 +21,12 @@ class USovereignControllerComponent;
 class USovereignAttributeComponent;
 class USovereignLevelComponent;
 class USovereignBioComponent;
+class USovereignInventoryComponent;
+class USovereignInventoryBroker;
+class USovereignClassComponent;
+class USovereignSkillComponent;
+class USovereignATBComponent;
+class USovereignPartyComponent;
 class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
@@ -66,7 +73,49 @@ public:
 	USovereignLevelComponent* GetLevelComponent() const { return LevelComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignAttributeComponent* GetAttributeComponent() const { return AttributeComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignQiComponent* GetQiComponent() const { return QiComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignInventoryComponent* GetInventoryComponent() const { return InventoryComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignClassComponent* GetClassComponent() const { return ClassComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignATBComponent* GetATBComponent() const { return ATBComponent; }
+
+	/**
+	 * Accesses the active party component.
+	 * If this is the Wisp, returns its party component directly.
+	 * If this is a possessed dragon vessel, queries the possessing Wisp for the party component.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	virtual USovereignPartyComponent* GetPartyComponent() const;
+
+	/** Base interaction trace distance in Unreal units */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
+	float BaseInteractionRange = 500.0f;
+
+	/** Radius of the interaction sphere sweep */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
+	float InteractionRadius = 30.0f;
+
+	/** Toggle to render the visual interaction raycast line and impact sphere */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Interaction")
+	bool bShowDebugInteractionRaycast = true;
+
+	/** Calculates effective interaction distance dynamically scaled by character bounds/scale */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Interaction")
+	float GetScaledInteractionRange() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	USovereignSpeciesData* GetSpeciesData() const { return SpeciesData; }
@@ -179,6 +228,22 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignBioComponent* BioComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignInventoryComponent* InventoryComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignClassComponent* ClassComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignSkillComponent* SkillComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignATBComponent* ATBComponent;
+
+	/** Inventory broker connecting inventory component to the SaveDataComponent hub */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Inventory")
+	USovereignInventoryBroker* InventoryBroker;
 
 	/** Performs a sphere trace to find the actor the player is looking at this is the i think wrong way to do this Blueprint callable */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Components")

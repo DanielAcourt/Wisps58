@@ -10,7 +10,15 @@
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignLevelComponent.h"
+#include "Inventory/SovereignInventoryComponent.h"
+#include "Inventory/SovereignInventoryBroker.h"
+#include "Components/SovereignClassComponent.h"
+#include "Components/SovereignSkillComponent.h"
+#include "Components/SovereignPartyComponent.h"
+#include "Components/SovereignATBComponent.h"
 #include "TimerManager.h"
+#include "DrawDebugHelpers.h"
+#include "Components/CapsuleComponent.h"
 
 //Entinty framework to save information
 #include "Entities/SovereignSaveableEntityComponent.h"
@@ -43,6 +51,10 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	QiComponent = CreateDefaultSubobject<USovereignQiComponent>(TEXT("QiComponent"));
 	LevelComponent = CreateDefaultSubobject<USovereignLevelComponent>(TEXT("LevelComponent"));
 	BioComponent = CreateDefaultSubobject<USovereignBioComponent>(TEXT("BioComponent"));
+	InventoryComponent = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("InventoryComponent"));
+	ClassComponent = CreateDefaultSubobject<USovereignClassComponent>(TEXT("ClassComponent"));
+	SkillComponent = CreateDefaultSubobject<USovereignSkillComponent>(TEXT("SkillComponent"));
+	ATBComponent = CreateDefaultSubobject<USovereignATBComponent>(TEXT("ATBComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
 	bUseControllerRotationYaw = false;
@@ -66,6 +78,26 @@ void ASovereignBaseCharacter::BeginPlay()
 	}
 
 	SetActorTickEnabled(UpdateFrequency == EUpdateFrequency::Realtime);
+
+	// Register InventoryBroker with the SaveDataComponent hub for atomic world manifest persistence
+	if (SaveDataComponent && InventoryComponent)
+	{
+		InventoryBroker = NewObject<USovereignInventoryBroker>(this, TEXT("InventoryBroker"));
+		InventoryBroker->Initialize(InventoryComponent);
+		SaveDataComponent->RegisterBroker(InventoryBroker);
+	}
+
+	// Register ClassComponent with SaveDataComponent hub
+	if (SaveDataComponent && ClassComponent)
+	{
+		SaveDataComponent->RegisterBroker(ClassComponent);
+	}
+
+	// Register SkillComponent with SaveDataComponent hub
+	if (SaveDataComponent && SkillComponent)
+	{
+		SaveDataComponent->RegisterBroker(SkillComponent);
+	}
 
 	// Only run this if we are controlled by a Human (Local Player)
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
@@ -353,43 +385,45 @@ void ASovereignBaseCharacter::OnInteract_Implementation(AActor* Interactor)
 
 AActor* ASovereignBaseCharacter::GetSensedActor()
 {
-	if (!Controller) return nullptr;
+	if (!Controller || !GetWorld()) return nullptr;
 
 	FVector Start;
 	FRotator Rot;
 	Controller->GetPlayerViewPoint(Start, Rot);
 
-	const float Range = 500.0f;
-	const float Radius = 25.0f;
-	FVector End = Start + (Rot.Vector() * Range);
+	const float EffectiveRange = GetScaledInteractionRange();
+	const float Radius = InteractionRadius;
+	FVector End = Start + (Rot.Vector() * EffectiveRange);
 
 	FHitResult Hit;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 
 	// Perform the thick raycast (Sphere Trace)
-	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, ECC_Visibility, FCollisionShape::MakeSphere(Radius), Params
-	);
-
+	bool bHit = GetWorld()->SweepSingleByChannel(Hit, Start, End, FQuat::Identity, ECC_Visibility, FCollisionShape::MakeSphere(Radius), Params);
 	AActor* HitActor = bHit ? Hit.GetActor() : nullptr;
 
-	// --- NEW DEBUG & BLUEPRINT LOGIC ---
+	// Update cached interacted actor and fire event
 	if (HitActor)
 	{
-		// 1. Logs to the Output Log (Window -> Output Log)
-		//UE_LOG(LogTemp, Warning, TEXT("Sovereign Sense: Hit Actor [%s] at Location [%s]"), *HitActor->GetName(), *Hit.Location.ToString());
-
-		// 2. Fires the Blueprint Event
 		OnActorSensed.Broadcast(HitActor);
 	}
 
 #if !UE_BUILD_SHIPPING
-	//DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Green : FColor::Red, false, 1.0f, 0, 1.0f);
-
-	if (bHit)
+	if (bShowDebugInteractionRaycast && IsPlayerControlled() && IsLocallyControlled())
 	{
-		// Draw a solid sphere where the hit actually occurred
-		//DrawDebugSphere(GetWorld(), Hit.Location, Radius, 12, FColor::Green, false, 1.0f);
+		// Visual Raycast Line
+		FColor LineColor = bHit ? FColor::Cyan : FColor::Red;
+		FVector HitPoint = bHit ? Hit.ImpactPoint : End;
+		DrawDebugLine(GetWorld(), Start, HitPoint, LineColor, false, -1.0f, 0, 1.5f);
+
+		if (bHit)
+		{
+			// Check if target speaks the Sovereign interaction language
+			bool bIsInteractable = HitActor && HitActor->Implements<UInteractionInterface>();
+			FColor SphereColor = bIsInteractable ? FColor::Green : FColor::Yellow;
+			DrawDebugSphere(GetWorld(), Hit.Location, Radius, 12, SphereColor, false, -1.0f, 0, 1.5f);
+		}
 	}
 #endif
 
@@ -431,14 +465,37 @@ AActor* ASovereignBaseCharacter::GetInhabitingSpirit_Implementation()
 }
 
 
+float ASovereignBaseCharacter::GetScaledInteractionRange() const
+{
+	// Scale interaction reach dynamically based on the actor's visual scale or capsule size
+	float ScaleFactor = 1.0f;
+	if (USkeletalMeshComponent* CharMesh = GetMesh())
+	{
+		ScaleFactor = FMath::Max(ScaleFactor, static_cast<float>(CharMesh->GetRelativeScale3D().GetMax()));
+	}
+	if (UCapsuleComponent* Capsule = GetCapsuleComponent())
+	{
+		float CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		if (CapsuleHalfHeight > 88.0f) // Standard human height is ~88u half-height
+		{
+			ScaleFactor = FMath::Max(ScaleFactor, CapsuleHalfHeight / 88.0f);
+		}
+	}
+
+	return BaseInteractionRange * ScaleFactor;
+}
+
 //BE CAREFUL USING TICKS//
 //THERE ARE LOTS OF CHARACTERS IN A SCENE SO IF WE USE TOO MANY WE ARE BUGGARED CPU WISE
 void ASovereignBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Call this every frame so the Blueprint Event and Log fire constantly
-	GetSensedActor();
+	// Performance Optimization: Only perform per-frame interaction raycasts if locally controlled by player
+	if (IsPlayerControlled() && IsLocallyControlled())
+	{
+		GetSensedActor();
+	}
 
 	// Simulate biology and Qi flow every frame strictly if set to Realtime update frequency
 	if (UpdateFrequency == EUpdateFrequency::Realtime)
@@ -618,6 +675,19 @@ void ASovereignBaseCharacter::OnSkeletalMeshLoaded(TSoftObjectPtr<USkeletalMesh>
 
 		UE_LOG(LogTemp, Log, TEXT("[%s] Character Visuals synced to Stage %d"), *GetName(), CurrentGrowthStage);
 	}
+}
+
+USovereignPartyComponent* ASovereignBaseCharacter::GetPartyComponent() const
+{
+	// Check if this character is possessed by the spirit wisp
+	if (AActor* Spirit = const_cast<ASovereignBaseCharacter*>(this)->GetInhabitingSpirit_Implementation())
+	{
+		if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(Spirit))
+		{
+			return Wisp->GetPartyComponent();
+		}
+	}
+	return nullptr;
 }
 
 void ASovereignBaseCharacter::OnMaterialLoaded(TSoftObjectPtr<UMaterialInterface> LoadedMaterialPtr)
