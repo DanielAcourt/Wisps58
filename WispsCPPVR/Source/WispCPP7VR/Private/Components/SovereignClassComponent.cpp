@@ -1,6 +1,7 @@
 // Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-07
 
 #include "Components/SovereignClassComponent.h"
+#include "Combat/SovereignClassDefinition.h"
 #include "Dom/JsonObject.h"
 #include "GameplayTagsManager.h"
 
@@ -70,6 +71,27 @@ bool USovereignClassComponent::UnlockClass(const FSovereignClassData& NewClassDa
 	}
 
 	return false;
+}
+
+bool USovereignClassComponent::UnlockClassFromDefinition(const USovereignClassDefinition* ClassDef)
+{
+	if (!ClassDef || !ClassDef->ClassTag.IsValid())
+	{
+		return false;
+	}
+
+	FSovereignClassData NewData;
+	NewData.ClassTag = ClassDef->ClassTag;
+	NewData.ClassDisplayName = ClassDef->ClassDisplayName;
+	NewData.ClassLevel = 1;
+	NewData.CPCost = ClassDef->CPCost;
+	NewData.StrengthMultiplier = ClassDef->StrengthMultiplier;
+	NewData.DexterityMultiplier = ClassDef->DexterityMultiplier;
+	NewData.ConstitutionMultiplier = ClassDef->ConstitutionMultiplier;
+	NewData.IntelligenceMultiplier = ClassDef->IntelligenceMultiplier;
+	NewData.WisdomMultiplier = ClassDef->WisdomMultiplier;
+
+	return UnlockClass(NewData);
 }
 
 bool USovereignClassComponent::EquipClass(const FGameplayTag& ClassTag)

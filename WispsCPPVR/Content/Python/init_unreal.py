@@ -41,3 +41,12 @@ try:
     unreal.log("🏛️ Sovereign Framework: Automated Item Definition Synthesizer Suite (B-070) registered into Python builtins context.")
 except Exception as e:
     unreal.log_warning(f"🏛️ Sovereign Framework: Item Synthesizer pre-load notice: {e}")
+
+try:
+    import import_combat_data
+    builtins.import_combat_data = import_combat_data
+    builtins.import_skills = import_combat_data.import_skills
+    builtins.import_classes = import_combat_data.import_classes
+    unreal.log("🏛️ Sovereign Framework: Deterministic Combat Skills & Classes Importer Suite (CS-001 & CS-002) registered into Python builtins context.")
+except Exception as e:
+    unreal.log_warning(f"🏛️ Sovereign Framework: Combat Data Importer pre-load notice: {e}")
