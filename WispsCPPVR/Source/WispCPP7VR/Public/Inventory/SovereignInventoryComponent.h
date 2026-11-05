@@ -111,6 +111,15 @@ public:
 	bool RemoveItemByInstanceId(const FGuid& InstanceId, int32 Quantity = 1);
 
 	/**
+	 * Removes units of an item matching a specific ItemTag across slots.
+	 * @param ItemTag The GameplayTag matching the item definition.
+	 * @param Quantity Number of units to decrement.
+	 * @return True if item was found and at least one unit was removed.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Inventory")
+	bool RemoveItemByTag(const FGameplayTag& ItemTag, int32 Quantity = 1);
+
+	/**
 	 * Consumes an item, invoking OnConsumed on all attached fragments.
 	 * If consumption succeeds on any fragment, decrements the item quantity.
 	 * @param InstanceId The GUID identifying the item instance.

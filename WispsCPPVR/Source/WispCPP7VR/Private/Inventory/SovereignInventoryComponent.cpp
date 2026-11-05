@@ -78,6 +78,46 @@ bool USovereignInventoryComponent::RemoveItemByInstanceId(const FGuid& InstanceI
 	return false;
 }
 
+bool USovereignInventoryComponent::RemoveItemByTag(const FGameplayTag& ItemTag, int32 Quantity)
+{
+	if (!ItemTag.IsValid() || Quantity <= 0)
+	{
+		return false;
+	}
+
+	int32 RemainingToRemove = Quantity;
+	bool bAnyRemoved = false;
+
+	for (int32 Index = InventorySlots.Num() - 1; Index >= 0 && RemainingToRemove > 0; --Index)
+	{
+		FSovereignInventoryItemInstance& Slot = InventorySlots[Index];
+		if (const USovereignItemDefinition* Def = Slot.ItemDefinition.Get())
+		{
+			if (Def->ItemTag.MatchesTag(ItemTag))
+			{
+				const int32 DeductAmount = FMath::Min(RemainingToRemove, Slot.Quantity);
+				Slot.Quantity -= DeductAmount;
+				RemainingToRemove -= DeductAmount;
+				bAnyRemoved = true;
+
+				if (Slot.Quantity <= 0)
+				{
+					const FGuid RemovedGuid = Slot.InstanceId;
+					InventorySlots.RemoveAt(Index);
+					OnItemRemoved.Broadcast(RemovedGuid);
+				}
+			}
+		}
+	}
+
+	if (bAnyRemoved)
+	{
+		OnInventoryUpdated.Broadcast();
+	}
+
+	return bAnyRemoved;
+}
+
 bool USovereignInventoryComponent::ConsumeItem(const FGuid& InstanceId, int32 Quantity)
 {
 	if (!InstanceId.IsValid() || Quantity <= 0)

@@ -66,6 +66,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Door", meta = (EditCondition = "UnlockCondition == EBossGateUnlockCondition::RequiresBossKey"))
 	FGameplayTag RequiredKeyTag;
 
+	/** If true, consuming the key upon unlocking removes 1 unit of the key item from the interactor's inventory */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Door", meta = (EditCondition = "UnlockCondition == EBossGateUnlockCondition::RequiresBossKey"))
+	bool bConsumeKeyOnUnlock = true;
+
 	/** Required Qi amount if UnlockCondition == RequiresQiEmpowerment */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Door", meta = (EditCondition = "UnlockCondition == EBossGateUnlockCondition::RequiresQiEmpowerment"))
 	float RequiredQiToUnlock = 50.0f;

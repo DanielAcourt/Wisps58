@@ -573,7 +573,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Chest loot inventory emptied"), TestChest->LootInventory->InventorySlots.Num(), 0);
 	TestFalse(TEXT("Chest cannot be looted a second time"), TestChest->OpenChest(Cultivator));
 
-	// 15. Test Ticket B-108 Key Pickup & Option C Key Routing Suite
+	// 15. Test Ticket B-108 Key Pickup, Consumption & Option C Key Routing Suite
 	ASovereignKeyPickup* TestKeyPickup = NewObject<ASovereignKeyPickup>();
 	TestNotNull(TEXT("KeyPickup created"), TestKeyPickup);
 	TestKeyPickup->KeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
@@ -585,18 +585,32 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Cultivator inventory has key item"),
 		Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag), InitialKeyCount + 1);
 
-	// Test key unlocking the Boss Gate
+	// Test key unlocking the Boss Gate with Key Consumption enabled
 	ASovereignDungeonDoor* BossGateDoor = NewObject<ASovereignDungeonDoor>();
 	BossGateDoor->bIsLocked = true;
+	BossGateDoor->bConsumeKeyOnUnlock = true;
 	BossGateDoor->UnlockCondition = EBossGateUnlockCondition::RequiresBossKey;
 	BossGateDoor->RequiredKeyTag = TestKeyPickup->KeyTag;
 
-	// Interactor possesses key -> opens door
+	// Interactor possesses key -> opens door and consumes the key item
 	BossGateDoor->OnInteract_Implementation(Cultivator);
 	TestFalse(TEXT("Boss Gate unlocked after interactor with key presents it"), BossGateDoor->bIsLocked);
 	TestTrue(TEXT("Boss Gate open after unlocked interaction"), BossGateDoor->bIsOpen);
+	TestEqual(TEXT("Key item consumed from cultivator inventory"),
+		Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag), InitialKeyCount);
 
-	// 16. Test Subsystem Regression Compatibility
+	// 16. Test Large Dungeon Scaling (TargetRoomCount = 80 and 200)
+	ASovereignDungeonGenerator* LargeGen80 = NewObject<ASovereignDungeonGenerator>();
+	LargeGen80->TargetRoomCount = 80;
+	LargeGen80->GenerationSeed = 1337;
+	LargeGen80->bSpawnPhysicalGeometry = false;
+	LargeGen80->bAutoSpawnDefaultLighting = false;
+	const bool bLargeGen80Success = LargeGen80->GenerateDungeon();
+	TestTrue(TEXT("TargetRoomCount = 80 generation succeeds"), bLargeGen80Success);
+	TestTrue(TEXT("TargetRoomCount = 80 generates >= 60 rooms (scaled beyond earlier cap)"), LargeGen80->DungeonNodes.Num() >= 60);
+	TestTrue(TEXT("TargetRoomCount = 80 reachability verified"), LargeGen80->ValidateTopologicalReachability(0, LargeGen80->BossNodeIndex));
+
+	// 17. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;

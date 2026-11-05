@@ -97,6 +97,11 @@ void ASovereignDungeonDoor::OnInteract_Implementation(AActor* Interactor)
 				if (RequiredKeyTag.IsValid() && Inv->GetItemCountByTag(RequiredKeyTag) > 0)
 				{
 					UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Key %s found in player inventory! Unlocking door."), *RequiredKeyTag.ToString());
+					if (bConsumeKeyOnUnlock)
+					{
+						Inv->RemoveItemByTag(RequiredKeyTag, 1);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Consumed 1 unit of key %s from player inventory."), *RequiredKeyTag.ToString());
+					}
 					UnlockDoor();
 					OpenDoor();
 					return;

@@ -678,9 +678,10 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		FIntPoint CurrentCoord = EntranceNode.GridCoord;
 		int32 CurrentIndex = 0;
 
-		// 2. Generate Critical Main Spine (Option A: Bounded to 8-25 rooms to prevent self-trapping on mega-dungeons)
-		const int32 MaxSpineBound = FMath::Clamp(TargetRoomCount - 2, MinSpineLength, 25);
-		const int32 DesiredSpineCount = FMath::FloorToInt(TargetRoomCount * 0.65f);
+		// 2. Generate Critical Main Spine (Option A: Bounded to prevent self-trapping on mega-dungeons, scaling dynamically with TargetRoomCount)
+		const int32 DynamicMaxSpine = FMath::Max(25, FMath::FloorToInt(TargetRoomCount * 0.40f));
+		const int32 MaxSpineBound = FMath::Clamp(TargetRoomCount - 2, MinSpineLength, DynamicMaxSpine);
+		const int32 DesiredSpineCount = FMath::FloorToInt(TargetRoomCount * 0.50f);
 		const int32 SpineTargetCount = FMath::Clamp(DesiredSpineCount, MinSpineLength, MaxSpineBound);
 
 		// Place a Rest Sanctuary along the critical spine at roughly the midway point (Ticket B-102 & B-103)
@@ -955,8 +956,25 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				}
 			}
 
+			// Fallback: If large special multi-cell room (Colosseum 8x8, Grand Chamber 4x6, Rest Sanctuary 2x2) cannot fit,
+			// fallback to a 1x1 Standard Chamber rather than popping and discarding the parent node!
+			if (BranchOpen.Num() == 0 && (BranchDims.X > 1 || BranchDims.Y > 1))
+			{
+				BranchType = EDungeonTileType::Chamber;
+				BranchDims = FIntPoint(1, 1);
+				for (const auto& Opt : CardinalOptions)
+				{
+					const FIntPoint CandidateBranchAnchor = ParentCoord + Opt.Value;
+					if (CanFitRoomFootprint(CandidateBranchAnchor, BranchDims))
+					{
+						BranchOpen.Add(Opt);
+					}
+				}
+			}
+
 			if (BranchOpen.Num() == 0)
 			{
+				// Truly blocked in all 4 cardinal directions even for 1x1 tile
 				EligibleBranchParents.RemoveAt(RandPick);
 				continue;
 			}
