@@ -94,7 +94,7 @@ void ASovereignDungeonDoor::OnInteract_Implementation(AActor* Interactor)
 		{
 			if (USovereignInventoryComponent* Inv = Character->GetInventoryComponent())
 			{
-				if (RequiredKeyTag.IsValid() && Inv->HasItemWithTag(RequiredKeyTag))
+				if (RequiredKeyTag.IsValid() && Inv->GetItemCountByTag(RequiredKeyTag) > 0)
 				{
 					UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Key %s found in player inventory! Unlocking door."), *RequiredKeyTag.ToString());
 					UnlockDoor();

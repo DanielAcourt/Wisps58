@@ -7,7 +7,8 @@
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignPartyComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "SaveSystem/SaveManager.h"
+#include "SaveSystem/SovereignSaveManager.h"
+#include "Engine/GameInstance.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Engine/World.h"
 
@@ -126,12 +127,15 @@ bool ASovereignRestTerminal::RestParty(ASovereignBaseCharacter* InteractingChara
 	// Trigger isolated dungeon checkpoint save (Ticket B-106)
 	if (bTriggerCheckpointSave && GetWorld())
 	{
-		if (USaveManager* SaveManager = USaveManager::Get(GetWorld()))
+		if (UGameInstance* GI = GetWorld()->GetGameInstance())
 		{
-			// Strictly save into "Dungeon_Checkpoint" without touching "Garden_AutoSave"
-			const bool bSaved = SaveManager->SaveWorldState(CheckpointSaveSlot, true);
-			UE_LOG(LogTemp, Log, TEXT("[RestTerminal] Dungeon Checkpoint saved to slot '%s' (Result: %s). Garden state remains isolated."),
-				*CheckpointSaveSlot, bSaved ? TEXT("Success") : TEXT("Failed"));
+			if (USaveManager* SaveManager = GI->GetSubsystem<USaveManager>())
+			{
+				// Strictly save into "Dungeon_Checkpoint" without touching "Garden_AutoSave"
+				SaveManager->SaveWorldState(CheckpointSaveSlot, true);
+				UE_LOG(LogTemp, Log, TEXT("[RestTerminal] Dungeon Checkpoint saved to slot '%s'. Garden state remains isolated."),
+					*CheckpointSaveSlot);
+			}
 		}
 	}
 
