@@ -1,0 +1,11 @@
+Name,ClassTag,DisplayName,Description,CPCost,StrengthMultiplier,DexterityMultiplier,ConstitutionMultiplier,IntelligenceMultiplier,WisdomMultiplier,PrerequisiteClasses,ReqSTR,ReqDEX,ReqCON,ReqINT,ReqWIS,GrantedSkills
+Class_Adventurer,Class.Combat.Adventurer,Adventurer,Baseline all-around class for every nascent dragon or cultivator.,1,1.0,1.0,1.0,1.0,1.0,,0,0,0,0,0,Skill.Combat.Adventurer.Strike
+Class_Warrior,Class.Combat.Warrior,Warrior,Frontline martial combatant excelling in raw power and heavy cleaves.,2,1.3,1.0,1.15,0.9,0.9,,12,0,10,0,0,Skill.Combat.Warrior.Cleave
+Class_Rogue,Class.Combat.Rogue,Rogue,Nimble skirmisher striking critical weak points with blazing speed.,2,1.0,1.35,0.95,1.0,0.9,,0,12,0,0,0,Skill.Combat.Rogue.Backstab
+Class_Mage,Class.Combat.Mage,Mage,Master of mystical draconic arts channeling devastating elemental spells.,2,0.85,1.0,0.9,1.4,1.1,,0,0,0,12,0,Skill.Combat.Mage.Fireball
+Class_Cleric,Class.Combat.Cleric,Cleric,Spiritual channeler converting ambient Qi into restoration and party wards.,2,0.9,0.95,1.1,1.0,1.35,,0,0,10,0,12,Skill.Combat.Cleric.Mend
+Class_Guardian,Class.Combat.Guardian,Guardian,Impenetrable vanguard anchoring party defenses in the front rank.,2,1.1,0.9,1.4,0.9,1.0,Class.Combat.Warrior:3,12,0,14,0,0,Skill.Combat.Guardian.ShieldBash
+Class_Ninja,Class.Combat.Ninja,Ninja,Master of stealth and assassinations striking before adversaries can act.,3,1.15,1.45,0.9,1.1,0.95,Class.Combat.Rogue:5,10,15,0,0,0,Skill.Combat.Ninja.ShadowStrike
+Class_Dragoon,Class.Combat.Dragoon,Dragoon,Aerial spear master combining warrior brutality with rogue finesse.,3,1.35,1.25,1.15,0.9,1.0,Class.Combat.Warrior:5;Class.Combat.Rogue:5,14,14,12,0,0,Skill.Combat.Dragoon.Pierce
+Class_Paladin,Class.Combat.Paladin,Paladin,Holy sentinel fusing guardian endurance with restorative clerical prayer.,3,1.25,0.9,1.3,1.0,1.25,Class.Combat.Warrior:5;Class.Combat.Cleric:5,14,0,14,0,12,"Skill.Combat.Warrior.Cleave,Skill.Combat.Cleric.Mend"
+Class_Archmage,Class.Combat.Archmage,Archmage,Transcendent sorcerer manipulating the foundational fabric of elemental Qi.,3,0.8,1.1,0.85,1.6,1.2,Class.Combat.Mage:5,0,0,0,16,12,Skill.Combat.Mage.Fireball
