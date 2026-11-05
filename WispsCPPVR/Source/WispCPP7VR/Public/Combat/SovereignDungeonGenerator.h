@@ -50,6 +50,9 @@ enum class EDungeonTileType : uint8
 	Chamber         UMETA(DisplayName = "Chamber"),
 	EliteChamber    UMETA(DisplayName = "Elite Chamber"),
 	TreasureRoom    UMETA(DisplayName = "Treasure Room"),
+	RestSanctuary   UMETA(DisplayName = "Rest Sanctuary"),
+	GrandChamber    UMETA(DisplayName = "Grand Chamber"),
+	Colosseum       UMETA(DisplayName = "Trial Colosseum"),
 	BossChamber     UMETA(DisplayName = "Boss Chamber")
 };
 
@@ -284,6 +287,66 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 GenerationSeed = 1337;
 
+	// --- Boss Key Configuration & Routing (Ticket B-108) ---
+
+	/** Whether the Boss Gate requires a Key Item to unlock */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys")
+	bool bRequireBossKey = true;
+
+	/** Option C: If true, spawns a physical 3D key pickup actor on a pedestal. If false, places key inside a Treasure Chest. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys", meta = (EditCondition = "bRequireBossKey"))
+	bool bSpawnKeyAsWorldPickup = true;
+
+	/** GameplayTag identifying the key item required to unlock the Boss Gate */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys", meta = (EditCondition = "bRequireBossKey"))
+	FGameplayTag BossKeyItemTag;
+
+	/** Optional custom item definition DataAsset for the Boss Key */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Keys", meta = (EditCondition = "bRequireBossKey"))
+	TObjectPtr<class USovereignItemDefinition> BossKeyItemDefinition;
+
+	/** Optional custom Blueprint class for the physical world key pickup actor (inherits ASovereignKeyPickup) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignKeyPickup> KeyPickupBlueprintClass;
+
+	// --- Special Room Budgeting & Ratios (Tickets B-102, B-103, B-104) ---
+
+	/** Percentage of Total Rooms allocated to Special Rooms (Default 20%, strictly capped by MaxSpecialRoomCapPercentage) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms", meta = (ClampMin = "0.0", ClampMax = "50.0"))
+	float SpecialRoomPercentage = 20.0f;
+
+	/** Hard maximum cap on special room allocation (Strict 50% cap prevents runaway special room bloat) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float MaxSpecialRoomCapPercentage = 50.0f;
+
+	/** Ratio of special room budget allocated to Treasure Rooms (1x1 dead-end loot vault) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float TreasureRoomRatio = 0.40f;
+
+	/** Ratio of special room budget allocated to Rest Sanctuaries (2x2 healing camp) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float RestSanctuaryRatio = 0.30f;
+
+	/** Ratio of special room budget allocated to Grand Chambers (4x6 large pillar halls) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float GrandChamberRatio = 0.20f;
+
+	/** Ratio of special room budget allocated to Trial Colosseums (8x8 massive battle arenas) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	float ColosseumRatio = 0.10f;
+
+	/** Optional custom actor class spawned in Rest Sanctuaries (Defaults to ASovereignRestTerminal) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	TSubclassOf<class ASovereignRestTerminal> RestTerminalClass;
+
+	/** Default rest charges for spawned rest terminals */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	int32 DefaultRestCharges = 3;
+
+	/** If true, randomizes rest charges between 1 and 5 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Special Rooms")
+	bool bRandomizeRestCharges = false;
+
 	/** Minimum required path distance from Entrance to Boss Chamber */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
 	int32 MinSpineLength = 4;
@@ -337,7 +400,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	bool bWallMeshCenterPivot = true;
 
-	/** When DoorwayMesh is null, assembles a 3-part archway (two posts and top lintel) with a 400x500cm opening instead of leaving an empty void */
+	/** When true, mesh instances use 1:1 scale (1.0, 1.0, 1.0) for artist modular assets modeled to metric standard. When false, scales 100cm primitive cubes (Ticket B-109). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	bool bUseMetricModularMeshScale = false;
+
+	/** When true and no DoorBlueprintClass is assigned, assembles a 3-part archway (two posts and top lintel) with a 400x500cm opening instead of leaving an empty void */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	bool bProceduralArchwayFallback = false;
 
@@ -349,11 +416,19 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> WallMesh;
 
-	/** Static Mesh for modular doorway openings/frames (Option A: If null, connected faces remain open cutouts) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
-	TObjectPtr<UStaticMesh> DoorwayMesh;
+	/** Optional custom Blueprint actor class for interactive swinging doors (Ticket B-105, inherits ASovereignDungeonDoor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonDoor> DoorBlueprintClass;
 
-	/** Optional specialized mesh for sealed Boss Gate barrier actor */
+	/** Optional custom Blueprint actor class for sealed Boss Gates (Ticket B-105, inherits ASovereignDungeonDoor) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonDoor> BossGateBlueprintClass;
+
+	/** Optional custom Blueprint actor class for treasure chests (Ticket B-107, inherits ASovereignTreasureChest) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignTreasureChest> TreasureChestBlueprintClass;
+
+	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> BossGateMesh;
 
@@ -368,10 +443,6 @@ public:
 	/** Instanced Static Mesh Component for rendering all boundary wall tiles in a single draw call */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<class UInstancedStaticMeshComponent> WallInstancedComponent;
-
-	/** Instanced Static Mesh Component for rendering modular doorway frames in a single draw call */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
-	TObjectPtr<class UInstancedStaticMeshComponent> DoorwayInstancedComponent;
 
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
@@ -500,29 +571,35 @@ public:
 	{
 		switch (Type)
 		{
-		case EDungeonTileType::EntranceRoom: return FIntPoint(1, 1);
-		case EDungeonTileType::Corridor:     return FIntPoint(1, 1);
-		case EDungeonTileType::Chamber:      return FIntPoint(1, 1);
-		case EDungeonTileType::TreasureRoom: return FIntPoint(1, 1);
-		case EDungeonTileType::EliteChamber: return FIntPoint(2, 2);
-		case EDungeonTileType::BossChamber:  return FIntPoint(4, 4);
-		default:                             return FIntPoint(1, 1);
+		case EDungeonTileType::EntranceRoom:  return FIntPoint(1, 1);
+		case EDungeonTileType::Corridor:      return FIntPoint(1, 1);
+		case EDungeonTileType::Chamber:       return FIntPoint(1, 1);
+		case EDungeonTileType::TreasureRoom:  return FIntPoint(1, 1);
+		case EDungeonTileType::RestSanctuary: return FIntPoint(2, 2);
+		case EDungeonTileType::GrandChamber:  return FIntPoint(4, 6);
+		case EDungeonTileType::Colosseum:     return FIntPoint(8, 8);
+		case EDungeonTileType::EliteChamber:  return FIntPoint(2, 2);
+		case EDungeonTileType::BossChamber:   return FIntPoint(4, 4);
+		default:                              return FIntPoint(1, 1);
 		}
 	}
 
-	/** Returns default max connection capacity for each room type (Ticket B-094.2) */
+	/** Returns default max connection capacity for each room type (Ticket B-094.2 & B-102) */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Footprints")
 	static int32 GetDefaultMaxConnectionsForTileType(EDungeonTileType Type)
 	{
 		switch (Type)
 		{
-		case EDungeonTileType::EntranceRoom: return 2;
-		case EDungeonTileType::Corridor:     return 2;
-		case EDungeonTileType::Chamber:      return 4;
-		case EDungeonTileType::TreasureRoom: return 1; // Strict dead-end leaf
-		case EDungeonTileType::EliteChamber: return 2; // Linear gatekeeper
-		case EDungeonTileType::BossChamber:  return 1; // Single entrance strictly
-		default:                             return 2;
+		case EDungeonTileType::EntranceRoom:  return 2;
+		case EDungeonTileType::Corridor:      return 2;
+		case EDungeonTileType::Chamber:       return 4;
+		case EDungeonTileType::TreasureRoom:  return 1; // Strict dead-end leaf
+		case EDungeonTileType::RestSanctuary: return 2; // Safe retreat / midway
+		case EDungeonTileType::GrandChamber:  return 4; // Multiple branch connections
+		case EDungeonTileType::Colosseum:     return 4; // Major trial hub
+		case EDungeonTileType::EliteChamber:  return 2; // Linear gatekeeper
+		case EDungeonTileType::BossChamber:   return 1; // Single entrance strictly
+		default:                              return 2;
 		}
 	}
 

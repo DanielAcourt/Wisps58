@@ -9,6 +9,11 @@
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/PointLight.h"
+#include "Entities/SovereignRestTerminal.h"
+#include "Entities/SovereignDungeonDoor.h"
+#include "Entities/SovereignTreasureChest.h"
+#include "Entities/SovereignKeyPickup.h"
+#include "Inventory/SovereignItemDefinition.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -29,6 +34,9 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 
 	TargetRoomCount = 8;
 	GenerationSeed = 1337;
+	bRequireBossKey = true;
+	bSpawnKeyAsWorldPickup = true;
+	BossKeyItemTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
 	MinSpineLength = 4;
 	MaxLoopCount = 0;
 	MaxGenerationRetries = 20;
@@ -62,8 +70,7 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	WallInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("WallInstancedComponent"));
 	WallInstancedComponent->SetupAttachment(FloorInstancedComponent);
 
-	DoorwayInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("DoorwayInstancedComponent"));
-	DoorwayInstancedComponent->SetupAttachment(FloorInstancedComponent);
+	bUseMetricModularMeshScale = false;
 
 	// Default fallback mesh finder for basic cube/floor shapes if custom modular assets aren't yet loaded
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultCubeObj(TEXT("/Engine/BasicShapes/Cube"));
@@ -587,10 +594,6 @@ void ASovereignDungeonGenerator::CleanupDungeon()
 	{
 		WallInstancedComponent->ClearInstances();
 	}
-	if (DoorwayInstancedComponent)
-	{
-		DoorwayInstancedComponent->ClearInstances();
-	}
 
 	// 2. Destroy strictly generator-spawned discrete actors (boss altar, props)
 	for (TObjectPtr<AActor>& SpawnedActor : GeneratorSpawnedActors)
@@ -675,14 +678,26 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		FIntPoint CurrentCoord = EntranceNode.GridCoord;
 		int32 CurrentIndex = 0;
 
-		// 2. Generate Critical Main Spine (Option A: Bounded to 8-25 rooms to prevent self-trapping on mega-dungeons)
-		const int32 MaxSpineBound = FMath::Clamp(TargetRoomCount - 2, MinSpineLength, 25);
-		const int32 DesiredSpineCount = FMath::FloorToInt(TargetRoomCount * 0.65f);
+		// 2. Generate Critical Main Spine (Option A: Bounded to prevent self-trapping on mega-dungeons, scaling dynamically with TargetRoomCount)
+		const int32 DynamicMaxSpine = FMath::Max(25, FMath::FloorToInt(TargetRoomCount * 0.40f));
+		const int32 MaxSpineBound = FMath::Clamp(TargetRoomCount - 2, MinSpineLength, DynamicMaxSpine);
+		const int32 DesiredSpineCount = FMath::FloorToInt(TargetRoomCount * 0.50f);
 		const int32 SpineTargetCount = FMath::Clamp(DesiredSpineCount, MinSpineLength, MaxSpineBound);
+
+		// Place a Rest Sanctuary along the critical spine at roughly the midway point (Ticket B-102 & B-103)
+		const int32 MidwaySpineIdx = (SpineTargetCount >= 6) ? (SpineTargetCount / 2) : INDEX_NONE;
 
 		for (int32 i = 1; i < SpineTargetCount; ++i)
 		{
-			const EDungeonTileType NextType = (i == SpineTargetCount - 1) ? EDungeonTileType::EliteChamber : EDungeonTileType::Corridor;
+			EDungeonTileType NextType = EDungeonTileType::Corridor;
+			if (i == SpineTargetCount - 1)
+			{
+				NextType = EDungeonTileType::EliteChamber;
+			}
+			else if (i == MidwaySpineIdx)
+			{
+				NextType = EDungeonTileType::RestSanctuary;
+			}
 			const FIntPoint NextDims = GetDefaultFootprintForTileType(NextType);
 
 			// Filter for open directions capable of accommodating the room's footprint
@@ -873,8 +888,18 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			continue;
 		}
 
-		// 4. Build Deep Branching Network for Remaining Room Budget (Ticket B-099 Option A)
+		// 4. Build Deep Branching Network with Proportional Special Room Quotas (Tickets B-102, B-103, B-104)
 		int32 RoomsRemaining = TargetRoomCount - DungeonNodes.Num();
+
+		// Calculate capped special room budget: strictly capped at MaxSpecialRoomCapPercentage (default 50%)
+		const float EffectiveSpecialPct = FMath::Clamp(SpecialRoomPercentage, 0.0f, FMath::Min(50.0f, MaxSpecialRoomCapPercentage));
+		const int32 TotalSpecialBudget = FMath::Clamp(FMath::RoundToInt(TargetRoomCount * (EffectiveSpecialPct / 100.0f)), 1, FMath::Max(1, TargetRoomCount / 2));
+
+		int32 TreasureCount = FMath::Max(1, FMath::RoundToInt(TotalSpecialBudget * TreasureRoomRatio));
+		int32 RestSanctuaryCount = FMath::RoundToInt(TotalSpecialBudget * RestSanctuaryRatio);
+		int32 GrandChamberCount = FMath::RoundToInt(TotalSpecialBudget * GrandChamberRatio);
+		int32 ColosseumCount = FMath::RoundToInt(TotalSpecialBudget * ColosseumRatio);
+
 		TArray<int32> EligibleBranchParents;
 		for (int32 i = 1; i < DungeonNodes.Num(); ++i)
 		{
@@ -896,8 +921,30 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				continue;
 			}
 
-			const EDungeonTileType BranchType = (RoomsRemaining == 1) ? EDungeonTileType::TreasureRoom : EDungeonTileType::Chamber;
-			const FIntPoint BranchDims = GetDefaultFootprintForTileType(BranchType);
+			// Select special room type based on budget quotas
+			EDungeonTileType BranchType = EDungeonTileType::Chamber;
+			if (ColosseumCount > 0 && TargetRoomCount >= 30)
+			{
+				BranchType = EDungeonTileType::Colosseum;
+			}
+			else if (GrandChamberCount > 0 && TargetRoomCount >= 15)
+			{
+				BranchType = EDungeonTileType::GrandChamber;
+			}
+			else if (RestSanctuaryCount > 0)
+			{
+				BranchType = EDungeonTileType::RestSanctuary;
+			}
+			else if (TreasureCount > 0)
+			{
+				BranchType = EDungeonTileType::TreasureRoom;
+			}
+			else
+			{
+				BranchType = EDungeonTileType::Chamber;
+			}
+
+			FIntPoint BranchDims = GetDefaultFootprintForTileType(BranchType);
 
 			TArray<TPair<EDungeonDirection, FIntPoint>> BranchOpen;
 			for (const auto& Opt : CardinalOptions)
@@ -909,8 +956,25 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				}
 			}
 
+			// Fallback: If large special multi-cell room (Colosseum 8x8, Grand Chamber 4x6, Rest Sanctuary 2x2) cannot fit,
+			// fallback to a 1x1 Standard Chamber rather than popping and discarding the parent node!
+			if (BranchOpen.Num() == 0 && (BranchDims.X > 1 || BranchDims.Y > 1))
+			{
+				BranchType = EDungeonTileType::Chamber;
+				BranchDims = FIntPoint(1, 1);
+				for (const auto& Opt : CardinalOptions)
+				{
+					const FIntPoint CandidateBranchAnchor = ParentCoord + Opt.Value;
+					if (CanFitRoomFootprint(CandidateBranchAnchor, BranchDims))
+					{
+						BranchOpen.Add(Opt);
+					}
+				}
+			}
+
 			if (BranchOpen.Num() == 0)
 			{
+				// Truly blocked in all 4 cardinal directions even for 1x1 tile
 				EligibleBranchParents.RemoveAt(RandPick);
 				continue;
 			}
@@ -945,8 +1009,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			BranchEdge.DoorState = EDoorState::Open;
 			DungeonEdges.Add(BranchEdge);
 
-			// Add new branch room to eligible parents if it's a chamber
-			if (BranchType == EDungeonTileType::Chamber)
+			// Decrement budget counters
+			if (BranchType == EDungeonTileType::Colosseum) ColosseumCount--;
+			else if (BranchType == EDungeonTileType::GrandChamber) GrandChamberCount--;
+			else if (BranchType == EDungeonTileType::RestSanctuary) RestSanctuaryCount--;
+			else if (BranchType == EDungeonTileType::TreasureRoom) TreasureCount--;
+
+			// Add new branch room to eligible parents if it can accept further branches
+			if (BranchType == EDungeonTileType::Chamber || BranchType == EDungeonTileType::GrandChamber || BranchType == EDungeonTileType::Colosseum)
 			{
 				EligibleBranchParents.Add(BranchIdx);
 			}
@@ -1010,18 +1080,9 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			WallInstancedComponent->RegisterComponent();
 		}
 	}
-	if (!DoorwayInstancedComponent)
-	{
-		DoorwayInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeDoorwayInstancedComponent"));
-		if (GetWorld())
-		{
-			DoorwayInstancedComponent->RegisterComponent();
-		}
-	}
 
 	FloorInstancedComponent->ClearInstances();
 	WallInstancedComponent->ClearInstances();
-	DoorwayInstancedComponent->ClearInstances();
 
 	if (FloorMesh)
 	{
@@ -1031,14 +1092,12 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 	{
 		WallInstancedComponent->SetStaticMesh(WallMesh);
 	}
-	if (DoorwayMesh)
-	{
-		DoorwayInstancedComponent->SetStaticMesh(DoorwayMesh);
-	}
 
 	const FVector Origin = GetActorLocation();
 
-	// 2. Spawn Floor Tiles for Each Room (Multi-cell aware)
+	// 2. Spawn Floor Tiles for Each Room (Multi-cell aware, Ticket B-109 metric scale toggle)
+	const FVector FloorScale = bUseMetricModularMeshScale ? FVector(1.0f, 1.0f, 1.0f) : FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f);
+
 	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
 	{
 		const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
@@ -1050,7 +1109,7 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			FTransform FloorTransform;
 			FloorTransform.SetLocation(CellPos - FVector(0.0f, 0.0f, 10.0f));
 			FloorTransform.SetRotation(FQuat::Identity);
-			FloorTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
+			FloorTransform.SetScale3D(FloorScale);
 
 			FloorInstancedComponent->AddInstance(FloorTransform);
 		}
@@ -1105,9 +1164,8 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			FaceTransform.SetLocation(CellPos + DirectionOffset);
 			FaceTransform.SetRotation(FaceRotation.Quaternion());
 
-			// Scale standard modular wall (Thickness = 30cm in local X, Width = 1000cm in local Y, Height = 600cm in local Z)
-			// Uniform scale across all directions prevents perpendicular slicing into rooms!
-			const FVector StandardWallScale(0.3f, TILE_SIZE / 100.0f, WallHeight / 100.0f);
+			// Scale standard modular wall (1:1 scale for metric artist mesh, or primitive cube scaling, Ticket B-109)
+			const FVector StandardWallScale = bUseMetricModularMeshScale ? FVector(1.0f, 1.0f, 1.0f) : FVector(0.3f, TILE_SIZE / 100.0f, WallHeight / 100.0f);
 			FaceTransform.SetScale3D(StandardWallScale);
 
 			if (!Socket.bIsConnected)
@@ -1121,56 +1179,65 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				const int32 EdgeId = Socket.ConnectedEdgeId;
 				const FSovereignDungeonEdge* EdgePtr = DungeonEdges.IsValidIndex(EdgeId) ? &DungeonEdges[EdgeId] : nullptr;
 
-				// Spawn Boss Gate if sealed elite gate
-				if (EdgePtr && EdgePtr->DoorState == EDoorState::SealedEliteGate)
+				// Spawn Interactive Door / Boss Gate Actor (Ticket B-105)
+				if (EdgePtr && !ProcessedSealedGates.Contains(EdgeId) && GetWorld())
 				{
-					if (!ProcessedSealedGates.Contains(EdgeId) && GetWorld())
+					ProcessedSealedGates.Add(EdgeId);
+
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+					if (EdgePtr->DoorState == EDoorState::SealedEliteGate)
 					{
-						ProcessedSealedGates.Add(EdgeId);
-
-						FActorSpawnParameters SpawnParams;
-						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-						if (AStaticMeshActor* GateActor = GetWorld()->SpawnActor<AStaticMeshActor>(
-							AStaticMeshActor::StaticClass(), FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
+						// Boss Gate spawning: Use BossGateBlueprintClass if assigned, else fallback
+						UClass* GateClass = BossGateBlueprintClass ? BossGateBlueprintClass.Get() : ASovereignDungeonDoor::StaticClass();
+						if (ASovereignDungeonDoor* GateDoor = GetWorld()->SpawnActor<ASovereignDungeonDoor>(
+							GateClass, FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
 						{
-							if (GateActor->GetStaticMeshComponent())
+							GateDoor->bIsLocked = true;
+							if (bRequireBossKey)
 							{
-								if (BossGateMesh)
-								{
-									GateActor->GetStaticMeshComponent()->SetStaticMesh(BossGateMesh);
-								}
-								GateActor->SetActorScale3D(FVector(0.5f, (TILE_SIZE * 0.5f) / 100.0f, 5.0f));
+								GateDoor->UnlockCondition = EBossGateUnlockCondition::RequiresBossKey;
+								GateDoor->RequiredKeyTag = BossKeyItemTag.IsValid() ? BossKeyItemTag : FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
 							}
-							GeneratorSpawnedActors.Add(GateActor);
-							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Sealed Boss Gate Actor at Edge %d."), EdgeId);
+							else
+							{
+								GateDoor->UnlockCondition = EBossGateUnlockCondition::DefeatEliteGuardian;
+							}
+							GeneratorSpawnedActors.Add(GateDoor);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Interactive Sealed Boss Gate Actor at Edge %d (Condition: %d)."),
+								EdgeId, (int32)GateDoor->UnlockCondition);
+						}
+					}
+					else if (DoorBlueprintClass)
+					{
+						// Standard Doorway Blueprint Actor
+						if (ASovereignDungeonDoor* StandardDoor = GetWorld()->SpawnActor<ASovereignDungeonDoor>(
+							DoorBlueprintClass, FaceTransform.GetLocation(), FaceTransform.GetRotation().Rotator(), SpawnParams))
+						{
+							StandardDoor->bIsLocked = false;
+							GeneratorSpawnedActors.Add(StandardDoor);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Interactive Door Actor at Edge %d."), EdgeId);
 						}
 					}
 				}
 
-				// If DoorwayMesh is assigned, spawn it in DoorwayInstancedComponent
-				if (DoorwayMesh)
+				// If no DoorBlueprintClass was assigned and bProceduralArchwayFallback is enabled, construct primitive archway opening
+				if (!DoorBlueprintClass && bProceduralArchwayFallback && WallInstancedComponent)
 				{
-					DoorwayInstancedComponent->AddInstance(FaceTransform);
-				}
-				else if (bProceduralArchwayFallback && WallInstancedComponent)
-				{
-					// Option 2 Archway Fallback: Construct a 400w x 500h opening using left post, right post, and top lintel
-					// Left Post (Width 300cm, centered at local Y = -350cm)
+					// Construct a 400w x 500h opening using left post, right post, and top lintel
 					const FVector LeftPostLocal(-350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform LeftTransform = FaceTransform;
 					LeftTransform.SetLocation(FaceTransform.GetLocation() + LeftPostLocal);
 					LeftTransform.SetScale3D(FVector(0.3f, 3.0f, WallHeight / 100.0f));
 					WallInstancedComponent->AddInstance(LeftTransform);
 
-					// Right Post (Width 300cm, centered at local Y = +350cm)
 					const FVector RightPostLocal(350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform RightTransform = FaceTransform;
 					RightTransform.SetLocation(FaceTransform.GetLocation() + RightPostLocal);
 					RightTransform.SetScale3D(FVector(0.3f, 3.0f, WallHeight / 100.0f));
 					WallInstancedComponent->AddInstance(RightTransform);
 
-					// Top Lintel (Width 400cm, Height 100cm, centered at Z = 550cm)
 					const float LintelZ = bWallMeshCenterPivot ? 250.0f : 500.0f;
 					FTransform LintelTransform = FaceTransform;
 					LintelTransform.SetLocation(FaceTransform.GetLocation() + FVector(0.0f, 0.0f, LintelZ));
@@ -1206,10 +1273,115 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				}
 			}
 		}
+		// 5. For Rest Sanctuary: Spawn ASovereignRestTerminal (Ticket B-103 & B-106)
+		else if (Node.TileType == EDungeonTileType::RestSanctuary)
+		{
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FVector RestCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					30.0f
+				);
+
+				UClass* TerminalClassToSpawn = RestTerminalClass ? RestTerminalClass.Get() : ASovereignRestTerminal::StaticClass();
+				if (ASovereignRestTerminal* Terminal = GetWorld()->SpawnActor<ASovereignRestTerminal>(TerminalClassToSpawn, RestCenterPos, FRotator::ZeroRotator, SpawnParams))
+				{
+					Terminal->MaxRestCharges = DefaultRestCharges;
+					Terminal->RemainingRestCharges = DefaultRestCharges;
+					Terminal->bRandomizeCharges = bRandomizeRestCharges;
+					GeneratorSpawnedActors.Add(Terminal);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignRestTerminal in RestSanctuary Node %d."), NodeIdx);
+				}
+			}
+		}
+		// 6. For Treasure Room: Spawn ASovereignTreasureChest (Ticket B-107)
+		else if (Node.TileType == EDungeonTileType::TreasureRoom)
+		{
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FVector ChestCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					30.0f
+				);
+
+				UClass* ChestClassToSpawn = TreasureChestBlueprintClass ? TreasureChestBlueprintClass.Get() : ASovereignTreasureChest::StaticClass();
+				if (ASovereignTreasureChest* Chest = GetWorld()->SpawnActor<ASovereignTreasureChest>(ChestClassToSpawn, ChestCenterPos, FRotator::ZeroRotator, SpawnParams))
+				{
+					// If Boss Key required and Option C routes key into chest, add key item
+					if (bRequireBossKey && !bSpawnKeyAsWorldPickup && Chest->LootInventory)
+					{
+						USovereignItemDefinition* KeyDefToUse = BossKeyItemDefinition ? BossKeyItemDefinition.Get() : NewObject<USovereignItemDefinition>(this);
+						if (!BossKeyItemDefinition)
+						{
+							KeyDefToUse->ItemTag = BossKeyItemTag.IsValid() ? BossKeyItemTag : FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+							KeyDefToUse->DisplayName = NSLOCTEXT("Sovereign", "BossKeyItemName", "Vault Guardian Key");
+						}
+						Chest->LootInventory->AddItem(KeyDefToUse, 1);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Placed Boss Key inside Treasure Chest in Node %d."), NodeIdx);
+					}
+
+					GeneratorSpawnedActors.Add(Chest);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignTreasureChest in TreasureRoom Node %d."), NodeIdx);
+				}
+			}
+		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls, %d Doorways."),
-		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount(), DoorwayInstancedComponent->GetInstanceCount());
+	// 5. Boss Key Physical World Pickup Routing (Option C: bSpawnKeyAsWorldPickup == true)
+	if (bRequireBossKey && bSpawnKeyAsWorldPickup && GetWorld())
+	{
+		// Find a suitable pre-boss room along the spine or branch (RestSanctuary or middle Corridor/Chamber)
+		int32 KeyRoomIdx = INDEX_NONE;
+
+		// Prioritize RestSanctuary
+		for (int32 i = 0; i < DungeonNodes.Num(); ++i)
+		{
+			if (DungeonNodes[i].TileType == EDungeonTileType::RestSanctuary)
+			{
+				KeyRoomIdx = i;
+				break;
+			}
+		}
+
+		// Fallback to middle spine room
+		if (KeyRoomIdx == INDEX_NONE && MainSpineNodeIndices.Num() > 1)
+		{
+			KeyRoomIdx = MainSpineNodeIndices[MainSpineNodeIndices.Num() / 2];
+		}
+
+		if (KeyRoomIdx != INDEX_NONE && DungeonNodes.IsValidIndex(KeyRoomIdx))
+		{
+			const FSovereignDungeonNode& KeyRoom = DungeonNodes[KeyRoomIdx];
+			const FVector KeyPos = KeyRoom.WorldTransform.GetLocation() + FVector(
+				(KeyRoom.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+				(KeyRoom.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f + 250.0f,
+				80.0f
+			);
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			UClass* KeyClassToSpawn = KeyPickupBlueprintClass ? KeyPickupBlueprintClass.Get() : ASovereignKeyPickup::StaticClass();
+			if (ASovereignKeyPickup* KeyPickup = GetWorld()->SpawnActor<ASovereignKeyPickup>(KeyClassToSpawn, KeyPos, FRotator::ZeroRotator, SpawnParams))
+			{
+				KeyPickup->KeyTag = BossKeyItemTag.IsValid() ? BossKeyItemTag : FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+				KeyPickup->KeyItemDefinition = BossKeyItemDefinition;
+				GeneratorSpawnedActors.Add(KeyPickup);
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned physical ASovereignKeyPickup on pedestal in Node %d."), KeyRoomIdx);
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls."),
+		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount());
 }
 
 void ASovereignDungeonGenerator::SpawnDefaultLightingRig()

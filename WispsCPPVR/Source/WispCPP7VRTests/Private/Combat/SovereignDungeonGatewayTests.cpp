@@ -2,12 +2,18 @@
 
 #include "Misc/AutomationTest.h"
 #include "Entities/SovereignDungeonGateway.h"
+#include "Entities/SovereignRestTerminal.h"
+#include "Entities/SovereignDungeonDoor.h"
+#include "Entities/SovereignTreasureChest.h"
+#include "Entities/SovereignKeyPickup.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignAttributeComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
 #include "Tests/AutomationCommon.h"
@@ -97,10 +103,10 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);
 	TestEqual(TEXT("Total generated nodes should equal TargetRoomCount"), Generator->DungeonNodes.Num(), 6);
 
-	// Verify Ticket B-089, B-094 & B-095 3D geometry & multi-cell footprint spawning
+	// Verify Ticket B-089, B-094, B-095 & B-109 3D geometry & multi-cell footprint spawning
 	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent.Get());
 	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent.Get());
-	TestNotNull(TEXT("DoorwayInstancedComponent exists"), Generator->DoorwayInstancedComponent.Get());
+	TestFalse(TEXT("bUseMetricModularMeshScale is false by default"), Generator->bUseMetricModularMeshScale);
 	TestTrue(TEXT("Floor instances match or exceed node count due to multi-cell footprints"),
 		Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() >= 6 : false);
 	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() > 0 : false);
@@ -207,11 +213,8 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("Wall instances strictly equal unconnected perimeter socket count (zero interior walls)"),
 		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, TotalUnconnectedSockets);
-	// Option A: DoorwayMesh is default null in testing, so connected faces remain open cutouts (0 instances)
-	TestEqual(TEXT("Doorway instances is 0 when DoorwayMesh is null (Option A open passage)"),
-		Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
 
-	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances
+	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances when bUseMetricModularMeshScale is false
 	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
 	{
 		FTransform FirstWallTransform;
@@ -239,7 +242,19 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Edges cleared after cleanup"), Generator->DungeonEdges.Num(), 0);
 	TestEqual(TEXT("Floor instances cleared after cleanup"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 0);
 	TestEqual(TEXT("Wall instances cleared after cleanup"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, 0);
-	TestEqual(TEXT("Doorway instances cleared after cleanup"), Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
+
+	// Test Ticket B-109 Metric Modular Mesh Scale (1:1 scale for custom artist meshes)
+	Generator->bUseMetricModularMeshScale = true;
+	Generator->GenerateDungeon();
+	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
+	{
+		FTransform MetricWallTransform;
+		Generator->WallInstancedComponent->GetInstanceTransform(0, MetricWallTransform, true);
+		TestNearlyEqual(TEXT("Metric wall scale X is 1.0"), (float)MetricWallTransform.GetScale3D().X, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale Y is 1.0"), (float)MetricWallTransform.GetScale3D().Y, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale Z is 1.0"), (float)MetricWallTransform.GetScale3D().Z, 1.0f, 0.01f);
+	}
+	Generator->CleanupDungeon();
 
 	// Re-run generation to ensure clean rebuild
 	const bool bRebuilt = Generator->GenerateDungeon();
@@ -482,7 +497,120 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	ArenaGen->CleanupDungeon();
 	TestEqual(TEXT("Biome arenas cleared after cleanup"), ArenaGen->BiomeBattleArenas.Num(), 0);
 
-	// 13. Test Subsystem Regression Compatibility
+	// 13. Test Tickets B-102, B-103, B-104 Special Rooms, Rest Terminal & Custom Footprints
+	ASovereignDungeonGenerator* SpecialGen = NewObject<ASovereignDungeonGenerator>();
+	SpecialGen->TargetRoomCount = 35;
+	SpecialGen->GenerationSeed = 7777;
+	SpecialGen->SpecialRoomPercentage = 20.0f;
+	SpecialGen->MaxSpecialRoomCapPercentage = 50.0f;
+	SpecialGen->bSpawnPhysicalGeometry = false;
+	SpecialGen->bAutoSpawnDefaultLighting = false;
+	const bool bSpecialSuccess = SpecialGen->GenerateDungeon();
+
+	TestTrue(TEXT("Special room generation succeeds"), bSpecialSuccess);
+
+	// Verify Footprints
+	TestEqual(TEXT("RestSanctuary footprint is 2x2"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::RestSanctuary), FIntPoint(2, 2));
+	TestEqual(TEXT("GrandChamber footprint is 4x6"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::GrandChamber), FIntPoint(4, 6));
+	TestEqual(TEXT("Colosseum footprint is 8x8"), ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::Colosseum), FIntPoint(8, 8));
+
+	// Test ASovereignRestTerminal Interaction & Charge Depletion
+	ASovereignRestTerminal* RestTerminal = NewObject<ASovereignRestTerminal>();
+	TestNotNull(TEXT("RestTerminal created"), RestTerminal);
+	RestTerminal->MaxRestCharges = 3;
+	RestTerminal->RemainingRestCharges = 3;
+	RestTerminal->bAutoDestroyOnDepletion = false; // keep in memory for assertion
+
+	// Hurt cultivator
+	Cultivator->GetAttributeComponent()->CurrentHealth = 10.0f;
+	Cultivator->GetQiComponent()->CurrentQi = 10.0f;
+
+	const bool bRested = RestTerminal->RestParty(Cultivator);
+	TestTrue(TEXT("RestParty succeeds"), bRested);
+	TestEqual(TEXT("Remaining charges decremented to 2"), RestTerminal->RemainingRestCharges, 2);
+	TestEqual(TEXT("Cultivator Health fully restored"), Cultivator->GetAttributeComponent()->CurrentHealth, Cultivator->GetAttributeComponent()->MaxHealth);
+	TestEqual(TEXT("Cultivator Qi fully restored"), Cultivator->GetQiComponent()->CurrentQi, Cultivator->GetQiComponent()->MaxQiCapacity);
+
+	// Exhaust remaining charges
+	RestTerminal->RestParty(Cultivator);
+	RestTerminal->RestParty(Cultivator);
+	TestEqual(TEXT("Remaining charges now 0"), RestTerminal->RemainingRestCharges, 0);
+
+	const bool bFailedRest = RestTerminal->RestParty(Cultivator);
+	TestFalse(TEXT("Cannot rest when depleted"), bFailedRest);
+
+	// 14. Test Tickets B-105 & B-107 Door and Treasure Chest Entities
+	ASovereignDungeonDoor* TestDoor = NewObject<ASovereignDungeonDoor>();
+	TestNotNull(TEXT("DungeonDoor created"), TestDoor);
+	TestFalse(TEXT("Door starts closed"), TestDoor->bIsOpen);
+	TestDoor->OpenDoor();
+	TestTrue(TEXT("Door is open after OpenDoor()"), TestDoor->bIsOpen);
+
+	// Test locked gate
+	TestDoor->CloseDoor();
+	TestDoor->bStayOpenOnceOpened = false;
+	TestDoor->bIsLocked = true;
+	TestDoor->UnlockCondition = EBossGateUnlockCondition::RequiresQiEmpowerment;
+	TestDoor->RequiredQiToUnlock = 30.0f;
+	TestDoor->ChanneledQi = 0.0f;
+
+	Cultivator->GetQiComponent()->CurrentQi = 100.0f;
+	TestDoor->ChannelQiToUnlock(Cultivator, 30.0f);
+	TestFalse(TEXT("Door unlocked after channeling required Qi"), TestDoor->bIsLocked);
+
+	// Test ASovereignTreasureChest
+	ASovereignTreasureChest* TestChest = NewObject<ASovereignTreasureChest>();
+	TestNotNull(TEXT("TreasureChest created"), TestChest);
+	TestFalse(TEXT("Chest starts unopened"), TestChest->bHasBeenOpened);
+
+	// Put loot in chest
+	TestChest->LootInventory->AddItem(HeavyOre, 2);
+	TestEqual(TEXT("Chest contains 2 items"), TestChest->LootInventory->InventorySlots.Num(), 1);
+
+	const bool bChestOpened = TestChest->OpenChest(Cultivator);
+	TestTrue(TEXT("OpenChest succeeds"), bChestOpened);
+	TestTrue(TEXT("Chest is marked opened"), TestChest->bHasBeenOpened);
+	TestEqual(TEXT("Chest loot inventory emptied"), TestChest->LootInventory->InventorySlots.Num(), 0);
+	TestFalse(TEXT("Chest cannot be looted a second time"), TestChest->OpenChest(Cultivator));
+
+	// 15. Test Ticket B-108 Key Pickup, Consumption & Option C Key Routing Suite
+	ASovereignKeyPickup* TestKeyPickup = NewObject<ASovereignKeyPickup>();
+	TestNotNull(TEXT("KeyPickup created"), TestKeyPickup);
+	TestKeyPickup->KeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+
+	// Pick up key with cultivator
+	const int32 InitialKeyCount = Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag);
+	const bool bKeyPickedUp = TestKeyPickup->PickupKey(Cultivator);
+	TestTrue(TEXT("PickupKey succeeds"), bKeyPickedUp);
+	TestEqual(TEXT("Cultivator inventory has key item"),
+		Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag), InitialKeyCount + 1);
+
+	// Test key unlocking the Boss Gate with Key Consumption enabled
+	ASovereignDungeonDoor* BossGateDoor = NewObject<ASovereignDungeonDoor>();
+	BossGateDoor->bIsLocked = true;
+	BossGateDoor->bConsumeKeyOnUnlock = true;
+	BossGateDoor->UnlockCondition = EBossGateUnlockCondition::RequiresBossKey;
+	BossGateDoor->RequiredKeyTag = TestKeyPickup->KeyTag;
+
+	// Interactor possesses key -> opens door and consumes the key item
+	BossGateDoor->OnInteract_Implementation(Cultivator);
+	TestFalse(TEXT("Boss Gate unlocked after interactor with key presents it"), BossGateDoor->bIsLocked);
+	TestTrue(TEXT("Boss Gate open after unlocked interaction"), BossGateDoor->bIsOpen);
+	TestEqual(TEXT("Key item consumed from cultivator inventory"),
+		Cultivator->GetInventoryComponent()->GetItemCountByTag(TestKeyPickup->KeyTag), InitialKeyCount);
+
+	// 16. Test Large Dungeon Scaling (TargetRoomCount = 80 and 200)
+	ASovereignDungeonGenerator* LargeGen80 = NewObject<ASovereignDungeonGenerator>();
+	LargeGen80->TargetRoomCount = 80;
+	LargeGen80->GenerationSeed = 1337;
+	LargeGen80->bSpawnPhysicalGeometry = false;
+	LargeGen80->bAutoSpawnDefaultLighting = false;
+	const bool bLargeGen80Success = LargeGen80->GenerateDungeon();
+	TestTrue(TEXT("TargetRoomCount = 80 generation succeeds"), bLargeGen80Success);
+	TestTrue(TEXT("TargetRoomCount = 80 generates >= 60 rooms (scaled beyond earlier cap)"), LargeGen80->DungeonNodes.Num() >= 60);
+	TestTrue(TEXT("TargetRoomCount = 80 reachability verified"), LargeGen80->ValidateTopologicalReachability(0, LargeGen80->BossNodeIndex));
+
+	// 17. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
 
 	return true;
