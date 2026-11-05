@@ -103,10 +103,10 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("GenerateDungeon should succeed"), bGenerated);
 	TestEqual(TEXT("Total generated nodes should equal TargetRoomCount"), Generator->DungeonNodes.Num(), 6);
 
-	// Verify Ticket B-089, B-094 & B-095 3D geometry & multi-cell footprint spawning
+	// Verify Ticket B-089, B-094, B-095 & B-109 3D geometry & multi-cell footprint spawning
 	TestNotNull(TEXT("FloorInstancedComponent exists"), Generator->FloorInstancedComponent.Get());
 	TestNotNull(TEXT("WallInstancedComponent exists"), Generator->WallInstancedComponent.Get());
-	TestNotNull(TEXT("DoorwayInstancedComponent exists"), Generator->DoorwayInstancedComponent.Get());
+	TestFalse(TEXT("bUseMetricModularMeshScale is false by default"), Generator->bUseMetricModularMeshScale);
 	TestTrue(TEXT("Floor instances match or exceed node count due to multi-cell footprints"),
 		Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() >= 6 : false);
 	TestTrue(TEXT("Boundary wall instances generated for perimeter edges"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() > 0 : false);
@@ -213,11 +213,8 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("Wall instances strictly equal unconnected perimeter socket count (zero interior walls)"),
 		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, TotalUnconnectedSockets);
-	// Option A: DoorwayMesh is default null in testing, so connected faces remain open cutouts (0 instances)
-	TestEqual(TEXT("Doorway instances is 0 when DoorwayMesh is null (Option A open passage)"),
-		Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
 
-	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances
+	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances when bUseMetricModularMeshScale is false
 	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
 	{
 		FTransform FirstWallTransform;
@@ -245,7 +242,19 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Edges cleared after cleanup"), Generator->DungeonEdges.Num(), 0);
 	TestEqual(TEXT("Floor instances cleared after cleanup"), Generator->FloorInstancedComponent ? Generator->FloorInstancedComponent->GetInstanceCount() : 0, 0);
 	TestEqual(TEXT("Wall instances cleared after cleanup"), Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, 0);
-	TestEqual(TEXT("Doorway instances cleared after cleanup"), Generator->DoorwayInstancedComponent ? Generator->DoorwayInstancedComponent->GetInstanceCount() : 0, 0);
+
+	// Test Ticket B-109 Metric Modular Mesh Scale (1:1 scale for custom artist meshes)
+	Generator->bUseMetricModularMeshScale = true;
+	Generator->GenerateDungeon();
+	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
+	{
+		FTransform MetricWallTransform;
+		Generator->WallInstancedComponent->GetInstanceTransform(0, MetricWallTransform, true);
+		TestNearlyEqual(TEXT("Metric wall scale X is 1.0"), MetricWallTransform.GetScale3D().X, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale Y is 1.0"), MetricWallTransform.GetScale3D().Y, 1.0f, 0.01f);
+		TestNearlyEqual(TEXT("Metric wall scale Z is 1.0"), MetricWallTransform.GetScale3D().Z, 1.0f, 0.01f);
+	}
+	Generator->CleanupDungeon();
 
 	// Re-run generation to ensure clean rebuild
 	const bool bRebuilt = Generator->GenerateDungeon();

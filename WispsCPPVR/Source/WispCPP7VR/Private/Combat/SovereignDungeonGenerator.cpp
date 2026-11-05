@@ -70,8 +70,7 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	WallInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("WallInstancedComponent"));
 	WallInstancedComponent->SetupAttachment(FloorInstancedComponent);
 
-	DoorwayInstancedComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("DoorwayInstancedComponent"));
-	DoorwayInstancedComponent->SetupAttachment(FloorInstancedComponent);
+	bUseMetricModularMeshScale = false;
 
 	// Default fallback mesh finder for basic cube/floor shapes if custom modular assets aren't yet loaded
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultCubeObj(TEXT("/Engine/BasicShapes/Cube"));
@@ -595,10 +594,6 @@ void ASovereignDungeonGenerator::CleanupDungeon()
 	{
 		WallInstancedComponent->ClearInstances();
 	}
-	if (DoorwayInstancedComponent)
-	{
-		DoorwayInstancedComponent->ClearInstances();
-	}
 
 	// 2. Destroy strictly generator-spawned discrete actors (boss altar, props)
 	for (TObjectPtr<AActor>& SpawnedActor : GeneratorSpawnedActors)
@@ -1067,18 +1062,9 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			WallInstancedComponent->RegisterComponent();
 		}
 	}
-	if (!DoorwayInstancedComponent)
-	{
-		DoorwayInstancedComponent = NewObject<UInstancedStaticMeshComponent>(this, TEXT("RuntimeDoorwayInstancedComponent"));
-		if (GetWorld())
-		{
-			DoorwayInstancedComponent->RegisterComponent();
-		}
-	}
 
 	FloorInstancedComponent->ClearInstances();
 	WallInstancedComponent->ClearInstances();
-	DoorwayInstancedComponent->ClearInstances();
 
 	if (FloorMesh)
 	{
@@ -1088,14 +1074,12 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 	{
 		WallInstancedComponent->SetStaticMesh(WallMesh);
 	}
-	if (DoorwayMesh)
-	{
-		DoorwayInstancedComponent->SetStaticMesh(DoorwayMesh);
-	}
 
 	const FVector Origin = GetActorLocation();
 
-	// 2. Spawn Floor Tiles for Each Room (Multi-cell aware)
+	// 2. Spawn Floor Tiles for Each Room (Multi-cell aware, Ticket B-109 metric scale toggle)
+	const FVector FloorScale = bUseMetricModularMeshScale ? FVector(1.0f, 1.0f, 1.0f) : FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f);
+
 	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
 	{
 		const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
@@ -1107,7 +1091,7 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			FTransform FloorTransform;
 			FloorTransform.SetLocation(CellPos - FVector(0.0f, 0.0f, 10.0f));
 			FloorTransform.SetRotation(FQuat::Identity);
-			FloorTransform.SetScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
+			FloorTransform.SetScale3D(FloorScale);
 
 			FloorInstancedComponent->AddInstance(FloorTransform);
 		}
@@ -1162,9 +1146,8 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			FaceTransform.SetLocation(CellPos + DirectionOffset);
 			FaceTransform.SetRotation(FaceRotation.Quaternion());
 
-			// Scale standard modular wall (Thickness = 30cm in local X, Width = 1000cm in local Y, Height = 600cm in local Z)
-			// Uniform scale across all directions prevents perpendicular slicing into rooms!
-			const FVector StandardWallScale(0.3f, TILE_SIZE / 100.0f, WallHeight / 100.0f);
+			// Scale standard modular wall (1:1 scale for metric artist mesh, or primitive cube scaling, Ticket B-109)
+			const FVector StandardWallScale = bUseMetricModularMeshScale ? FVector(1.0f, 1.0f, 1.0f) : FVector(0.3f, TILE_SIZE / 100.0f, WallHeight / 100.0f);
 			FaceTransform.SetScale3D(StandardWallScale);
 
 			if (!Socket.bIsConnected)
@@ -1221,14 +1204,10 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 					}
 				}
 
-				// If DoorwayMesh is assigned, spawn it in DoorwayInstancedComponent
-				if (DoorwayMesh)
+				// If no DoorBlueprintClass was assigned and bProceduralArchwayFallback is enabled, construct primitive archway opening
+				if (!DoorBlueprintClass && bProceduralArchwayFallback && WallInstancedComponent)
 				{
-					DoorwayInstancedComponent->AddInstance(FaceTransform);
-				}
-				else if (bProceduralArchwayFallback && WallInstancedComponent)
-				{
-					// Option 2 Archway Fallback: Construct a 400w x 500h opening using left post, right post, and top lintel
+					// Construct a 400w x 500h opening using left post, right post, and top lintel
 					const FVector LeftPostLocal(-350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform LeftTransform = FaceTransform;
 					LeftTransform.SetLocation(FaceTransform.GetLocation() + LeftPostLocal);
@@ -1383,8 +1362,8 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls, %d Doorways."),
-		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount(), DoorwayInstancedComponent->GetInstanceCount());
+	UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned 3D Dungeon Geometry: %d Floors, %d Walls."),
+		FloorInstancedComponent->GetInstanceCount(), WallInstancedComponent->GetInstanceCount());
 }
 
 void ASovereignDungeonGenerator::SpawnDefaultLightingRig()

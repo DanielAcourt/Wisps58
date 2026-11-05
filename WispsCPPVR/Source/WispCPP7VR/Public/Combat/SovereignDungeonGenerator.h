@@ -400,7 +400,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	bool bWallMeshCenterPivot = true;
 
-	/** When DoorwayMesh is null, assembles a 3-part archway (two posts and top lintel) with a 400x500cm opening instead of leaving an empty void */
+	/** When true, mesh instances use 1:1 scale (1.0, 1.0, 1.0) for artist modular assets modeled to metric standard. When false, scales 100cm primitive cubes (Ticket B-109). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	bool bUseMetricModularMeshScale = false;
+
+	/** When true and no DoorBlueprintClass is assigned, assembles a 3-part archway (two posts and top lintel) with a 400x500cm opening instead of leaving an empty void */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	bool bProceduralArchwayFallback = false;
 
@@ -411,10 +415,6 @@ public:
 	/** Static Mesh for perimeter walls */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> WallMesh;
-
-	/** Static Mesh for modular doorway openings/frames (Option A: If null, connected faces remain open cutouts) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
-	TObjectPtr<UStaticMesh> DoorwayMesh;
 
 	/** Optional custom Blueprint actor class for interactive swinging doors (Ticket B-105, inherits ASovereignDungeonDoor) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
@@ -443,10 +443,6 @@ public:
 	/** Instanced Static Mesh Component for rendering all boundary wall tiles in a single draw call */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<class UInstancedStaticMeshComponent> WallInstancedComponent;
-
-	/** Instanced Static Mesh Component for rendering modular doorway frames in a single draw call */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Geometry")
-	TObjectPtr<class UInstancedStaticMeshComponent> DoorwayInstancedComponent;
 
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
