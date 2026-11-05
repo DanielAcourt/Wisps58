@@ -32,8 +32,7 @@ ASovereignTreasureChest::ASovereignTreasureChest()
 
 	// Loot inventory
 	LootInventory = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("LootInventory"));
-	LootInventory->MaxSlots = 8;
-	LootInventory->MaxWeightCapacity = 500.0f;
+	LootInventory->MaxSlotCount = 8;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> DefaultCube(TEXT("/Engine/BasicShapes/Cube"));
 	if (DefaultCube.Succeeded())
@@ -119,9 +118,9 @@ bool ASovereignTreasureChest::OpenChest(ASovereignBaseCharacter* Looter)
 			for (int32 SlotIdx = LootInventory->InventorySlots.Num() - 1; SlotIdx >= 0; --SlotIdx)
 			{
 				const FSovereignInventoryItemInstance& Item = LootInventory->InventorySlots[SlotIdx];
-				if (Item.IsValid())
+				if (Item.ItemDefinition.IsValid() && Item.Quantity > 0)
 				{
-					PlayerInv->AddItem(Item.ItemDefinition.Get(), Item.Quantity, Item.DynamicTags, Item.DynamicProperties);
+					PlayerInv->AddItem(Item.ItemDefinition.Get(), Item.Quantity);
 					TransferredCount++;
 				}
 			}
