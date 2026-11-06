@@ -428,6 +428,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignTreasureChest> TreasureChestBlueprintClass;
 
+	/** Optional custom Blueprint actor class for dungeon entrance gateway (Ticket B-111, inherits ASovereignBaseInteractable) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignBaseInteractable> EntranceActorClass;
+
 	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> BossGateMesh;
@@ -643,6 +647,10 @@ public:
 	/** Returns world transform of the Entrance Room */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
 	FTransform GetEntranceTransform() const;
+
+	/** Returns spawned entrance gateway actor if present (Ticket B-111) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
+	class ASovereignBaseInteractable* GetEntranceGatewayActor() const;
 
 	/** Returns world transform of the terminal Boss Chamber */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")

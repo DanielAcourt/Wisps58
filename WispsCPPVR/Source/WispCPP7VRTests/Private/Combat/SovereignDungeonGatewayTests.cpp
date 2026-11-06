@@ -6,6 +6,7 @@
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignKeyPickup.h"
+#include "Entities/SovereignDungeonEntrance.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
@@ -612,6 +613,16 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	// 17. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
+
+	// 18. Test Ticket B-111 Interactive Entrance & Return to Garden
+	ASovereignDungeonEntrance* TestEntrance = NewObject<ASovereignDungeonEntrance>();
+	TestNotNull(TEXT("Dungeon Entrance created"), TestEntrance);
+	TestEqual(TEXT("Entrance hint indicates return to garden"), TestEntrance->GetInteractionHint_Implementation(), TEXT("Return to Meditation Garden"));
+	TestTrue(TEXT("Entrance interactable by default"), TestEntrance->CanInteract_Implementation(Cultivator));
+
+	// Test generator entrance class assignment
+	DetGenA->EntranceActorClass = ASovereignDungeonEntrance::StaticClass();
+	TestEqual(TEXT("Generator EntranceActorClass matches assigned class"), DetGenA->EntranceActorClass.Get(), ASovereignDungeonEntrance::StaticClass());
 
 	return true;
 }
