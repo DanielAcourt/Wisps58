@@ -650,5 +650,26 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	DetGenA->BossTeleporterClass = ASovereignBossTeleporter::StaticClass();
 	TestEqual(TEXT("Generator BossTeleporterClass matches assigned class"), DetGenA->BossTeleporterClass.Get(), ASovereignBossTeleporter::StaticClass());
 
+	// 20. Test Ticket B-113 Comprehensive Entrance & Boss Teleporter Automation Suite
+	// Test getter queries on generator when spawned actors array is empty
+	TestNull(TEXT("GetEntranceGatewayActor returns null when none spawned"), DetGenA->GetEntranceGatewayActor());
+	TestNull(TEXT("GetBossTeleporterActor returns null when none spawned"), DetGenA->GetBossTeleporterActor());
+
+	// Add dummy entrance and boss teleporter to GeneratorSpawnedActors to test accessor retrieval & idempotent cleanup
+	DetGenA->GeneratorSpawnedActors.Add(TestEntrance);
+	DetGenA->GeneratorSpawnedActors.Add(TestTeleporter);
+	TestEqual(TEXT("GetEntranceGatewayActor retrieves entrance actor"), DetGenA->GetEntranceGatewayActor(), TestEntrance);
+	TestEqual(TEXT("GetBossTeleporterActor retrieves boss teleporter actor"), DetGenA->GetBossTeleporterActor(), TestTeleporter);
+
+	// Verify portal light component properties on teleporter
+	TestNotNull(TEXT("PortalLightComponent is instantiated on Boss Teleporter"), TestTeleporter->PortalLightComponent.Get());
+	TestTrue(TEXT("Portal light becomes visible when teleporter activates"), TestTeleporter->PortalLightComponent->IsVisible());
+
+	// Verify Idempotent Cleanup clears spawned entrance and teleporter references
+	DetGenA->CleanupDungeon();
+	TestEqual(TEXT("GeneratorSpawnedActors empty after CleanupDungeon"), DetGenA->GeneratorSpawnedActors.Num(), 0);
+	TestNull(TEXT("GetEntranceGatewayActor returns null after CleanupDungeon"), DetGenA->GetEntranceGatewayActor());
+	TestNull(TEXT("GetBossTeleporterActor returns null after CleanupDungeon"), DetGenA->GetBossTeleporterActor());
+
 	return true;
 }
