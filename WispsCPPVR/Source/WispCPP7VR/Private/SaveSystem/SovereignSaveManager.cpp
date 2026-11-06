@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-09-21
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-06
 
 #include "SaveSystem/SovereignSaveManager.h"
 #include "SaveSystem/SovereignSaveGame.h"
@@ -10,20 +10,64 @@
 #include "Serialization/JsonSerializer.h"
 #include "JsonObjectConverter.h" // Requires "JsonUtilities" in Build.cs
 #include "Components/SovereignBioComponent.h"
+#include "Combat/SovereignDungeonSubsystem.h"
+#include "Entities/SovereignDungeonDoor.h"
+#include "Entities/SovereignTreasureChest.h"
+#include "Entities/SovereignRestTerminal.h"
+#include "Entities/SovereignKeyPickup.h"
+#include "Entities/SovereignDungeonEntrance.h"
+#include "Entities/SovereignBossTeleporter.h"
+#include "EngineUtils.h"
 
 void USaveManager::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
-    // This is where you'd set up global save settings 
-    // when the game first launches.
     UE_LOG(LogTemp, Log, TEXT("SovereignSystem: SaveManager Boss Initialized."));
 }
+
 void USaveManager::Deinitialize()
 {
-    // Clean up any temporary save data before the game closes
     UE_LOG(LogTemp, Log, TEXT("SovereignSystem: SaveManager Boss Shutting Down."));
-
     Super::Deinitialize();
+}
+
+bool USaveManager::ShouldBypassProceduralActorSerialization(AActor* InActor)
+{
+    if (!InActor) return false;
+
+    // Check if this actor is a static / procedural dungeon entity
+    if (ASovereignDungeonDoor* Door = Cast<ASovereignDungeonDoor>(InActor))
+    {
+        // If the door is closed and locked (or unmodified default), bypass it
+        // Only save if it has been opened or unlocked
+        return !Door->bIsOpen;
+    }
+
+    if (ASovereignTreasureChest* Chest = Cast<ASovereignTreasureChest>(InActor))
+    {
+        // Only serialize chest if it has been opened/looted
+        return !Chest->bHasBeenOpened;
+    }
+
+    if (ASovereignRestTerminal* Terminal = Cast<ASovereignRestTerminal>(InActor))
+    {
+        // Only serialize terminal if charges were consumed
+        return (Terminal->RemainingRestCharges == Terminal->MaxRestCharges);
+    }
+
+    if (InActor->IsA<ASovereignDungeonEntrance>())
+    {
+        // Procedural entrance gateway is static and deterministically placed at Node 0
+        return true;
+    }
+
+    if (ASovereignBossTeleporter* Teleporter = Cast<ASovereignBossTeleporter>(InActor))
+    {
+        // Only serialize if activated upon boss defeat
+        return !Teleporter->bIsActive;
+    }
+
+    return false;
 }
 
 void USaveManager::PurgeUnearnedEntities(USovereignSaveGame* LoadedSuitcase)
@@ -39,18 +83,93 @@ void USaveManager::PurgeUnearnedEntities(USovereignSaveGame* LoadedSuitcase)
 
     for (AActor* Actor : TrackedActors)
     {
+        if (!Actor) continue;
+
+        // Procedural dungeon entities should NOT be purged; their layout is reconstructed from seed
+        if (Actor->IsA<ASovereignDungeonDoor>() ||
+            Actor->IsA<ASovereignTreasureChest>() ||
+            Actor->IsA<ASovereignRestTerminal>() ||
+            Actor->IsA<ASovereignKeyPickup>() ||
+            Actor->IsA<ASovereignDungeonEntrance>() ||
+            Actor->IsA<ASovereignBossTeleporter>())
+        {
+            continue;
+        }
+
         auto* SaveComp = Actor->FindComponentByClass<USovereignSaveableEntityComponent>();
         if (!SaveComp) continue;
 
-        // Use a Lambda or FindByPredicate for better performance than a nested loop
+        // Use FindByPredicate for better performance than a nested loop
         bool bFound = LoadedSuitcase->SavedActors.ContainsByPredicate([&](const FEntitySaveData& S) {
             return S.MyGUID == SaveComp->EntityID;
-            });
+        });
 
         if (!bFound)
         {
             UE_LOG(LogTemp, Warning, TEXT("Sovereign: Purging %s"), *Actor->GetName());
             Actor->Destroy(); // Registry cleanup happens automatically in Actor's EndPlay!
+        }
+    }
+}
+
+void USaveManager::ApplyDungeonDeltas(const FSovereignDungeonDeltaState& DeltaState)
+{
+    UWorld* World = GetWorld();
+    UActorRegistry* Registry = World ? World->GetSubsystem<UActorRegistry>() : nullptr;
+    if (!World) return;
+
+    // Apply door states
+    for (const auto& DoorPair : DeltaState.DoorStates)
+    {
+        AActor* Actor = Registry ? Registry->FindActor(DoorPair.Key) : nullptr;
+        if (ASovereignDungeonDoor* Door = Cast<ASovereignDungeonDoor>(Actor))
+        {
+            if (DoorPair.Value && !Door->bIsOpen)
+            {
+                Door->OpenDoor();
+            }
+        }
+    }
+
+    // Apply chest states
+    for (const auto& ChestPair : DeltaState.ChestStates)
+    {
+        AActor* Actor = Registry ? Registry->FindActor(ChestPair.Key) : nullptr;
+        if (ASovereignTreasureChest* Chest = Cast<ASovereignTreasureChest>(Actor))
+        {
+            Chest->bHasBeenOpened = ChestPair.Value;
+        }
+    }
+
+    // Apply rest terminal charges
+    for (const auto& RestPair : DeltaState.RestTerminalCharges)
+    {
+        AActor* Actor = Registry ? Registry->FindActor(RestPair.Key) : nullptr;
+        if (ASovereignRestTerminal* Terminal = Cast<ASovereignRestTerminal>(Actor))
+        {
+            Terminal->ResetCharges(RestPair.Value);
+        }
+    }
+
+    // Destroy collected key pickups
+    for (const FGuid& KeyGuid : DeltaState.CollectedKeyGuids)
+    {
+        AActor* Actor = Registry ? Registry->FindActor(KeyGuid) : nullptr;
+        if (ASovereignKeyPickup* Pickup = Cast<ASovereignKeyPickup>(Actor))
+        {
+            Pickup->Destroy();
+        }
+    }
+
+    // Boss defeat & teleporter activation
+    if (DeltaState.bBossDefeated)
+    {
+        for (TActorIterator<ASovereignBossTeleporter> It(World); It; ++It)
+        {
+            if (ASovereignBossTeleporter* Teleporter = *It)
+            {
+                Teleporter->ActivateTeleporter();
+            }
         }
     }
 }
@@ -65,9 +184,20 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
 
     if (!Registry || !SaveSuitcase) return;
 
+    // Ingest Dungeon Expedition parameters and delta state if ongoing (Ticket B-115)
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+        {
+            SaveSuitcase->DungeonDelta.ExpeditionSeed = DungeonSub->ActiveExpeditionSeed;
+            SaveSuitcase->DungeonDelta.EnemyBuffMultiplier = DungeonSub->ActiveEnemyBuffMultiplier;
+            SaveSuitcase->DungeonDelta.RewardMultiplier = DungeonSub->ActiveRewardMultiplier;
+        }
+    }
+
     TSet<AActor*> ProcessedActors;
 
-    // Iterate through the Registry (Active Actors in the Garden)
+    // Iterate through the Registry (Active Actors in World)
     for (auto& Elem : Registry->GetActiveRegistry())
     {
         // Get the physical actor from the Weak Pointer
@@ -78,10 +208,34 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
                 continue; // Skip if this physical actor instance was already serialized
             }
 
+            // Ticket B-115: Filter out unmutated procedural actors to keep mega-dungeon saves lightweight
+            if (ShouldBypassProceduralActorSerialization(TargetActor))
+            {
+                continue;
+            }
+
             // Find the 'Passport' (Component) containing the Sovereign data
             if (auto* SaveComp = TargetActor->FindComponentByClass<USovereignSaveableEntityComponent>())
             {
                 ProcessedActors.Add(TargetActor);
+
+                // Collect procedural mutated deltas into DungeonDelta (Ticket B-115)
+                if (ASovereignDungeonDoor* Door = Cast<ASovereignDungeonDoor>(TargetActor))
+                {
+                    SaveSuitcase->DungeonDelta.DoorStates.Add(SaveComp->EntityID, Door->bIsOpen);
+                }
+                else if (ASovereignTreasureChest* Chest = Cast<ASovereignTreasureChest>(TargetActor))
+                {
+                    SaveSuitcase->DungeonDelta.ChestStates.Add(SaveComp->EntityID, Chest->bHasBeenOpened);
+                }
+                else if (ASovereignRestTerminal* Terminal = Cast<ASovereignRestTerminal>(TargetActor))
+                {
+                    SaveSuitcase->DungeonDelta.RestTerminalCharges.Add(SaveComp->EntityID, Terminal->RemainingRestCharges);
+                }
+                else if (ASovereignBossTeleporter* Teleporter = Cast<ASovereignBossTeleporter>(TargetActor))
+                {
+                    SaveSuitcase->DungeonDelta.bBossDefeated = Teleporter->bIsActive;
+                }
 
                 FEntitySaveData Data;
 
@@ -90,7 +244,6 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
                 Data.ObjectName = SaveComp->ObjectName.IsEmpty() ? TargetActor->GetName() : SaveComp->ObjectName;
 
                 // 2. LINEAGE: Who is my parent? (The Genetic Link)
-                // Access lineage data from Bio component
                 if (auto* BioComp = TargetActor->FindComponentByClass<USovereignBioComponent>())
                 {
                     Data.ParentID = BioComp->ParentID;
@@ -98,7 +251,7 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
                     Data.FatherID = BioComp->FatherID;
                     Data.bIsFemale = BioComp->bIsFemale;
                     Data.OffspringCount = BioComp->OffspringCount;
-                    Data.MatingHistory = BioComp->MatingHistory; // Note: This is TArray<FGuid>, may need conversion
+                    Data.MatingHistory = BioComp->MatingHistory;
                 }
 
                 // 3. PHYSICALITY: Where am I and what am I?
@@ -125,8 +278,10 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
         UGameplayStatics::SaveGameToSlot(SaveSuitcase, SlotName, 0);
     }
 
-    UE_LOG(LogTemp, Log, TEXT("Sovereign: World State committed to %s. Total Entities: %d"), *SlotName, SaveSuitcase->SavedActors.Num());
+    UE_LOG(LogTemp, Log, TEXT("Sovereign: World State committed to %s. Total Entities: %d (Seed: %d)"),
+        *SlotName, SaveSuitcase->SavedActors.Num(), SaveSuitcase->DungeonDelta.ExpeditionSeed);
 }
+
 void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
 {
     USovereignSaveGame* LoadedSuitcase = nullptr;
@@ -152,6 +307,20 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
     UWorld* World = GetWorld();
     UActorRegistry* Registry = World ? World->GetSubsystem<UActorRegistry>() : nullptr;
     if (!World || !Registry) return;
+
+    // Ingest Dungeon Expedition parameters into Dungeon Subsystem if present (Ticket B-115)
+    if (UGameInstance* GI = GetGameInstance())
+    {
+        if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+        {
+            if (LoadedSuitcase->DungeonDelta.ExpeditionSeed != 0)
+            {
+                DungeonSub->ActiveExpeditionSeed = LoadedSuitcase->DungeonDelta.ExpeditionSeed;
+                DungeonSub->ActiveEnemyBuffMultiplier = LoadedSuitcase->DungeonDelta.EnemyBuffMultiplier;
+                DungeonSub->ActiveRewardMultiplier = LoadedSuitcase->DungeonDelta.RewardMultiplier;
+            }
+        }
+    }
 
     // Phase 2: Reconstitution
     for (const FEntitySaveData& Data : LoadedSuitcase->SavedActors)
@@ -208,7 +377,7 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
                 {
                     SaveComp->ObjectName = Data.ObjectName;
                 }
-                // Restore [2025-12-20] Unknown Tags (Mutations, Qi levels, etc.)
+                // Restore Unknown Tags (Mutations, Qi levels, etc.)
                 if (Data.UnknownMetaTags.IsValid())
                 {
                     SaveComp->ApplyStateFromJsonObject(Data.UnknownMetaTags);
@@ -225,9 +394,12 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
             }
         }
     }
+
+    // Phase 4: Apply Dungeon Deltas (Ticket B-115)
+    ApplyDungeonDeltas(LoadedSuitcase->DungeonDelta);
+
     UE_LOG(LogTemp, Log, TEXT("Sovereign: Symmetry Restored. World synchronized with %s."), *SlotName);
 }
-
 
 int32 USaveManager::GetSavedEntityCount(FString SlotName, bool bIsJson)
 {
@@ -246,9 +418,9 @@ int32 USaveManager::GetSavedEntityCount(FString SlotName, bool bIsJson)
         TempSuitcase = Cast<USovereignSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
     }
 
-    // Return the count if found, otherwise 0
     return (TempSuitcase) ? TempSuitcase->SavedActors.Num() : 0;
 }
+
 USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonContent)
 {
     USovereignSaveGame* NewSuitcase = Cast<USovereignSaveGame>(UGameplayStatics::CreateSaveGameObject(USovereignSaveGame::StaticClass()));
@@ -273,7 +445,6 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                     Data.ObjectName = Obj->GetStringField(TEXT("ObjectName"));
                 }
 
-                // --- ADDED: Parse ParentID if it exists ---
                 if (Obj->HasField(TEXT("ParentID")))
                 {
                     FGuid::Parse(Obj->GetStringField(TEXT("ParentID")), Data.ParentID);
@@ -286,7 +457,6 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 {
                     Data.UnknownMetaTags = Obj->GetObjectField(TEXT("MetaTags"));
 
-                    // Deduplication & Priority GUID Resolution & Fallback ObjectName:
                     const TSharedPtr<FJsonObject>* IdentityObjPtr;
                     if (Data.UnknownMetaTags->TryGetObjectField(TEXT("Identity"), IdentityObjPtr) && IdentityObjPtr->IsValid())
                     {
@@ -308,7 +478,6 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                     }
                 }
 
-                // Check if an entry for this primary GUID is already present to prevent duplicates when reading legacy save files
                 bool bAlreadyExists = NewSuitcase->SavedActors.ContainsByPredicate([&](const FEntitySaveData& Existing) {
                     return Existing.MyGUID == Data.MyGUID;
                 });
@@ -323,6 +492,81 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 }
             }
         }
+
+        // Deserialize DungeonDelta (Ticket B-115)
+        const TSharedPtr<FJsonObject>* DeltaObjPtr;
+        if (RootObj->TryGetObjectField(TEXT("DungeonDelta"), DeltaObjPtr) && DeltaObjPtr->IsValid())
+        {
+            TSharedPtr<FJsonObject> DeltaObj = *DeltaObjPtr;
+            DeltaObj->TryGetNumberField(TEXT("ExpeditionSeed"), NewSuitcase->DungeonDelta.ExpeditionSeed);
+
+            double TempVal = 1.0;
+            if (DeltaObj->TryGetNumberField(TEXT("EnemyBuffMultiplier"), TempVal))
+            {
+                NewSuitcase->DungeonDelta.EnemyBuffMultiplier = (float)TempVal;
+            }
+            if (DeltaObj->TryGetNumberField(TEXT("RewardMultiplier"), TempVal))
+            {
+                NewSuitcase->DungeonDelta.RewardMultiplier = (float)TempVal;
+            }
+            DeltaObj->TryGetBoolField(TEXT("bBossDefeated"), NewSuitcase->DungeonDelta.bBossDefeated);
+
+            // Door states
+            const TSharedPtr<FJsonObject>* DoorObjPtr;
+            if (DeltaObj->TryGetObjectField(TEXT("DoorStates"), DoorObjPtr) && DoorObjPtr->IsValid())
+            {
+                for (const auto& DoorPair : (*DoorObjPtr)->Values)
+                {
+                    FGuid DoorGuid;
+                    if (FGuid::Parse(DoorPair.Key, DoorGuid))
+                    {
+                        NewSuitcase->DungeonDelta.DoorStates.Add(DoorGuid, DoorPair.Value->AsBool());
+                    }
+                }
+            }
+
+            // Chest states
+            const TSharedPtr<FJsonObject>* ChestObjPtr;
+            if (DeltaObj->TryGetObjectField(TEXT("ChestStates"), ChestObjPtr) && ChestObjPtr->IsValid())
+            {
+                for (const auto& ChestPair : (*ChestObjPtr)->Values)
+                {
+                    FGuid ChestGuid;
+                    if (FGuid::Parse(ChestPair.Key, ChestGuid))
+                    {
+                        NewSuitcase->DungeonDelta.ChestStates.Add(ChestGuid, ChestPair.Value->AsBool());
+                    }
+                }
+            }
+
+            // Rest Terminal states
+            const TSharedPtr<FJsonObject>* RestObjPtr;
+            if (DeltaObj->TryGetObjectField(TEXT("RestTerminalCharges"), RestObjPtr) && RestObjPtr->IsValid())
+            {
+                for (const auto& RestPair : (*RestObjPtr)->Values)
+                {
+                    FGuid RestGuid;
+                    if (FGuid::Parse(RestPair.Key, RestGuid))
+                    {
+                        NewSuitcase->DungeonDelta.RestTerminalCharges.Add(RestGuid, (int32)RestPair.Value->AsNumber());
+                    }
+                }
+            }
+
+            // Collected keys
+            const TArray<TSharedPtr<FJsonValue>>* KeyArray;
+            if (DeltaObj->TryGetArrayField(TEXT("CollectedKeyGuids"), KeyArray))
+            {
+                for (const auto& KeyVal : *KeyArray)
+                {
+                    FGuid KeyGuid;
+                    if (FGuid::Parse(KeyVal->AsString(), KeyGuid))
+                    {
+                        NewSuitcase->DungeonDelta.CollectedKeyGuids.Add(KeyGuid);
+                    }
+                }
+            }
+        }
     }
     else
     {
@@ -331,6 +575,7 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
 
     return NewSuitcase;
 }
+
 FString USaveManager::ConvertSuitcaseToJson(USovereignSaveGame* Suitcase)
 {
     if (!Suitcase) return "";
@@ -366,7 +611,49 @@ FString USaveManager::ConvertSuitcaseToJson(USovereignSaveGame* Suitcase)
     }
 
     Writer->WriteArrayEnd();
+
+    // Serialize DungeonDelta (Ticket B-115)
+    Writer->WriteObjectStart(TEXT("DungeonDelta"));
+    Writer->WriteValue(TEXT("ExpeditionSeed"), Suitcase->DungeonDelta.ExpeditionSeed);
+    Writer->WriteValue(TEXT("EnemyBuffMultiplier"), Suitcase->DungeonDelta.EnemyBuffMultiplier);
+    Writer->WriteValue(TEXT("RewardMultiplier"), Suitcase->DungeonDelta.RewardMultiplier);
+    Writer->WriteValue(TEXT("bBossDefeated"), Suitcase->DungeonDelta.bBossDefeated);
+
+    // Door states
+    Writer->WriteObjectStart(TEXT("DoorStates"));
+    for (const auto& DoorPair : Suitcase->DungeonDelta.DoorStates)
+    {
+        Writer->WriteValue(DoorPair.Key.ToString(), DoorPair.Value);
+    }
     Writer->WriteObjectEnd();
+
+    // Chest states
+    Writer->WriteObjectStart(TEXT("ChestStates"));
+    for (const auto& ChestPair : Suitcase->DungeonDelta.ChestStates)
+    {
+        Writer->WriteValue(ChestPair.Key.ToString(), ChestPair.Value);
+    }
+    Writer->WriteObjectEnd();
+
+    // Rest terminal charges
+    Writer->WriteObjectStart(TEXT("RestTerminalCharges"));
+    for (const auto& RestPair : Suitcase->DungeonDelta.RestTerminalCharges)
+    {
+        Writer->WriteValue(RestPair.Key.ToString(), RestPair.Value);
+    }
+    Writer->WriteObjectEnd();
+
+    // Collected keys
+    Writer->WriteArrayStart(TEXT("CollectedKeyGuids"));
+    for (const FGuid& KeyGuid : Suitcase->DungeonDelta.CollectedKeyGuids)
+    {
+        Writer->WriteValue(KeyGuid.ToString());
+    }
+    Writer->WriteArrayEnd();
+
+    Writer->WriteObjectEnd(); // End DungeonDelta
+
+    Writer->WriteObjectEnd(); // End Root
     Writer->Close();
 
     return Output;
