@@ -7,6 +7,7 @@
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignKeyPickup.h"
 #include "Entities/SovereignDungeonEntrance.h"
+#include "Entities/SovereignBossTeleporter.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
@@ -623,6 +624,31 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Test generator entrance class assignment
 	DetGenA->EntranceActorClass = ASovereignDungeonEntrance::StaticClass();
 	TestEqual(TEXT("Generator EntranceActorClass matches assigned class"), DetGenA->EntranceActorClass.Get(), ASovereignDungeonEntrance::StaticClass());
+
+	// 19. Test Ticket B-112 Interactive Post-Boss Extraction Teleporter & Activation Pipeline
+	ASovereignBossTeleporter* TestTeleporter = NewObject<ASovereignBossTeleporter>();
+	TestNotNull(TEXT("Boss Teleporter created"), TestTeleporter);
+	TestFalse(TEXT("Boss teleporter is initially dormant"), TestTeleporter->bIsActive);
+	TestFalse(TEXT("Boss teleporter cannot be interacted with while dormant"), TestTeleporter->CanInteract_Implementation(Cultivator));
+	TestEqual(TEXT("Dormant hint displays defeat boss requirement"),
+		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->DormantHint);
+
+	// Test activation upon boss victory notification
+	bool bActivationDelegateFired = false;
+	TestTeleporter->OnBossTeleporterActivated.AddLambda([&bActivationDelegateFired]() {
+		bActivationDelegateFired = true;
+	});
+
+	TestTeleporter->NotifyBossDefeated();
+	TestTrue(TEXT("Boss teleporter is active after boss defeated"), TestTeleporter->bIsActive);
+	TestTrue(TEXT("Boss teleporter can be interacted with once active"), TestTeleporter->CanInteract_Implementation(Cultivator));
+	TestEqual(TEXT("Active hint displays teleport option"),
+		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->ActiveHint);
+	TestTrue(TEXT("OnBossTeleporterActivated delegate broadcast"), bActivationDelegateFired);
+
+	// Test generator boss teleporter class assignment
+	DetGenA->BossTeleporterClass = ASovereignBossTeleporter::StaticClass();
+	TestEqual(TEXT("Generator BossTeleporterClass matches assigned class"), DetGenA->BossTeleporterClass.Get(), ASovereignBossTeleporter::StaticClass());
 
 	return true;
 }

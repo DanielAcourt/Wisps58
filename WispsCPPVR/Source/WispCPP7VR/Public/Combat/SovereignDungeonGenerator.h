@@ -432,6 +432,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignBaseInteractable> EntranceActorClass;
 
+	/** Optional custom Blueprint actor class for post-boss exit teleporter (Ticket B-112, inherits ASovereignBossTeleporter) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignBossTeleporter> BossTeleporterClass;
+
 	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> BossGateMesh;
@@ -655,6 +659,10 @@ public:
 	/** Returns world transform of the terminal Boss Chamber */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
 	FTransform GetBossChamberTransform() const;
+
+	/** Returns spawned boss teleporter actor if present (Ticket B-112) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
+	class ASovereignBossTeleporter* GetBossTeleporterActor() const;
 
 	/** Selects an active battle manager from the biome arenas array */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
