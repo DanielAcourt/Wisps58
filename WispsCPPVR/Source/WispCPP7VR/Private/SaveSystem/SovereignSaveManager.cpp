@@ -147,7 +147,7 @@ void USaveManager::ApplyDungeonDeltas(const FSovereignDungeonDeltaState& DeltaSt
         AActor* Actor = Registry ? Registry->FindActor(RestPair.Key) : nullptr;
         if (ASovereignRestTerminal* Terminal = Cast<ASovereignRestTerminal>(Actor))
         {
-            Terminal->SetRestCharges(RestPair.Value);
+            Terminal->ResetCharges(RestPair.Value);
         }
     }
 
