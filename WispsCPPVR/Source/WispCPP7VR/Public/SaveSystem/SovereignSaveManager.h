@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. All Rights Reserved. Confidential & Proprietary.
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-06
 
 #pragma once
 
@@ -6,8 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "Subsystems/GameInstanceSubsystem.h" // The Boss's new parent class
 #include "SaveSystem/SovereignGameData.h" // Needed for FEntitySaveData
+#include "SaveSystem/SovereignDungeonDelta.h"
 #include "SovereignSaveManager.generated.h"
-
 
 /**
  * @class USaveManager
@@ -16,6 +16,7 @@
  */
 
 class USovereignSaveGame;
+class ASovereignBaseInteractable;
 
 UCLASS()
 class WISPCPP7VR_API USaveManager : public UGameInstanceSubsystem
@@ -48,6 +49,18 @@ public:
 
     /** Logic: If I didn't save you, you don't exist. */
     void PurgeUnearnedEntities(class USovereignSaveGame* LoadedSuitcase);
+
+    /**
+     * Checks if an interactable is an unmutated procedural dungeon actor (Ticket B-115).
+     * If true, it should be excluded from full entity serialization to prevent saving thousands
+     * of static room actors in 750+ room mega-dungeons.
+     */
+    static bool ShouldBypassProceduralActorSerialization(AActor* InActor);
+
+    /**
+     * Applies lightweight dungeon deltas onto active procedural actors in the world (Ticket B-115).
+     */
+    void ApplyDungeonDeltas(const FSovereignDungeonDeltaState& DeltaState);
 
 
 protected:
