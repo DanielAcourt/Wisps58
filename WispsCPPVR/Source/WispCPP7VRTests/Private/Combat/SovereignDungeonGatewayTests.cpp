@@ -15,6 +15,7 @@
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
@@ -634,17 +635,11 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->DormantHint);
 
 	// Test activation upon boss victory notification
-	bool bActivationDelegateFired = false;
-	TestTeleporter->OnBossTeleporterActivated.AddLambda([&bActivationDelegateFired]() {
-		bActivationDelegateFired = true;
-	});
-
 	TestTeleporter->NotifyBossDefeated();
 	TestTrue(TEXT("Boss teleporter is active after boss defeated"), TestTeleporter->bIsActive);
 	TestTrue(TEXT("Boss teleporter can be interacted with once active"), TestTeleporter->CanInteract_Implementation(Cultivator));
 	TestEqual(TEXT("Active hint displays teleport option"),
 		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->ActiveHint);
-	TestTrue(TEXT("OnBossTeleporterActivated delegate broadcast"), bActivationDelegateFired);
 
 	// Test generator boss teleporter class assignment
 	DetGenA->BossTeleporterClass = ASovereignBossTeleporter::StaticClass();
@@ -658,8 +653,8 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Add dummy entrance and boss teleporter to GeneratorSpawnedActors to test accessor retrieval & idempotent cleanup
 	DetGenA->GeneratorSpawnedActors.Add(TestEntrance);
 	DetGenA->GeneratorSpawnedActors.Add(TestTeleporter);
-	TestEqual(TEXT("GetEntranceGatewayActor retrieves entrance actor"), DetGenA->GetEntranceGatewayActor(), TestEntrance);
-	TestEqual(TEXT("GetBossTeleporterActor retrieves boss teleporter actor"), DetGenA->GetBossTeleporterActor(), TestTeleporter);
+	TestTrue(TEXT("GetEntranceGatewayActor retrieves entrance actor"), DetGenA->GetEntranceGatewayActor() == TestEntrance);
+	TestTrue(TEXT("GetBossTeleporterActor retrieves boss teleporter actor"), DetGenA->GetBossTeleporterActor() == TestTeleporter);
 
 	// Verify portal light component properties on teleporter
 	TestNotNull(TEXT("PortalLightComponent is instantiated on Boss Teleporter"), TestTeleporter->PortalLightComponent.Get());

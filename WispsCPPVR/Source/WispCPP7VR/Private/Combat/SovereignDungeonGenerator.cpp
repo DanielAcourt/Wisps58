@@ -1338,7 +1338,14 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 						}
 						else
 						{
-							EntryDirection = GetOppositeDirection(Edge.DirectionAtoB);
+							switch (Edge.DirectionAtoB)
+							{
+							case EDungeonDirection::North: EntryDirection = EDungeonDirection::South; break;
+							case EDungeonDirection::South: EntryDirection = EDungeonDirection::North; break;
+							case EDungeonDirection::East:  EntryDirection = EDungeonDirection::West; break;
+							case EDungeonDirection::West:  EntryDirection = EDungeonDirection::East; break;
+							default: break;
+							}
 						}
 						break;
 					}
