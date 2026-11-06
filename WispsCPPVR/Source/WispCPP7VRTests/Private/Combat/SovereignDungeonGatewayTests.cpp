@@ -6,6 +6,8 @@
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignKeyPickup.h"
+#include "Entities/SovereignDungeonEntrance.h"
+#include "Entities/SovereignBossTeleporter.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
@@ -13,6 +15,7 @@
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
@@ -612,6 +615,56 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	// 17. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
+
+	// 18. Test Ticket B-111 Interactive Entrance & Return to Garden
+	ASovereignDungeonEntrance* TestEntrance = NewObject<ASovereignDungeonEntrance>();
+	TestNotNull(TEXT("Dungeon Entrance created"), TestEntrance);
+	TestEqual(TEXT("Entrance hint indicates return to garden"), TestEntrance->GetInteractionHint_Implementation(), TEXT("Return to Meditation Garden"));
+	TestTrue(TEXT("Entrance interactable by default"), TestEntrance->CanInteract_Implementation(Cultivator));
+
+	// Test generator entrance class assignment
+	DetGenA->EntranceActorClass = ASovereignDungeonEntrance::StaticClass();
+	TestEqual(TEXT("Generator EntranceActorClass matches assigned class"), DetGenA->EntranceActorClass.Get(), ASovereignDungeonEntrance::StaticClass());
+
+	// 19. Test Ticket B-112 Interactive Post-Boss Extraction Teleporter & Activation Pipeline
+	ASovereignBossTeleporter* TestTeleporter = NewObject<ASovereignBossTeleporter>();
+	TestNotNull(TEXT("Boss Teleporter created"), TestTeleporter);
+	TestFalse(TEXT("Boss teleporter is initially dormant"), TestTeleporter->bIsActive);
+	TestFalse(TEXT("Boss teleporter cannot be interacted with while dormant"), TestTeleporter->CanInteract_Implementation(Cultivator));
+	TestEqual(TEXT("Dormant hint displays defeat boss requirement"),
+		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->DormantHint);
+
+	// Test activation upon boss victory notification
+	TestTeleporter->NotifyBossDefeated();
+	TestTrue(TEXT("Boss teleporter is active after boss defeated"), TestTeleporter->bIsActive);
+	TestTrue(TEXT("Boss teleporter can be interacted with once active"), TestTeleporter->CanInteract_Implementation(Cultivator));
+	TestEqual(TEXT("Active hint displays teleport option"),
+		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->ActiveHint);
+
+	// Test generator boss teleporter class assignment
+	DetGenA->BossTeleporterClass = ASovereignBossTeleporter::StaticClass();
+	TestEqual(TEXT("Generator BossTeleporterClass matches assigned class"), DetGenA->BossTeleporterClass.Get(), ASovereignBossTeleporter::StaticClass());
+
+	// 20. Test Ticket B-113 Comprehensive Entrance & Boss Teleporter Automation Suite
+	// Test getter queries on generator when spawned actors array is empty
+	TestNull(TEXT("GetEntranceGatewayActor returns null when none spawned"), DetGenA->GetEntranceGatewayActor());
+	TestNull(TEXT("GetBossTeleporterActor returns null when none spawned"), DetGenA->GetBossTeleporterActor());
+
+	// Add dummy entrance and boss teleporter to GeneratorSpawnedActors to test accessor retrieval & idempotent cleanup
+	DetGenA->GeneratorSpawnedActors.Add(TestEntrance);
+	DetGenA->GeneratorSpawnedActors.Add(TestTeleporter);
+	TestTrue(TEXT("GetEntranceGatewayActor retrieves entrance actor"), DetGenA->GetEntranceGatewayActor() == TestEntrance);
+	TestTrue(TEXT("GetBossTeleporterActor retrieves boss teleporter actor"), DetGenA->GetBossTeleporterActor() == TestTeleporter);
+
+	// Verify portal light component properties on teleporter
+	TestNotNull(TEXT("PortalLightComponent is instantiated on Boss Teleporter"), TestTeleporter->PortalLightComponent.Get());
+	TestTrue(TEXT("Portal light becomes visible when teleporter activates"), TestTeleporter->PortalLightComponent->IsVisible());
+
+	// Verify Idempotent Cleanup clears spawned entrance and teleporter references
+	DetGenA->CleanupDungeon();
+	TestEqual(TEXT("GeneratorSpawnedActors empty after CleanupDungeon"), DetGenA->GeneratorSpawnedActors.Num(), 0);
+	TestNull(TEXT("GetEntranceGatewayActor returns null after CleanupDungeon"), DetGenA->GetEntranceGatewayActor());
+	TestNull(TEXT("GetBossTeleporterActor returns null after CleanupDungeon"), DetGenA->GetBossTeleporterActor());
 
 	return true;
 }

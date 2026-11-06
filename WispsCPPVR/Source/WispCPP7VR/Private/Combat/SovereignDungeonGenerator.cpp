@@ -13,6 +13,8 @@
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignKeyPickup.h"
+#include "Entities/SovereignDungeonEntrance.h"
+#include "Entities/SovereignBossTeleporter.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
@@ -1247,20 +1249,64 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			}
 		}
 
-		// 4. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop
+		// 3.5 For Entrance Room: Spawn Interactive Entrance Gateway Actor (Ticket B-111)
+		if (Node.TileType == EDungeonTileType::EntranceRoom && GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			// Find an unconnected boundary perimeter socket (closed wall) opposite outgoing passages
+			FVector EntrancePortalPos = Node.WorldTransform.GetLocation();
+			FRotator EntrancePortalRot = Node.WorldTransform.GetRotation().Rotator();
+			bool bFoundClosedWall = false;
+
+			for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
+			{
+				const uint8 DirMask = 1 << static_cast<uint8>(Socket.FacingDirection);
+				const bool bHasEdge = (Node.ConnectedPassageMask & DirMask) != 0;
+				if (!bHasEdge)
+				{
+					// Found an unconnected perimeter boundary
+					FVector DirVector = FVector::ZeroVector;
+					switch (Socket.FacingDirection)
+					{
+					case EDungeonDirection::North: DirVector = FVector(1.0f, 0.0f, 0.0f); break;
+					case EDungeonDirection::South: DirVector = FVector(-1.0f, 0.0f, 0.0f); break;
+					case EDungeonDirection::East:  DirVector = FVector(0.0f, 1.0f, 0.0f); break;
+					case EDungeonDirection::West:  DirVector = FVector(0.0f, -1.0f, 0.0f); break;
+					default: break;
+					}
+
+					EntrancePortalPos = Node.WorldTransform.GetLocation() + (DirVector * (TILE_SIZE * 0.45f));
+					EntrancePortalRot = DirVector.Rotation();
+					bFoundClosedWall = true;
+					break;
+				}
+			}
+
+			UClass* EntranceClassToSpawn = EntranceActorClass ? EntranceActorClass.Get() : ASovereignDungeonEntrance::StaticClass();
+			if (ASovereignBaseInteractable* EntranceActor = GetWorld()->SpawnActor<ASovereignBaseInteractable>(
+				EntranceClassToSpawn, EntrancePortalPos, EntrancePortalRot, SpawnParams))
+			{
+				GeneratorSpawnedActors.Add(EntranceActor);
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Entrance Gateway Actor in Node %d at %s."),
+					NodeIdx, *EntrancePortalPos.ToString());
+			}
+		}
+
+		// 4. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop & Extraction Teleporter (Ticket B-112)
 		if (Node.TileType == EDungeonTileType::BossChamber)
 		{
+			const FVector BossCenterPos = AnchorPos + FVector(
+				(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+				(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+				50.0f
+			);
+
 			if (BossAltarMesh && GetWorld())
 			{
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-				// Place altar in the center of the multi-cell Boss Chamber
-				const FVector BossCenterPos = AnchorPos + FVector(
-					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
-					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
-					50.0f
-				);
 
 				if (AStaticMeshActor* AltarActor = GetWorld()->SpawnActor<AStaticMeshActor>(
 					AStaticMeshActor::StaticClass(), BossCenterPos, FRotator::ZeroRotator, SpawnParams))
@@ -1270,6 +1316,64 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 						AltarActor->GetStaticMeshComponent()->SetStaticMesh(BossAltarMesh);
 					}
 					GeneratorSpawnedActors.Add(AltarActor);
+				}
+			}
+
+			// Spawn ASovereignBossTeleporter placed behind the boss opposite the entry door
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				// Find direction of the boss entrance edge
+				EDungeonDirection EntryDirection = EDungeonDirection::South;
+				for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+				{
+					if (Edge.Connects(NodeIdx))
+					{
+						// If NodeIdx is NodeB, the edge entered from NodeA via DirectionAtoB
+						if (Edge.NodeIndexB == NodeIdx)
+						{
+							EntryDirection = Edge.DirectionAtoB;
+						}
+						else
+						{
+							switch (Edge.DirectionAtoB)
+							{
+							case EDungeonDirection::North: EntryDirection = EDungeonDirection::South; break;
+							case EDungeonDirection::South: EntryDirection = EDungeonDirection::North; break;
+							case EDungeonDirection::East:  EntryDirection = EDungeonDirection::West; break;
+							case EDungeonDirection::West:  EntryDirection = EDungeonDirection::East; break;
+							default: break;
+							}
+						}
+						break;
+					}
+				}
+
+				// The back wall is in the forward direction of EntryDirection
+				FVector BackWallOffset = FVector::ZeroVector;
+				switch (EntryDirection)
+				{
+				case EDungeonDirection::North: BackWallOffset = FVector(1.0f, 0.0f, 0.0f); break;
+				case EDungeonDirection::South: BackWallOffset = FVector(-1.0f, 0.0f, 0.0f); break;
+				case EDungeonDirection::East:  BackWallOffset = FVector(0.0f, 1.0f, 0.0f); break;
+				case EDungeonDirection::West:  BackWallOffset = FVector(0.0f, -1.0f, 0.0f); break;
+				default: BackWallOffset = FVector(1.0f, 0.0f, 0.0f); break;
+				}
+
+				// Offset teleporter behind boss relative to boss entrance
+				const float HalfChamberExtent = (Node.FootprintDimensions.X * TILE_SIZE) * 0.40f;
+				const FVector TeleporterPos = BossCenterPos + (BackWallOffset * HalfChamberExtent);
+				const FRotator TeleporterRot = (-BackWallOffset).Rotation(); // Face inwards toward center
+
+				UClass* TeleporterClassToSpawn = BossTeleporterClass ? BossTeleporterClass.Get() : ASovereignBossTeleporter::StaticClass();
+				if (ASovereignBossTeleporter* Teleporter = GetWorld()->SpawnActor<ASovereignBossTeleporter>(
+					TeleporterClassToSpawn, TeleporterPos, TeleporterRot, SpawnParams))
+				{
+					GeneratorSpawnedActors.Add(Teleporter);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignBossTeleporter in BossChamber Node %d at %s."),
+						NodeIdx, *TeleporterPos.ToString());
 				}
 			}
 		}
@@ -1701,6 +1805,30 @@ FTransform ASovereignDungeonGenerator::GetEntranceTransform() const
 		return DungeonNodes[0].WorldTransform;
 	}
 	return GetActorTransform();
+}
+
+ASovereignBossTeleporter* ASovereignDungeonGenerator::GetBossTeleporterActor() const
+{
+	for (AActor* SpawnedActor : GeneratorSpawnedActors)
+	{
+		if (SpawnedActor && (SpawnedActor->IsA<ASovereignBossTeleporter>() || (BossTeleporterClass && SpawnedActor->IsA(BossTeleporterClass))))
+		{
+			return Cast<ASovereignBossTeleporter>(SpawnedActor);
+		}
+	}
+	return nullptr;
+}
+
+ASovereignBaseInteractable* ASovereignDungeonGenerator::GetEntranceGatewayActor() const
+{
+	for (AActor* SpawnedActor : GeneratorSpawnedActors)
+	{
+		if (SpawnedActor && (SpawnedActor->IsA<ASovereignDungeonEntrance>() || (EntranceActorClass && SpawnedActor->IsA(EntranceActorClass))))
+		{
+			return Cast<ASovereignBaseInteractable>(SpawnedActor);
+		}
+	}
+	return nullptr;
 }
 
 FTransform ASovereignDungeonGenerator::GetBossChamberTransform() const
