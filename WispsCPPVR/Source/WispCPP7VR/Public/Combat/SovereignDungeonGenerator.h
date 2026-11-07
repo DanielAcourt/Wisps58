@@ -432,9 +432,25 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignBaseInteractable> EntranceActorClass;
 
+	/** Optional custom Blueprint actor class for upward return stairs on Depth >= 1 (Ticket B-117, inherits ASovereignUpwardStairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignUpwardStairs> UpwardStairsClass;
+
 	/** Optional custom Blueprint actor class for post-boss exit teleporter (Ticket B-112, inherits ASovereignBossTeleporter) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignBossTeleporter> BossTeleporterClass;
+
+	/** Optional custom Blueprint actor class for procedural descent stairs (Ticket B-116, inherits ASovereignDungeonStairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonStairs> DescentStairsClass;
+
+	/** Mode toggle: If true, stairs only spawn in Boss Chamber; if false, can also spawn in dedicated Stair Rooms (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	bool bToggleBossOnlyStairs = true;
+
+	/** If true, spawns descent stairs in the Boss Chamber alongside/behind the boss */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	bool bSpawnDescentStairs = true;
 
 	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")

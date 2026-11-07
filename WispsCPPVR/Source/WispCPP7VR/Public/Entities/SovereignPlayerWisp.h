@@ -83,6 +83,10 @@ public:
 	/** Accessor for the persistent player party component */
 	virtual USovereignPartyComponent* GetPartyComponent() const override { return PartyComponent; }
 
+	/** Highest dungeon depth conquered by this player wisp (Ticket B-117) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon")
+	int32 DeepestDungeonCompleted = 0;
+
 	/** Accessor for current possessed host actor */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Possession")
 	AActor* GetCurrentHost() const { return CurrentHost; }

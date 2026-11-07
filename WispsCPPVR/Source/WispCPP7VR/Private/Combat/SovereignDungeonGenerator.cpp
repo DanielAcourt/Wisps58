@@ -15,6 +15,8 @@
 #include "Entities/SovereignKeyPickup.h"
 #include "Entities/SovereignDungeonEntrance.h"
 #include "Entities/SovereignBossTeleporter.h"
+#include "Entities/SovereignDungeonStairs.h"
+#include "Entities/SovereignUpwardStairs.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
@@ -1284,13 +1286,34 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				}
 			}
 
-			UClass* EntranceClassToSpawn = EntranceActorClass ? EntranceActorClass.Get() : ASovereignDungeonEntrance::StaticClass();
+			// Depth-aware entrance gateway vs upward stairs (Ticket B-117)
+			int32 ActiveDepth = 0;
+			if (UGameInstance* GI = GetWorld()->GetGameInstance())
+			{
+				if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+				{
+					ActiveDepth = DungeonSub->GetCurrentDepth();
+				}
+			}
+
+			UClass* ActorClassToSpawn = nullptr;
+			if (ActiveDepth > 0)
+			{
+				// Depth >= 1 spawns upward stairs
+				ActorClassToSpawn = UpwardStairsClass ? UpwardStairsClass.Get() : ASovereignUpwardStairs::StaticClass();
+			}
+			else
+			{
+				// Depth 0 spawns garden return entrance
+				ActorClassToSpawn = EntranceActorClass ? EntranceActorClass.Get() : ASovereignDungeonEntrance::StaticClass();
+			}
+
 			if (ASovereignBaseInteractable* EntranceActor = GetWorld()->SpawnActor<ASovereignBaseInteractable>(
-				EntranceClassToSpawn, EntrancePortalPos, EntrancePortalRot, SpawnParams))
+				ActorClassToSpawn, EntrancePortalPos, EntrancePortalRot, SpawnParams))
 			{
 				GeneratorSpawnedActors.Add(EntranceActor);
-				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Entrance Gateway Actor in Node %d at %s."),
-					NodeIdx, *EntrancePortalPos.ToString());
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned %s in Node %d at %s (Depth: %d)."),
+					*ActorClassToSpawn->GetName(), NodeIdx, *EntrancePortalPos.ToString(), ActiveDepth);
 			}
 		}
 
@@ -1374,6 +1397,23 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 					GeneratorSpawnedActors.Add(Teleporter);
 					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignBossTeleporter in BossChamber Node %d at %s."),
 						NodeIdx, *TeleporterPos.ToString());
+				}
+
+				// Spawn descent stairs in Boss Chamber (Ticket B-116)
+				if (bSpawnDescentStairs)
+				{
+					// Position stairs slightly to the side of the exit teleporter
+					FVector OrthoOffset = FVector::CrossProduct(BackWallOffset, FVector::UpVector).GetSafeNormal();
+					const FVector StairsPos = TeleporterPos + (OrthoOffset * (TILE_SIZE * 0.35f));
+
+					UClass* StairsClassToSpawn = DescentStairsClass ? DescentStairsClass.Get() : ASovereignDungeonStairs::StaticClass();
+					if (ASovereignDungeonStairs* Stairs = GetWorld()->SpawnActor<ASovereignDungeonStairs>(
+						StairsClassToSpawn, StairsPos, TeleporterRot, SpawnParams))
+					{
+						GeneratorSpawnedActors.Add(Stairs);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignDungeonStairs in BossChamber Node %d at %s."),
+							NodeIdx, *StairsPos.ToString());
+					}
 				}
 			}
 		}
