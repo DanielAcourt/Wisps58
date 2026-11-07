@@ -4,7 +4,11 @@
 #include "Entities/SovereignDungeonStairs.h"
 #include "Entities/SovereignUpwardStairs.h"
 #include "Combat/SovereignDungeonSubsystem.h"
+#include "Combat/SovereignDungeonGenerator.h"
 #include "Entities/SovereignPlayerWisp.h"
+#include "Entities/SovereignBaseCharacter.h"
+#include "Inventory/SovereignInventoryComponent.h"
+#include "Inventory/SovereignItemDefinition.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -33,6 +37,54 @@ bool FSovereignDungeonStairsInheritanceTest::RunTest(const FString& Parameters)
 	// Verify sacrifice calculation mechanics inherited from ASovereignDungeonGateway
 	TestNearlyEqual(TEXT("Default enemy buff is 1.0"), (float)Stairs->CalculateEnemyBuffMultiplier(), 1.0f);
 	TestNearlyEqual(TEXT("Default reward mult is 1.0"), (float)Stairs->CalculateRewardMultiplier(), 1.0f);
+
+	return true;
+}
+
+/**
+ * Unit Test: B-116 Stair Room Footprint & Connection Metrics
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSovereignStairRoomFootprintTest, "WispsGame.Combat.StairRoomFootprint", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSovereignStairRoomFootprintTest::RunTest(const FString& Parameters)
+{
+	FIntPoint Dims = ASovereignDungeonGenerator::GetDefaultFootprintForTileType(EDungeonTileType::StairRoom);
+	TestEqual(TEXT("StairRoom width is 4"), Dims.X, 4);
+	TestEqual(TEXT("StairRoom height is 4"), Dims.Y, 4);
+
+	int32 MaxConns = ASovereignDungeonGenerator::GetDefaultMaxConnectionsForTileType(EDungeonTileType::StairRoom);
+	TestEqual(TEXT("StairRoom max connections is 2"), MaxConns, 2);
+
+	return true;
+}
+
+/**
+ * Unit Test: B-116 Boss Key Deletion upon Stair Descent
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSovereignStairBossKeyDeletionTest, "WispsGame.Combat.StairBossKeyDeletion", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSovereignStairBossKeyDeletionTest::RunTest(const FString& Parameters)
+{
+	ASovereignDungeonStairs* Stairs = NewObject<ASovereignDungeonStairs>();
+	Stairs->SetGatewayUnlocked(true);
+
+	ASovereignBaseCharacter* Leader = NewObject<ASovereignBaseCharacter>();
+	TestNotNull(TEXT("Leader created"), Leader);
+
+	USovereignInventoryComponent* Inv = Leader->GetInventoryComponent();
+	TestNotNull(TEXT("Inventory component created"), Inv);
+
+	const FGameplayTag BossKeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+	USovereignItemDefinition* KeyDef = NewObject<USovereignItemDefinition>();
+	KeyDef->ItemTag = BossKeyTag;
+
+	Inv->AddItem(KeyDef, 2);
+	TestEqual(TEXT("Initial key count is 2"), Inv->GetItemCountByTag(BossKeyTag), 2);
+
+	// Calling DescendToNextFloor consumes sacrifices and deletes any held Boss Keys
+	Stairs->DescendToNextFloor(Leader);
+
+	TestEqual(TEXT("Boss keys deleted from inventory on descent"), Inv->GetItemCountByTag(BossKeyTag), 0);
 
 	return true;
 }

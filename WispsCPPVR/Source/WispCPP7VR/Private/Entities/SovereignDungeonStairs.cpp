@@ -4,6 +4,7 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "Combat/SovereignDungeonGenerator.h"
+#include "Inventory/SovereignInventoryComponent.h"
 #include "EngineUtils.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
@@ -87,6 +88,21 @@ bool ASovereignDungeonStairs::DescendToNextFloor(ASovereignBaseCharacter* PartyL
 
 	// 3. Consume sacrifices
 	ConsumeSacrifices();
+
+	// If player carries a Boss Key, delete it upon using descent stairs
+	if (PartyLeader)
+	{
+		if (USovereignInventoryComponent* LeaderInv = PartyLeader->GetInventoryComponent())
+		{
+			const FGameplayTag BossKeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+			if (BossKeyTag.IsValid() && LeaderInv->GetItemCountByTag(BossKeyTag) > 0)
+			{
+				const int32 KeysDeleted = LeaderInv->GetItemCountByTag(BossKeyTag);
+				LeaderInv->RemoveItemByTag(BossKeyTag, KeysDeleted);
+				UE_LOG(LogTemp, Log, TEXT("[DungeonStairs] Deleted %d Boss Key(s) from inventory upon descending."), KeysDeleted);
+			}
+		}
+	}
 
 	OnDungeonStairsDescended.Broadcast(NewDepth);
 

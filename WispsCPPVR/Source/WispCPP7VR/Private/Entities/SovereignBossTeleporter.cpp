@@ -1,8 +1,10 @@
 // Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-05
 
 #include "Entities/SovereignBossTeleporter.h"
+#include "Entities/SovereignDungeonStairs.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "Combat/SovereignEncounterSubsystem.h"
+#include "EngineUtils.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -96,6 +98,18 @@ void ASovereignBossTeleporter::ActivateTeleporter()
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[ASovereignBossTeleporter] Teleporter has been ACTIVATED following boss defeat."));
+
+	// Also notify any descent stairs in the Boss Chamber to unseal (Ticket B-116)
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<ASovereignDungeonStairs> It(World); It; ++It)
+		{
+			if (ASovereignDungeonStairs* Stairs = *It)
+			{
+				Stairs->NotifyBossDefeated();
+			}
+		}
+	}
 
 	OnBossTeleporterActivated.Broadcast();
 }
