@@ -19,6 +19,7 @@
 #include "Entities/SovereignUpwardStairs.h"
 #include "Entities/SovereignPlayerWisp.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "EngineUtils.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -1064,7 +1065,15 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				{
 					if (ParentSocket.bIsConnected) continue;
 
-					const FIntPoint StepDir = GetDirectionOffset(ParentSocket.FacingDirection);
+					FIntPoint StepDir = FIntPoint(1, 0);
+					switch (ParentSocket.FacingDirection)
+					{
+					case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+					case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+					case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+					case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+					default: break;
+					}
 					const FIntPoint CandidateAnchor = ParentSocket.CellCoord + StepDir;
 
 					if (CanFitRoomFootprint(CandidateAnchor, StairDims))
