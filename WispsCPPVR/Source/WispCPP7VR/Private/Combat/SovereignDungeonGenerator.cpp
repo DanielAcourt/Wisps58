@@ -1042,11 +1042,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			}
 		}
 
-		for (TActorIterator<ASovereignPlayerWisp> WispIt(GetWorld()); WispIt; ++WispIt)
+		if (UWorld* CurrentWorld = GetWorld())
 		{
-			if (ASovereignPlayerWisp* Wisp = *WispIt)
+			for (TActorIterator<ASovereignPlayerWisp> WispIt(CurrentWorld); WispIt; ++WispIt)
 			{
-				PlayerDeepestCompleted = FMath::Max(PlayerDeepestCompleted, Wisp->DeepestDungeonCompleted);
+				if (ASovereignPlayerWisp* Wisp = *WispIt)
+				{
+					PlayerDeepestCompleted = FMath::Max(PlayerDeepestCompleted, Wisp->DeepestDungeonCompleted);
+				}
 			}
 		}
 
