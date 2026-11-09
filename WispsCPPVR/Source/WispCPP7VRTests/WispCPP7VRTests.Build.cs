@@ -16,6 +16,7 @@ public class WispCPP7VRTests : ModuleRules
             "Json",
             "JsonUtilities",
             "GameplayTags",
+            "EnhancedInput",
             "TestFramework",
             "UnrealEd"
         });

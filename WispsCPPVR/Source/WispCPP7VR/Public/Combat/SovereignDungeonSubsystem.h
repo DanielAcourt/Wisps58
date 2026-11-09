@@ -28,6 +28,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	int32 ActiveExpeditionSeed = 1337;
 
+	/** Configurable Blueprint class path of the procedural dungeon generator with all custom settings and art assets */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FString DungeonGeneratorClassPath;
+
+	/** Direct class override of the procedural dungeon generator if available */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	TSubclassOf<class ASovereignDungeonGenerator> DungeonGeneratorClassOverride;
+
 	/** Combat stat multiplier applied to enemies inside the dungeon */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	float ActiveEnemyBuffMultiplier = 1.0f;
@@ -48,6 +56,30 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	bool bHasActiveExpedition = false;
 
+	/** Target room count for procedural generation in this expedition */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	int32 TargetRoomCount = 8;
+
+	/** Special room percentage (e.g. 20.0%) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float SpecialRoomPercentage = 20.0f;
+
+	/** Ratio of special rooms dedicated to Treasure Rooms */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float TreasureRoomRatio = 0.40f;
+
+	/** Ratio of special rooms dedicated to Rest Sanctuaries */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float RestSanctuaryRatio = 0.30f;
+
+	/** Ratio of special rooms dedicated to Grand Chambers */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float GrandChamberRatio = 0.20f;
+
+	/** Ratio of special rooms dedicated to Trial Colosseums */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float ColosseumRatio = 0.10f;
+
 	/** Current dungeon floor depth (0 = entrance floor) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	int32 CurrentDepth = 0;
@@ -55,6 +87,18 @@ public:
 	/** Set of Key Pickup GUIDs collected during the current expedition */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	TArray<FGuid> CollectedKeyGuids;
+
+	/** Asset class path of the possessed party leader vessel (e.g. /Game/Blueprint/Actors/Living/BP_Dragon.BP_Dragon_C) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FString PartyLeaderClassPath;
+
+	/** GUID of the party leader vessel */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FGuid PartyLeaderGUID;
+
+	/** Serialized JSON state representing the party leader vessel's attributes, Qi, inventory, and bio vitals */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FString PartyLeaderStateJson;
 
 	/** Difficulty scaling rate per depth floor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Expedition")
@@ -100,6 +144,18 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Expedition")
 	bool IsKeyCollected(const FGuid& KeyGuid) const;
+
+	/**
+	 * Records the possessed party leader vessel class and full entity state JSON before dungeon entry.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
+	void RecordPartyLeaderState(const FString& InClassPath, const FGuid& InGuid, const FString& InStateJson);
+
+	/**
+	 * Checks if a recorded party leader vessel state is available for spawning.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Expedition")
+	bool HasPartyLeaderState() const { return !PartyLeaderClassPath.IsEmpty(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
 	void ClearExpedition();

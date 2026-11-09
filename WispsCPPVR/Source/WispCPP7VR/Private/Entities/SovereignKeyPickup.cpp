@@ -7,6 +7,7 @@
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameplayTagsManager.h"
 #include "UObject/ConstructorHelpers.h"
 
 ASovereignKeyPickup::ASovereignKeyPickup()
@@ -19,6 +20,7 @@ ASovereignKeyPickup::ASovereignKeyPickup()
 	BobFrequency = 2.0f;
 	RunningTime = 0.0f;
 
+	UGameplayTagsManager::Get().AddNativeGameplayTag(FName("Item.Key.BossGate"));
 	KeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
 	KeyDisplayName = NSLOCTEXT("Sovereign", "BossKeyName", "Vault Guardian Key");
 

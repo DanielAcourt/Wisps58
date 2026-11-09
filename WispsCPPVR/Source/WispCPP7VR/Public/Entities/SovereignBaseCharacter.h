@@ -152,6 +152,9 @@ public:
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	void SetDefaultMappingContext(class UInputMappingContext* NewContext) { DefaultMappingContext = NewContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputAction* GetMoveAction() const { return MoveAction; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")

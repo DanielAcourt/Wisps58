@@ -19,6 +19,7 @@
 #include "Entities/SovereignUpwardStairs.h"
 #include "Entities/SovereignPlayerWisp.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "GameplayTagsManager.h"
 #include "EngineUtils.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
@@ -42,6 +43,7 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	GenerationSeed = 1337;
 	bRequireBossKey = true;
 	bSpawnKeyAsWorldPickup = true;
+	UGameplayTagsManager::Get().AddNativeGameplayTag(FName("Item.Key.BossGate"));
 	BossKeyItemTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
 	MinSpineLength = 4;
 	MaxLoopCount = 0;
@@ -102,11 +104,17 @@ void ASovereignDungeonGenerator::BeginPlay()
 				if (DungeonSubsystem->bHasActiveExpedition)
 				{
 					GenerationSeed = DungeonSubsystem->ActiveExpeditionSeed;
+					TargetRoomCount = DungeonSubsystem->TargetRoomCount;
+					SpecialRoomPercentage = DungeonSubsystem->SpecialRoomPercentage;
+					TreasureRoomRatio = DungeonSubsystem->TreasureRoomRatio;
+					RestSanctuaryRatio = DungeonSubsystem->RestSanctuaryRatio;
+					GrandChamberRatio = DungeonSubsystem->GrandChamberRatio;
+					ColosseumRatio = DungeonSubsystem->ColosseumRatio;
 					EnemyBuffMultiplier = DungeonSubsystem->ActiveEnemyBuffMultiplier;
 					RewardMultiplier = DungeonSubsystem->ActiveRewardMultiplier;
 
-					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Expedition parameters ingested: Seed=%d, EnemyBuff=x%f, RewardMult=x%f"),
-						GenerationSeed, EnemyBuffMultiplier, RewardMultiplier);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Expedition parameters ingested: Seed=%d, TargetRooms=%d, SpecialRoomPct=%f, EnemyBuff=x%f, RewardMult=x%f"),
+						GenerationSeed, TargetRoomCount, SpecialRoomPercentage, EnemyBuffMultiplier, RewardMultiplier);
 				}
 			}
 		}
