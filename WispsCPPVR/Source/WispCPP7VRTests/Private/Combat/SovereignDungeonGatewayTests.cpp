@@ -740,7 +740,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 		// Assign an InputMappingContext to the dragon vessel
 		UInputMappingContext* MockIMC = NewObject<UInputMappingContext>();
-		DragonVessel->DefaultMappingContext = MockIMC;
+		DragonVessel->SetDefaultMappingContext(MockIMC);
 		TestEqual(TEXT("Dragon has DefaultMappingContext assigned"), DragonVessel->GetDefaultMappingContext(), MockIMC);
 
 		// Capture full entity state to JSON
@@ -769,7 +769,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 		// Instantiate new vessel simulating dungeon spawning and restore state
 		ASovereignBaseCharacter* SpawnedDungeonDragon = NewObject<ASovereignBaseCharacter>();
-		SpawnedDungeonDragon->DefaultMappingContext = MockIMC;
+		SpawnedDungeonDragon->SetDefaultMappingContext(MockIMC);
 
 		USovereignSaveableEntityComponent* SpawnedSaveComp = SpawnedDungeonDragon->FindComponentByClass<USovereignSaveableEntityComponent>();
 		SpawnedSaveComp->ApplyStateFromJsonObject(DragonStateJsonObj);
