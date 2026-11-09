@@ -636,6 +636,7 @@ void ASovereignDungeonGenerator::CleanupDungeon()
 	// 5. Reset graph data
 	DungeonNodes.Empty();
 	DungeonEdges.Empty();
+	SpecialRooms.Empty();
 	MasterGridOccupancy.Empty();
 	MainSpineNodeIndices.Empty();
 	BossNodeIndex = INDEX_NONE;
@@ -927,9 +928,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				continue;
 			}
 
-			// Select special room type based on budget quotas
+			// Select special room type based on budget quotas.
+			// Prioritize guaranteed TreasureRoom (1x1 dead-end vault) so it isn't starved by large rooms.
 			EDungeonTileType BranchType = EDungeonTileType::Chamber;
-			if (ColosseumCount > 0 && TargetRoomCount >= 30)
+			if (TreasureCount > 0)
+			{
+				BranchType = EDungeonTileType::TreasureRoom;
+			}
+			else if (ColosseumCount > 0 && TargetRoomCount >= 30)
 			{
 				BranchType = EDungeonTileType::Colosseum;
 			}
@@ -940,10 +946,6 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			else if (RestSanctuaryCount > 0)
 			{
 				BranchType = EDungeonTileType::RestSanctuary;
-			}
-			else if (TreasureCount > 0)
-			{
-				BranchType = EDungeonTileType::TreasureRoom;
 			}
 			else
 			{
@@ -1144,8 +1146,106 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				SpawnDefaultLightingRig();
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Successfully generated dungeon with %d nodes, %d edges on attempt %d."),
-				DungeonNodes.Num(), DungeonEdges.Num(), Attempt + 1);
+			// Build and update SpecialRooms registry from generated nodes (Ticket B-120)
+			SpecialRooms.Empty();
+			const FVector GenOrigin = GetActorLocation();
+
+			for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
+			{
+				const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
+				// Register all non-standard rooms (Entrance, Treasure, Rest, Stair, Grand, Colosseum, Elite, Boss)
+				if (Node.TileType != EDungeonTileType::Corridor && Node.TileType != EDungeonTileType::Chamber)
+				{
+					FSovereignSpecialRoomInfo Info;
+					Info.NodeIndex = NodeIdx;
+					Info.TileType = Node.TileType;
+					Info.GridCoord = Node.GridCoord;
+					Info.FootprintDimensions = Node.FootprintDimensions;
+					Info.WorldCenterLocation = GenOrigin + FVector(
+						(Node.GridCoord.X + (Node.FootprintDimensions.X - 1) * 0.5f) * TILE_SIZE,
+						(Node.GridCoord.Y + (Node.FootprintDimensions.Y - 1) * 0.5f) * TILE_SIZE,
+						0.0f
+					);
+
+					// Associate spawned actor if one exists for this node
+					for (AActor* SpawnedAct : GeneratorSpawnedActors)
+					{
+						if (IsValid(SpawnedAct))
+						{
+							const float Dist2D = FVector::Dist2D(SpawnedAct->GetActorLocation(), Info.WorldCenterLocation);
+							if (Dist2D <= (FMath::Max(Node.FootprintDimensions.X, Node.FootprintDimensions.Y) * TILE_SIZE * 0.75f))
+							{
+								Info.SpawnedActor = SpawnedAct;
+								break;
+							}
+						}
+					}
+
+					FString TypeName;
+					switch (Node.TileType)
+					{
+					case EDungeonTileType::EntranceRoom:  TypeName = TEXT("Entrance Room"); break;
+					case EDungeonTileType::TreasureRoom:  TypeName = TEXT("Treasure Room"); break;
+					case EDungeonTileType::RestSanctuary: TypeName = TEXT("Rest Sanctuary"); break;
+					case EDungeonTileType::GrandChamber:  TypeName = TEXT("Grand Chamber"); break;
+					case EDungeonTileType::Colosseum:     TypeName = TEXT("Trial Colosseum"); break;
+					case EDungeonTileType::EliteChamber:  TypeName = TEXT("Elite Chamber"); break;
+					case EDungeonTileType::BossChamber:   TypeName = TEXT("Boss Chamber"); break;
+					case EDungeonTileType::StairRoom:     TypeName = TEXT("Stair Room"); break;
+					default:                              TypeName = TEXT("Special Room"); break;
+					}
+					Info.DisplayName = FString::Printf(TEXT("%s (Node %d)"), *TypeName, NodeIdx);
+					SpecialRooms.Add(Info);
+				}
+			}
+
+			// Prominent ASCII Summary Diagnostic Logging (Ticket B-120)
+			int32 ChamberCount = 0;
+			int32 CorridorCount = 0;
+			int32 TreasureCountTotal = 0;
+			int32 RestCountTotal = 0;
+			int32 GrandCountTotal = 0;
+			int32 ColosseumCountTotal = 0;
+			int32 EliteCountTotal = 0;
+			int32 BossCountTotal = 0;
+			int32 StairCountTotal = 0;
+
+			for (const FSovereignDungeonNode& Node : DungeonNodes)
+			{
+				switch (Node.TileType)
+				{
+				case EDungeonTileType::EntranceRoom:  break;
+				case EDungeonTileType::Corridor:      CorridorCount++; break;
+				case EDungeonTileType::Chamber:       ChamberCount++; break;
+				case EDungeonTileType::TreasureRoom:  TreasureCountTotal++; break;
+				case EDungeonTileType::RestSanctuary: RestCountTotal++; break;
+				case EDungeonTileType::GrandChamber:  GrandCountTotal++; break;
+				case EDungeonTileType::Colosseum:     ColosseumCountTotal++; break;
+				case EDungeonTileType::EliteChamber:  EliteCountTotal++; break;
+				case EDungeonTileType::BossChamber:   BossCountTotal++; break;
+				case EDungeonTileType::StairRoom:     StairCountTotal++; break;
+				}
+			}
+
+			UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+			UE_LOG(LogTemp, Display, TEXT("🏛️ [SOVEREIGN DUNGEON GENERATOR] LAYOUT GENERATION COMPLETE (Attempt %d, Seed %d)"), Attempt + 1, GenerationSeed);
+			UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+			UE_LOG(LogTemp, Display, TEXT(" Total Rooms: %d | Edges: %d | Spine Length: %d"), DungeonNodes.Num(), DungeonEdges.Num(), MainSpineNodeIndices.Num());
+			UE_LOG(LogTemp, Display, TEXT(" Standard Rooms -> Corridors: %d | Chambers: %d"), CorridorCount, ChamberCount);
+			UE_LOG(LogTemp, Display, TEXT(" Special Rooms  -> Entrance: 1 | Treasure: %d | Rest: %d | Boss: %d | Stairs: %d | Grand: %d | Colosseum: %d | Elite: %d"),
+				TreasureCountTotal, RestCountTotal, BossCountTotal, StairCountTotal, GrandCountTotal, ColosseumCountTotal, EliteCountTotal);
+			UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+			UE_LOG(LogTemp, Display, TEXT(" 📦 SPECIAL ROOMS & CHEST LOCATIONS REGISTRY (%d Total):"), SpecialRooms.Num());
+			for (const FSovereignSpecialRoomInfo& RoomInfo : SpecialRooms)
+			{
+				const FString ActorStr = RoomInfo.SpawnedActor ? RoomInfo.SpawnedActor->GetClass()->GetName() : TEXT("None");
+				UE_LOG(LogTemp, Display, TEXT("   • [%s] Coord: (%d, %d) | Footprint: %dx%d | Center: X=%.0f Y=%.0f Z=%.0f | Actor: %s"),
+					*RoomInfo.DisplayName, RoomInfo.GridCoord.X, RoomInfo.GridCoord.Y,
+					RoomInfo.FootprintDimensions.X, RoomInfo.FootprintDimensions.Y,
+					RoomInfo.WorldCenterLocation.X, RoomInfo.WorldCenterLocation.Y, RoomInfo.WorldCenterLocation.Z,
+					*ActorStr);
+			}
+			UE_LOG(LogTemp, Display, TEXT("================================================================================"));
 
 			OnDungeonGenerated.Broadcast(DungeonNodes.Num());
 			return true;

@@ -257,6 +257,45 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 	}
 };
 
+/**
+ * FSovereignSpecialRoomInfo
+ * Diagnostic & gameplay registry entry for special rooms spawned within the procedural dungeon (Ticket B-120).
+ * Tracks Entrance, Treasure, Rest, Stair, Grand, Colosseum, Elite, and Boss rooms.
+ */
+USTRUCT(BlueprintType)
+struct WISPCPP7VR_API FSovereignSpecialRoomInfo
+{
+	GENERATED_BODY()
+
+	/** Logical node index in DungeonNodes */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 NodeIndex = INDEX_NONE;
+
+	/** Semantic room type (EntranceRoom, TreasureRoom, RestSanctuary, BossChamber, StairRoom, etc.) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	EDungeonTileType TileType = EDungeonTileType::Chamber;
+
+	/** Top-left anchor coordinate in 1000cm grid units */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FIntPoint GridCoord = FIntPoint::ZeroValue;
+
+	/** World location representing the spatial center of this room footprint */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FVector WorldCenterLocation = FVector::ZeroVector;
+
+	/** Width and height of this room in 1000cm grid cells */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FIntPoint FootprintDimensions = FIntPoint(1, 1);
+
+	/** Spawned interactive actor associated with this room (ASovereignTreasureChest, RestTerminal, Stairs, etc.) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	TObjectPtr<AActor> SpawnedActor = nullptr;
+
+	/** Human-readable display label (e.g., "Treasure Room (Node 4)") */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FString DisplayName;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonGenerated, int32, TotalTilesGenerated);
 
 /**
@@ -485,6 +524,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
 
+	/** Registry of all special rooms generated (Entrance, Treasure, Rest, Stair, Colosseum, Grand, Boss) (Ticket B-120) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
+	TArray<FSovereignSpecialRoomInfo> SpecialRooms;
+
 	/** Master spatial cell reservation map mapping each occupied 1000cm grid cell to its owning room index (Ticket B-094) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TMap<FIntPoint, int32> MasterGridOccupancy;
@@ -585,6 +628,10 @@ public:
 	/** Teleports the active Level Editor viewport camera to look directly at the Dungeon Entrance! */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
 	void InspectEntrance();
+
+	/** Returns the list of all special rooms generated in this dungeon (Ticket B-120) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Layout")
+	const TArray<FSovereignSpecialRoomInfo>& GetSpecialRooms() const { return SpecialRooms; }
 
 	/**
 	 * Spawns the dedicated battle arena platform array with physical 3D theater stages.

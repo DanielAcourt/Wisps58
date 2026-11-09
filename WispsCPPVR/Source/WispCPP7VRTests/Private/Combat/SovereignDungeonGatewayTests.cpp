@@ -666,5 +666,49 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("GetEntranceGatewayActor returns null after CleanupDungeon"), DetGenA->GetEntranceGatewayActor());
 	TestNull(TEXT("GetBossTeleporterActor returns null after CleanupDungeon"), DetGenA->GetBossTeleporterActor());
 
+	// 21. Test Ticket B-120: Special Rooms Registry, Guaranteed Treasure Placement & Logging
+	ASovereignDungeonGenerator* SpecialGen = NewObject<ASovereignDungeonGenerator>();
+	SpecialGen->GenerationSeed = 42;
+	SpecialGen->TargetRoomCount = 12;
+	SpecialGen->SpecialRoomPercentage = 25.0f;
+	SpecialGen->bSpawnPhysicalGeometry = false;
+	const bool bSpecialGenSuccess = SpecialGen->GenerateDungeon();
+	TestTrue(TEXT("SpecialGen generates successfully"), bSpecialGenSuccess);
+
+	// Verify SpecialRooms array is populated and accessible
+	const TArray<FSovereignSpecialRoomInfo>& SpecialRoomList = SpecialGen->GetSpecialRooms();
+	TestTrue(TEXT("SpecialRooms list is populated"), SpecialRoomList.Num() > 0);
+
+	// Verify Node 0 (Entrance Room) is registered in SpecialRooms
+	bool bHasEntrance = false;
+	bool bHasTreasure = false;
+	bool bHasBoss = false;
+
+	for (const FSovereignSpecialRoomInfo& RoomInfo : SpecialRoomList)
+	{
+		if (RoomInfo.NodeIndex == 0 && RoomInfo.TileType == EDungeonTileType::EntranceRoom)
+		{
+			bHasEntrance = true;
+		}
+		if (RoomInfo.TileType == EDungeonTileType::TreasureRoom)
+		{
+			bHasTreasure = true;
+			TestTrue(TEXT("Treasure Room has 1x1 footprint"), RoomInfo.FootprintDimensions == FIntPoint(1, 1));
+		}
+		if (RoomInfo.TileType == EDungeonTileType::BossChamber)
+		{
+			bHasBoss = true;
+			TestTrue(TEXT("Boss Chamber has 4x4 footprint"), RoomInfo.FootprintDimensions == FIntPoint(4, 4));
+		}
+	}
+
+	TestTrue(TEXT("Node 0 Entrance Room is registered in SpecialRooms"), bHasEntrance);
+	TestTrue(TEXT("Guaranteed Treasure Room is registered in SpecialRooms"), bHasTreasure);
+	TestTrue(TEXT("Boss Chamber is registered in SpecialRooms"), bHasBoss);
+
+	// Verify CleanupDungeon empties SpecialRooms
+	SpecialGen->CleanupDungeon();
+	TestEqual(TEXT("CleanupDungeon clears SpecialRooms array"), SpecialGen->GetSpecialRooms().Num(), 0);
+
 	return true;
 }
