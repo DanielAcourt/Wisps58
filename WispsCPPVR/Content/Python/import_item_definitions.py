@@ -238,9 +238,20 @@ def import_item_definitions_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSpecie
         # Set Core Properties
         item_asset.set_editor_property("display_name", unreal.Text(rec["DisplayName"]))
         if rec["ItemTag"]:
-            tag_struct = unreal.GameplayTag()
-            tag_struct.tag_name = unreal.Name(rec["ItemTag"])
-            item_asset.set_editor_property("item_tag", tag_struct)
+            tag_struct = None
+            try:
+                tag_struct = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(rec["ItemTag"]))
+            except Exception:
+                try:
+                    tag_struct = unreal.GameplayTag(tag_name=unreal.Name(rec["ItemTag"]))
+                except Exception:
+                    try:
+                        tag_struct = unreal.GameplayTag()
+                        tag_struct.set_editor_property("tag_name", unreal.Name(rec["ItemTag"]))
+                    except Exception:
+                        pass
+            if tag_struct:
+                item_asset.set_editor_property("item_tag", tag_struct)
 
         # Build Fragments Array
         req_frags = determine_required_fragments(rec)

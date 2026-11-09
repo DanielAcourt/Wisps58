@@ -233,9 +233,20 @@ def import_skills_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSkillsTemplate.c
 
         # Set Identity & Display
         if rec["SkillTag"]:
-            tag_struct = unreal.GameplayTag()
-            tag_struct.tag_name = unreal.Name(rec["SkillTag"])
-            skill_asset.set_editor_property("skill_tag", tag_struct)
+            tag_struct = None
+            try:
+                tag_struct = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(rec["SkillTag"]))
+            except Exception:
+                try:
+                    tag_struct = unreal.GameplayTag(tag_name=unreal.Name(rec["SkillTag"]))
+                except Exception:
+                    try:
+                        tag_struct = unreal.GameplayTag()
+                        tag_struct.set_editor_property("tag_name", unreal.Name(rec["SkillTag"]))
+                    except Exception:
+                        pass
+            if tag_struct:
+                skill_asset.set_editor_property("skill_tag", tag_struct)
 
         skill_asset.set_editor_property("skill_display_name", unreal.Text(rec["DisplayName"]))
         skill_asset.set_editor_property("skill_description", unreal.Text(rec["Description"]))
@@ -341,9 +352,20 @@ def import_classes_to_assets(csv_path="AI_Nexus/Data/DT_SovereignClassesTemplate
 
         # Set Identity & Display
         if rec["ClassTag"]:
-            tag_struct = unreal.GameplayTag()
-            tag_struct.tag_name = unreal.Name(rec["ClassTag"])
-            class_asset.set_editor_property("class_tag", tag_struct)
+            tag_struct = None
+            try:
+                tag_struct = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(rec["ClassTag"]))
+            except Exception:
+                try:
+                    tag_struct = unreal.GameplayTag(tag_name=unreal.Name(rec["ClassTag"]))
+                except Exception:
+                    try:
+                        tag_struct = unreal.GameplayTag()
+                        tag_struct.set_editor_property("tag_name", unreal.Name(rec["ClassTag"]))
+                    except Exception:
+                        pass
+            if tag_struct:
+                class_asset.set_editor_property("class_tag", tag_struct)
 
         class_asset.set_editor_property("class_display_name", unreal.Text(rec["DisplayName"]))
         class_asset.set_editor_property("class_description", unreal.Text(rec["Description"]))
