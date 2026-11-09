@@ -92,6 +92,8 @@ void USovereignDungeonSubsystem::RecordPartyLeaderState(const FString& InClassPa
 void USovereignDungeonSubsystem::ClearExpedition()
 {
 	ActiveExpeditionSeed = 1337;
+	DungeonGeneratorClassPath.Empty();
+	DungeonGeneratorClassOverride = nullptr;
 	ActiveEnemyBuffMultiplier = 1.0f;
 	ActiveRewardMultiplier = 1.0f;
 	CurrentDepth = 0;

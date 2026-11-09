@@ -793,8 +793,8 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	// 23. Test Dungeon Generator Auto-Spawn & Deterministic Replicability
 	{
-		UGameInstance* GI = NewObject<UGameInstance>();
-		USovereignDungeonSubsystem* Subsystem = NewObject<USovereignDungeonSubsystem>(GI);
+		UGameInstance* TestGI = NewObject<UGameInstance>();
+		USovereignDungeonSubsystem* Subsystem = NewObject<USovereignDungeonSubsystem>(TestGI);
 		Subsystem->TargetRoomCount = 10;
 		Subsystem->SpecialRoomPercentage = 30.0f;
 		Subsystem->TreasureRoomRatio = 0.50f;
@@ -818,10 +818,18 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("BossKeyItemTag is valid"), AutoGen->BossKeyItemTag.IsValid());
 		TestEqual(TEXT("BossKeyItemTag is Item.Key.BossGate"), AutoGen->BossKeyItemTag.ToString(), FString(TEXT("Item.Key.BossGate")));
 
-		// Verify ASovereignBaseCharacter attachment component fallback
+		// Verify ASovereignBaseCharacter attachment component fallback via interface
 		ASovereignBaseCharacter* DummyChar = NewObject<ASovereignBaseCharacter>();
-		USceneComponent* AttachComp = DummyChar->GetPossessionAttachmentComponent_Implementation();
+		USceneComponent* AttachComp = IInteractionInterface::Execute_GetPossessionAttachmentComponent(DummyChar);
 		TestNotNull(TEXT("GetPossessionAttachmentComponent returns a valid component"), AttachComp);
+
+		// Verify DungeonGeneratorBlueprintClass propagation on Gateway
+		ASovereignDungeonGateway* TestGateway = NewObject<ASovereignDungeonGateway>();
+		TestGateway->DungeonGeneratorBlueprintClass = ASovereignDungeonGenerator::StaticClass();
+		TestEqual(TEXT("Gateway has custom generator class"), TestGateway->DungeonGeneratorBlueprintClass.Get(), ASovereignDungeonGenerator::StaticClass());
+
+		Subsystem->DungeonGeneratorClassOverride = TestGateway->DungeonGeneratorBlueprintClass;
+		TestEqual(TEXT("Subsystem stored generator class override"), Subsystem->DungeonGeneratorClassOverride.Get(), ASovereignDungeonGenerator::StaticClass());
 	}
 
 	return true;

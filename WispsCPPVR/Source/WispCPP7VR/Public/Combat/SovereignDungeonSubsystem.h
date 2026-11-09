@@ -28,6 +28,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	int32 ActiveExpeditionSeed = 1337;
 
+	/** Configurable Blueprint class path of the procedural dungeon generator with all custom settings and art assets */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FString DungeonGeneratorClassPath;
+
+	/** Direct class override of the procedural dungeon generator if available */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	TSubclassOf<class ASovereignDungeonGenerator> DungeonGeneratorClassOverride;
+
 	/** Combat stat multiplier applied to enemies inside the dungeon */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	float ActiveEnemyBuffMultiplier = 1.0f;

@@ -108,6 +108,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
 	int32 ExpeditionSeed = 0;
 
+	/** Configurable Blueprint class of the procedural dungeon generator with all custom settings and art assets defined */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	TSubclassOf<ASovereignDungeonGenerator> DungeonGeneratorBlueprintClass;
+
 	/** Target room count for procedural generation in the dungeon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
 	int32 TargetRoomCount = 8;

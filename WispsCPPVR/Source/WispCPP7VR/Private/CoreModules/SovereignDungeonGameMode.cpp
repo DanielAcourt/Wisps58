@@ -72,11 +72,37 @@ void ASovereignDungeonGameMode::BeginPlay()
 	else if (GetWorld())
 	{
 		UClass* GenClassToSpawn = DungeonGeneratorClass ? DungeonGeneratorClass.Get() : ASovereignDungeonGenerator::StaticClass();
+
+		// Check if DungeonSubsystem specifies a custom Blueprint generator class from the gateway
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->DungeonGeneratorClassOverride)
+				{
+					GenClassToSpawn = DungeonSub->DungeonGeneratorClassOverride;
+				}
+				else if (!DungeonSub->DungeonGeneratorClassPath.IsEmpty())
+				{
+					FString GenPath = DungeonSub->DungeonGeneratorClassPath;
+					if (!GenPath.EndsWith(TEXT("_C")))
+					{
+						GenPath += TEXT("_C");
+					}
+					if (UClass* LoadedGenClass = LoadClass<ASovereignDungeonGenerator>(nullptr, *GenPath))
+					{
+						GenClassToSpawn = LoadedGenClass;
+					}
+				}
+			}
+		}
+
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		ActiveDungeonGenerator = GetWorld()->SpawnActor<ASovereignDungeonGenerator>(GenClassToSpawn, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] No generator found in scene. Auto-spawned %s at runtime."),
-			ActiveDungeonGenerator ? *ActiveDungeonGenerator->GetName() : TEXT("None"));
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] No generator found in scene. Auto-spawned %s (Class: %s) at runtime."),
+			ActiveDungeonGenerator ? *ActiveDungeonGenerator->GetName() : TEXT("None"),
+			GenClassToSpawn ? *GenClassToSpawn->GetName() : TEXT("None"));
 	}
 
 	// 2. Align local player controller if already logged in

@@ -204,6 +204,14 @@ bool ASovereignDungeonGateway::EnterDungeon(ASovereignBaseCharacter* PartyLeader
 			DungeonSubsystem->GrandChamberRatio = GrandChamberRatio;
 			DungeonSubsystem->ColosseumRatio = ColosseumRatio;
 
+			if (DungeonGeneratorBlueprintClass)
+			{
+				DungeonSubsystem->DungeonGeneratorClassOverride = DungeonGeneratorBlueprintClass;
+				DungeonSubsystem->DungeonGeneratorClassPath = DungeonGeneratorBlueprintClass->GetPathName();
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] Configured custom Dungeon Generator class [%s] for expedition."),
+					*DungeonSubsystem->DungeonGeneratorClassPath);
+			}
+
 			DungeonSubsystem->RecordExpedition(SeedToUse, EnemyBuff, RewardMult, CurrentMapName, GardenSaveSlot);
 
 			if (EffectiveLeaderVessel)
