@@ -48,6 +48,30 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	bool bHasActiveExpedition = false;
 
+	/** Target room count for procedural generation in this expedition */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	int32 TargetRoomCount = 8;
+
+	/** Special room percentage (e.g. 20.0%) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float SpecialRoomPercentage = 20.0f;
+
+	/** Ratio of special rooms dedicated to Treasure Rooms */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float TreasureRoomRatio = 0.40f;
+
+	/** Ratio of special rooms dedicated to Rest Sanctuaries */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float RestSanctuaryRatio = 0.30f;
+
+	/** Ratio of special rooms dedicated to Grand Chambers */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float GrandChamberRatio = 0.20f;
+
+	/** Ratio of special rooms dedicated to Trial Colosseums */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	float ColosseumRatio = 0.10f;
+
 	/** Current dungeon floor depth (0 = entrance floor) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	int32 CurrentDepth = 0;

@@ -19,8 +19,9 @@
 
 ASovereignDungeonGameMode::ASovereignDungeonGameMode()
 {
-	bLockPossessionToLeader = true;
+	bLockPossessionToLeader = false;
 	DefaultPawnClass = ASovereignBaseCharacter::StaticClass();
+	DungeonGeneratorClass = ASovereignDungeonGenerator::StaticClass();
 }
 
 UClass* ASovereignDungeonGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
@@ -61,12 +62,21 @@ void ASovereignDungeonGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 1. Locate the dungeon generator in the world
+	// 1. Locate the dungeon generator in the world (or auto-spawn if none exists)
 	TArray<AActor*> FoundGenerators;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASovereignDungeonGenerator::StaticClass(), FoundGenerators);
 	if (FoundGenerators.Num() > 0)
 	{
 		ActiveDungeonGenerator = Cast<ASovereignDungeonGenerator>(FoundGenerators[0]);
+	}
+	else if (GetWorld())
+	{
+		UClass* GenClassToSpawn = DungeonGeneratorClass ? DungeonGeneratorClass.Get() : ASovereignDungeonGenerator::StaticClass();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		ActiveDungeonGenerator = GetWorld()->SpawnActor<ASovereignDungeonGenerator>(GenClassToSpawn, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] No generator found in scene. Auto-spawned %s at runtime."),
+			ActiveDungeonGenerator ? *ActiveDungeonGenerator->GetName() : TEXT("None"));
 	}
 
 	// 2. Align local player controller if already logged in
@@ -101,12 +111,6 @@ void ASovereignDungeonGameMode::SetupPartyLeaderAtEntrance(APlayerController* PC
 	// If player spawned as a Wisp, ensure it is possessing or transitioning into the party leader vessel
 	if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(ControlledPawn))
 	{
-		if (bLockPossessionToLeader)
-		{
-			// Prevent unpossession keybind from releasing the wisp in the dungeon
-			Wisp->SetIsPossessing(true);
-		}
-
 		if (AActor* Host = Wisp->GetCurrentHost())
 		{
 			DungeonPartyLeader = Cast<ASovereignBaseCharacter>(Host);

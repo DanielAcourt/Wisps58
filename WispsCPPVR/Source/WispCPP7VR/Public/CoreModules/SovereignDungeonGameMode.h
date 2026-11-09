@@ -30,9 +30,13 @@ public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 
-	/** Whether unpossession back into wisp spirit form is strictly prohibited in the dungeon */
+	/** Whether unpossession back into wisp spirit form is strictly prohibited in the dungeon (Defaults to false) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
-	bool bLockPossessionToLeader = true;
+	bool bLockPossessionToLeader = false;
+
+	/** Class of dungeon generator to auto-spawn if none is found in the scene */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Config")
+	TSubclassOf<ASovereignDungeonGenerator> DungeonGeneratorClass;
 
 	/** Cached pointer to the procedural dungeon generator in the active level */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|State")

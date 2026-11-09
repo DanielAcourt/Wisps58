@@ -341,8 +341,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	ASovereignDungeonGameMode* DungeonGM = NewObject<ASovereignDungeonGameMode>();
 	if (TestNotNull(TEXT("DungeonGM created"), DungeonGM))
 	{
-		TestTrue(TEXT("bLockPossessionToLeader defaults to true"), DungeonGM->bLockPossessionToLeader);
+		TestFalse(TEXT("bLockPossessionToLeader defaults to false to allow unpossession"), DungeonGM->bLockPossessionToLeader);
 		TestTrue(TEXT("DefaultPawnClass is ASovereignBaseCharacter"), DungeonGM->DefaultPawnClass == ASovereignBaseCharacter::StaticClass());
+		TestTrue(TEXT("DungeonGeneratorClass defaults to ASovereignDungeonGenerator"), DungeonGM->DungeonGeneratorClass == ASovereignDungeonGenerator::StaticClass());
 
 		DungeonGM->ActiveDungeonGenerator = Generator;
 		DungeonGM->DungeonPartyLeader = Cultivator;
@@ -788,6 +789,39 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("ClearExpedition clears party leader state"), DungeonSubsystem->HasPartyLeaderState());
 		TestTrue(TEXT("PartyLeaderClassPath cleared"), DungeonSubsystem->PartyLeaderClassPath.IsEmpty());
 		TestTrue(TEXT("PartyLeaderStateJson cleared"), DungeonSubsystem->PartyLeaderStateJson.IsEmpty());
+	}
+
+	// 23. Test Dungeon Generator Auto-Spawn & Deterministic Replicability
+	{
+		UGameInstance* GI = NewObject<UGameInstance>();
+		USovereignDungeonSubsystem* Subsystem = NewObject<USovereignDungeonSubsystem>(GI);
+		Subsystem->TargetRoomCount = 10;
+		Subsystem->SpecialRoomPercentage = 30.0f;
+		Subsystem->TreasureRoomRatio = 0.50f;
+		Subsystem->RestSanctuaryRatio = 0.25f;
+		Subsystem->RecordExpedition(5555, 1.5f, 2.0f, FName(TEXT("TestMap")));
+
+		ASovereignDungeonGenerator* AutoGen = NewObject<ASovereignDungeonGenerator>();
+		AutoGen->TargetRoomCount = Subsystem->TargetRoomCount;
+		AutoGen->SpecialRoomPercentage = Subsystem->SpecialRoomPercentage;
+		AutoGen->TreasureRoomRatio = Subsystem->TreasureRoomRatio;
+		AutoGen->RestSanctuaryRatio = Subsystem->RestSanctuaryRatio;
+		AutoGen->GenerationSeed = Subsystem->ActiveExpeditionSeed;
+		AutoGen->EnemyBuffMultiplier = Subsystem->ActiveEnemyBuffMultiplier;
+		AutoGen->RewardMultiplier = Subsystem->ActiveRewardMultiplier;
+
+		TestEqual(TEXT("AutoGen TargetRoomCount replicated"), AutoGen->TargetRoomCount, 10);
+		TestEqual(TEXT("AutoGen SpecialRoomPercentage replicated"), AutoGen->SpecialRoomPercentage, 30.0f);
+		TestEqual(TEXT("AutoGen GenerationSeed replicated"), AutoGen->GenerationSeed, 5555);
+
+		// Verify Boss Key tag is valid
+		TestTrue(TEXT("BossKeyItemTag is valid"), AutoGen->BossKeyItemTag.IsValid());
+		TestEqual(TEXT("BossKeyItemTag is Item.Key.BossGate"), AutoGen->BossKeyItemTag.ToString(), FString(TEXT("Item.Key.BossGate")));
+
+		// Verify ASovereignBaseCharacter attachment component fallback
+		ASovereignBaseCharacter* DummyChar = NewObject<ASovereignBaseCharacter>();
+		USceneComponent* AttachComp = DummyChar->GetPossessionAttachmentComponent_Implementation();
+		TestNotNull(TEXT("GetPossessionAttachmentComponent returns a valid component"), AttachComp);
 	}
 
 	return true;

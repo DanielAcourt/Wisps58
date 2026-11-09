@@ -5,6 +5,7 @@
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "GameplayTagsManager.h"
 #include "UObject/ConstructorHelpers.h"
 
 ASovereignDungeonDoor::ASovereignDungeonDoor()
@@ -97,22 +98,29 @@ void ASovereignDungeonDoor::OnInteract_Implementation(AActor* Interactor)
 	{
 		if (UnlockCondition == EBossGateUnlockCondition::RequiresBossKey && Character)
 		{
+			FGameplayTag KeyTagToCheck = RequiredKeyTag;
+			if (!KeyTagToCheck.IsValid())
+			{
+				UGameplayTagsManager::Get().AddNativeGameplayTag(FName("Item.Key.BossGate"));
+				KeyTagToCheck = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
+			}
+
 			if (USovereignInventoryComponent* Inv = Character->GetInventoryComponent())
 			{
-				if (RequiredKeyTag.IsValid() && Inv->GetItemCountByTag(RequiredKeyTag) > 0)
+				if (KeyTagToCheck.IsValid() && Inv->GetItemCountByTag(KeyTagToCheck) > 0)
 				{
-					UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Key %s found in player inventory! Unlocking door."), *RequiredKeyTag.ToString());
+					UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Key %s found in player inventory! Unlocking door."), *KeyTagToCheck.ToString());
 					if (bConsumeKeyOnUnlock)
 					{
-						Inv->RemoveItemByTag(RequiredKeyTag, 1);
-						UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Consumed 1 unit of key %s from player inventory."), *RequiredKeyTag.ToString());
+						Inv->RemoveItemByTag(KeyTagToCheck, 1);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] Consumed 1 unit of key %s from player inventory."), *KeyTagToCheck.ToString());
 					}
 					UnlockDoor();
 					OpenDoor();
 					return;
 				}
 			}
-			UE_LOG(LogTemp, Warning, TEXT("[DungeonDoor] Locked: Interactor lacks required key tag %s."), *RequiredKeyTag.ToString());
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonDoor] Locked: Interactor lacks required key tag %s."), *KeyTagToCheck.ToString());
 			return;
 		}
 		else if (UnlockCondition == EBossGateUnlockCondition::RequiresQiEmpowerment && Character)

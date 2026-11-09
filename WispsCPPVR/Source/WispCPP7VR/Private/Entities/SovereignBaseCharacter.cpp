@@ -201,7 +201,14 @@ void ASovereignBaseCharacter::UnPossessed()
 //Setting Up the Possession Attacthment Component
 USceneComponent* ASovereignBaseCharacter::GetPossessionAttachmentComponent_Implementation()
 {
-	return GetMesh();
+	if (USkeletalMeshComponent* SkelMesh = GetMesh())
+	{
+		if (SkelMesh->GetSkeletalMeshAsset())
+		{
+			return SkelMesh;
+		}
+	}
+	return GetRootComponent();
 }
 void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {

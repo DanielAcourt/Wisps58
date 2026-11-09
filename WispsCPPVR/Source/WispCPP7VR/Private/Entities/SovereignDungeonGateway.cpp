@@ -197,6 +197,13 @@ bool ASovereignDungeonGateway::EnterDungeon(ASovereignBaseCharacter* PartyLeader
 		// 5. Record Expedition parameters and Party Leader Vessel in GameInstance Subsystem
 		if (USovereignDungeonSubsystem* DungeonSubsystem = GI->GetSubsystem<USovereignDungeonSubsystem>())
 		{
+			DungeonSubsystem->TargetRoomCount = TargetRoomCount;
+			DungeonSubsystem->SpecialRoomPercentage = SpecialRoomPercentage;
+			DungeonSubsystem->TreasureRoomRatio = TreasureRoomRatio;
+			DungeonSubsystem->RestSanctuaryRatio = RestSanctuaryRatio;
+			DungeonSubsystem->GrandChamberRatio = GrandChamberRatio;
+			DungeonSubsystem->ColosseumRatio = ColosseumRatio;
+
 			DungeonSubsystem->RecordExpedition(SeedToUse, EnemyBuff, RewardMult, CurrentMapName, GardenSaveSlot);
 
 			if (EffectiveLeaderVessel)
