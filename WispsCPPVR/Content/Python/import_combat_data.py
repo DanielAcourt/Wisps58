@@ -45,13 +45,59 @@ def sanitize_asset_name(name_str, prefix="DA_"):
     return f"{prefix}{clean}"
 
 
+def resolve_csv_path(csv_path):
+    """
+    Robustly resolves path to CSV template across different working directories
+    and Unreal Engine execution environments.
+    """
+    if not csv_path:
+        return ""
+
+    csv_path = csv_path.replace("\\", "/").strip("\"'")
+
+    # 1. Direct path exists
+    if os.path.exists(csv_path):
+        return os.path.abspath(csv_path)
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 2. Candidate: relative to repo root derived from script location
+    repo_root = os.path.abspath(os.path.join(script_dir, "..", "..", ".."))
+    candidate_repo = os.path.join(repo_root, csv_path)
+    if os.path.exists(candidate_repo):
+        return candidate_repo
+
+    # 3. Candidate: relative to unreal project dir
+    if IN_ENGINE:
+        try:
+            proj_dir = unreal.Paths.project_dir()
+            candidate_ue_proj = os.path.abspath(os.path.join(proj_dir, "..", csv_path))
+            if os.path.exists(candidate_ue_proj):
+                return candidate_ue_proj
+            candidate_ue_direct = os.path.abspath(os.path.join(proj_dir, csv_path))
+            if os.path.exists(candidate_ue_direct):
+                return candidate_ue_direct
+        except Exception:
+            pass
+
+    # 4. Fallback search by filename
+    base_name = os.path.basename(csv_path)
+    for search_root in [repo_root, script_dir]:
+        for root, _, files in os.walk(search_root):
+            if base_name in files:
+                return os.path.join(root, base_name)
+
+    return csv_path
+
+
 def parse_csv_skill_rows(csv_path):
     """Parses Skills CSV and returns list of skill records."""
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"Skills CSV file not found: {csv_path}")
+    resolved_path = resolve_csv_path(csv_path)
+    if not os.path.exists(resolved_path):
+        raise FileNotFoundError(f"Skills CSV file not found: {csv_path} (Resolved: {resolved_path})")
 
     records = []
-    with open(csv_path, mode='r', encoding='utf-8') as f:
+    with open(resolved_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             raw_name = row.get("Name", "").strip()
@@ -78,11 +124,12 @@ def parse_csv_skill_rows(csv_path):
 
 def parse_csv_class_rows(csv_path):
     """Parses Classes CSV and returns list of class records."""
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"Classes CSV file not found: {csv_path}")
+    resolved_path = resolve_csv_path(csv_path)
+    if not os.path.exists(resolved_path):
+        raise FileNotFoundError(f"Classes CSV file not found: {csv_path} (Resolved: {resolved_path})")
 
     records = []
-    with open(csv_path, mode='r', encoding='utf-8') as f:
+    with open(resolved_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             raw_name = row.get("Name", "").strip()
