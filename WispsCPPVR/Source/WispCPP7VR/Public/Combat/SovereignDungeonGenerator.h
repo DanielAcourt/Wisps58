@@ -709,6 +709,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
 	void RebuildNodeAdjacencyCaches();
 
+	/** Binds perimeter sockets and passage masks incrementally for an edge (Tickets B-094 & B-095) */
+	void BindEdgeSockets(const FSovereignDungeonEdge& Edge);
+
 	/** Idempotent cleanup of generator-owned actors, components, and arenas without touching level actors (Ticket B-092) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Lifecycle")
 	void CleanupDungeon();

@@ -19,6 +19,7 @@
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
+#include "GameplayTagsManager.h"
 #include "Tests/AutomationCommon.h"
 
 /**
@@ -577,6 +578,7 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Chest cannot be looted a second time"), TestChest->OpenChest(Cultivator));
 
 	// 15. Test Ticket B-108 Key Pickup, Consumption & Option C Key Routing Suite
+	UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Item.Key.BossGate"));
 	ASovereignKeyPickup* TestKeyPickup = NewObject<ASovereignKeyPickup>();
 	TestNotNull(TEXT("KeyPickup created"), TestKeyPickup);
 	TestKeyPickup->KeyTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
