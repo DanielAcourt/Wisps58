@@ -113,6 +113,10 @@ bool FSovereignDungeonDeltaSerializationTest::RunTest(const FString& Parameters)
 
 	FGuid KeyGuid = FGuid::NewGuid();
 	Suitcase->DungeonDelta.CollectedKeyGuids.Add(KeyGuid);
+	Suitcase->DungeonDelta.KeyStates.Add(KeyGuid, true);
+
+	FGuid UncollectedKeyGuid = FGuid::NewGuid();
+	Suitcase->DungeonDelta.KeyStates.Add(UncollectedKeyGuid, false);
 
 	// Verify delta state holds values accurately
 	TestEqual(TEXT("Seed matches"), Suitcase->DungeonDelta.ExpeditionSeed, 9999);
@@ -123,6 +127,21 @@ bool FSovereignDungeonDeltaSerializationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("ChestStates count"), Suitcase->DungeonDelta.ChestStates.Num(), 1);
 	TestEqual(TEXT("RestTerminalCharges count"), Suitcase->DungeonDelta.RestTerminalCharges.Num(), 1);
 	TestEqual(TEXT("CollectedKeyGuids count"), Suitcase->DungeonDelta.CollectedKeyGuids.Num(), 1);
+	TestEqual(TEXT("KeyStates count"), Suitcase->DungeonDelta.KeyStates.Num(), 2);
+	TestTrue(TEXT("KeyGuid is collected"), Suitcase->DungeonDelta.KeyStates.FindRef(KeyGuid));
+	TestFalse(TEXT("UncollectedKeyGuid is not collected"), Suitcase->DungeonDelta.KeyStates.FindRef(UncollectedKeyGuid));
+
+	// Test JSON Roundtrip for KeyStates
+	FString JsonOutput = USaveManager::ConvertSuitcaseToJson(Suitcase);
+	TestFalse(TEXT("Json output not empty"), JsonOutput.IsEmpty());
+	TestTrue(TEXT("Json contains KeyStates"), JsonOutput.Contains(TEXT("\"KeyStates\"")));
+
+	USovereignSaveGame* LoadedSuitcase = USaveManager::ConvertJsonToSuitcase(JsonOutput);
+	TestNotNull(TEXT("Loaded suitcase valid"), LoadedSuitcase);
+	TestEqual(TEXT("Loaded KeyStates count"), LoadedSuitcase->DungeonDelta.KeyStates.Num(), 2);
+	TestTrue(TEXT("Loaded KeyGuid matches true"), LoadedSuitcase->DungeonDelta.KeyStates.FindRef(KeyGuid));
+	TestFalse(TEXT("Loaded UncollectedKeyGuid matches false"), LoadedSuitcase->DungeonDelta.KeyStates.FindRef(UncollectedKeyGuid));
+	TestTrue(TEXT("Loaded CollectedKeyGuids contains KeyGuid"), LoadedSuitcase->DungeonDelta.CollectedKeyGuids.Contains(KeyGuid));
 
 	return true;
 }

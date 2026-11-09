@@ -67,6 +67,12 @@ bool USaveManager::ShouldBypassProceduralActorSerialization(AActor* InActor)
         return !Teleporter->bIsActive;
     }
 
+    if (ASovereignKeyPickup* KeyPickup = Cast<ASovereignKeyPickup>(InActor))
+    {
+        // Key pickup state is tracked in DungeonDelta.KeyStates, bypass raw actor serialization
+        return true;
+    }
+
     return false;
 }
 
@@ -151,12 +157,26 @@ void USaveManager::ApplyDungeonDeltas(const FSovereignDungeonDeltaState& DeltaSt
         }
     }
 
-    // Destroy collected key pickups
+    // Destroy collected key pickups (from KeyStates map or legacy CollectedKeyGuids array)
+    TSet<FGuid> KeysToDestroy;
+    for (const auto& KeyPair : DeltaState.KeyStates)
+    {
+        if (KeyPair.Value) // true = collected / in player inventory
+        {
+            KeysToDestroy.Add(KeyPair.Key);
+        }
+    }
     for (const FGuid& KeyGuid : DeltaState.CollectedKeyGuids)
+    {
+        KeysToDestroy.Add(KeyGuid);
+    }
+
+    for (const FGuid& KeyGuid : KeysToDestroy)
     {
         AActor* Actor = Registry ? Registry->FindActor(KeyGuid) : nullptr;
         if (ASovereignKeyPickup* Pickup = Cast<ASovereignKeyPickup>(Actor))
         {
+            Pickup->bIsPickedUp = true;
             Pickup->Destroy();
         }
     }
@@ -192,6 +212,13 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
             SaveSuitcase->DungeonDelta.ExpeditionSeed = DungeonSub->ActiveExpeditionSeed;
             SaveSuitcase->DungeonDelta.EnemyBuffMultiplier = DungeonSub->ActiveEnemyBuffMultiplier;
             SaveSuitcase->DungeonDelta.RewardMultiplier = DungeonSub->ActiveRewardMultiplier;
+
+            // Ingest collected key GUIDs tracked by DungeonSubsystem (Ticket B-118)
+            for (const FGuid& CollectedKeyGuid : DungeonSub->CollectedKeyGuids)
+            {
+                SaveSuitcase->DungeonDelta.KeyStates.Add(CollectedKeyGuid, true);
+                SaveSuitcase->DungeonDelta.CollectedKeyGuids.AddUnique(CollectedKeyGuid);
+            }
         }
     }
 
@@ -250,6 +277,14 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
                 else if (ASovereignBossTeleporter* Teleporter = Cast<ASovereignBossTeleporter>(TargetActor))
                 {
                     SaveSuitcase->DungeonDelta.bBossDefeated = Teleporter->bIsActive;
+                }
+                else if (ASovereignKeyPickup* KeyPickup = Cast<ASovereignKeyPickup>(TargetActor))
+                {
+                    SaveSuitcase->DungeonDelta.KeyStates.Add(SaveComp->EntityID, KeyPickup->bIsPickedUp);
+                    if (KeyPickup->bIsPickedUp)
+                    {
+                        SaveSuitcase->DungeonDelta.CollectedKeyGuids.AddUnique(SaveComp->EntityID);
+                    }
                 }
 
                 FEntitySaveData Data;
@@ -333,6 +368,19 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
                 DungeonSub->ActiveExpeditionSeed = LoadedSuitcase->DungeonDelta.ExpeditionSeed;
                 DungeonSub->ActiveEnemyBuffMultiplier = LoadedSuitcase->DungeonDelta.EnemyBuffMultiplier;
                 DungeonSub->ActiveRewardMultiplier = LoadedSuitcase->DungeonDelta.RewardMultiplier;
+            }
+
+            // Restore collected key GUIDs to subsystem
+            for (const auto& KeyPair : LoadedSuitcase->DungeonDelta.KeyStates)
+            {
+                if (KeyPair.Value)
+                {
+                    DungeonSub->RecordKeyCollected(KeyPair.Key);
+                }
+            }
+            for (const FGuid& KeyGuid : LoadedSuitcase->DungeonDelta.CollectedKeyGuids)
+            {
+                DungeonSub->RecordKeyCollected(KeyGuid);
             }
         }
     }
@@ -568,7 +616,26 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                 }
             }
 
-            // Collected keys
+            // Key states (Ticket B-118: KeyStates map)
+            const TSharedPtr<FJsonObject>* KeyObjPtr;
+            if (DeltaObj->TryGetObjectField(TEXT("KeyStates"), KeyObjPtr) && KeyObjPtr->IsValid())
+            {
+                for (const auto& KeyPair : (*KeyObjPtr)->Values)
+                {
+                    FGuid KeyGuid;
+                    if (FGuid::Parse(KeyPair.Key, KeyGuid))
+                    {
+                        const bool bCollected = KeyPair.Value->AsBool();
+                        NewSuitcase->DungeonDelta.KeyStates.Add(KeyGuid, bCollected);
+                        if (bCollected)
+                        {
+                            NewSuitcase->DungeonDelta.CollectedKeyGuids.AddUnique(KeyGuid);
+                        }
+                    }
+                }
+            }
+
+            // Collected keys (Ticket B-115 legacy array fallback)
             const TArray<TSharedPtr<FJsonValue>>* KeyArray;
             if (DeltaObj->TryGetArrayField(TEXT("CollectedKeyGuids"), KeyArray))
             {
@@ -577,7 +644,11 @@ USovereignSaveGame* USaveManager::ConvertJsonToSuitcase(const FString& JsonConte
                     FGuid KeyGuid;
                     if (FGuid::Parse(KeyVal->AsString(), KeyGuid))
                     {
-                        NewSuitcase->DungeonDelta.CollectedKeyGuids.Add(KeyGuid);
+                        NewSuitcase->DungeonDelta.CollectedKeyGuids.AddUnique(KeyGuid);
+                        if (!NewSuitcase->DungeonDelta.KeyStates.Contains(KeyGuid))
+                        {
+                            NewSuitcase->DungeonDelta.KeyStates.Add(KeyGuid, true);
+                        }
                     }
                 }
             }
@@ -658,7 +729,15 @@ FString USaveManager::ConvertSuitcaseToJson(USovereignSaveGame* Suitcase)
     }
     Writer->WriteObjectEnd();
 
-    // Collected keys
+    // Key states (Ticket B-118: KeyStates map)
+    Writer->WriteObjectStart(TEXT("KeyStates"));
+    for (const auto& KeyPair : Suitcase->DungeonDelta.KeyStates)
+    {
+        Writer->WriteValue(KeyPair.Key.ToString(), KeyPair.Value);
+    }
+    Writer->WriteObjectEnd();
+
+    // Collected keys (retained for backward compatibility)
     Writer->WriteArrayStart(TEXT("CollectedKeyGuids"));
     for (const FGuid& KeyGuid : Suitcase->DungeonDelta.CollectedKeyGuids)
     {

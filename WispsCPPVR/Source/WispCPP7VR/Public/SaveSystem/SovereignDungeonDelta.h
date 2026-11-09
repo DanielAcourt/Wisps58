@@ -39,7 +39,11 @@ struct WISPCPP7VR_API FSovereignDungeonDeltaState
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveData|Dungeon")
 	TMap<FGuid, int32> RestTerminalCharges;
 
-	/** Set of collected Key Pickup GUIDs */
+	/** Map of Key Pickup GUID to boolean (true = collected / in player inventory, false = in dungeon) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveData|Dungeon")
+	TMap<FGuid, bool> KeyStates;
+
+	/** Set of collected Key Pickup GUIDs (retained for backward compatibility) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveData|Dungeon")
 	TArray<FGuid> CollectedKeyGuids;
 

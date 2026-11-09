@@ -35,6 +35,19 @@ void USovereignInventoryBroker::OnSave(TSharedPtr<FJsonObject>& OutJson)
 		SlotObj->SetStringField(TEXT("ItemDef"), Slot.ItemDefinition.ToSoftObjectPath().ToString());
 		SlotObj->SetNumberField(TEXT("Quantity"), Slot.Quantity);
 
+		// Fallback Item Definition properties (Ticket B-119: transient item preservation)
+		if (const USovereignItemDefinition* Def = Slot.ItemDefinition.Get())
+		{
+			if (Def->ItemTag.IsValid())
+			{
+				SlotObj->SetStringField(TEXT("FallbackItemTag"), Def->ItemTag.ToString());
+			}
+			if (!Def->DisplayName.IsEmpty())
+			{
+				SlotObj->SetStringField(TEXT("FallbackDisplayName"), Def->DisplayName.ToString());
+			}
+		}
+
 		// Dynamic Tags
 		TArray<TSharedPtr<FJsonValue>> TagsArray;
 		for (const FGameplayTag& Tag : Slot.DynamicTags)
@@ -96,7 +109,36 @@ void USovereignInventoryBroker::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 			if (SlotObj->HasField(TEXT("ItemDef")))
 			{
 				FString PathStr = SlotObj->GetStringField(TEXT("ItemDef"));
-				LoadedSlot.ItemDefinition = TSoftObjectPtr<USovereignItemDefinition>(FSoftObjectPath(PathStr));
+				if (!PathStr.IsEmpty() && PathStr != TEXT("None"))
+				{
+					LoadedSlot.ItemDefinition = TSoftObjectPtr<USovereignItemDefinition>(FSoftObjectPath(PathStr));
+				}
+			}
+
+			// Fallback reconstruction for transient item definitions (Ticket B-119)
+			// Attempt to resolve or synchronously load disk asset first; only construct fallback if asset doesn't exist
+			USovereignItemDefinition* ResolvedDef = LoadedSlot.ItemDefinition.Get();
+			if (!ResolvedDef && !LoadedSlot.ItemDefinition.IsNull())
+			{
+				ResolvedDef = LoadedSlot.ItemDefinition.LoadSynchronous();
+			}
+
+			if (!ResolvedDef && SlotObj->HasField(TEXT("FallbackItemTag")))
+			{
+				FString FallbackTagStr = SlotObj->GetStringField(TEXT("FallbackItemTag"));
+				FGameplayTag FallbackTag = FGameplayTag::RequestGameplayTag(FName(*FallbackTagStr), false);
+				if (!FallbackTag.IsValid())
+				{
+					UGameplayTagsManager::Get().AddNativeGameplayTag(FName(*FallbackTagStr));
+					FallbackTag = FGameplayTag::RequestGameplayTag(FName(*FallbackTagStr), false);
+				}
+
+				FString FallbackNameStr = SlotObj->HasField(TEXT("FallbackDisplayName")) ? SlotObj->GetStringField(TEXT("FallbackDisplayName")) : TEXT("Item");
+
+				USovereignItemDefinition* ReconstructedDef = NewObject<USovereignItemDefinition>(Inv);
+				ReconstructedDef->ItemTag = FallbackTag;
+				ReconstructedDef->DisplayName = FText::FromString(FallbackNameStr);
+				LoadedSlot.ItemDefinition = ReconstructedDef;
 			}
 
 			if (SlotObj->HasField(TEXT("Quantity")))

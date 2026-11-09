@@ -62,6 +62,9 @@ public:
      */
     void ApplyDungeonDeltas(const FSovereignDungeonDeltaState& DeltaState);
 
+    // Helpers to serialize and deserialize save suitcases to/from JSON (Ticket B-115 & B-118)
+    static FString ConvertSuitcaseToJson(USovereignSaveGame* Suitcase);
+    static USovereignSaveGame* ConvertJsonToSuitcase(const FString& JsonContent);
 
 protected:
 	// Called when the game starts or when spawned
@@ -75,9 +78,5 @@ private:
     // Acts as switch between saving to a json file or saving to unreal default uSavegameobject Binary system
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Settings", meta = (AllowPrivateAccess = "true"))
     bool bUseJsonByDefault = true;
-
-    // Helpers to keep the main logic clean
-    FString ConvertSuitcaseToJson(USovereignSaveGame* Suitcase);
-    USovereignSaveGame* ConvertJsonToSuitcase(const FString& JsonContent);
 
 };
