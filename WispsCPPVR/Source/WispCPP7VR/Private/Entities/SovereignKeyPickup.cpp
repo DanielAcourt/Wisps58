@@ -2,6 +2,8 @@
 
 #include "Entities/SovereignKeyPickup.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
+#include "Combat/SovereignDungeonSubsystem.h"
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Components/StaticMeshComponent.h"
@@ -82,23 +84,44 @@ bool ASovereignKeyPickup::PickupKey(ASovereignBaseCharacter* Looter)
 	if (USovereignInventoryComponent* Inv = Looter->GetInventoryComponent())
 	{
 		// If explicit item definition assigned, add it to inventory
-		if (KeyItemDefinition)
+		USovereignItemDefinition* KeyDefToUse = KeyItemDefinition ? KeyItemDefinition.Get() : nullptr;
+		if (!KeyDefToUse)
 		{
-			Inv->AddItem(KeyItemDefinition.Get(), 1);
-		}
-		else
-		{
-			// Construct transient item definition with KeyTag if unassigned
-			USovereignItemDefinition* FallbackKeyDef = NewObject<USovereignItemDefinition>(this);
+			// Construct transient item definition with KeyTag if unassigned (outered to inventory component for stability)
+			USovereignItemDefinition* FallbackKeyDef = NewObject<USovereignItemDefinition>(Inv);
 			FallbackKeyDef->ItemTag = KeyTag;
 			FallbackKeyDef->DisplayName = KeyDisplayName;
-			Inv->AddItem(FallbackKeyDef, 1);
+			KeyDefToUse = FallbackKeyDef;
 		}
 
-		UE_LOG(LogTemp, Log, TEXT("[KeyPickup] %s picked up by %s! Tag: %s"),
-			*GetName(), *Looter->GetName(), *KeyTag.ToString());
+		Inv->AddItem(KeyDefToUse, 1);
+
+		// Record key pickup GUID in DungeonSubsystem before destruction (Ticket B-118)
+		FGuid KeyGuid;
+		if (SaveDataComponent && SaveDataComponent->EntityID.IsValid())
+		{
+			KeyGuid = SaveDataComponent->EntityID;
+		}
+
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+				{
+					if (KeyGuid.IsValid())
+					{
+						DungeonSub->RecordKeyCollected(KeyGuid);
+					}
+				}
+			}
+		}
+
+		UE_LOG(LogTemp, Log, TEXT("[KeyPickup] %s (GUID: %s) picked up by %s! Tag: %s"),
+			*GetName(), *KeyGuid.ToString(), *Looter->GetName(), *KeyTag.ToString());
 
 		OnKeyPickedUp.Broadcast(Looter);
+		bIsPickedUp = true;
 		Destroy();
 		return true;
 	}

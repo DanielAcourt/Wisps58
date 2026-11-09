@@ -62,12 +62,27 @@ int32 USovereignDungeonSubsystem::AdvanceFloorDepth(float ExtraSacrificeBuff, fl
 	return CurrentDepth;
 }
 
+void USovereignDungeonSubsystem::RecordKeyCollected(const FGuid& KeyGuid)
+{
+	if (KeyGuid.IsValid() && !CollectedKeyGuids.Contains(KeyGuid))
+	{
+		CollectedKeyGuids.Add(KeyGuid);
+		UE_LOG(LogTemp, Log, TEXT("[SovereignDungeonSubsystem] Key recorded as collected: %s"), *KeyGuid.ToString());
+	}
+}
+
+bool USovereignDungeonSubsystem::IsKeyCollected(const FGuid& KeyGuid) const
+{
+	return KeyGuid.IsValid() && CollectedKeyGuids.Contains(KeyGuid);
+}
+
 void USovereignDungeonSubsystem::ClearExpedition()
 {
 	ActiveExpeditionSeed = 1337;
 	ActiveEnemyBuffMultiplier = 1.0f;
 	ActiveRewardMultiplier = 1.0f;
 	CurrentDepth = 0;
+	CollectedKeyGuids.Empty();
 	bHasActiveExpedition = false;
 
 	UE_LOG(LogTemp, Log, TEXT("[SovereignDungeonSubsystem] Expedition state cleared."));

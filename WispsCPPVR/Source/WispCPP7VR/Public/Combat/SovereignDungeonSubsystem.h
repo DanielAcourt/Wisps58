@@ -52,6 +52,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	int32 CurrentDepth = 0;
 
+	/** Set of Key Pickup GUIDs collected during the current expedition */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	TArray<FGuid> CollectedKeyGuids;
+
 	/** Difficulty scaling rate per depth floor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Expedition")
 	float DepthEnemyBuffRate = 0.25f;
@@ -85,6 +89,18 @@ public:
 	/**
 	 * Clears active expedition parameters upon returning to the garden.
 	 */
+	/**
+	 * Records a key pickup as collected by its GUID.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
+	void RecordKeyCollected(const FGuid& KeyGuid);
+
+	/**
+	 * Checks if a key pickup has been collected.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Expedition")
+	bool IsKeyCollected(const FGuid& KeyGuid) const;
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
 	void ClearExpedition();
 
