@@ -221,7 +221,13 @@ def import_item_definitions_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSpecie
             item_asset = editor_asset_lib.load_asset(package_path)
         else:
             factory = unreal.DataAssetFactory()
-            factory.data_asset_class = item_def_class
+            try:
+                factory.set_editor_property("data_asset_class", item_def_class)
+            except Exception:
+                try:
+                    factory.data_asset_class = item_def_class
+                except Exception:
+                    pass
             item_asset = asset_tools.create_asset(asset_name, output_dir, item_def_class, factory)
 
         if not item_asset:

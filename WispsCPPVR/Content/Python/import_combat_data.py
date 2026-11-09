@@ -217,7 +217,13 @@ def import_skills_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSkillsTemplate.c
             skill_asset = editor_asset_lib.load_asset(package_path)
         else:
             factory = unreal.DataAssetFactory()
-            factory.data_asset_class = skill_def_class
+            try:
+                factory.set_editor_property("data_asset_class", skill_def_class)
+            except Exception:
+                try:
+                    factory.data_asset_class = skill_def_class
+                except Exception:
+                    pass
             skill_asset = asset_tools.create_asset(asset_name, output_dir, skill_def_class, factory)
 
         if not skill_asset:
@@ -319,7 +325,13 @@ def import_classes_to_assets(csv_path="AI_Nexus/Data/DT_SovereignClassesTemplate
             class_asset = editor_asset_lib.load_asset(package_path)
         else:
             factory = unreal.DataAssetFactory()
-            factory.data_asset_class = class_def_class
+            try:
+                factory.set_editor_property("data_asset_class", class_def_class)
+            except Exception:
+                try:
+                    factory.data_asset_class = class_def_class
+                except Exception:
+                    pass
             class_asset = asset_tools.create_asset(asset_name, output_dir, class_def_class, factory)
 
         if not class_asset:
