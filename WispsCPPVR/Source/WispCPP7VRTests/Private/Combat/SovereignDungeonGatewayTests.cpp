@@ -667,16 +667,16 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("GetBossTeleporterActor returns null after CleanupDungeon"), DetGenA->GetBossTeleporterActor());
 
 	// 21. Test Ticket B-120: Special Rooms Registry, Guaranteed Treasure Placement & Logging
-	ASovereignDungeonGenerator* SpecialGen = NewObject<ASovereignDungeonGenerator>();
-	SpecialGen->GenerationSeed = 42;
-	SpecialGen->TargetRoomCount = 12;
-	SpecialGen->SpecialRoomPercentage = 25.0f;
-	SpecialGen->bSpawnPhysicalGeometry = false;
-	const bool bSpecialGenSuccess = SpecialGen->GenerateDungeon();
-	TestTrue(TEXT("SpecialGen generates successfully"), bSpecialGenSuccess);
+	ASovereignDungeonGenerator* RegistryGen = NewObject<ASovereignDungeonGenerator>();
+	RegistryGen->GenerationSeed = 42;
+	RegistryGen->TargetRoomCount = 12;
+	RegistryGen->SpecialRoomPercentage = 25.0f;
+	RegistryGen->bSpawnPhysicalGeometry = false;
+	const bool bRegistryGenSuccess = RegistryGen->GenerateDungeon();
+	TestTrue(TEXT("RegistryGen generates successfully"), bRegistryGenSuccess);
 
 	// Verify SpecialRooms array is populated and accessible
-	const TArray<FSovereignSpecialRoomInfo>& SpecialRoomList = SpecialGen->GetSpecialRooms();
+	const TArray<FSovereignSpecialRoomInfo>& SpecialRoomList = RegistryGen->GetSpecialRooms();
 	TestTrue(TEXT("SpecialRooms list is populated"), SpecialRoomList.Num() > 0);
 
 	// Verify Node 0 (Entrance Room) is registered in SpecialRooms
@@ -707,8 +707,8 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Boss Chamber is registered in SpecialRooms"), bHasBoss);
 
 	// Verify CleanupDungeon empties SpecialRooms
-	SpecialGen->CleanupDungeon();
-	TestEqual(TEXT("CleanupDungeon clears SpecialRooms array"), SpecialGen->GetSpecialRooms().Num(), 0);
+	RegistryGen->CleanupDungeon();
+	TestEqual(TEXT("CleanupDungeon clears SpecialRooms array"), RegistryGen->GetSpecialRooms().Num(), 0);
 
 	return true;
 }
