@@ -1,4 +1,4 @@
-// Copyright (c) 2013-2025 Daniel Acourt. All Rights Reserved. Confidential & Proprietary.
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-06
 
 /*2. The SaveGame Object (UWispsSaveGame)
 Class Type: Inherits from SaveGame
@@ -16,6 +16,7 @@ Image Tag:*/
 #include "UObject/NoExportTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "SaveSystem/SovereignGameData.h"
+#include "SaveSystem/SovereignDungeonDelta.h"
 
 #include "SovereignSaveGame.generated.h"
 
@@ -70,5 +71,9 @@ Image Tag:*/
 
      UPROPERTY(BlueprintReadWrite, Category = "Sovereign")
      FDateTime SaveTime;
+
+     /** Lightweight dungeon delta & seed state (Ticket B-115) */
+     UPROPERTY(BlueprintReadWrite, Category = "Sovereign|Dungeon")
+     FSovereignDungeonDeltaState DungeonDelta;
 
  };

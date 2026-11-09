@@ -80,6 +80,11 @@ void ASovereignDungeonDoor::Tick(float DeltaTime)
 
 void ASovereignDungeonDoor::OnInteract_Implementation(AActor* Interactor)
 {
+	Super::OnInteract_Implementation(Interactor);
+
+	UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] %s interacted with by %s (IsOpen: %d, IsLocked: %d)."),
+		*GetName(), Interactor ? *Interactor->GetName() : TEXT("Unknown"), bIsOpen ? 1 : 0, bIsLocked ? 1 : 0);
+
 	if (bIsOpen && bStayOpenOnceOpened)
 	{
 		return;

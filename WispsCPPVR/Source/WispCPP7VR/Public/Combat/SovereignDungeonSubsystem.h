@@ -48,6 +48,18 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	bool bHasActiveExpedition = false;
 
+	/** Current dungeon floor depth (0 = entrance floor) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	int32 CurrentDepth = 0;
+
+	/** Difficulty scaling rate per depth floor */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Expedition")
+	float DepthEnemyBuffRate = 0.25f;
+
+	/** Reward multiplier scaling rate per depth floor */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Expedition")
+	float DepthRewardRate = 0.20f;
+
 	/** Delegate broadcast when a new expedition is launched */
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Dungeon|Events")
 	FOnExpeditionLaunched OnExpeditionLaunched;
@@ -57,6 +69,18 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
 	void RecordExpedition(int32 Seed, float EnemyBuff, float RewardMult, FName ReturnMapName, const FString& SaveSlot = TEXT("Garden_AutoSave"));
+
+	/**
+	 * Advances floor depth and applies scaling multipliers (Ticket B-116 & B-117).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
+	int32 AdvanceFloorDepth(float ExtraSacrificeBuff = 1.0f, float ExtraSacrificeReward = 1.0f);
+
+	/**
+	 * Returns the current floor depth.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Expedition")
+	int32 GetCurrentDepth() const { return CurrentDepth; }
 
 	/**
 	 * Clears active expedition parameters upon returning to the garden.

@@ -53,7 +53,8 @@ enum class EDungeonTileType : uint8
 	RestSanctuary   UMETA(DisplayName = "Rest Sanctuary"),
 	GrandChamber    UMETA(DisplayName = "Grand Chamber"),
 	Colosseum       UMETA(DisplayName = "Trial Colosseum"),
-	BossChamber     UMETA(DisplayName = "Boss Chamber")
+	BossChamber     UMETA(DisplayName = "Boss Chamber"),
+	StairRoom       UMETA(DisplayName = "Stair Room")
 };
 
 /**
@@ -432,9 +433,37 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignBaseInteractable> EntranceActorClass;
 
+	/** Optional custom Blueprint actor class for upward return stairs on Depth >= 1 (Ticket B-117, inherits ASovereignUpwardStairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignUpwardStairs> UpwardStairsClass;
+
 	/** Optional custom Blueprint actor class for post-boss exit teleporter (Ticket B-112, inherits ASovereignBossTeleporter) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignBossTeleporter> BossTeleporterClass;
+
+	/** Optional custom Blueprint actor class for procedural descent stairs (Ticket B-116, inherits ASovereignDungeonStairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonStairs> DescentStairsClass;
+
+	/** Mode toggle: If true, stairs only spawn in Boss Chamber; if false, can also spawn in dedicated Stair Rooms (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	bool bToggleBossOnlyStairs = true;
+
+	/** If true, spawns descent stairs in the Boss Chamber alongside/behind the boss */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	bool bSpawnDescentStairs = true;
+
+	/** Randomized probability of spawning a 4x4 Stair Room when floor is already conquered (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	float StairRoomSpawnChance = 0.5f;
+
+	/** Chance to spawn an ASovereignRestTerminal inside the 4x4 Stair Room (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	float StairRoomRestTerminalChance = 0.5f;
+
+	/** Optional mesh for descent stairs (wedge / ramp / modeled stairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> DescentStairsMesh;
 
 	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
@@ -588,6 +617,7 @@ public:
 		case EDungeonTileType::Colosseum:     return FIntPoint(8, 8);
 		case EDungeonTileType::EliteChamber:  return FIntPoint(2, 2);
 		case EDungeonTileType::BossChamber:   return FIntPoint(4, 4);
+		case EDungeonTileType::StairRoom:     return FIntPoint(4, 4);
 		default:                              return FIntPoint(1, 1);
 		}
 	}
@@ -607,6 +637,7 @@ public:
 		case EDungeonTileType::Colosseum:     return 4; // Major trial hub
 		case EDungeonTileType::EliteChamber:  return 2; // Linear gatekeeper
 		case EDungeonTileType::BossChamber:   return 1; // Single entrance strictly
+		case EDungeonTileType::StairRoom:     return 2; // Descent hub
 		default:                              return 2;
 		}
 	}

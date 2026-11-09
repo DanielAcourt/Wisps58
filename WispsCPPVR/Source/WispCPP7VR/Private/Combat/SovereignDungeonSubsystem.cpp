@@ -12,6 +12,9 @@ void USovereignDungeonSubsystem::Initialize(FSubsystemCollectionBase& Collection
 	ActiveExpeditionSeed = 1337;
 	ActiveEnemyBuffMultiplier = 1.0f;
 	ActiveRewardMultiplier = 1.0f;
+	CurrentDepth = 0;
+	DepthEnemyBuffRate = 0.25f;
+	DepthRewardRate = 0.20f;
 	GardenReturnMapName = NAME_None;
 	GardenSaveSlot = TEXT("Garden_AutoSave");
 	bHasActiveExpedition = false;
@@ -27,6 +30,7 @@ void USovereignDungeonSubsystem::Deinitialize()
 void USovereignDungeonSubsystem::RecordExpedition(int32 Seed, float EnemyBuff, float RewardMult, FName ReturnMapName, const FString& SaveSlot)
 {
 	ActiveExpeditionSeed = Seed;
+	CurrentDepth = 0;
 	ActiveEnemyBuffMultiplier = FMath::Max(1.0f, EnemyBuff);
 	ActiveRewardMultiplier = FMath::Max(1.0f, RewardMult);
 	GardenReturnMapName = ReturnMapName;
@@ -39,11 +43,31 @@ void USovereignDungeonSubsystem::RecordExpedition(int32 Seed, float EnemyBuff, f
 	OnExpeditionLaunched.Broadcast(ActiveExpeditionSeed, ActiveEnemyBuffMultiplier, ActiveRewardMultiplier, GardenReturnMapName);
 }
 
+int32 USovereignDungeonSubsystem::AdvanceFloorDepth(float ExtraSacrificeBuff, float ExtraSacrificeReward)
+{
+	CurrentDepth++;
+	// Seed changes deterministically per floor
+	ActiveExpeditionSeed = ActiveExpeditionSeed + 10007;
+
+	// Scale difficulty and rewards with depth
+	const float DepthBuffFactor = 1.0f + (CurrentDepth * DepthEnemyBuffRate);
+	const float DepthRewardFactor = 1.0f + (CurrentDepth * DepthRewardRate);
+
+	ActiveEnemyBuffMultiplier = FMath::Max(1.0f, (ActiveEnemyBuffMultiplier * ExtraSacrificeBuff) * DepthBuffFactor);
+	ActiveRewardMultiplier = FMath::Max(1.0f, (ActiveRewardMultiplier * ExtraSacrificeReward) * DepthRewardFactor);
+
+	UE_LOG(LogTemp, Log, TEXT("[SovereignDungeonSubsystem] Advanced to Depth %d! New Seed: %d, EnemyBuff: x%f, RewardMult: x%f"),
+		CurrentDepth, ActiveExpeditionSeed, ActiveEnemyBuffMultiplier, ActiveRewardMultiplier);
+
+	return CurrentDepth;
+}
+
 void USovereignDungeonSubsystem::ClearExpedition()
 {
 	ActiveExpeditionSeed = 1337;
 	ActiveEnemyBuffMultiplier = 1.0f;
 	ActiveRewardMultiplier = 1.0f;
+	CurrentDepth = 0;
 	bHasActiveExpedition = false;
 
 	UE_LOG(LogTemp, Log, TEXT("[SovereignDungeonSubsystem] Expedition state cleared."));

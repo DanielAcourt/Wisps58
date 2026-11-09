@@ -15,7 +15,11 @@
 #include "Entities/SovereignKeyPickup.h"
 #include "Entities/SovereignDungeonEntrance.h"
 #include "Entities/SovereignBossTeleporter.h"
+#include "Entities/SovereignDungeonStairs.h"
+#include "Entities/SovereignUpwardStairs.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "EngineUtils.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -1026,6 +1030,95 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			RoomsRemaining--;
 		}
 
+		// 4.2. Dedicated 4x4 Stair Room Placement (Ticket B-116: DU-Add stairs)
+		// If bToggleBossOnlyStairs is false, and this floor has previously been cleared, roll StairRoomSpawnChance
+		int32 ActiveExpeditionDepth = 0;
+		int32 PlayerDeepestCompleted = 0;
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				ActiveExpeditionDepth = DungeonSub->GetCurrentDepth();
+			}
+		}
+
+		if (UWorld* CurrentWorld = GetWorld())
+		{
+			for (TActorIterator<ASovereignPlayerWisp> WispIt(CurrentWorld); WispIt; ++WispIt)
+			{
+				if (ASovereignPlayerWisp* Wisp = *WispIt)
+				{
+					PlayerDeepestCompleted = FMath::Max(PlayerDeepestCompleted, Wisp->DeepestDungeonCompleted);
+				}
+			}
+		}
+
+		const bool bEligibleForStairRoom = !bToggleBossOnlyStairs && (ActiveExpeditionDepth < PlayerDeepestCompleted);
+		if (bEligibleForStairRoom && (Stream.FRand() <= StairRoomSpawnChance) && EligibleBranchParents.Num() > 0)
+		{
+			const FIntPoint StairDims = GetDefaultFootprintForTileType(EDungeonTileType::StairRoom);
+			for (int32 AttemptIdx = 0; AttemptIdx < EligibleBranchParents.Num(); ++AttemptIdx)
+			{
+				const int32 CandidateParent = EligibleBranchParents[AttemptIdx];
+				FSovereignDungeonNode& PNode = DungeonNodes[CandidateParent];
+				if (!PNode.CanAcceptConnection()) continue;
+
+				bool bPlacedStairRoom = false;
+				for (const FSovereignDoorwaySocket& ParentSocket : PNode.PerimeterSockets)
+				{
+					if (ParentSocket.bIsConnected) continue;
+
+					FIntPoint StepDir = FIntPoint(1, 0);
+					switch (ParentSocket.FacingDirection)
+					{
+					case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+					case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+					case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+					case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+					default: break;
+					}
+					const FIntPoint CandidateAnchor = ParentSocket.CellCoord + StepDir;
+
+					if (CanFitRoomFootprint(CandidateAnchor, StairDims))
+					{
+						FSovereignDungeonNode StairNode;
+						StairNode.NodeIndex = DungeonNodes.Num();
+						StairNode.TileType = EDungeonTileType::StairRoom;
+						StairNode.GridCoord = CandidateAnchor;
+						StairNode.FootprintDimensions = StairDims;
+						StairNode.MaxConnections = GetDefaultMaxConnectionsForTileType(EDungeonTileType::StairRoom);
+						StairNode.GeneratePerimeterSockets();
+
+						const FVector StairWorldLoc = GetActorLocation() + FVector(CandidateAnchor.X * TILE_SIZE, CandidateAnchor.Y * TILE_SIZE, 0.0f);
+						StairNode.WorldTransform = FTransform(FRotator::ZeroRotator, StairWorldLoc, FVector::OneVector);
+
+						for (const FIntPoint& Cell : StairNode.GetOccupiedCells())
+						{
+							MasterGridOccupancy.Add(Cell, StairNode.NodeIndex);
+						}
+
+						const int32 StairIdx = DungeonNodes.Add(StairNode);
+
+						FSovereignDungeonEdge StairEdge;
+						StairEdge.EdgeId = DungeonEdges.Num();
+						StairEdge.NodeIndexA = CandidateParent;
+						StairEdge.NodeIndexB = StairIdx;
+						StairEdge.DirectionAtoB = ParentSocket.FacingDirection;
+						StairEdge.PassageType = EPassageType::OpenArchway;
+						StairEdge.DoorState = EDoorState::Open;
+						DungeonEdges.Add(StairEdge);
+
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Successfully placed dedicated 4x4 Stair Room %d off Parent %d!"),
+							StairIdx, CandidateParent);
+
+						bPlacedStairRoom = true;
+						break;
+					}
+				}
+				if (bPlacedStairRoom) break;
+			}
+		}
+
 		// 4.5. Generate Controlled Shortcut Loops (Ticket B-096)
 		if (MaxLoopCount > 0)
 		{
@@ -1284,13 +1377,31 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 				}
 			}
 
-			UClass* EntranceClassToSpawn = EntranceActorClass ? EntranceActorClass.Get() : ASovereignDungeonEntrance::StaticClass();
+			int32 ActiveDepth = 0;
+			if (UGameInstance* GI = GetWorld()->GetGameInstance())
+			{
+				if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+				{
+					ActiveDepth = DungeonSub->GetCurrentDepth();
+				}
+			}
+
+			UClass* ActorClassToSpawn = nullptr;
+			if (ActiveDepth > 0)
+			{
+				ActorClassToSpawn = UpwardStairsClass ? UpwardStairsClass.Get() : ASovereignUpwardStairs::StaticClass();
+			}
+			else
+			{
+				ActorClassToSpawn = EntranceActorClass ? EntranceActorClass.Get() : ASovereignDungeonEntrance::StaticClass();
+			}
+
 			if (ASovereignBaseInteractable* EntranceActor = GetWorld()->SpawnActor<ASovereignBaseInteractable>(
-				EntranceClassToSpawn, EntrancePortalPos, EntrancePortalRot, SpawnParams))
+				ActorClassToSpawn, EntrancePortalPos, EntrancePortalRot, SpawnParams))
 			{
 				GeneratorSpawnedActors.Add(EntranceActor);
-				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Entrance Gateway Actor in Node %d at %s."),
-					NodeIdx, *EntrancePortalPos.ToString());
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned %s in Node %d at %s (Depth: %d)."),
+					*ActorClassToSpawn->GetName(), NodeIdx, *EntrancePortalPos.ToString(), ActiveDepth);
 			}
 		}
 
@@ -1375,6 +1486,27 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignBossTeleporter in BossChamber Node %d at %s."),
 						NodeIdx, *TeleporterPos.ToString());
 				}
+
+				// Spawn descent stairs in Boss Chamber (Ticket B-116)
+				if (bSpawnDescentStairs)
+				{
+					FVector OrthoOffset = FVector::CrossProduct(BackWallOffset, FVector::UpVector).GetSafeNormal();
+					const FVector StairsPos = TeleporterPos + (OrthoOffset * (TILE_SIZE * 0.35f));
+
+					UClass* StairsClassToSpawn = DescentStairsClass ? DescentStairsClass.Get() : ASovereignDungeonStairs::StaticClass();
+					if (ASovereignDungeonStairs* Stairs = GetWorld()->SpawnActor<ASovereignDungeonStairs>(
+						StairsClassToSpawn, StairsPos, TeleporterRot, SpawnParams))
+					{
+						if (DescentStairsMesh && Stairs->GatewayDoorMesh)
+						{
+							Stairs->GatewayDoorMesh->SetStaticMesh(DescentStairsMesh);
+						}
+
+						GeneratorSpawnedActors.Add(Stairs);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignDungeonStairs in BossChamber Node %d at %s."),
+							NodeIdx, *StairsPos.ToString());
+					}
+				}
 			}
 		}
 		// 5. For Rest Sanctuary: Spawn ASovereignRestTerminal (Ticket B-103 & B-106)
@@ -1434,6 +1566,54 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 					GeneratorSpawnedActors.Add(Chest);
 					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignTreasureChest in TreasureRoom Node %d."), NodeIdx);
+				}
+			}
+		}
+		// 7. For Dedicated 4x4 Stair Room: Spawn Descent Stairs & Optional Rest Sanctuary (Ticket B-116)
+		else if (Node.TileType == EDungeonTileType::StairRoom)
+		{
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FVector StairCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					30.0f
+				);
+
+				UClass* StairsClassToSpawn = DescentStairsClass ? DescentStairsClass.Get() : ASovereignDungeonStairs::StaticClass();
+				if (ASovereignDungeonStairs* Stairs = GetWorld()->SpawnActor<ASovereignDungeonStairs>(
+					StairsClassToSpawn, StairCenterPos, FRotator::ZeroRotator, SpawnParams))
+				{
+					// Dedicated Stair Room bypasses the boss; stairs start unlocked without requiring boss kill
+					Stairs->bRequireBossDefeat = false;
+					Stairs->SetGatewayUnlocked(true);
+
+					if (DescentStairsMesh && Stairs->GatewayDoorMesh)
+					{
+						Stairs->GatewayDoorMesh->SetStaticMesh(DescentStairsMesh);
+					}
+
+					GeneratorSpawnedActors.Add(Stairs);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Unlocked ASovereignDungeonStairs in StairRoom Node %d."), NodeIdx);
+				}
+
+				// Optional Rest Terminal spawn chance inside Stair Room (Ticket B-116)
+				if (FMath::FRand() <= StairRoomRestTerminalChance)
+				{
+					const FVector RestPos = StairCenterPos + FVector(TILE_SIZE * 0.35f, TILE_SIZE * 0.35f, 0.0f);
+					UClass* TerminalClassToSpawn = RestTerminalClass ? RestTerminalClass.Get() : ASovereignRestTerminal::StaticClass();
+					if (ASovereignRestTerminal* Terminal = GetWorld()->SpawnActor<ASovereignRestTerminal>(
+						TerminalClassToSpawn, RestPos, FRotator::ZeroRotator, SpawnParams))
+					{
+						Terminal->MaxRestCharges = DefaultRestCharges;
+						Terminal->RemainingRestCharges = DefaultRestCharges;
+						Terminal->bRandomizeCharges = bRandomizeRestCharges;
+						GeneratorSpawnedActors.Add(Terminal);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned bonus ASovereignRestTerminal in StairRoom Node %d."), NodeIdx);
+					}
 				}
 			}
 		}
