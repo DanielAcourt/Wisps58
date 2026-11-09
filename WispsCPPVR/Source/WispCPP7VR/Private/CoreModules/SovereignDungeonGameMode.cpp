@@ -3,17 +3,58 @@
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignPlayerWisp.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignBattleManager.h"
+#include "Combat/SovereignDungeonSubsystem.h"
 #include "Components/SovereignPartyComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 
 ASovereignDungeonGameMode::ASovereignDungeonGameMode()
 {
 	bLockPossessionToLeader = true;
 	DefaultPawnClass = ASovereignBaseCharacter::StaticClass();
+}
+
+UClass* ASovereignDungeonGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->HasPartyLeaderState())
+				{
+					FString ClassPath = DungeonSub->PartyLeaderClassPath;
+					// Resolve Blueprint generated class if standard path
+					if (!ClassPath.EndsWith(TEXT("_C")))
+					{
+						ClassPath += TEXT("_C");
+					}
+
+					if (UClass* LoadedClass = LoadClass<APawn>(nullptr, *ClassPath))
+					{
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Dynamic vessel pawn class resolved for expedition: %s"), *LoadedClass->GetName());
+						return LoadedClass;
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[DungeonGameMode] Failed to load party leader vessel class [%s], using default."), *ClassPath);
+					}
+				}
+			}
+		}
+	}
+
+	return Super::GetDefaultPawnClassForController_Implementation(InController);
 }
 
 void ASovereignDungeonGameMode::BeginPlay()
@@ -74,6 +115,46 @@ void ASovereignDungeonGameMode::SetupPartyLeaderAtEntrance(APlayerController* PC
 	else if (ASovereignBaseCharacter* Character = Cast<ASovereignBaseCharacter>(ControlledPawn))
 	{
 		DungeonPartyLeader = Character;
+	}
+
+	// Restore cached vessel stats, attributes, Qi, inventory, and bio vitals from DungeonSubsystem
+	if (DungeonPartyLeader)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (!DungeonSub->PartyLeaderStateJson.IsEmpty())
+				{
+					TSharedPtr<FJsonObject> StateJsonObj;
+					TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(DungeonSub->PartyLeaderStateJson);
+					if (FJsonSerializer::Deserialize(Reader, StateJsonObj) && StateJsonObj.IsValid())
+					{
+						if (USovereignSaveableEntityComponent* SaveComp = DungeonPartyLeader->FindComponentByClass<USovereignSaveableEntityComponent>())
+						{
+							SaveComp->ApplyStateFromJsonObject(StateJsonObj);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Restored runtime stats and inventory to party leader vessel [%s] from subsystem state."),
+								*DungeonPartyLeader->GetName());
+						}
+					}
+				}
+			}
+		}
+
+		// Ensure the dragon vessel's Input Mapping Context is active on the local player controller
+		if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+			{
+				if (UInputMappingContext* VesselIMC = DungeonPartyLeader->GetDefaultMappingContext())
+				{
+					Subsystem->RemoveMappingContext(VesselIMC);
+					Subsystem->AddMappingContext(VesselIMC, 0);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Activated vessel DefaultMappingContext [%s] for %s"),
+						*VesselIMC->GetName(), *DungeonPartyLeader->GetName());
+				}
+			}
+		}
 	}
 
 	// Teleport the party leader to the Entrance Room WorldTransform

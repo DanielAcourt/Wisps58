@@ -56,6 +56,18 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	TArray<FGuid> CollectedKeyGuids;
 
+	/** Asset class path of the possessed party leader vessel (e.g. /Game/Blueprint/Actors/Living/BP_Dragon.BP_Dragon_C) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FString PartyLeaderClassPath;
+
+	/** GUID of the party leader vessel */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FGuid PartyLeaderGUID;
+
+	/** Serialized JSON state representing the party leader vessel's attributes, Qi, inventory, and bio vitals */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	FString PartyLeaderStateJson;
+
 	/** Difficulty scaling rate per depth floor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Expedition")
 	float DepthEnemyBuffRate = 0.25f;
@@ -100,6 +112,18 @@ public:
 	 */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Expedition")
 	bool IsKeyCollected(const FGuid& KeyGuid) const;
+
+	/**
+	 * Records the possessed party leader vessel class and full entity state JSON before dungeon entry.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
+	void RecordPartyLeaderState(const FString& InClassPath, const FGuid& InGuid, const FString& InStateJson);
+
+	/**
+	 * Checks if a recorded party leader vessel state is available for spawning.
+	 */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Expedition")
+	bool HasPartyLeaderState() const { return !PartyLeaderClassPath.IsEmpty(); }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
 	void ClearExpedition();

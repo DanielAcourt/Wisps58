@@ -15,6 +15,9 @@ void USovereignDungeonSubsystem::Initialize(FSubsystemCollectionBase& Collection
 	CurrentDepth = 0;
 	DepthEnemyBuffRate = 0.25f;
 	DepthRewardRate = 0.20f;
+	PartyLeaderClassPath.Empty();
+	PartyLeaderGUID.Invalidate();
+	PartyLeaderStateJson.Empty();
 	GardenReturnMapName = NAME_None;
 	GardenSaveSlot = TEXT("Garden_AutoSave");
 	bHasActiveExpedition = false;
@@ -76,6 +79,16 @@ bool USovereignDungeonSubsystem::IsKeyCollected(const FGuid& KeyGuid) const
 	return KeyGuid.IsValid() && CollectedKeyGuids.Contains(KeyGuid);
 }
 
+void USovereignDungeonSubsystem::RecordPartyLeaderState(const FString& InClassPath, const FGuid& InGuid, const FString& InStateJson)
+{
+	PartyLeaderClassPath = InClassPath;
+	PartyLeaderGUID = InGuid;
+	PartyLeaderStateJson = InStateJson;
+
+	UE_LOG(LogTemp, Log, TEXT("[SovereignDungeonSubsystem] Party Leader State recorded: Class=%s, GUID=%s, StateLen=%d"),
+		*PartyLeaderClassPath, *PartyLeaderGUID.ToString(), PartyLeaderStateJson.Len());
+}
+
 void USovereignDungeonSubsystem::ClearExpedition()
 {
 	ActiveExpeditionSeed = 1337;
@@ -83,6 +96,9 @@ void USovereignDungeonSubsystem::ClearExpedition()
 	ActiveRewardMultiplier = 1.0f;
 	CurrentDepth = 0;
 	CollectedKeyGuids.Empty();
+	PartyLeaderClassPath.Empty();
+	PartyLeaderGUID.Invalidate();
+	PartyLeaderStateJson.Empty();
 	bHasActiveExpedition = false;
 
 	UE_LOG(LogTemp, Log, TEXT("[SovereignDungeonSubsystem] Expedition state cleared."));
