@@ -184,7 +184,7 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
 
     if (!Registry || !SaveSuitcase) return;
 
-    // Ingest Dungeon Expedition parameters and delta state if ongoing (Ticket B-115)
+    // Ingest Dungeon Expedition parameters and active generator seed (Ticket B-115)
     if (UGameInstance* GI = GetGameInstance())
     {
         if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
@@ -192,6 +192,21 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
             SaveSuitcase->DungeonDelta.ExpeditionSeed = DungeonSub->ActiveExpeditionSeed;
             SaveSuitcase->DungeonDelta.EnemyBuffMultiplier = DungeonSub->ActiveEnemyBuffMultiplier;
             SaveSuitcase->DungeonDelta.RewardMultiplier = DungeonSub->ActiveRewardMultiplier;
+        }
+    }
+
+    // Direct generator query fallback: if in a standalone dungeon level without gateway transition
+    if (World)
+    {
+        for (TActorIterator<ASovereignDungeonGenerator> GenIt(World); GenIt; ++GenIt)
+        {
+            if (ASovereignDungeonGenerator* Gen = *GenIt)
+            {
+                SaveSuitcase->DungeonDelta.ExpeditionSeed = Gen->GenerationSeed;
+                SaveSuitcase->DungeonDelta.EnemyBuffMultiplier = Gen->EnemyBuffMultiplier;
+                SaveSuitcase->DungeonDelta.RewardMultiplier = Gen->RewardMultiplier;
+                break;
+            }
         }
     }
 
