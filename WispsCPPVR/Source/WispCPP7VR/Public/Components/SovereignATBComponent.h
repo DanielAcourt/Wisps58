@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SovereignBaseComponent.h"
+#include "Combat/SovereignSkillAugment.h"
 #include "SovereignATBComponent.generated.h"
 
 class ASovereignBaseCharacter;
@@ -12,8 +13,6 @@ class ASovereignBaseCharacter;
  * EATBState
  * State machine for individual combatant Active Time Battle (ATB) gauge progression.
  */
-#include "Combat/SovereignSkillAugment.h"
-
 UENUM(BlueprintType)
 enum class EATBState : uint8
 {
