@@ -8,6 +8,7 @@
 #include "Components/SovereignClassComponent.h"
 #include "Components/SovereignSkillComponent.h"
 #include "Components/SovereignLevelComponent.h"
+#include "Components/SovereignStatusComponent.h"
 #include "Combat/SovereignSkillDefinition.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
@@ -115,6 +116,17 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 			{
 				ActiveCombatant = NextActor;
 				SetBattleState(EBattleState::ActionExecuting);
+
+				// Check Stun condition (Ticket CS-005)
+				if (USovereignStatusComponent* StatusComp = NextActor->GetStatusComponent())
+				{
+					if (StatusComp->IsStunned())
+					{
+						UE_LOG(LogTemp, Log, TEXT("[BattleManager] %s is Stunned and loses their turn!"), *NextActor->GetName());
+						ConcludeActiveTurn();
+						continue;
+					}
+				}
 
 				if (USovereignATBComponent* ATBComp = NextActor->GetATBComponent())
 				{
@@ -678,6 +690,12 @@ void ASovereignBattleManager::ConcludeActiveTurn()
 {
 	if (ActiveCombatant)
 	{
+		// Process turn-end status effects (Poison damage, Regen healing, turn decrement) - Ticket CS-005
+		if (USovereignStatusComponent* StatusComp = ActiveCombatant->GetStatusComponent())
+		{
+			StatusComp->ProcessTurnEnd();
+		}
+
 		if (USovereignATBComponent* ATB = ActiveCombatant->GetATBComponent())
 		{
 			ATB->CompleteActionExecution();
@@ -832,6 +850,15 @@ bool ASovereignBattleManager::CanCastSkill(const ASovereignBaseCharacter* Caster
 		return true;
 	}
 
+	// Check Silence status effect (Ticket CS-005)
+	if (const USovereignStatusComponent* StatusComp = Caster->GetStatusComponent())
+	{
+		if (StatusComp->IsSilenced())
+		{
+			return false; // Silenced combatants cannot cast Qi skills
+		}
+	}
+
 	if (const USovereignQiComponent* QiComp = Caster->GetQiComponent())
 	{
 		return QiComp->CurrentQi >= SkillDef->QiCost;
@@ -872,6 +899,12 @@ FSovereignCombatEntitySnapshot ASovereignBattleManager::CreateSnapshotForCombata
 		else if (const USovereignElementComponent* ElemComp = Combatant->FindComponentByClass<USovereignElementComponent>())
 		{
 			Snapshot.PrimaryElement = ElemComp->BodySocket;
+		}
+
+		// Status conditions (Ticket CS-005)
+		if (const USovereignStatusComponent* StatusComp = Combatant->GetStatusComponent())
+		{
+			Snapshot.bIsBlinded = StatusComp->IsBlinded();
 		}
 	}
 	return Snapshot;
@@ -982,6 +1015,15 @@ bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster
 
 			TargetAttr->CurrentHealth = FMath::Max(0.0f, TargetAttr->CurrentHealth - FinalDmg);
 			TotalActionResult += FinalDmg;
+		}
+
+		// Apply Status Effects if defined on the skill (Ticket CS-005)
+		if (SkillDef->InflictedStatus != ESovereignStatusType::None)
+		{
+			if (USovereignStatusComponent* TargetStatus = Target->GetStatusComponent())
+			{
+				TargetStatus->ApplyStatusEffect(SkillDef->InflictedStatus, SkillDef->StatusDurationTurns, SkillDef->StatusPotency, Caster);
+			}
 		}
 	}
 

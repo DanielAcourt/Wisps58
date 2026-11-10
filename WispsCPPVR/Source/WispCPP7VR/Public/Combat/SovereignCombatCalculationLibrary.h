@@ -84,6 +84,10 @@ struct WISPCPP7VR_API FSovereignCombatEntitySnapshot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
 	ESovereignElement ResistanceElement = ESovereignElement::None;
 
+	/** Whether this combatant is suffering from Blind (Ticket CS-005) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
+	bool bIsBlinded = false;
+
 	FSovereignCombatEntitySnapshot()
 		: FormationSlot(1)
 		, bIsAlive(true)
@@ -98,6 +102,7 @@ struct WISPCPP7VR_API FSovereignCombatEntitySnapshot
 		, PrimaryElement(ESovereignElement::None)
 		, WeaknessElement(ESovereignElement::None)
 		, ResistanceElement(ESovereignElement::None)
+		, bIsBlinded(false)
 	{
 	}
 
@@ -142,6 +147,10 @@ struct WISPCPP7VR_API FSovereignDamageCalculationResult
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
 	float ElementalMultiplier = 1.0f;
 
+	/** Whether attacker was afflicted by Blind (50% physical accuracy/damage debuff) - Ticket CS-005 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
+	bool bIsBlinded = false;
+
 	/** Final net damage floored at minimum 1.0 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
 	float FinalDamage = 1.0f;
@@ -154,6 +163,7 @@ struct WISPCPP7VR_API FSovereignDamageCalculationResult
 		, MitigationFactor(1.0f)
 		, bIsCriticalHit(false)
 		, ElementalMultiplier(1.0f)
+		, bIsBlinded(false)
 		, FinalDamage(1.0f)
 	{
 	}

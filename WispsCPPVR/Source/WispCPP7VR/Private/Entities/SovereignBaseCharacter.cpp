@@ -14,6 +14,7 @@
 #include "Inventory/SovereignInventoryBroker.h"
 #include "Components/SovereignClassComponent.h"
 #include "Components/SovereignSkillComponent.h"
+#include "Components/SovereignStatusComponent.h"
 #include "Components/SovereignPartyComponent.h"
 #include "Components/SovereignATBComponent.h"
 #include "TimerManager.h"
@@ -54,6 +55,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	InventoryComponent = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("InventoryComponent"));
 	ClassComponent = CreateDefaultSubobject<USovereignClassComponent>(TEXT("ClassComponent"));
 	SkillComponent = CreateDefaultSubobject<USovereignSkillComponent>(TEXT("SkillComponent"));
+	StatusComponent = CreateDefaultSubobject<USovereignStatusComponent>(TEXT("StatusComponent"));
 	ATBComponent = CreateDefaultSubobject<USovereignATBComponent>(TEXT("ATBComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS

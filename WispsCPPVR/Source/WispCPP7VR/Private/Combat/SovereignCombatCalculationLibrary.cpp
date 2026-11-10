@@ -180,14 +180,21 @@ FSovereignDamageCalculationResult USovereignCombatCalculationLibrary::CalculateC
 	}
 	ComputedDamage *= Result.ElementalMultiplier;
 
-	// 8. Critical hit evaluation (1.5x multiplier)
+	// 8. Blind Mitigation (50% physical accuracy/damage reduction) - Ticket CS-005
+	Result.bIsBlinded = Attacker.bIsBlinded;
+	if (Attacker.bIsBlinded && (ScalingAttr == ESovereignSkillScalingAttribute::Strength || ScalingAttr == ESovereignSkillScalingAttribute::Dexterity))
+	{
+		ComputedDamage *= 0.5f;
+	}
+
+	// 9. Critical hit evaluation (1.5x multiplier)
 	Result.bIsCriticalHit = EvaluateCriticalHit(Attacker, Target, ForcedCritRoll);
 	if (Result.bIsCriticalHit)
 	{
 		ComputedDamage *= 1.5f;
 	}
 
-	// 9. Floor final damage at minimum 1.0f on hit
+	// 10. Floor final damage at minimum 1.0f on hit
 	Result.FinalDamage = FMath::Max(1.0f, FMath::RoundToFloat(ComputedDamage));
 
 	return Result;

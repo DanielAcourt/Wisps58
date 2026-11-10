@@ -25,6 +25,7 @@ class USovereignInventoryComponent;
 class USovereignInventoryBroker;
 class USovereignClassComponent;
 class USovereignSkillComponent;
+class USovereignStatusComponent;
 class USovereignATBComponent;
 class USovereignPartyComponent;
 class ASovereignPlayerWisp;
@@ -89,6 +90,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Status")
+	USovereignStatusComponent* GetStatusComponent() const { return StatusComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignATBComponent* GetATBComponent() const { return ATBComponent; }
@@ -243,6 +247,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignSkillComponent* SkillComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignStatusComponent* StatusComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignATBComponent* ATBComponent;

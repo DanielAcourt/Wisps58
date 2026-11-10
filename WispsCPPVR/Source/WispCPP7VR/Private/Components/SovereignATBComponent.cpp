@@ -4,6 +4,7 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignClassComponent.h"
+#include "Components/SovereignStatusComponent.h"
 
 USovereignATBComponent::USovereignATBComponent()
 {
@@ -46,6 +47,12 @@ float USovereignATBComponent::CalculateEffectiveFillRate() const
 		if (const USovereignClassComponent* ClassComp = Character->GetClassComponent())
 		{
 			ClassSpeedMultiplier = FMath::Max(0.1f, ClassComp->GetTotalDexterityMultiplier());
+		}
+
+		// 3. Status Multiplier (Haste 1.5x, Slow 0.5x) - Ticket CS-005
+		if (const USovereignStatusComponent* StatusComp = Character->GetStatusComponent())
+		{
+			ClassSpeedMultiplier *= StatusComp->GetATBSpeedMultiplier();
 		}
 	}
 
