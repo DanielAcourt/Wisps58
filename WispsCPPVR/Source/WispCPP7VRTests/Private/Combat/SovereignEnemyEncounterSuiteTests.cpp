@@ -10,6 +10,7 @@
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignLevelComponent.h"
 #include "Components/SovereignClassComponent.h"
+#include "Components/SovereignSkillComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "GameplayTagsManager.h"
 #include "Tests/AutomationCommon.h"

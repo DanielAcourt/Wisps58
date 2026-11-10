@@ -132,7 +132,7 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 						}
 						UE_LOG(LogTemp, Log, TEXT("[BattleManager] %s is Stunned and loses their turn!"), *NextActor->GetName());
 						ConcludeActiveTurn();
-						continue;
+						return;
 					}
 				}
 
@@ -296,12 +296,12 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	}
 
 	// Determine AI Role (Ticket CS-003)
-	ESovereignEnemyRole Role = ESovereignEnemyRole::Default;
+	ESovereignEnemyRole EnemyRole = ESovereignEnemyRole::Default;
 	if (const TObjectPtr<USovereignEnemyDefinition>* FoundDef = EnemyDefinitionsMap.Find(EnemyCombatant))
 	{
 		if (*FoundDef)
 		{
-			Role = (*FoundDef)->EnemyRole;
+			EnemyRole = (*FoundDef)->EnemyRole;
 		}
 	}
 
@@ -327,7 +327,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	};
 
 	// --- A. Support Healer Decision Tree ---
-	if (Role == ESovereignEnemyRole::SupportHealer)
+	if (EnemyRole == ESovereignEnemyRole::SupportHealer)
 	{
 		// Check living allies for health < 50%
 		ASovereignBaseCharacter* MostWoundedAlly = nullptr;
@@ -385,7 +385,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	}
 
 	// --- B. Tactical Leader Decision Tree (AoE or Highest Threat) ---
-	if (!bFoundUsableSkill && Role == ESovereignEnemyRole::TacticalLeader && SkillComp)
+	if (!bFoundUsableSkill && EnemyRole == ESovereignEnemyRole::TacticalLeader && SkillComp)
 	{
 		// If 2+ living players, prefer full matrix AoE or cleave
 		if (LivingPlayers.Num() >= 2)
@@ -436,7 +436,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	}
 
 	// --- C. Aggressive Brute Decision Tree (Front Rank Focus) ---
-	if (Targets.Num() == 0 && Role == ESovereignEnemyRole::AggressiveBrute)
+	if (Targets.Num() == 0 && EnemyRole == ESovereignEnemyRole::AggressiveBrute)
 	{
 		// Prioritize Front Rank (Slots 0, 1, 2)
 		TArray<ASovereignBaseCharacter*> FrontRankPlayers;
@@ -456,7 +456,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	}
 
 	// --- D. Skirmisher / Sniper Decision Tree (Execute Lowest HP or Rear Rank) ---
-	if (Targets.Num() == 0 && Role == ESovereignEnemyRole::SkirmisherSniper)
+	if (Targets.Num() == 0 && EnemyRole == ESovereignEnemyRole::SkirmisherSniper)
 	{
 		// Find living player with lowest absolute HP
 		ASovereignBaseCharacter* LowestHPPlayer = nullptr;

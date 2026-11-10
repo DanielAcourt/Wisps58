@@ -157,13 +157,20 @@ FSovereignDamageCalculationResult USovereignCombatCalculationLibrary::CalculateC
 
 	// 7. Elemental Weakness / Resistance Evaluation (Ticket CS-004)
 	ESovereignElement AttackElement = ESovereignElement::None;
-	if (SkillInstance.Augment && SkillInstance.Augment->InfusedElement != ESovereignElement::None)
+	for (const TObjectPtr<USovereignSkillAugment>& Augment : SkillInstance.ActiveAugments)
 	{
-		AttackElement = SkillInstance.Augment->InfusedElement;
+		if (Augment && Augment->InfusedElement != ESovereignElement::None)
+		{
+			AttackElement = Augment->InfusedElement;
+			break;
+		}
 	}
-	else if (USovereignSkillDefinition* Def = SkillInstance.SkillDefinition.Get())
+	if (AttackElement == ESovereignElement::None)
 	{
-		AttackElement = Def->ElementType;
+		if (USovereignSkillDefinition* Def = SkillInstance.SkillDefinition.Get())
+		{
+			AttackElement = Def->ElementType;
+		}
 	}
 
 	Result.ElementalMultiplier = 1.0f;
