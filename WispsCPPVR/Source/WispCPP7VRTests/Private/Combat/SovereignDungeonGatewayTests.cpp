@@ -12,8 +12,12 @@
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignPartyComponent.h"
+#include "Components/SovereignClassComponent.h"
+#include "Components/SovereignPolymorphComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Inventory/SovereignInventoryComponent.h"
@@ -830,6 +834,125 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 		Subsystem->DungeonGeneratorClassOverride = TestGateway->DungeonGeneratorBlueprintClass;
 		TestEqual(TEXT("Subsystem stored generator class override"), Subsystem->DungeonGeneratorClassOverride.Get(), ASovereignDungeonGenerator::StaticClass());
+	}
+
+	// 24. Test Ticket B-121: Unpossessed Wisp Gateway Block & UI Delegate Trigger
+	{
+		ASovereignDungeonGateway* Gateway = NewObject<ASovereignDungeonGateway>();
+		Gateway->SetGatewayUnlocked(true);
+
+		ASovereignPlayerWisp* Wisp = NewObject<ASovereignPlayerWisp>();
+		Wisp->SetIsPossessing(false);
+
+		bool bDelegateFired = false;
+		Gateway->OnUnpossessedWispInteraction.AddLambda([&bDelegateFired, Wisp](ASovereignPlayerWisp* InteractingWisp) {
+			if (InteractingWisp == Wisp)
+			{
+				bDelegateFired = true;
+			}
+		});
+
+		// Attempt to enter dungeon as an unpossessed wisp
+		const bool bEntered = Gateway->EnterDungeon(Wisp);
+		TestFalse(TEXT("Unpossessed wisp is blocked from entering dungeon"), bEntered);
+		TestTrue(TEXT("OnUnpossessedWispInteraction delegate fired to show UI"), bDelegateFired);
+		TestEqual(TEXT("Interaction hint shows vessel required"), Gateway->GetInteractionHint_Implementation(), FString(TEXT("Enter Procedural Dungeon (Vessel Required)")));
+	}
+
+	// 25. Test Ticket B-122: Full 3x3 Party Roster Serialization & Dungeon Reconstitution
+	{
+		UGameInstance* GI = NewObject<UGameInstance>();
+		USovereignDungeonSubsystem* Subsystem = NewObject<USovereignDungeonSubsystem>(GI);
+
+		// Create Leader dragon vessel
+		ASovereignBaseCharacter* LeaderVessel = NewObject<ASovereignBaseCharacter>();
+		LeaderVessel->GetAttributeComponent()->Strength = 60;
+		LeaderVessel->GetAttributeComponent()->Dexterity = 40;
+		LeaderVessel->SetCurrentGrowthStage(5);
+
+		// Create Ally vessel
+		ASovereignBaseCharacter* AllyVessel = NewObject<ASovereignBaseCharacter>();
+		AllyVessel->GetAttributeComponent()->Strength = 35;
+		AllyVessel->GetAttributeComponent()->Intelligence = 55;
+		AllyVessel->SetCurrentGrowthStage(3);
+
+		// Setup Party Component on Wisp possessing leader
+		ASovereignPlayerWisp* PossessingWisp = NewObject<ASovereignPlayerWisp>();
+		USovereignPartyComponent* PartyComp = PossessingWisp->GetPartyComponent();
+		PartyComp->AssignPartyMember(0, LeaderVessel, true);
+		PartyComp->AssignPartyMember(1, AllyVessel, false);
+
+		// Capture Ally State JSON
+		TSharedPtr<FJsonObject> AllyStateObj = AllyVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->CaptureFullEntityState();
+		FString AllyStateString;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&AllyStateString);
+		FJsonSerializer::Serialize(AllyStateObj.ToSharedRef(), Writer);
+
+		// Record both members into Subsystem
+		Subsystem->RecordPartyMemberState(0, LeaderVessel->GetClass()->GetPathName(), FGuid::NewGuid(), TEXT("{}"), true);
+		Subsystem->RecordPartyMemberState(1, AllyVessel->GetClass()->GetPathName(), FGuid::NewGuid(), AllyStateString, false);
+
+		TestEqual(TEXT("ActivePartyMembersData has 2 entries"), Subsystem->ActivePartyMembersData.Num(), 2);
+		TestEqual(TEXT("Slot 0 is recorded as Leader"), Subsystem->ActivePartyMembersData[0].bIsLeader, true);
+		TestEqual(TEXT("Slot 1 is recorded as Ally"), Subsystem->ActivePartyMembersData[1].bIsLeader, false);
+
+		// Verify Polymorph component serialization & broker integration
+		USovereignPolymorphComponent* PolyComp = NewObject<USovereignPolymorphComponent>(LeaderVessel, TEXT("PolymorphComp"));
+		LeaderVessel->AddInstanceComponent(PolyComp);
+		PolyComp->RegisterComponent();
+		LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->RegisterBroker(PolyComp);
+
+		TSharedPtr<FJsonObject> SavedRoot = LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->CaptureFullEntityState();
+		TestTrue(TEXT("Polymorph data is saved under Sovereign.Polymorph"), SavedRoot->HasField(TEXT("Sovereign.Polymorph")));
+	}
+
+	// 26. Test Ticket B-123: Bidirectional Progression Synchronization (Dungeon to Garden)
+	{
+		const FString TestGardenSlot = TEXT("Test_Garden_SyncSlot");
+		USovereignSaveGame* GardenSuitcase = Cast<USovereignSaveGame>(UGameplayStatics::CreateSaveGameObject(USovereignSaveGame::StaticClass()));
+
+		const FGuid VesselGuid = FGuid::NewGuid();
+		FEntitySaveData EntityData;
+		EntityData.MyGUID = VesselGuid;
+		EntityData.ObjectName = TEXT("DragonVessel");
+		EntityData.ClassPath = ASovereignBaseCharacter::StaticClass()->GetPathName();
+
+		// Initial garden state: STR = 20
+		TSharedPtr<FJsonObject> InitialMeta = MakeShared<FJsonObject>();
+		TSharedPtr<FJsonObject> InitialAttrs = MakeShared<FJsonObject>();
+		InitialAttrs->SetNumberField(TEXT("Strength"), 20);
+		InitialMeta->SetObjectField(TEXT("Sovereign.Attributes"), InitialAttrs);
+		EntityData.UnknownMetaTags = InitialMeta;
+
+		GardenSuitcase->SavedActors.Add(EntityData);
+		const FString InitialSuitcaseJson = USaveManager::ConvertSuitcaseToJson(GardenSuitcase);
+		USovereignJsonUtils::ValidateAndSave(TestGardenSlot, InitialSuitcaseJson);
+
+		// In the dungeon, vessel gained STR = 50
+		TSharedPtr<FJsonObject> DungeonUpdatedMeta = MakeShared<FJsonObject>();
+		TSharedPtr<FJsonObject> UpdatedAttrs = MakeShared<FJsonObject>();
+		UpdatedAttrs->SetNumberField(TEXT("Strength"), 50);
+		DungeonUpdatedMeta->SetObjectField(TEXT("Sovereign.Attributes"), UpdatedAttrs);
+
+		const bool bSyncSuccess = USaveManager::UpdateEntityInSavedSlot(TestGardenSlot, VesselGuid, DungeonUpdatedMeta);
+		TestTrue(TEXT("UpdateEntityInSavedSlot succeeded"), bSyncSuccess);
+
+		// Reload and verify updated progression persisted in the garden save file
+		FString ReloadedJson;
+		USovereignJsonUtils::LoadStringFromFile(TestGardenSlot, ReloadedJson);
+		USovereignSaveGame* ReloadedSuitcase = USaveManager::ConvertJsonToSuitcase(ReloadedJson);
+
+		TestNotNull(TEXT("ReloadedSuitcase is valid"), ReloadedSuitcase);
+		TestEqual(TEXT("SavedActors count retained"), ReloadedSuitcase->SavedActors.Num(), 1);
+
+		const TSharedPtr<FJsonObject>* ReloadedAttrs = nullptr;
+		TestTrue(TEXT("Attributes field present in reloaded save"), ReloadedSuitcase->SavedActors[0].UnknownMetaTags->TryGetObjectField(TEXT("Sovereign.Attributes"), ReloadedAttrs));
+		if (ReloadedAttrs && ReloadedAttrs->IsValid())
+		{
+			double ReloadedStr = 0;
+			(*ReloadedAttrs)->TryGetNumberField(TEXT("Strength"), ReloadedStr);
+			TestEqual(TEXT("Vessel Strength updated in Garden save file to 50"), (int32)ReloadedStr, 50);
+		}
 	}
 
 	return true;

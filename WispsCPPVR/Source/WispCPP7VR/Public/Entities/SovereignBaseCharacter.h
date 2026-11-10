@@ -123,6 +123,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	int32 GetCurrentGrowthStage() const { return CurrentGrowthStage; }
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	void SetCurrentGrowthStage(int32 NewStage)
+	{
+		CurrentGrowthStage = FMath::Clamp(NewStage, 0, 7);
+		RefreshVisuals();
+		if (AttributeComponent)
+		{
+			AttributeComponent->SyncStatsFromEntity();
+		}
+	}
+
 	/** Master template initialization from species data asset */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	virtual void InitializeFromSovereignData(USovereignSpeciesData* InData);

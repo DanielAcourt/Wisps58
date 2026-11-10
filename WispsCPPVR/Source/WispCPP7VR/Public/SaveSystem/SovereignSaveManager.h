@@ -66,6 +66,12 @@ public:
     static FString ConvertSuitcaseToJson(USovereignSaveGame* Suitcase);
     static USovereignSaveGame* ConvertJsonToSuitcase(const FString& JsonContent);
 
+    /**
+     * Updates or merges an individual entity's serialized state into a saved world slot (Ticket B-123).
+     * Used by dungeon exit portals to synchronize character progression back to the Garden save file.
+     */
+    static bool UpdateEntityInSavedSlot(const FString& SlotName, const FGuid& EntityGuid, const TSharedPtr<FJsonObject>& NewEntityState);
+
 protected:
 	// Called when the game starts or when spawned
 	//virtual void BeginPlay() override;

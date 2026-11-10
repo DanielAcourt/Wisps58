@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SovereignBaseComponent.h"
+#include "Entities/SovereignBrokerInterface.h"
 #include "SovereignPolymorphComponent.generated.h"
 
 class ASovereignBaseCharacter;
@@ -31,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnVesselFormChanged, ESovereignVess
  * and turn-based combat class utilization, preserving base D&D attributes, identity, and inventory.
  */
 UCLASS(ClassGroup = (Sovereign), meta = (BlueprintSpawnableComponent))
-class WISPCPP7VR_API USovereignPolymorphComponent : public USovereignBaseComponent
+class WISPCPP7VR_API USovereignPolymorphComponent : public USovereignBaseComponent, public ISovereignBrokerInterface
 {
 	GENERATED_BODY()
 
@@ -91,6 +92,11 @@ public:
 
 	/** Helper to retrieve owner character vessel */
 	ASovereignBaseCharacter* GetOwnerCharacter() const;
+
+	// --- ISovereignBrokerInterface Implementation ---
+	virtual void OnSave(TSharedPtr<FJsonObject>& OutJson) override;
+	virtual void OnLoad(const TSharedPtr<FJsonObject>& InJson) override;
+	virtual void OnProcessData(const TMap<FString, FString>& Data) override;
 
 protected:
 	virtual void BeginPlay() override;
