@@ -430,6 +430,207 @@ def import_classes(csv_path="AI_Nexus/Data/DT_SovereignClassesTemplate.csv", out
     return import_classes_to_assets(csv_path=csv_path, output_dir=output_dir, skills_dir=skills_dir)
 
 
+def parse_csv_enemy_rows(csv_path):
+    resolved = resolve_csv_path(csv_path)
+    if not os.path.exists(resolved):
+        raise FileNotFoundError(f"Enemies CSV not found: {resolved}")
+    records = []
+    with open(resolved, mode="r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            raw_skills = row.get("EquippedSkills", "")
+            skills = [s.strip() for s in raw_skills.split(",") if s.strip()] if raw_skills else []
+            records.append({
+                "AssetName": sanitize_asset_name(row.get("Name", "Enemy_Default"), "DA_"),
+                "EnemyTag": row.get("EnemyTag", "").strip(),
+                "DisplayName": row.get("DisplayName", "").strip(),
+                "CharacterClass": row.get("CharacterClass", "").strip(),
+                "MaxHealth": float(row.get("MaxHealth", 100.0)),
+                "MaxQi": float(row.get("MaxQi", 50.0)),
+                "STR": int(row.get("Strength", 10)),
+                "DEX": int(row.get("Dexterity", 10)),
+                "CON": int(row.get("Constitution", 10)),
+                "INT": int(row.get("Intelligence", 10)),
+                "WIS": int(row.get("Wisdom", 10)),
+                "CHA": int(row.get("Charisma", 10)),
+                "LCK": int(row.get("Luck", 10)),
+                "EquippedSkills": skills,
+                "ExpReward": float(row.get("ExpReward", 50.0)),
+                "ClassExpReward": int(row.get("ClassExpReward", 10)),
+                "QiReward": float(row.get("QiReward", 15.0))
+            })
+    return records
+
+
+def parse_csv_encounter_rows(csv_path):
+    resolved = resolve_csv_path(csv_path)
+    if not os.path.exists(resolved):
+        raise FileNotFoundError(f"Encounters CSV not found: {resolved}")
+    records = []
+    with open(resolved, mode="r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            raw_slots = row.get("EnemySlots", "")
+            slots = []
+            if raw_slots:
+                for s in raw_slots.split(";"):
+                    if ":" in s:
+                        slot_idx_str, enemy_ref = s.split(":", 1)
+                        slots.append({
+                            "SlotIndex": int(slot_idx_str.strip()),
+                            "EnemyRef": enemy_ref.strip()
+                        })
+            records.append({
+                "AssetName": sanitize_asset_name(row.get("Name", "Encounter_Default"), "DA_"),
+                "EncounterTag": row.get("EncounterTag", "").strip(),
+                "DisplayName": row.get("DisplayName", "").strip(),
+                "EnemySlots": slots,
+                "CanFlee": row.get("CanFlee", "true").strip().lower() in ["true", "1", "yes"],
+                "MinDepth": int(row.get("MinDepth", 0)),
+                "SpawnWeight": float(row.get("SpawnWeight", 100.0))
+            })
+    return records
+
+
+def import_enemies_to_assets(csv_path="AI_Nexus/Data/DT_SovereignEnemiesTemplate.csv", output_dir="/Game/Data/Enemies", skills_dir="/Game/Data/Skills"):
+    records = parse_csv_enemy_rows(csv_path)
+    if not IN_ENGINE:
+        summary = f"[Standalone Dry-Run] Successfully validated {len(records)} enemy records in {csv_path}."
+        print(summary)
+        return summary
+
+    asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+    editor_asset_lib = unreal.EditorAssetLibrary
+
+    if not editor_asset_lib.does_directory_exist(output_dir):
+        editor_asset_lib.make_directory(output_dir)
+
+    enemy_def_class = unreal.load_class(None, "/Script/WispCPP7VR.SovereignEnemyDefinition")
+    if not enemy_def_class:
+        err = "Failed: /Script/WispCPP7VR.SovereignEnemyDefinition C++ class not found."
+        unreal.log_error(err)
+        return err
+
+    imported_count = 0
+    for rec in records:
+        asset_name = rec["AssetName"]
+        package_path = f"{output_dir}/{asset_name}"
+
+        factory = unreal.DataAssetFactory()
+        try:
+            factory.set_editor_property("data_asset_class", enemy_def_class)
+        except Exception:
+            pass
+
+        enemy_asset = None
+        if editor_asset_lib.does_asset_exist(package_path):
+            enemy_asset = editor_asset_lib.load_asset(package_path)
+        else:
+            enemy_asset = asset_tools.create_asset(asset_name, output_dir, enemy_def_class, factory)
+
+        if not enemy_asset:
+            continue
+
+        enemy_asset.modify()
+        if rec["EnemyTag"]:
+            try:
+                tag_struct = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(rec["EnemyTag"]))
+                if tag_struct:
+                    enemy_asset.set_editor_property("enemy_tag", tag_struct)
+            except Exception:
+                pass
+
+        enemy_asset.set_editor_property("enemy_display_name", unreal.Text(rec["DisplayName"]))
+        enemy_asset.set_editor_property("max_health", rec["MaxHealth"])
+        enemy_asset.set_editor_property("max_qi", rec["MaxQi"])
+        enemy_asset.set_editor_property("strength", rec["STR"])
+        enemy_asset.set_editor_property("dexterity", rec["DEX"])
+        enemy_asset.set_editor_property("constitution", rec["CON"])
+        enemy_asset.set_editor_property("intelligence", rec["INT"])
+        enemy_asset.set_editor_property("wisdom", rec["WIS"])
+        enemy_asset.set_editor_property("charisma", rec["CHA"])
+        enemy_asset.set_editor_property("luck", rec["LCK"])
+        enemy_asset.set_editor_property("experience_reward", rec["ExpReward"])
+        enemy_asset.set_editor_property("class_experience_reward", rec["ClassExpReward"])
+        enemy_asset.set_editor_property("qi_reward", rec["QiReward"])
+
+        editor_asset_lib.save_loaded_asset(enemy_asset)
+        imported_count += 1
+
+    summary = f"Synthesized {imported_count} USovereignEnemyDefinition assets in {output_dir}."
+    unreal.log(f"👹 Sovereign Combat: {summary}")
+    return summary
+
+
+def import_encounters_to_assets(csv_path="AI_Nexus/Data/DT_SovereignEncountersTemplate.csv", output_dir="/Game/Data/Encounters", enemies_dir="/Game/Data/Enemies"):
+    records = parse_csv_encounter_rows(csv_path)
+    if not IN_ENGINE:
+        summary = f"[Standalone Dry-Run] Successfully validated {len(records)} encounter records in {csv_path}."
+        print(summary)
+        return summary
+
+    asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+    editor_asset_lib = unreal.EditorAssetLibrary
+
+    if not editor_asset_lib.does_directory_exist(output_dir):
+        editor_asset_lib.make_directory(output_dir)
+
+    enc_def_class = unreal.load_class(None, "/Script/WispCPP7VR.SovereignEncounterDefinition")
+    if not enc_def_class:
+        err = "Failed: /Script/WispCPP7VR.SovereignEncounterDefinition C++ class not found."
+        unreal.log_error(err)
+        return err
+
+    imported_count = 0
+    for rec in records:
+        asset_name = rec["AssetName"]
+        package_path = f"{output_dir}/{asset_name}"
+
+        factory = unreal.DataAssetFactory()
+        try:
+            factory.set_editor_property("data_asset_class", enc_def_class)
+        except Exception:
+            pass
+
+        enc_asset = None
+        if editor_asset_lib.does_asset_exist(package_path):
+            enc_asset = editor_asset_lib.load_asset(package_path)
+        else:
+            enc_asset = asset_tools.create_asset(asset_name, output_dir, enc_def_class, factory)
+
+        if not enc_asset:
+            continue
+
+        enc_asset.modify()
+        if rec["EncounterTag"]:
+            try:
+                tag_struct = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(rec["EncounterTag"]))
+                if tag_struct:
+                    enc_asset.set_editor_property("encounter_tag", tag_struct)
+            except Exception:
+                pass
+
+        enc_asset.set_editor_property("encounter_display_name", unreal.Text(rec["DisplayName"]))
+        enc_asset.set_editor_property("b_can_flee", rec["CanFlee"])
+        enc_asset.set_editor_property("min_dungeon_depth", rec["MinDepth"])
+        enc_asset.set_editor_property("spawn_weight", rec["SpawnWeight"])
+
+        editor_asset_lib.save_loaded_asset(enc_asset)
+        imported_count += 1
+
+    summary = f"Synthesized {imported_count} USovereignEncounterDefinition assets in {output_dir}."
+    unreal.log(f"⚔️ Sovereign Combat: {summary}")
+    return summary
+
+
+def import_enemies(csv_path="AI_Nexus/Data/DT_SovereignEnemiesTemplate.csv", output_dir="/Game/Data/Enemies", skills_dir="/Game/Data/Skills"):
+    return import_enemies_to_assets(csv_path=csv_path, output_dir=output_dir, skills_dir=skills_dir)
+
+
+def import_encounters(csv_path="AI_Nexus/Data/DT_SovereignEncountersTemplate.csv", output_dir="/Game/Data/Encounters", enemies_dir="/Game/Data/Enemies"):
+    return import_encounters_to_assets(csv_path=csv_path, output_dir=output_dir, enemies_dir=enemies_dir)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sovereign Skills & Classes Deterministic Importer")
     parser.add_argument("--skills-csv", default="AI_Nexus/Data/DT_SovereignSkillsTemplate.csv", help="Path to Skills CSV")

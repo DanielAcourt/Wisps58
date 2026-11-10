@@ -54,7 +54,7 @@ void USovereignEnemyDefinition::InitializeEnemyVessel(ASovereignBaseCharacter* V
 	// 2. Initialize Qi
 	if (USovereignQiComponent* QiComp = Vessel->GetQiComponent())
 	{
-		QiComp->MaxQi = MaxQi;
+		QiComp->MaxQiCapacity = MaxQi;
 		QiComp->CurrentQi = MaxQi;
 	}
 
@@ -71,7 +71,8 @@ void USovereignEnemyDefinition::InitializeEnemyVessel(ASovereignBaseCharacter* V
 			}
 			if (SkillDef)
 			{
-				SkillComp->EquipSkill(SkillDef);
+				FGuid OutInstanceId;
+				SkillComp->EquipSkill(SkillDef, OutInstanceId);
 			}
 		}
 	}

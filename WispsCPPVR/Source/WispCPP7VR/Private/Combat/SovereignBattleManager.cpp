@@ -623,7 +623,7 @@ void ASovereignBattleManager::DistributeVictoryRewards()
 		// 3. Qi replenishment from defeated enemies
 		if (USovereignQiComponent* QiComp = Member->GetQiComponent())
 		{
-			QiComp->CurrentQi = FMath::Clamp(QiComp->CurrentQi + MemberQi, 0.0f, QiComp->MaxQi);
+			QiComp->CurrentQi = FMath::Clamp(QiComp->CurrentQi + MemberQi, 0.0f, QiComp->MaxQiCapacity);
 		}
 	}
 
