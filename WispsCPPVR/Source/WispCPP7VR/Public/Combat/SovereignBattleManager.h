@@ -8,9 +8,12 @@
 #include "Components/SovereignPartyComponent.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
+#include "Combat/SovereignEnemyDefinition.h"
+#include "Combat/SovereignEncounterDefinition.h"
 #include "SovereignBattleManager.generated.h"
 
 class ASovereignBaseCharacter;
+class ACameraActor;
 
 /**
  * FSovereignReadyEntry
@@ -49,6 +52,7 @@ enum class EBattleState : uint8
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBattleStateChanged, EBattleState, OldState, EBattleState, NewState);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCombatantTurnReady, ASovereignBaseCharacter*, Combatant);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleEnded, EBattleState, Outcome);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnVictoryRewardsDistributed, float, TotalExp, int32, ClassExp, float, TotalQi, int32, ParticipatingMembersCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnSkillActionExecuted, ASovereignBaseCharacter*, Caster, const FGameplayTag&, SkillTag, float, Value, bool, bIsHealing);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnItemActionExecuted, ASovereignBaseCharacter*, User, const FGameplayTag&, ItemTag, ASovereignBaseCharacter*, Target);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFleeAttemptFailed, ASovereignBaseCharacter*, Fleer, float, CurrentEscapeProgress);
@@ -96,6 +100,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Battle|Spatial")
 	FTransform ArenaCameraTransform;
 
+	/** Dedicated side-angle battle camera actor */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Camera")
+	TObjectPtr<ACameraActor> BattleCameraActor;
+
+	/** Dynamically spawned enemy actors in this battle (cleaned up on battle end) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Spawning")
+	TArray<TObjectPtr<ASovereignBaseCharacter>> SpawnedEnemyActors;
+
+	/** Active encounter definition if battle was started from a definition */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Encounter")
+	TObjectPtr<USovereignEncounterDefinition> ActiveEncounterDefinition;
+
 	/** Current operational encounter state */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|State")
 	EBattleState BattleState = EBattleState::EncounterStarting;
@@ -129,6 +145,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
 	FOnBattleEnded OnBattleEnded;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
+	FOnVictoryRewardsDistributed OnVictoryRewardsDistributed;
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Battle|Events")
 	FOnSkillActionExecuted OnSkillActionExecuted;
@@ -206,6 +225,36 @@ public:
 	void InitializeEncounter(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, const TArray<ASovereignBaseCharacter*>& InEnemyUnits, bool bCanFlee = true);
 
 	/**
+	 * Initializes an encounter using a USovereignEncounterDefinition, dynamically spawning enemy vessels on designated grid slots.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
+	void InitializeEncounterFromDefinition(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, USovereignEncounterDefinition* EncounterDef);
+
+	/**
+	 * Activates the dedicated side-angle battle camera for the player controller.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Camera")
+	void ActivateBattleCamera(APlayerController* PC, float BlendTime = 0.5f);
+
+	/**
+	 * Restores the player controller's camera view back to the target character vessel.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Camera")
+	void RestorePlayerCamera(APlayerController* PC, AActor* TargetActor, float BlendTime = 0.5f);
+
+	/**
+	 * Destroys all dynamically spawned enemy actors in the arena.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Cleanup")
+	void CleanupSpawnedEnemies();
+
+	/**
+	 * Executes an automated turn for an AI-controlled enemy combatant.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|AI")
+	void ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCombatant);
+
+	/**
 	 * Advances the battle state machine.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
@@ -236,6 +285,12 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
 	bool CheckCombatOutcome();
+
+	/**
+	 * Distributes post-battle EXP, Class EXP, and Qi rewards to all participating player party members.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Rewards")
+	void DistributeVictoryRewards();
 
 	/**
 	 * Triggers a battle conclusion due to fleeing.

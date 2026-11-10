@@ -594,6 +594,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Encounters")
 	float RandomEncounterChance = 25.0f;
 
+	/** Optional encounter definitions for random step encounters in this dungeon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Encounters")
+	TArray<TObjectPtr<class USovereignEncounterDefinition>> RandomEncounterPool;
+
 	/** Accumulated movement distance since last encounter check */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Encounters")
 	float AccumulatedStepDistance = 0.0f;
