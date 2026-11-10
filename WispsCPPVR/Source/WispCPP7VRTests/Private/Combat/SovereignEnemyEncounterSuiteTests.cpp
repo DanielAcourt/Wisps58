@@ -40,6 +40,7 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 	// 1. DataAsset Definition & Reward Calculation Validation
 	USovereignEnemyDefinition* WolfDef = NewObject<USovereignEnemyDefinition>();
 	WolfDef->EnemyDisplayName = FText::FromString(TEXT("Dire Wolf"));
+	WolfDef->EnemyRole = ESovereignEnemyRole::AggressiveBrute;
 	WolfDef->MaxHealth = 120.0f;
 	WolfDef->MaxQi = 30.0f;
 	WolfDef->Strength = 14;
@@ -50,9 +51,11 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 
 	USovereignEnemyDefinition* MageDef = NewObject<USovereignEnemyDefinition>();
 	MageDef->EnemyDisplayName = FText::FromString(TEXT("Goblin Shaman"));
+	MageDef->EnemyRole = ESovereignEnemyRole::SupportHealer;
 	MageDef->MaxHealth = 80.0f;
 	MageDef->MaxQi = 60.0f;
 	MageDef->Intelligence = 16;
+	MageDef->Wisdom = 14;
 	MageDef->ExperienceReward = 100.0f;
 	MageDef->ClassExperienceReward = 30;
 	MageDef->QiReward = 35.0f;
@@ -130,7 +133,7 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 			}
 		}
 
-		// 4. Test Automated Enemy Turn AI
+		// 4. Test Automated Enemy Turn AI - Aggressive Brute
 		if (BattleMgr->EnemyGrid[0])
 		{
 			const float PlayerHPBefore = PlayerHero->GetAttributeComponent()->CurrentHealth;
@@ -138,6 +141,35 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 			const float PlayerHPAfter = PlayerHero->GetAttributeComponent()->CurrentHealth;
 
 			TestTrue(TEXT("Enemy Turn AI executed an attack reducing Player HP"), PlayerHPAfter < PlayerHPBefore);
+		}
+
+		// 4b. Test Support Healer AI (Goblin Shaman heals wounded ally)
+		if (BattleMgr->EnemyGrid[6] && BattleMgr->EnemyGrid[0])
+		{
+			// Equip Shaman with a healing skill
+			USovereignSkillDefinition* HealSkill = NewObject<USovereignSkillDefinition>();
+			HealSkill->SkillTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.Combat.Cleric.Mend"), false);
+			HealSkill->SkillDisplayName = FText::FromString(TEXT("Mend"));
+			HealSkill->ScalingAttribute = ESovereignSkillScalingAttribute::Wisdom;
+			HealSkill->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
+			HealSkill->BasePower = 30.0f;
+			HealSkill->StatMultiplier = 1.0f;
+			HealSkill->QiCost = 10.0f;
+
+			if (USovereignSkillComponent* ShamanSkillComp = BattleMgr->EnemyGrid[6]->GetSkillComponent())
+			{
+				FGuid OutId;
+				ShamanSkillComp->EquipSkill(HealSkill, OutId);
+			}
+
+			// Wound the Wolf ally to below 50% HP (e.g. 40 / 120 HP)
+			USovereignAttributeComponent* WolfAttr = BattleMgr->EnemyGrid[0]->GetAttributeComponent();
+			WolfAttr->CurrentHealth = 40.0f;
+
+			// Shaman executes turn
+			BattleMgr->ExecuteEnemyTurn(BattleMgr->EnemyGrid[6].Get());
+
+			TestTrue(TEXT("Support Healer healed wounded ally above 40 HP"), WolfAttr->CurrentHealth > 40.0f);
 		}
 	}
 

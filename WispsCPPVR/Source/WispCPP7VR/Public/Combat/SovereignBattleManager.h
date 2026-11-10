@@ -112,6 +112,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Encounter")
 	TObjectPtr<USovereignEncounterDefinition> ActiveEncounterDefinition;
 
+	/** Maps enemy combatant actors to their authored definitions for role & AI lookups */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Encounter")
+	TMap<TObjectPtr<ASovereignBaseCharacter>, TObjectPtr<USovereignEnemyDefinition>> EnemyDefinitionsMap;
+
 	/** Current operational encounter state */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|State")
 	EBattleState BattleState = EBattleState::EncounterStarting;

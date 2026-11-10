@@ -9,6 +9,7 @@
 USovereignEnemyDefinition::USovereignEnemyDefinition()
 {
 	EnemyDisplayName = FText::FromString(TEXT("Enemy"));
+	EnemyRole = ESovereignEnemyRole::Default;
 	CharacterClass = ASovereignBaseCharacter::StaticClass();
 	MaxHealth = 100.0f;
 	MaxQi = 50.0f;

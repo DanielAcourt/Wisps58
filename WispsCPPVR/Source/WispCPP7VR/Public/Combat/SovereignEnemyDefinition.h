@@ -11,6 +11,20 @@
 class ASovereignBaseCharacter;
 
 /**
+ * ESovereignEnemyRole
+ * Tactical behavioral personality governing turn-based AI decision-making (Ticket CS-003).
+ */
+UENUM(BlueprintType)
+enum class ESovereignEnemyRole : uint8
+{
+	Default           UMETA(DisplayName = "Default (Balanced)"),
+	AggressiveBrute   UMETA(DisplayName = "Aggressive Brute (Focus Frontline)"),
+	SkirmisherSniper  UMETA(DisplayName = "Skirmisher / Sniper (Execute Weakest / Rear)"),
+	SupportHealer     UMETA(DisplayName = "Support / Healer (Prioritize Wounded Allies)"),
+	TacticalLeader    UMETA(DisplayName = "Tactical Leader (AoE / Highest Threat)")
+};
+
+/**
  * USovereignEnemyDefinition
  * Primary DataAsset defining an enemy combatant archetype.
  * Specifies the character vessel actor class, visual identity, base combat attributes,
@@ -31,6 +45,10 @@ public:
 	/** User-facing display name of the enemy */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Display")
 	FText EnemyDisplayName;
+
+	/** Tactical AI role and behavioral personality in battle (Ticket CS-003) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Behavior")
+	ESovereignEnemyRole EnemyRole = ESovereignEnemyRole::Default;
 
 	/** Actor class to instantiate for this enemy in the battle arena (inherits ASovereignBaseCharacter) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Spawning")

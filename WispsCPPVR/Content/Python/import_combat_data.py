@@ -444,6 +444,7 @@ def parse_csv_enemy_rows(csv_path):
                 "AssetName": sanitize_asset_name(row.get("Name", "Enemy_Default"), "DA_"),
                 "EnemyTag": row.get("EnemyTag", "").strip(),
                 "DisplayName": row.get("DisplayName", "").strip(),
+                "EnemyRole": row.get("EnemyRole", "Default").strip(),
                 "CharacterClass": row.get("CharacterClass", "").strip(),
                 "MaxHealth": float(row.get("MaxHealth", 100.0)),
                 "MaxQi": float(row.get("MaxQi", 50.0)),
@@ -541,6 +542,21 @@ def import_enemies_to_assets(csv_path="AI_Nexus/Data/DT_SovereignEnemiesTemplate
                 pass
 
         enemy_asset.set_editor_property("enemy_display_name", unreal.Text(rec["DisplayName"]))
+
+        # Set Enemy Role Enum
+        role_str = rec["EnemyRole"].lower()
+        if hasattr(unreal, "SovereignEnemyRole"):
+            if "brute" in role_str or "aggressive" in role_str:
+                enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.AGGRESSIVE_BRUTE)
+            elif "sniper" in role_str or "skirmisher" in role_str:
+                enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.SKIRMISHER_SNIPER)
+            elif "healer" in role_str or "support" in role_str:
+                enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.SUPPORT_HEALER)
+            elif "leader" in role_str or "tactical" in role_str:
+                enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.TACTICAL_LEADER)
+            else:
+                enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.DEFAULT)
+
         enemy_asset.set_editor_property("max_health", rec["MaxHealth"])
         enemy_asset.set_editor_property("max_qi", rec["MaxQi"])
         enemy_asset.set_editor_property("strength", rec["STR"])

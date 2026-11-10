@@ -188,6 +188,7 @@ void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASo
 				if (NewEnemy)
 				{
 					SlotConfig.EnemyDefinition->InitializeEnemyVessel(NewEnemy);
+					EnemyDefinitionsMap.Add(NewEnemy, SlotConfig.EnemyDefinition);
 					SpawnedEnemyActors.Add(NewEnemy);
 					SpawnedEnemies[SlotConfig.SlotIndex] = NewEnemy;
 				}
@@ -208,6 +209,7 @@ void ASovereignBattleManager::CleanupSpawnedEnemies()
 		}
 	}
 	SpawnedEnemyActors.Empty();
+	EnemyDefinitionsMap.Empty();
 }
 
 void ASovereignBattleManager::ActivateBattleCamera(APlayerController* PC, float BlendTime)
@@ -273,18 +275,206 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 		return;
 	}
 
-	// 1. Pick a Skill (or fallback basic attack)
+	// Determine AI Role (Ticket CS-003)
+	ESovereignEnemyRole Role = ESovereignEnemyRole::Default;
+	if (const TObjectPtr<USovereignEnemyDefinition>* FoundDef = EnemyDefinitionsMap.Find(EnemyCombatant))
+	{
+		if (*FoundDef)
+		{
+			Role = (*FoundDef)->EnemyRole;
+		}
+	}
+
+	USovereignSkillComponent* SkillComp = EnemyCombatant->GetSkillComponent();
+
+	// 1. Role-specific decision trees
 	FSovereignSkillInstance SelectedSkillInstance;
 	bool bFoundUsableSkill = false;
+	TArray<ASovereignBaseCharacter*> Targets;
 
-	if (USovereignSkillComponent* SkillComp = EnemyCombatant->GetSkillComponent())
+	// Helper lambda: creates transient basic strike
+	auto MakeFallbackStrike = [this]() -> FSovereignSkillInstance
 	{
-		// Try equipped skills with sufficient Qi
+		USovereignSkillDefinition* FallbackStrike = NewObject<USovereignSkillDefinition>(this);
+		FallbackStrike->SkillTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.Combat.BasicStrike"), false);
+		FallbackStrike->SkillDisplayName = FText::FromString(TEXT("Strike"));
+		FallbackStrike->BasePower = 15.0f;
+		FallbackStrike->StatMultiplier = 1.0f;
+		FallbackStrike->QiCost = 0.0f;
+		FallbackStrike->ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
+		FallbackStrike->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
+		return FSovereignSkillInstance(FallbackStrike);
+	};
+
+	// --- A. Support Healer Decision Tree ---
+	if (Role == ESovereignEnemyRole::SupportHealer)
+	{
+		// Check living allies for health < 50%
+		ASovereignBaseCharacter* MostWoundedAlly = nullptr;
+		float LowestHealthPercent = 0.50f;
+
+		for (ASovereignBaseCharacter* Ally : GetLivingEnemyUnits())
+		{
+			if (Ally)
+			{
+				if (const USovereignAttributeComponent* Attr = Ally->GetAttributeComponent())
+				{
+					if (Attr->MaxHealth > 0.0f)
+					{
+						const float HealthPct = Attr->CurrentHealth / Attr->MaxHealth;
+						if (HealthPct < LowestHealthPercent)
+						{
+							LowestHealthPercent = HealthPct;
+							MostWoundedAlly = Ally;
+						}
+					}
+				}
+			}
+		}
+
+		if (MostWoundedAlly && SkillComp)
+		{
+			// Search for healing skill
+			for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
+			{
+				const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+				if (CandidateDef && CandidateDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
+					(CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SingleTarget ||
+					 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly ||
+					 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies))
+				{
+					if (CanCastSkill(EnemyCombatant, CandidateDef))
+					{
+						SelectedSkillInstance = Candidate;
+						bFoundUsableSkill = true;
+						if (CandidateDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies)
+						{
+							Targets = GetLivingEnemyUnits();
+						}
+						else
+						{
+							Targets.Add(MostWoundedAlly);
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// --- B. Tactical Leader Decision Tree (AoE or Highest Threat) ---
+	if (!bFoundUsableSkill && Role == ESovereignEnemyRole::TacticalLeader && SkillComp)
+	{
+		// If 2+ living players, prefer full matrix AoE or cleave
+		if (LivingPlayers.Num() >= 2)
+		{
+			for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
+			{
+				const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+				if (CandidateDef && (CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FullMatrixAOE ||
+									 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FrontRowSweep))
+				{
+					if (CanCastSkill(EnemyCombatant, CandidateDef))
+					{
+						SelectedSkillInstance = Candidate;
+						bFoundUsableSkill = true;
+						Targets = LivingPlayers;
+						break;
+					}
+				}
+			}
+		}
+
+		// Otherwise target player with highest Strength (threat)
+		if (!bFoundUsableSkill)
+		{
+			ASovereignBaseCharacter* HighestThreatPlayer = nullptr;
+			int32 MaxStrength = -1;
+			for (ASovereignBaseCharacter* Player : LivingPlayers)
+			{
+				if (Player)
+				{
+					if (const USovereignAttributeComponent* Attr = Player->GetAttributeComponent())
+					{
+						if (Attr->Strength > MaxStrength)
+						{
+							MaxStrength = Attr->Strength;
+							HighestThreatPlayer = Player;
+						}
+					}
+				}
+			}
+			if (HighestThreatPlayer)
+			{
+				Targets.Add(HighestThreatPlayer);
+			}
+		}
+	}
+
+	// --- C. Aggressive Brute Decision Tree (Front Rank Focus) ---
+	if (Targets.Num() == 0 && Role == ESovereignEnemyRole::AggressiveBrute)
+	{
+		// Prioritize Front Rank (Slots 0, 1, 2)
+		TArray<ASovereignBaseCharacter*> FrontRankPlayers;
+		for (int32 Slot = 0; Slot < 3; ++Slot)
+		{
+			if (PlayerGrid[Slot] && IsCombatantAlive(PlayerGrid[Slot].Get()))
+			{
+				FrontRankPlayers.Add(PlayerGrid[Slot].Get());
+			}
+		}
+
+		if (FrontRankPlayers.Num() > 0)
+		{
+			const int32 Pick = FMath::RandRange(0, FrontRankPlayers.Num() - 1);
+			Targets.Add(FrontRankPlayers[Pick]);
+		}
+	}
+
+	// --- D. Skirmisher / Sniper Decision Tree (Execute Lowest HP or Rear Rank) ---
+	if (Targets.Num() == 0 && Role == ESovereignEnemyRole::SkirmisherSniper)
+	{
+		// Find living player with lowest absolute HP
+		ASovereignBaseCharacter* LowestHPPlayer = nullptr;
+		float MinHP = MAX_FLT;
+
+		for (ASovereignBaseCharacter* Player : LivingPlayers)
+		{
+			if (Player)
+			{
+				if (const USovereignAttributeComponent* Attr = Player->GetAttributeComponent())
+				{
+					if (Attr->CurrentHealth < MinHP)
+					{
+						MinHP = Attr->CurrentHealth;
+						LowestHPPlayer = Player;
+					}
+				}
+			}
+		}
+
+		if (LowestHPPlayer)
+		{
+			Targets.Add(LowestHPPlayer);
+		}
+	}
+
+	// --- E. Standard Skill Selection if not chosen above ---
+	if (!bFoundUsableSkill && SkillComp)
+	{
 		for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
 		{
-			if (Candidate.SkillDefinition.IsValid() || Candidate.SkillDefinition.LoadSynchronous())
+			const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+			if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+			if (CandidateDef && CanCastSkill(EnemyCombatant, CandidateDef))
 			{
-				if (CanCastSkill(EnemyCombatant, Candidate.SkillDefinition.Get()))
+				// Avoid selecting healing skills if targeting offensive players
+				if (CandidateDef->ScalingAttribute != ESovereignSkillScalingAttribute::Wisdom)
 				{
 					SelectedSkillInstance = Candidate;
 					bFoundUsableSkill = true;
@@ -296,52 +486,17 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 
 	if (!bFoundUsableSkill)
 	{
-		// Create a transient basic strike skill definition
-		USovereignSkillDefinition* FallbackStrike = NewObject<USovereignSkillDefinition>(this);
-		FallbackStrike->SkillTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.Combat.BasicStrike"), false);
-		FallbackStrike->SkillDisplayName = FText::FromString(TEXT("Strike"));
-		FallbackStrike->BasePower = 15.0f;
-		FallbackStrike->StatMultiplier = 1.0f;
-		FallbackStrike->QiCost = 0.0f;
-		FallbackStrike->ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
-		FallbackStrike->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
-
-		SelectedSkillInstance = FSovereignSkillInstance(FallbackStrike);
+		SelectedSkillInstance = MakeFallbackStrike();
 	}
 
-	// 2. Select Target(s)
-	TArray<ASovereignBaseCharacter*> Targets;
-	const USovereignSkillDefinition* SkillDef = SelectedSkillInstance.SkillDefinition.Get();
-
-	if (SkillDef && SkillDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
-		(SkillDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly || SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies))
+	// --- F. Fallback Target Selection if preferred slot was empty ---
+	if (Targets.Num() == 0)
 	{
-		// Friendly healing: target self or wounded allies
-		if (SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies)
-		{
-			Targets = GetLivingEnemyUnits();
-		}
-		else
-		{
-			Targets.Add(EnemyCombatant);
-		}
-	}
-	else
-	{
-		// Offensive targeting against player party
-		if (SkillDef && SkillDef->TargetPattern == ESovereignSkillTargetPattern::FullMatrixAOE)
-		{
-			Targets = LivingPlayers;
-		}
-		else
-		{
-			// Pick random living player
-			const int32 TargetIdx = FMath::RandRange(0, LivingPlayers.Num() - 1);
-			Targets.Add(LivingPlayers[TargetIdx]);
-		}
+		const int32 Pick = FMath::RandRange(0, LivingPlayers.Num() - 1);
+		Targets.Add(LivingPlayers[Pick]);
 	}
 
-	// 3. Execute Skill Action
+	// 2. Execute Action
 	ExecuteSkillAction(EnemyCombatant, SelectedSkillInstance, Targets);
 }
 
