@@ -155,14 +155,53 @@ FSovereignDamageCalculationResult USovereignCombatCalculationLibrary::CalculateC
 	// 6. Base mitigated damage
 	float ComputedDamage = ScaledOffense * Result.MitigationFactor;
 
-	// 7. Critical hit evaluation (1.5x multiplier)
+	// 7. Elemental Weakness / Resistance Evaluation (Ticket CS-004)
+	ESovereignElement AttackElement = ESovereignElement::None;
+	for (const TObjectPtr<USovereignSkillAugment>& Augment : SkillInstance.ActiveAugments)
+	{
+		if (Augment && Augment->InfusedElement != ESovereignElement::None)
+		{
+			AttackElement = Augment->InfusedElement;
+			break;
+		}
+	}
+	if (AttackElement == ESovereignElement::None)
+	{
+		if (USovereignSkillDefinition* Def = SkillInstance.SkillDefinition.Get())
+		{
+			AttackElement = Def->ElementType;
+		}
+	}
+
+	Result.ElementalMultiplier = 1.0f;
+	if (AttackElement != ESovereignElement::None)
+	{
+		if (Target.WeaknessElement != ESovereignElement::None && Target.WeaknessElement == AttackElement)
+		{
+			Result.ElementalMultiplier = 1.5f; // +50% weakness bonus
+		}
+		else if (Target.ResistanceElement != ESovereignElement::None && Target.ResistanceElement == AttackElement)
+		{
+			Result.ElementalMultiplier = 0.5f; // 50% resistance mitigation
+		}
+	}
+	ComputedDamage *= Result.ElementalMultiplier;
+
+	// 8. Blind Mitigation (50% physical accuracy/damage reduction) - Ticket CS-005
+	Result.bIsBlinded = Attacker.bIsBlinded;
+	if (Attacker.bIsBlinded && (ScalingAttr == ESovereignSkillScalingAttribute::Strength || ScalingAttr == ESovereignSkillScalingAttribute::Dexterity))
+	{
+		ComputedDamage *= 0.5f;
+	}
+
+	// 9. Critical hit evaluation (1.5x multiplier)
 	Result.bIsCriticalHit = EvaluateCriticalHit(Attacker, Target, ForcedCritRoll);
 	if (Result.bIsCriticalHit)
 	{
 		ComputedDamage *= 1.5f;
 	}
 
-	// 8. Floor final damage at minimum 1.0f on hit
+	// 10. Floor final damage at minimum 1.0f on hit
 	Result.FinalDamage = FMath::Max(1.0f, FMath::RoundToFloat(ComputedDamage));
 
 	return Result;

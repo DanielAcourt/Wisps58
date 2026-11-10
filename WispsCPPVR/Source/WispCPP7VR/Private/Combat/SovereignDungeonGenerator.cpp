@@ -19,6 +19,7 @@
 #include "Entities/SovereignUpwardStairs.h"
 #include "Entities/SovereignPlayerWisp.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "Combat/SovereignEncounterDefinition.h"
 #include "GameplayTagsManager.h"
 #include "EngineUtils.h"
 #include "Components/DirectionalLightComponent.h"
@@ -2077,9 +2078,18 @@ void ASovereignDungeonGenerator::ProcessPlayerMovement(ASovereignBaseCharacter* 
 					// Pick an active biome arena
 					ASovereignBattleManager* ActiveArena = GetBattleArenaForBiome(0);
 
-					// Spawn temporary random enemies or trigger battle manager
-					TArray<ASovereignBaseCharacter*> EnemyUnits;
-					Subsystem->TriggerEncounter(PlayerLeader, nullptr, EnemyUnits, true, ActiveArena);
+					if (RandomEncounterPool.Num() > 0)
+					{
+						const int32 RandomIdx = FMath::RandRange(0, RandomEncounterPool.Num() - 1);
+						USovereignEncounterDefinition* SelectedEncounter = RandomEncounterPool[RandomIdx];
+						Subsystem->TriggerEncounterWithDefinition(PlayerLeader, nullptr, SelectedEncounter, ActiveArena);
+					}
+					else
+					{
+						// Spawn temporary random enemies or trigger battle manager
+						TArray<ASovereignBaseCharacter*> EnemyUnits;
+						Subsystem->TriggerEncounter(PlayerLeader, nullptr, EnemyUnits, true, ActiveArena);
+					}
 				}
 			}
 		}

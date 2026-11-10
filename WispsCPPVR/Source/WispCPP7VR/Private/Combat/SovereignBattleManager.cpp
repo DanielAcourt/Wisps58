@@ -6,12 +6,17 @@
 #include "Components/SovereignATBComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignClassComponent.h"
+#include "Components/SovereignSkillComponent.h"
+#include "Components/SovereignLevelComponent.h"
+#include "Components/SovereignStatusComponent.h"
 #include "Combat/SovereignSkillDefinition.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
 #include "Inventory/SovereignInventoryComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
+#include "Camera/CameraActor.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
 ASovereignBattleManager::ASovereignBattleManager()
@@ -67,10 +72,15 @@ void ASovereignBattleManager::GenerateDefaultGridTransforms()
 		EnemySlotTransforms[Slot] = FTransform(EnemyRot, EnemyPos);
 	}
 
-	// Action Camera Transform (Side elevated view)
+	// Action Camera Transform (Side elevated view framing both sides in FF7 perspective)
 	FVector CamPos = Origin + FVector(0.0f, -800.0f, 350.0f);
 	FRotator CamRot = FRotationMatrix::MakeFromX(Origin - CamPos).Rotator();
 	ArenaCameraTransform = FTransform(CamRot, CamPos);
+
+	if (BattleCameraActor)
+	{
+		BattleCameraActor->SetActorTransform(ArenaCameraTransform);
+	}
 }
 
 void ASovereignBattleManager::PositionCombatantsOnGrid()
@@ -107,15 +117,451 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 				ActiveCombatant = NextActor;
 				SetBattleState(EBattleState::ActionExecuting);
 
+				// Check Stun condition (Ticket CS-005) & Interrupt Telegraphed Attack (Ticket CS-006)
+				if (USovereignStatusComponent* StatusComp = NextActor->GetStatusComponent())
+				{
+					if (StatusComp->IsStunned())
+					{
+						if (USovereignATBComponent* ATBComp = NextActor->GetATBComponent())
+						{
+							if (ATBComp->IsChargingAttack())
+							{
+								UE_LOG(LogTemp, Warning, TEXT("[BattleManager] %s's telegraphed attack was INTERRUPTED by Stun!"), *NextActor->GetName());
+								ATBComp->CancelTelegraphedCharge();
+							}
+						}
+						UE_LOG(LogTemp, Log, TEXT("[BattleManager] %s is Stunned and loses their turn!"), *NextActor->GetName());
+						ConcludeActiveTurn();
+						return;
+					}
+				}
+
 				if (USovereignATBComponent* ATBComp = NextActor->GetATBComponent())
 				{
 					ATBComp->BeginActionSelection();
 				}
 
 				OnCombatantTurnReady.Broadcast(NextActor);
+
+				// If the acting combatant belongs to the enemy formation, execute automated AI turn
+				bool bIsEnemy = false;
+				for (const auto& EnemyUnit : EnemyGrid)
+				{
+					if (EnemyUnit.Get() == NextActor)
+					{
+						bIsEnemy = true;
+						break;
+					}
+				}
+
+				if (bIsEnemy)
+				{
+					ExecuteEnemyTurn(NextActor);
+				}
 			}
 		}
 	}
+}
+
+void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, USovereignEncounterDefinition* EncounterDef)
+{
+	if (!EncounterDef)
+	{
+		InitializeEncounter(InPlayerUnits, TArray<ASovereignBaseCharacter*>(), true);
+		return;
+	}
+
+	ActiveEncounterDefinition = EncounterDef;
+	CleanupSpawnedEnemies();
+
+	UWorld* World = GetWorld();
+	TArray<ASovereignBaseCharacter*> SpawnedEnemies;
+	SpawnedEnemies.SetNumZeroed(GRID_SIZE);
+
+	if (World)
+	{
+		if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+		{
+			GenerateDefaultGridTransforms();
+		}
+
+		for (const FSovereignEncounterSlot& SlotConfig : EncounterDef->EnemySlots)
+		{
+			if (SlotConfig.EnemyDefinition && SlotConfig.SlotIndex >= 0 && SlotConfig.SlotIndex < GRID_SIZE)
+			{
+				TSubclassOf<ASovereignBaseCharacter> ClassToSpawn = SlotConfig.EnemyDefinition->CharacterClass;
+				if (!ClassToSpawn)
+				{
+					ClassToSpawn = ASovereignBaseCharacter::StaticClass();
+				}
+
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FTransform& SpawnTransform = EnemySlotTransforms[SlotConfig.SlotIndex];
+				ASovereignBaseCharacter* NewEnemy = World->SpawnActor<ASovereignBaseCharacter>(
+					ClassToSpawn,
+					SpawnTransform.GetLocation(),
+					SpawnTransform.GetRotation().Rotator(),
+					SpawnParams);
+
+				if (NewEnemy)
+				{
+					SlotConfig.EnemyDefinition->InitializeEnemyVessel(NewEnemy);
+					EnemyDefinitionsMap.Add(NewEnemy, SlotConfig.EnemyDefinition);
+					SpawnedEnemyActors.Add(NewEnemy);
+					SpawnedEnemies[SlotConfig.SlotIndex] = NewEnemy;
+				}
+			}
+		}
+	}
+
+	InitializeEncounter(InPlayerUnits, SpawnedEnemies, EncounterDef->bCanFlee);
+}
+
+void ASovereignBattleManager::CleanupSpawnedEnemies()
+{
+	for (TObjectPtr<ASovereignBaseCharacter> EnemyActor : SpawnedEnemyActors)
+	{
+		if (EnemyActor)
+		{
+			EnemyActor->Destroy();
+		}
+	}
+	SpawnedEnemyActors.Empty();
+	EnemyDefinitionsMap.Empty();
+}
+
+void ASovereignBattleManager::ActivateBattleCamera(APlayerController* PC, float BlendTime)
+{
+	if (!PC)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (!BattleCameraActor)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		BattleCameraActor = World->SpawnActor<ACameraActor>(
+			ACameraActor::StaticClass(),
+			ArenaCameraTransform.GetLocation(),
+			ArenaCameraTransform.GetRotation().Rotator(),
+			SpawnParams);
+	}
+	else
+	{
+		BattleCameraActor->SetActorTransform(ArenaCameraTransform);
+	}
+
+	if (BattleCameraActor)
+	{
+		PC->SetViewTargetWithBlend(BattleCameraActor, BlendTime, VTBlend_EaseInOut, 2.0f);
+		UE_LOG(LogTemp, Log, TEXT("[BattleManager] Switched ViewTarget to BattleCameraActor [%s] with blend time %f"),
+			*BattleCameraActor->GetName(), BlendTime);
+	}
+}
+
+void ASovereignBattleManager::RestorePlayerCamera(APlayerController* PC, AActor* TargetActor, float BlendTime)
+{
+	if (!PC || !TargetActor)
+	{
+		return;
+	}
+
+	PC->SetViewTargetWithBlend(TargetActor, BlendTime, VTBlend_EaseInOut, 2.0f);
+	UE_LOG(LogTemp, Log, TEXT("[BattleManager] Restored ViewTarget to %s with blend time %f"),
+		*TargetActor->GetName(), BlendTime);
+}
+
+void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCombatant)
+{
+	if (!EnemyCombatant || !IsCombatantAlive(EnemyCombatant))
+	{
+		ConcludeActiveTurn();
+		return;
+	}
+
+	const TArray<ASovereignBaseCharacter*> LivingPlayers = GetLivingPlayerUnits();
+	if (LivingPlayers.Num() == 0)
+	{
+		ConcludeActiveTurn();
+		return;
+	}
+
+	// Determine AI Role (Ticket CS-003)
+	ESovereignEnemyRole EnemyRole = ESovereignEnemyRole::Default;
+	if (const TObjectPtr<USovereignEnemyDefinition>* FoundDef = EnemyDefinitionsMap.Find(EnemyCombatant))
+	{
+		if (*FoundDef)
+		{
+			EnemyRole = (*FoundDef)->EnemyRole;
+		}
+	}
+
+	USovereignSkillComponent* SkillComp = EnemyCombatant->GetSkillComponent();
+
+	// 1. Role-specific decision trees
+	FSovereignSkillInstance SelectedSkillInstance;
+	bool bFoundUsableSkill = false;
+	TArray<ASovereignBaseCharacter*> Targets;
+
+	// Helper lambda: creates transient basic strike
+	auto MakeFallbackStrike = [this]() -> FSovereignSkillInstance
+	{
+		USovereignSkillDefinition* FallbackStrike = NewObject<USovereignSkillDefinition>(this);
+		FallbackStrike->SkillTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.Combat.BasicStrike"), false);
+		FallbackStrike->SkillDisplayName = FText::FromString(TEXT("Strike"));
+		FallbackStrike->BasePower = 15.0f;
+		FallbackStrike->StatMultiplier = 1.0f;
+		FallbackStrike->QiCost = 0.0f;
+		FallbackStrike->ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
+		FallbackStrike->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
+		return FSovereignSkillInstance(FallbackStrike);
+	};
+
+	// --- A. Support Healer Decision Tree ---
+	if (EnemyRole == ESovereignEnemyRole::SupportHealer)
+	{
+		// Check living allies for health < 50%
+		ASovereignBaseCharacter* MostWoundedAlly = nullptr;
+		float LowestHealthPercent = 0.50f;
+
+		for (ASovereignBaseCharacter* Ally : GetLivingEnemyUnits())
+		{
+			if (Ally)
+			{
+				if (const USovereignAttributeComponent* Attr = Ally->GetAttributeComponent())
+				{
+					if (Attr->MaxHealth > 0.0f)
+					{
+						const float HealthPct = Attr->CurrentHealth / Attr->MaxHealth;
+						if (HealthPct < LowestHealthPercent)
+						{
+							LowestHealthPercent = HealthPct;
+							MostWoundedAlly = Ally;
+						}
+					}
+				}
+			}
+		}
+
+		if (MostWoundedAlly && SkillComp)
+		{
+			// Search for healing skill
+			for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
+			{
+				const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+				if (CandidateDef && CandidateDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
+					(CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SingleTarget ||
+					 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly ||
+					 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies))
+				{
+					if (CanCastSkill(EnemyCombatant, CandidateDef))
+					{
+						SelectedSkillInstance = Candidate;
+						bFoundUsableSkill = true;
+						if (CandidateDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies)
+						{
+							Targets = GetLivingEnemyUnits();
+						}
+						else
+						{
+							Targets.Add(MostWoundedAlly);
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	// --- B. Tactical Leader Decision Tree (AoE or Highest Threat) ---
+	if (!bFoundUsableSkill && EnemyRole == ESovereignEnemyRole::TacticalLeader && SkillComp)
+	{
+		// If 2+ living players, prefer full matrix AoE or cleave
+		if (LivingPlayers.Num() >= 2)
+		{
+			for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
+			{
+				const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+				if (CandidateDef && (CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FullMatrixAOE ||
+									 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FrontRowSweep))
+				{
+					if (CanCastSkill(EnemyCombatant, CandidateDef))
+					{
+						SelectedSkillInstance = Candidate;
+						bFoundUsableSkill = true;
+						Targets = LivingPlayers;
+						break;
+					}
+				}
+			}
+		}
+
+		// Otherwise target player with highest Strength (threat)
+		if (!bFoundUsableSkill)
+		{
+			ASovereignBaseCharacter* HighestThreatPlayer = nullptr;
+			int32 MaxStrength = -1;
+			for (ASovereignBaseCharacter* Player : LivingPlayers)
+			{
+				if (Player)
+				{
+					if (const USovereignAttributeComponent* Attr = Player->GetAttributeComponent())
+					{
+						if (Attr->Strength > MaxStrength)
+						{
+							MaxStrength = Attr->Strength;
+							HighestThreatPlayer = Player;
+						}
+					}
+				}
+			}
+			if (HighestThreatPlayer)
+			{
+				Targets.Add(HighestThreatPlayer);
+			}
+		}
+	}
+
+	// --- C. Aggressive Brute Decision Tree (Front Rank Focus) ---
+	if (Targets.Num() == 0 && EnemyRole == ESovereignEnemyRole::AggressiveBrute)
+	{
+		// Prioritize Front Rank (Slots 0, 1, 2)
+		TArray<ASovereignBaseCharacter*> FrontRankPlayers;
+		for (int32 Slot = 0; Slot < 3; ++Slot)
+		{
+			if (PlayerGrid[Slot] && IsCombatantAlive(PlayerGrid[Slot].Get()))
+			{
+				FrontRankPlayers.Add(PlayerGrid[Slot].Get());
+			}
+		}
+
+		if (FrontRankPlayers.Num() > 0)
+		{
+			const int32 Pick = FMath::RandRange(0, FrontRankPlayers.Num() - 1);
+			Targets.Add(FrontRankPlayers[Pick]);
+		}
+	}
+
+	// --- D. Skirmisher / Sniper Decision Tree (Execute Lowest HP or Rear Rank) ---
+	if (Targets.Num() == 0 && EnemyRole == ESovereignEnemyRole::SkirmisherSniper)
+	{
+		// Find living player with lowest absolute HP
+		ASovereignBaseCharacter* LowestHPPlayer = nullptr;
+		float MinHP = MAX_FLT;
+
+		for (ASovereignBaseCharacter* Player : LivingPlayers)
+		{
+			if (Player)
+			{
+				if (const USovereignAttributeComponent* Attr = Player->GetAttributeComponent())
+				{
+					if (Attr->CurrentHealth < MinHP)
+					{
+						MinHP = Attr->CurrentHealth;
+						LowestHPPlayer = Player;
+					}
+				}
+			}
+		}
+
+		if (LowestHPPlayer)
+		{
+			Targets.Add(LowestHPPlayer);
+		}
+	}
+
+	// --- E. Standard Skill Selection if not chosen above ---
+	if (!bFoundUsableSkill && SkillComp)
+	{
+		// Check if we are already in the second stage of a telegraphed charge (Ticket CS-006)
+		USovereignATBComponent* ATBComp = EnemyCombatant->GetATBComponent();
+		if (ATBComp && ATBComp->IsChargingAttack() && ATBComp->ChargingSkillInstance.SkillDefinition.IsValid())
+		{
+			SelectedSkillInstance = ATBComp->ChargingSkillInstance;
+			bFoundUsableSkill = true;
+		}
+		else
+		{
+			for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
+			{
+				const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+				if (CandidateDef && CanCastSkill(EnemyCombatant, CandidateDef))
+				{
+					// Avoid selecting healing skills if targeting offensive players
+					if (CandidateDef->ScalingAttribute != ESovereignSkillScalingAttribute::Wisdom)
+					{
+						SelectedSkillInstance = Candidate;
+						bFoundUsableSkill = true;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	if (!bFoundUsableSkill)
+	{
+		SelectedSkillInstance = MakeFallbackStrike();
+	}
+
+	// --- F. Fallback Target Selection if preferred slot was empty ---
+	if (Targets.Num() == 0)
+	{
+		const int32 Pick = FMath::RandRange(0, LivingPlayers.Num() - 1);
+		Targets.Add(LivingPlayers[Pick]);
+	}
+
+	// --- G. Telegraphed Attack Stage 1 vs Stage 2 Evaluation (Ticket CS-006) ---
+	const USovereignSkillDefinition* SkillDef = SelectedSkillInstance.SkillDefinition.Get();
+	USovereignATBComponent* ATBComp = EnemyCombatant->GetATBComponent();
+
+	if (SkillDef && SkillDef->bIsTelegraphed && ATBComp)
+	{
+		if (!ATBComp->IsChargingAttack())
+		{
+			// STAGE 1: Begin charging stance, announce warning text, reset ATB, end turn without damage
+			FText Warning = SkillDef->TelegraphWarningText;
+			if (Warning.IsEmpty())
+			{
+				Warning = FText::Format(
+					NSLOCTEXT("Sovereign", "TelegraphWarningFmt", "{0} is charging a lethal attack: {1}!"),
+					FText::FromString(EnemyCombatant->GetName()),
+					SkillDef->SkillDisplayName
+				);
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("[BattleManager] %s"), *Warning.ToString());
+			ATBComp->BeginTelegraphedCharge(SelectedSkillInstance, Warning);
+
+			// Conclude turn without executing damage yet
+			ConcludeActiveTurn();
+			return;
+		}
+		else
+		{
+			// STAGE 2: Unleash attack!
+			ATBComp->OnTelegraphedAttackUnleashed.Broadcast(EnemyCombatant, SkillDef->SkillTag);
+			ATBComp->ChargingSkillInstance = FSovereignSkillInstance();
+		}
+	}
+
+	// 2. Execute Action
+	ExecuteSkillAction(EnemyCombatant, SelectedSkillInstance, Targets);
 }
 
 void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, const TArray<ASovereignBaseCharacter*>& InEnemyUnits, bool bCanFlee)
@@ -186,6 +632,11 @@ void ASovereignBattleManager::SetBattleState(EBattleState NewState)
 		}
 		else if (NewState == EBattleState::Victory || NewState == EBattleState::Defeat || NewState == EBattleState::Fled)
 		{
+			if (NewState == EBattleState::Victory)
+			{
+				DistributeVictoryRewards();
+			}
+
 			OnBattleEnded.Broadcast(NewState);
 
 			// Freeze ATB tickers on all combatants
@@ -203,6 +654,9 @@ void ASovereignBattleManager::SetBattleState(EBattleState NewState)
 					Enemy->GetATBComponent()->SetComponentTickEnabled(false);
 				}
 			}
+
+			// Clean up dynamically spawned enemies so the arena is pristine for the next encounter
+			CleanupSpawnedEnemies();
 		}
 	}
 }
@@ -288,6 +742,12 @@ void ASovereignBattleManager::ConcludeActiveTurn()
 {
 	if (ActiveCombatant)
 	{
+		// Process turn-end status effects (Poison damage, Regen healing, turn decrement) - Ticket CS-005
+		if (USovereignStatusComponent* StatusComp = ActiveCombatant->GetStatusComponent())
+		{
+			StatusComp->ProcessTurnEnd();
+		}
+
 		if (USovereignATBComponent* ATB = ActiveCombatant->GetATBComponent())
 		{
 			ATB->CompleteActionExecution();
@@ -321,6 +781,81 @@ bool ASovereignBattleManager::CheckCombatOutcome()
 	}
 
 	return false;
+}
+
+void ASovereignBattleManager::DistributeVictoryRewards()
+{
+	float TotalExp = 0.0f;
+	int32 TotalClassExp = 0;
+	float TotalQi = 0.0f;
+
+	if (ActiveEncounterDefinition)
+	{
+		TotalExp = ActiveEncounterDefinition->CalculateTotalExperience();
+		TotalClassExp = ActiveEncounterDefinition->CalculateTotalClassExperience();
+		TotalQi = ActiveEncounterDefinition->CalculateTotalQi();
+	}
+	else
+	{
+		// Fallback reward calculation based on number of enemies in EnemyGrid
+		int32 EnemyCount = 0;
+		for (const auto& Enemy : EnemyGrid)
+		{
+			if (Enemy)
+			{
+				EnemyCount++;
+			}
+		}
+		EnemyCount = FMath::Max(1, EnemyCount);
+		TotalExp = EnemyCount * 50.0f;
+		TotalClassExp = EnemyCount * 10;
+		TotalQi = EnemyCount * 15.0f;
+	}
+
+	const TArray<ASovereignBaseCharacter*> LivingMembers = GetLivingPlayerUnits();
+	if (LivingMembers.Num() == 0)
+	{
+		return;
+	}
+
+	// Option A: Award experience to living party members
+	// Distribute EXP across living members and feed USovereignLevelComponent + USovereignClassComponent
+	const double MemberExp = TotalExp / LivingMembers.Num();
+	const float MemberQi = TotalQi / LivingMembers.Num();
+
+	for (ASovereignBaseCharacter* Member : LivingMembers)
+	{
+		if (!Member)
+		{
+			continue;
+		}
+
+		// 1. Level Component Attribute XP (feathers into active training focus)
+		if (USovereignLevelComponent* LevelComp = Member->GetLevelComponent())
+		{
+			LevelComp->AddAttributeXP(LevelComp->ActiveTrainingFocus, MemberExp);
+		}
+
+		// 2. Class Component CP / Class Level Progression
+		if (USovereignClassComponent* ClassComp = Member->GetClassComponent())
+		{
+			for (const FGameplayTag& EquippedTag : ClassComp->EquippedClasses)
+			{
+				ClassComp->AddClassLevel(EquippedTag, FMath::Max(1, TotalClassExp / 10));
+			}
+		}
+
+		// 3. Qi replenishment from defeated enemies
+		if (USovereignQiComponent* QiComp = Member->GetQiComponent())
+		{
+			QiComp->CurrentQi = FMath::Clamp(QiComp->CurrentQi + MemberQi, 0.0f, QiComp->MaxQiCapacity);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("[BattleManager] Distributed Victory Rewards: TotalExp: %.1f, ClassExp: %d, TotalQi: %.1f across %d members."),
+		TotalExp, TotalClassExp, TotalQi, LivingMembers.Num());
+
+	OnVictoryRewardsDistributed.Broadcast(TotalExp, TotalClassExp, TotalQi, LivingMembers.Num());
 }
 
 void ASovereignBattleManager::ConcludeFled()
@@ -367,6 +902,15 @@ bool ASovereignBattleManager::CanCastSkill(const ASovereignBaseCharacter* Caster
 		return true;
 	}
 
+	// Check Silence status effect (Ticket CS-005)
+	if (const USovereignStatusComponent* StatusComp = Caster->GetStatusComponent())
+	{
+		if (StatusComp->IsSilenced())
+		{
+			return false; // Silenced combatants cannot cast Qi skills
+		}
+	}
+
 	if (const USovereignQiComponent* QiComp = Caster->GetQiComponent())
 	{
 		return QiComp->CurrentQi >= SkillDef->QiCost;
@@ -392,6 +936,27 @@ FSovereignCombatEntitySnapshot ASovereignBattleManager::CreateSnapshotForCombata
 			Snapshot.Intelligence = Attr->Intelligence;
 			Snapshot.Wisdom = Attr->Wisdom;
 			Snapshot.Luck = Attr->Luck;
+		}
+
+		// Elemental properties (Ticket CS-004)
+		if (const TObjectPtr<USovereignEnemyDefinition>* FoundDef = EnemyDefinitionsMap.Find(const_cast<ASovereignBaseCharacter*>(Combatant)))
+		{
+			if (*FoundDef)
+			{
+				Snapshot.PrimaryElement = (*FoundDef)->PrimaryElement;
+				Snapshot.WeaknessElement = (*FoundDef)->WeaknessElement;
+				Snapshot.ResistanceElement = (*FoundDef)->ResistanceElement;
+			}
+		}
+		else if (const USovereignElementComponent* ElemComp = Combatant->FindComponentByClass<USovereignElementComponent>())
+		{
+			Snapshot.PrimaryElement = ElemComp->BodySocket;
+		}
+
+		// Status conditions (Ticket CS-005)
+		if (const USovereignStatusComponent* StatusComp = Combatant->GetStatusComponent())
+		{
+			Snapshot.bIsBlinded = StatusComp->IsBlinded();
 		}
 	}
 	return Snapshot;
@@ -502,6 +1067,15 @@ bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster
 
 			TargetAttr->CurrentHealth = FMath::Max(0.0f, TargetAttr->CurrentHealth - FinalDmg);
 			TotalActionResult += FinalDmg;
+		}
+
+		// Apply Status Effects if defined on the skill (Ticket CS-005)
+		if (SkillDef->InflictedStatus != ESovereignStatusType::None)
+		{
+			if (USovereignStatusComponent* TargetStatus = Target->GetStatusComponent())
+			{
+				TargetStatus->ApplyStatusEffect(SkillDef->InflictedStatus, SkillDef->StatusDurationTurns, SkillDef->StatusPotency, Caster);
+			}
 		}
 	}
 

@@ -4,6 +4,7 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignClassComponent.h"
+#include "Components/SovereignStatusComponent.h"
 
 USovereignATBComponent::USovereignATBComponent()
 {
@@ -21,8 +22,8 @@ void USovereignATBComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// In battle arena, Tick advances ATB if charging
-	if (ATBState == EATBState::Charging && !bIsWaitModeActive)
+	// In battle arena, Tick advances ATB if charging or charging telegraphed attack
+	if ((ATBState == EATBState::Charging || ATBState == EATBState::ChargingAttack) && !bIsWaitModeActive)
 	{
 		AdvanceATB(DeltaTime);
 	}
@@ -47,6 +48,12 @@ float USovereignATBComponent::CalculateEffectiveFillRate() const
 		{
 			ClassSpeedMultiplier = FMath::Max(0.1f, ClassComp->GetTotalDexterityMultiplier());
 		}
+
+		// 3. Status Multiplier (Haste 1.5x, Slow 0.5x) - Ticket CS-005
+		if (const USovereignStatusComponent* StatusComp = Character->GetStatusComponent())
+		{
+			ClassSpeedMultiplier *= StatusComp->GetATBSpeedMultiplier();
+		}
 	}
 
 	return BaseATBRate * (1.0f + DexterityBonus) * ClassSpeedMultiplier;
@@ -54,7 +61,7 @@ float USovereignATBComponent::CalculateEffectiveFillRate() const
 
 void USovereignATBComponent::AdvanceATB(float DeltaTime)
 {
-	if (DeltaTime <= 0.0f || ATBState != EATBState::Charging || bIsWaitModeActive)
+	if (DeltaTime <= 0.0f || (ATBState != EATBState::Charging && ATBState != EATBState::ChargingAttack) || bIsWaitModeActive)
 	{
 		return;
 	}
@@ -99,6 +106,36 @@ void USovereignATBComponent::EnterDefendStance()
 	// Defending sets the defensive mitigation flag and ends turn
 	bIsDefending = true;
 	ResetATB();
+}
+
+void USovereignATBComponent::BeginTelegraphedCharge(const FSovereignSkillInstance& InSkillInstance, const FText& WarningText)
+{
+	ChargingSkillInstance = InSkillInstance;
+	CurrentATB = 0.0f;
+	SetATBState(EATBState::ChargingAttack);
+	OnATBProgressChanged.Broadcast(CurrentATB, MAX_ATB);
+
+	FGameplayTag SkillTag;
+	if (USovereignSkillDefinition* Def = InSkillInstance.SkillDefinition.Get())
+	{
+		SkillTag = Def->SkillTag;
+	}
+	OnTelegraphedAttackStarted.Broadcast(Cast<ASovereignBaseCharacter>(GetOwner()), SkillTag, WarningText);
+}
+
+void USovereignATBComponent::CancelTelegraphedCharge()
+{
+	if (ATBState == EATBState::ChargingAttack)
+	{
+		FGameplayTag SkillTag;
+		if (USovereignSkillDefinition* Def = ChargingSkillInstance.SkillDefinition.Get())
+		{
+			SkillTag = Def->SkillTag;
+		}
+		ChargingSkillInstance = FSovereignSkillInstance();
+		ResetATB();
+		OnTelegraphedAttackInterrupted.Broadcast(Cast<ASovereignBaseCharacter>(GetOwner()), SkillTag);
+	}
 }
 
 void USovereignATBComponent::SetATBState(EATBState NewState)

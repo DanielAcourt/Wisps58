@@ -4,6 +4,7 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignPartyComponent.h"
 #include "EngineUtils.h"
+#include "Kismet/GameplayStatics.h"
 
 USovereignEncounterSubsystem::USovereignEncounterSubsystem()
 {
@@ -95,8 +96,117 @@ bool USovereignEncounterSubsystem::TriggerEncounter(
 	// 6. Initialize Encounter on Battle Manager
 	bIsEncounterActive = true;
 	BattleMgr->InitializeEncounter(DeployedParty, EnemyUnits, bCanFlee);
+
+	// 7. Activate Battle Camera & disable exploration input
+	if (World)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			BattleMgr->ActivateBattleCamera(PC);
+			PlayerLeader->DisableInput(PC);
+		}
+	}
+
 	OnEncounterTransitionStarted.Broadcast(BattleMgr);
 
+	return true;
+}
+
+bool USovereignEncounterSubsystem::TriggerEncounterWithDefinition(
+	ASovereignBaseCharacter* PlayerLeader,
+	AActor* OverlappedMob,
+	USovereignEncounterDefinition* EncounterDef,
+	ASovereignBattleManager* CustomBattleManager)
+{
+	if (!PlayerLeader || !EncounterDef)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World && PlayerLeader)
+	{
+		World = PlayerLeader->GetWorld();
+	}
+	if (!World && CustomBattleManager)
+	{
+		World = CustomBattleManager->GetWorld();
+	}
+
+	// 1. Locate or Spawn Battle Manager
+	ASovereignBattleManager* BattleMgr = CustomBattleManager;
+	if (!BattleMgr && World)
+	{
+		for (TActorIterator<ASovereignBattleManager> It(World); It; ++It)
+		{
+			BattleMgr = *It;
+			break;
+		}
+
+		if (!BattleMgr)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			FVector ArenaPos = PlayerLeader->GetActorLocation() + FVector(0.0f, 0.0f, 5000.0f);
+			BattleMgr = World->SpawnActor<ASovereignBattleManager>(ASovereignBattleManager::StaticClass(), ArenaPos, FRotator::ZeroRotator, SpawnParams);
+		}
+	}
+
+	if (!BattleMgr)
+	{
+		return false;
+	}
+
+	ActiveBattleManager = BattleMgr;
+	InteractedDungeonMob = OverlappedMob;
+
+	// 2. Cache Dungeon Return Transform
+	DungeonReturnTransform = PlayerLeader->GetActorTransform();
+
+	// 3. Assemble Player Party
+	ActivePlayerParty.Empty();
+	TArray<ASovereignBaseCharacter*> DeployedParty;
+
+	if (USovereignPartyComponent* PartyComp = PlayerLeader->GetPartyComponent())
+	{
+		DeployedParty = PartyComp->GetAllActivePartyMembers();
+	}
+	if (DeployedParty.Num() == 0)
+	{
+		DeployedParty.Add(PlayerLeader);
+	}
+
+	for (auto* Member : DeployedParty)
+	{
+		ActivePlayerParty.Add(Member);
+	}
+
+	// 4. Hide/Disable Collision on Roaming Dungeon Mob
+	if (OverlappedMob)
+	{
+		OverlappedMob->SetActorHiddenInGame(true);
+		OverlappedMob->SetActorEnableCollision(false);
+	}
+
+	// 5. Bind Battle Ended delegate
+	BattleMgr->OnBattleEnded.RemoveDynamic(this, &USovereignEncounterSubsystem::HandleBattleEnded);
+	BattleMgr->OnBattleEnded.AddDynamic(this, &USovereignEncounterSubsystem::HandleBattleEnded);
+
+	// 6. Initialize Encounter on Battle Manager from definition
+	bIsEncounterActive = true;
+	BattleMgr->InitializeEncounterFromDefinition(DeployedParty, EncounterDef);
+
+	// 7. Activate Battle Camera & disable exploration input
+	if (World)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			BattleMgr->ActivateBattleCamera(PC);
+			PlayerLeader->DisableInput(PC);
+		}
+	}
+
+	OnEncounterTransitionStarted.Broadcast(BattleMgr);
 	return true;
 }
 
@@ -110,6 +220,20 @@ void USovereignEncounterSubsystem::ReturnPartyToDungeon(EBattleState Outcome)
 	if (!bIsEncounterActive)
 	{
 		return;
+	}
+
+	// 0. Restore Camera & Re-enable Input
+	UWorld* World = GetWorld();
+	if (ActiveBattleManager.IsValid() && ActivePlayerParty.Num() > 0 && ActivePlayerParty[0])
+	{
+		if (World)
+		{
+			if (APlayerController* PC = World->GetFirstPlayerController())
+			{
+				ActiveBattleManager->RestorePlayerCamera(PC, ActivePlayerParty[0]);
+				ActivePlayerParty[0]->EnableInput(PC);
+			}
+		}
 	}
 
 	// 1. Teleport Living Party Members Back to Dungeon Floor
