@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+#include "SaveSystem/SovereignGameData.h"
 #include "Combat/SovereignSkillDefinition.h"
 #include "SovereignEnemyDefinition.generated.h"
 
@@ -53,6 +54,20 @@ public:
 	/** Actor class to instantiate for this enemy in the battle arena (inherits ASovereignBaseCharacter) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Spawning")
 	TSubclassOf<ASovereignBaseCharacter> CharacterClass;
+
+	// --- Elemental Affinities (Ticket CS-004) ---
+
+	/** Primary element this enemy is aligned with */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Elemental")
+	ESovereignElement PrimaryElement = ESovereignElement::None;
+
+	/** Element this enemy takes 1.5x damage from */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Elemental")
+	ESovereignElement WeaknessElement = ESovereignElement::None;
+
+	/** Element this enemy mitigates 0.5x damage from */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Elemental")
+	ESovereignElement ResistanceElement = ESovereignElement::None;
 
 	// --- Combat Attributes ---
 

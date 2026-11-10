@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+#include "SaveSystem/SovereignGameData.h"
 #include "SovereignSkillDefinition.generated.h"
 
 class UTexture2D;
@@ -74,6 +75,10 @@ public:
 	/** Which D&D attribute scales this ability */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Scaling")
 	ESovereignSkillScalingAttribute ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
+
+	/** Elemental affinity of this skill (Fire, Water, Earth, etc.) - Ticket CS-004 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Elemental")
+	ESovereignElement ElementType = ESovereignElement::None;
 
 	/** Base ability power before stat scaling */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Scaling")

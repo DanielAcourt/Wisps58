@@ -3,6 +3,7 @@
 #include "Combat/SovereignEnemyDefinition.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignElementComponent.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignSkillComponent.h"
 
@@ -10,6 +11,9 @@ USovereignEnemyDefinition::USovereignEnemyDefinition()
 {
 	EnemyDisplayName = FText::FromString(TEXT("Enemy"));
 	EnemyRole = ESovereignEnemyRole::Default;
+	PrimaryElement = ESovereignElement::None;
+	WeaknessElement = ESovereignElement::None;
+	ResistanceElement = ESovereignElement::None;
 	CharacterClass = ASovereignBaseCharacter::StaticClass();
 	MaxHealth = 100.0f;
 	MaxQi = 50.0f;
@@ -52,11 +56,19 @@ void USovereignEnemyDefinition::InitializeEnemyVessel(ASovereignBaseCharacter* V
 		AttrComp->CurrentHealth = MaxHealth;
 	}
 
-	// 2. Initialize Qi
+	// 2. Initialize Qi & Elements
 	if (USovereignQiComponent* QiComp = Vessel->GetQiComponent())
 	{
 		QiComp->MaxQiCapacity = MaxQi;
 		QiComp->CurrentQi = MaxQi;
+	}
+
+	if (USovereignElementComponent* ElemComp = Vessel->FindComponentByClass<USovereignElementComponent>())
+	{
+		if (PrimaryElement != ESovereignElement::None)
+		{
+			ElemComp->BodySocket = PrimaryElement;
+		}
 	}
 
 	// 3. Initialize Skills

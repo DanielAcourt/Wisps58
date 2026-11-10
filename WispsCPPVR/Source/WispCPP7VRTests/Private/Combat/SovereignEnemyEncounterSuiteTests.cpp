@@ -180,6 +180,58 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("Player received Strength XP from victory rewards"), StrengthXPAfter > StrengthXPBefore);
 
+	// 5b. Test Elemental Weakness and Resistance (Ticket CS-004)
+	{
+		FSovereignCombatEntitySnapshot AttackerSnap;
+		AttackerSnap.Strength = 20;
+		AttackerSnap.FormationSlot = 1;
+
+		FSovereignCombatEntitySnapshot TargetSnap;
+		TargetSnap.Constitution = 10;
+		TargetSnap.FormationSlot = 1;
+		TargetSnap.PrimaryElement = ESovereignElement::Earth;
+		TargetSnap.WeaknessElement = ESovereignElement::Fire;
+		TargetSnap.ResistanceElement = ESovereignElement::Nature;
+
+		// Unaligned Skill (None)
+		USovereignSkillDefinition* NeutralSkill = NewObject<USovereignSkillDefinition>();
+		NeutralSkill->BasePower = 50.0f;
+		NeutralSkill->StatMultiplier = 1.0f;
+		NeutralSkill->ElementType = ESovereignElement::None;
+		FSovereignSkillInstance NeutralInst(NeutralSkill);
+
+		// Fire Skill (Target Weakness -> 1.5x)
+		USovereignSkillDefinition* FireSkill = NewObject<USovereignSkillDefinition>();
+		FireSkill->BasePower = 50.0f;
+		FireSkill->StatMultiplier = 1.0f;
+		FireSkill->ElementType = ESovereignElement::Fire;
+		FSovereignSkillInstance FireInst(FireSkill);
+
+		// Nature Skill (Target Resistance -> 0.5x)
+		USovereignSkillDefinition* NatureSkill = NewObject<USovereignSkillDefinition>();
+		NatureSkill->BasePower = 50.0f;
+		NatureSkill->StatMultiplier = 1.0f;
+		NatureSkill->ElementType = ESovereignElement::Nature;
+		FSovereignSkillInstance NatureInst(NatureSkill);
+
+		const FSovereignDamageCalculationResult NeutralResult = USovereignCombatCalculationLibrary::CalculateCombatDamage(
+			AttackerSnap, TargetSnap, NeutralInst, 1.0f
+		);
+		const FSovereignDamageCalculationResult WeaknessResult = USovereignCombatCalculationLibrary::CalculateCombatDamage(
+			AttackerSnap, TargetSnap, FireInst, 1.0f
+		);
+		const FSovereignDamageCalculationResult ResistanceResult = USovereignCombatCalculationLibrary::CalculateCombatDamage(
+			AttackerSnap, TargetSnap, NatureInst, 1.0f
+		);
+
+		TestEqual(TEXT("Neutral elemental multiplier is 1.0"), NeutralResult.ElementalMultiplier, 1.0f);
+		TestEqual(TEXT("Fire weakness elemental multiplier is 1.5"), WeaknessResult.ElementalMultiplier, 1.5f);
+		TestEqual(TEXT("Nature resistance elemental multiplier is 0.5"), ResistanceResult.ElementalMultiplier, 0.5f);
+
+		TestTrue(TEXT("Fire weakness damage is greater than neutral damage"), WeaknessResult.FinalDamage > NeutralResult.FinalDamage);
+		TestTrue(TEXT("Nature resistance damage is less than neutral damage"), ResistanceResult.FinalDamage < NeutralResult.FinalDamage);
+	}
+
 	// 6. Test Enemy Actor Cleanup on Battle End
 	BattleMgr->CleanupSpawnedEnemies();
 	TestEqual(TEXT("SpawnedEnemyActors emptied after cleanup"), BattleMgr->SpawnedEnemyActors.Num(), 0);

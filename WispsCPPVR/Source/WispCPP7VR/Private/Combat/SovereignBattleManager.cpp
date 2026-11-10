@@ -858,6 +858,21 @@ FSovereignCombatEntitySnapshot ASovereignBattleManager::CreateSnapshotForCombata
 			Snapshot.Wisdom = Attr->Wisdom;
 			Snapshot.Luck = Attr->Luck;
 		}
+
+		// Elemental properties (Ticket CS-004)
+		if (const TObjectPtr<USovereignEnemyDefinition>* FoundDef = EnemyDefinitionsMap.Find(const_cast<ASovereignBaseCharacter*>(Combatant)))
+		{
+			if (*FoundDef)
+			{
+				Snapshot.PrimaryElement = (*FoundDef)->PrimaryElement;
+				Snapshot.WeaknessElement = (*FoundDef)->WeaknessElement;
+				Snapshot.ResistanceElement = (*FoundDef)->ResistanceElement;
+			}
+		}
+		else if (const USovereignElementComponent* ElemComp = Combatant->FindComponentByClass<USovereignElementComponent>())
+		{
+			Snapshot.PrimaryElement = ElemComp->BodySocket;
+		}
 	}
 	return Snapshot;
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "SaveSystem/SovereignGameData.h"
 #include "Combat/SovereignSkillDefinition.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "SovereignCombatCalculationLibrary.generated.h"
@@ -71,6 +72,18 @@ struct WISPCPP7VR_API FSovereignCombatEntitySnapshot
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
 	float ClassDamageMultiplier = 1.0f;
 
+	/** Innate/body element of this combatant (Ticket CS-004) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
+	ESovereignElement PrimaryElement = ESovereignElement::None;
+
+	/** Element this combatant takes 1.5x damage from (Ticket CS-004) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
+	ESovereignElement WeaknessElement = ESovereignElement::None;
+
+	/** Element this combatant mitigates 0.5x damage from (Ticket CS-004) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
+	ESovereignElement ResistanceElement = ESovereignElement::None;
+
 	FSovereignCombatEntitySnapshot()
 		: FormationSlot(1)
 		, bIsAlive(true)
@@ -82,6 +95,9 @@ struct WISPCPP7VR_API FSovereignCombatEntitySnapshot
 		, Luck(10)
 		, EquipmentDefense(0.0f)
 		, ClassDamageMultiplier(1.0f)
+		, PrimaryElement(ESovereignElement::None)
+		, WeaknessElement(ESovereignElement::None)
+		, ResistanceElement(ESovereignElement::None)
 	{
 	}
 
@@ -122,6 +138,10 @@ struct WISPCPP7VR_API FSovereignDamageCalculationResult
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
 	bool bIsCriticalHit = false;
 
+	/** Elemental vulnerability/resistance multiplier (e.g. 1.5x weakness, 0.5x resistance) - Ticket CS-004 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
+	float ElementalMultiplier = 1.0f;
+
 	/** Final net damage floored at minimum 1.0 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Combat")
 	float FinalDamage = 1.0f;
@@ -133,6 +153,7 @@ struct WISPCPP7VR_API FSovereignDamageCalculationResult
 		, EffectiveDefense(0.0f)
 		, MitigationFactor(1.0f)
 		, bIsCriticalHit(false)
+		, ElementalMultiplier(1.0f)
 		, FinalDamage(1.0f)
 	{
 	}

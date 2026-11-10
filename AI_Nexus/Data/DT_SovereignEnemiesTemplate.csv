@@ -1,5 +1,5 @@
-Name,EnemyTag,DisplayName,EnemyRole,CharacterClass,MaxHealth,MaxQi,Strength,Dexterity,Constitution,Intelligence,Wisdom,Charisma,Luck,EquippedSkills,ExpReward,ClassExpReward,QiReward
-Enemy_GoblinScout,Enemy.Humanoid.Goblin.Scout,Goblin Scout,SkirmisherSniper,/Script/WispCPP7VR.SovereignBaseCharacter,70.0,20.0,9,14,8,8,8,7,12,Skill.Combat.Rogue.Backstab,45.0,10,10.0
-Enemy_GoblinWarrior,Enemy.Humanoid.Goblin.Warrior,Goblin Warrior,AggressiveBrute,/Script/WispCPP7VR.SovereignBaseCharacter,110.0,30.0,13,10,12,7,8,6,9,Skill.Combat.Warrior.Cleave,65.0,15,15.0
-Enemy_GoblinShaman,Enemy.Humanoid.Goblin.Shaman,Goblin Shaman,SupportHealer,/Script/WispCPP7VR.SovereignBaseCharacter,80.0,60.0,7,10,8,14,12,8,10,"Skill.Combat.Mage.Fireball,Skill.Combat.Cleric.Mend",85.0,20,30.0
-Enemy_HobgoblinChief,Enemy.Humanoid.Goblin.Chief,Hobgoblin Chief,TacticalLeader,/Script/WispCPP7VR.SovereignBaseCharacter,220.0,50.0,16,11,15,9,10,10,11,"Skill.Combat.Warrior.Cleave,Skill.Combat.Guardian.ShieldBash",160.0,35,40.0
+Name,EnemyTag,DisplayName,EnemyRole,PrimaryElement,WeaknessElement,ResistanceElement,CharacterClass,MaxHealth,MaxQi,Strength,Dexterity,Constitution,Intelligence,Wisdom,Charisma,Luck,EquippedSkills,ExpReward,ClassExpReward,QiReward
+Enemy_GoblinScout,Enemy.Humanoid.Goblin.Scout,Goblin Scout,SkirmisherSniper,Earth,Fire,Earth,/Script/WispCPP7VR.SovereignBaseCharacter,70.0,20.0,9,14,8,8,8,7,12,Skill.Combat.Rogue.Backstab,45.0,10,10.0
+Enemy_GoblinWarrior,Enemy.Humanoid.Goblin.Warrior,Goblin Warrior,AggressiveBrute,Nature,Fire,Water,/Script/WispCPP7VR.SovereignBaseCharacter,110.0,30.0,13,10,12,7,8,6,9,Skill.Combat.Warrior.Cleave,65.0,15,15.0
+Enemy_GoblinShaman,Enemy.Humanoid.Goblin.Shaman,Goblin Shaman,SupportHealer,Earth,Fire,Earth,/Script/WispCPP7VR.SovereignBaseCharacter,80.0,60.0,7,10,8,14,12,8,10,"Skill.Combat.Mage.Fireball,Skill.Combat.Cleric.Mend",85.0,20,30.0
+Enemy_HobgoblinChief,Enemy.Humanoid.Goblin.Chief,Hobgoblin Chief,TacticalLeader,Earth,Water,Fire,/Script/WispCPP7VR.SovereignBaseCharacter,220.0,50.0,16,11,15,9,10,10,11,"Skill.Combat.Warrior.Cleave,Skill.Combat.Guardian.ShieldBash",160.0,35,40.0

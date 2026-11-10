@@ -112,6 +112,7 @@ def parse_csv_skill_rows(csv_path):
                 "Description": row.get("Description", "").strip(),
                 "TargetPattern": row.get("TargetPattern", "SingleTarget").strip(),
                 "ScalingAttribute": row.get("ScalingAttribute", "Strength").strip(),
+                "ElementType": row.get("ElementType", "None").strip(),
                 "BasePower": float(row.get("BasePower", "20.0") or "20.0"),
                 "StatMultiplier": float(row.get("StatMultiplier", "1.20") or "1.20"),
                 "QiCost": float(row.get("QiCost", "0.0") or "0.0"),
@@ -281,6 +282,26 @@ def import_skills_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSkillsTemplate.c
             else:
                 skill_asset.set_editor_property("scaling_attribute", unreal.SovereignSkillScalingAttribute.STRENGTH)
 
+        # Set Element Type Enum (Ticket CS-004)
+        elem_str = rec["ElementType"].lower()
+        if hasattr(unreal, "SovereignElement"):
+            if "fire" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.FIRE)
+            elif "water" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.WATER)
+            elif "earth" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.EARTH)
+            elif "nature" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.NATURE)
+            elif "air" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.AIR)
+            elif "light" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.LIGHT)
+            elif "dark" in elem_str:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.DARK)
+            else:
+                skill_asset.set_editor_property("element_type", unreal.SovereignElement.NONE)
+
         # Numerical Values
         skill_asset.set_editor_property("base_power", rec["BasePower"])
         skill_asset.set_editor_property("stat_multiplier", rec["StatMultiplier"])
@@ -445,6 +466,9 @@ def parse_csv_enemy_rows(csv_path):
                 "EnemyTag": row.get("EnemyTag", "").strip(),
                 "DisplayName": row.get("DisplayName", "").strip(),
                 "EnemyRole": row.get("EnemyRole", "Default").strip(),
+                "PrimaryElement": row.get("PrimaryElement", "None").strip(),
+                "WeaknessElement": row.get("WeaknessElement", "None").strip(),
+                "ResistanceElement": row.get("ResistanceElement", "None").strip(),
                 "CharacterClass": row.get("CharacterClass", "").strip(),
                 "MaxHealth": float(row.get("MaxHealth", 100.0)),
                 "MaxQi": float(row.get("MaxQi", 50.0)),
@@ -556,6 +580,25 @@ def import_enemies_to_assets(csv_path="AI_Nexus/Data/DT_SovereignEnemiesTemplate
                 enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.TACTICAL_LEADER)
             else:
                 enemy_asset.set_editor_property("enemy_role", unreal.SovereignEnemyRole.DEFAULT)
+
+        # Helper for SovereignElement
+        def resolve_element(e_str):
+            if not hasattr(unreal, "SovereignElement"):
+                return None
+            s = e_str.lower()
+            if "fire" in s: return unreal.SovereignElement.FIRE
+            if "water" in s: return unreal.SovereignElement.WATER
+            if "earth" in s: return unreal.SovereignElement.EARTH
+            if "nature" in s: return unreal.SovereignElement.NATURE
+            if "air" in s: return unreal.SovereignElement.AIR
+            if "light" in s: return unreal.SovereignElement.LIGHT
+            if "dark" in s: return unreal.SovereignElement.DARK
+            return unreal.SovereignElement.NONE
+
+        if hasattr(unreal, "SovereignElement"):
+            enemy_asset.set_editor_property("primary_element", resolve_element(rec["PrimaryElement"]))
+            enemy_asset.set_editor_property("weakness_element", resolve_element(rec["WeaknessElement"]))
+            enemy_asset.set_editor_property("resistance_element", resolve_element(rec["ResistanceElement"]))
 
         enemy_asset.set_editor_property("max_health", rec["MaxHealth"])
         enemy_asset.set_editor_property("max_qi", rec["MaxQi"])
