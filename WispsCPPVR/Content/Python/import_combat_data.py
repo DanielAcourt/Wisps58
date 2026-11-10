@@ -113,6 +113,8 @@ def parse_csv_skill_rows(csv_path):
                 "TargetPattern": row.get("TargetPattern", "SingleTarget").strip(),
                 "ScalingAttribute": row.get("ScalingAttribute", "Strength").strip(),
                 "ElementType": row.get("ElementType", "None").strip(),
+                "bIsTelegraphed": row.get("bIsTelegraphed", "false").strip().lower() in ["true", "1", "yes"],
+                "TelegraphWarningText": row.get("TelegraphWarningText", "").strip(),
                 "BasePower": float(row.get("BasePower", "20.0") or "20.0"),
                 "StatMultiplier": float(row.get("StatMultiplier", "1.20") or "1.20"),
                 "QiCost": float(row.get("QiCost", "0.0") or "0.0"),
@@ -301,6 +303,11 @@ def import_skills_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSkillsTemplate.c
                 skill_asset.set_editor_property("element_type", unreal.SovereignElement.DARK)
             else:
                 skill_asset.set_editor_property("element_type", unreal.SovereignElement.NONE)
+
+        # Telegraphed Attack Properties (Ticket CS-006)
+        skill_asset.set_editor_property("b_is_telegraphed", rec["bIsTelegraphed"])
+        if rec["TelegraphWarningText"]:
+            skill_asset.set_editor_property("telegraph_warning_text", unreal.Text(rec["TelegraphWarningText"]))
 
         # Numerical Values
         skill_asset.set_editor_property("base_power", rec["BasePower"])

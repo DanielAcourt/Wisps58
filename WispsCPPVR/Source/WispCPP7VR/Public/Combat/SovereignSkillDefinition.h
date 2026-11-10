@@ -93,6 +93,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Status")
 	float StatusPotency = 10.0f;
 
+	/** Whether this skill requires a telegraphed 1-turn charging stance before unleashing (Ticket CS-006) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Telegraph")
+	bool bIsTelegraphed = false;
+
+	/** Warning text broadcast when starting to charge this attack */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Telegraph")
+	FText TelegraphWarningText;
+
 	/** Base ability power before stat scaling */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Scaling")
 	float BasePower = 20.0f;

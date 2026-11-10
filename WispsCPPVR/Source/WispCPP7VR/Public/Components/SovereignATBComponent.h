@@ -12,6 +12,8 @@ class ASovereignBaseCharacter;
  * EATBState
  * State machine for individual combatant Active Time Battle (ATB) gauge progression.
  */
+#include "Combat/SovereignSkillAugment.h"
+
 UENUM(BlueprintType)
 enum class EATBState : uint8
 {
@@ -19,12 +21,16 @@ enum class EATBState : uint8
 	Ready           UMETA(DisplayName = "Ready"),
 	SelectingAction UMETA(DisplayName = "Selecting Action"),
 	ExecutingAction UMETA(DisplayName = "Executing Action"),
+	ChargingAttack  UMETA(DisplayName = "Charging Telegraphed Attack"),
 	Paused          UMETA(DisplayName = "Paused")
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnATBProgressChanged, float, CurrentATB, float, MaxATB);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnATBReady, ASovereignBaseCharacter*, Combatant);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnATBStateChanged, EATBState, OldState, EATBState, NewState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnTelegraphedAttackStarted, ASovereignBaseCharacter*, Combatant, const FGameplayTag&, SkillTag, const FText&, WarningText);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTelegraphedAttackUnleashed, ASovereignBaseCharacter*, Combatant, const FGameplayTag&, SkillTag);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTelegraphedAttackInterrupted, ASovereignBaseCharacter*, Combatant, const FGameplayTag&, SkillTag);
 
 /**
  * USovereignATBComponent
@@ -58,6 +64,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|ATB")
 	EATBState ATBState = EATBState::Charging;
 
+	/** Queued skill instance being telegraphed/charged (Ticket CS-006) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|ATB|Telegraph")
+	FSovereignSkillInstance ChargingSkillInstance;
+
 	/** Whether combat is currently in Wait Mode (pauses ATB accumulation while navigating submenus) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|ATB")
 	bool bIsWaitModeActive = false;
@@ -79,6 +89,15 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|ATB|Events")
 	FOnATBStateChanged OnATBStateChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|ATB|Events")
+	FOnTelegraphedAttackStarted OnTelegraphedAttackStarted;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|ATB|Events")
+	FOnTelegraphedAttackUnleashed OnTelegraphedAttackUnleashed;
+
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|ATB|Events")
+	FOnTelegraphedAttackInterrupted OnTelegraphedAttackInterrupted;
 
 	// --- ATB Operations ---
 
@@ -109,6 +128,20 @@ public:
 	/** Enters Defend stance: ends turn, resets ATB to 0, and mitigates incoming damage until next turn */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|ATB")
 	void EnterDefendStance();
+
+	// --- Telegraphed Attack API (Ticket CS-006) ---
+
+	/** Begins charging a telegraphed ultimate attack: resets ATB, broadcasts warning, enters ChargingAttack */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|ATB|Telegraph")
+	void BeginTelegraphedCharge(const FSovereignSkillInstance& InSkillInstance, const FText& WarningText);
+
+	/** Cancels a telegraphed charge (e.g. interrupted by Stun) and resumes standard charging */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|ATB|Telegraph")
+	void CancelTelegraphedCharge();
+
+	/** Checks whether this combatant is currently charging a telegraphed attack */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|ATB|Telegraph")
+	bool IsChargingAttack() const { return ATBState == EATBState::ChargingAttack; }
 
 	/** Sets operational state with delegate broadcast */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|ATB")

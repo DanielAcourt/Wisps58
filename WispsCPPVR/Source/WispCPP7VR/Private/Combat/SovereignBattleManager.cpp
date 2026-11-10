@@ -117,11 +117,19 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 				ActiveCombatant = NextActor;
 				SetBattleState(EBattleState::ActionExecuting);
 
-				// Check Stun condition (Ticket CS-005)
+				// Check Stun condition (Ticket CS-005) & Interrupt Telegraphed Attack (Ticket CS-006)
 				if (USovereignStatusComponent* StatusComp = NextActor->GetStatusComponent())
 				{
 					if (StatusComp->IsStunned())
 					{
+						if (USovereignATBComponent* ATBComp = NextActor->GetATBComponent())
+						{
+							if (ATBComp->IsChargingAttack())
+							{
+								UE_LOG(LogTemp, Warning, TEXT("[BattleManager] %s's telegraphed attack was INTERRUPTED by Stun!"), *NextActor->GetName());
+								ATBComp->CancelTelegraphedCharge();
+							}
+						}
 						UE_LOG(LogTemp, Log, TEXT("[BattleManager] %s is Stunned and loses their turn!"), *NextActor->GetName());
 						ConcludeActiveTurn();
 						continue;
@@ -478,19 +486,29 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	// --- E. Standard Skill Selection if not chosen above ---
 	if (!bFoundUsableSkill && SkillComp)
 	{
-		for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
+		// Check if we are already in the second stage of a telegraphed charge (Ticket CS-006)
+		USovereignATBComponent* ATBComp = EnemyCombatant->GetATBComponent();
+		if (ATBComp && ATBComp->IsChargingAttack() && ATBComp->ChargingSkillInstance.SkillDefinition.IsValid())
 		{
-			const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
-			if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
-
-			if (CandidateDef && CanCastSkill(EnemyCombatant, CandidateDef))
+			SelectedSkillInstance = ATBComp->ChargingSkillInstance;
+			bFoundUsableSkill = true;
+		}
+		else
+		{
+			for (const FSovereignSkillInstance& Candidate : SkillComp->EquippedSkills)
 			{
-				// Avoid selecting healing skills if targeting offensive players
-				if (CandidateDef->ScalingAttribute != ESovereignSkillScalingAttribute::Wisdom)
+				const USovereignSkillDefinition* CandidateDef = Candidate.SkillDefinition.Get();
+				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
+
+				if (CandidateDef && CanCastSkill(EnemyCombatant, CandidateDef))
 				{
-					SelectedSkillInstance = Candidate;
-					bFoundUsableSkill = true;
-					break;
+					// Avoid selecting healing skills if targeting offensive players
+					if (CandidateDef->ScalingAttribute != ESovereignSkillScalingAttribute::Wisdom)
+					{
+						SelectedSkillInstance = Candidate;
+						bFoundUsableSkill = true;
+						break;
+					}
 				}
 			}
 		}
@@ -506,6 +524,40 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 	{
 		const int32 Pick = FMath::RandRange(0, LivingPlayers.Num() - 1);
 		Targets.Add(LivingPlayers[Pick]);
+	}
+
+	// --- G. Telegraphed Attack Stage 1 vs Stage 2 Evaluation (Ticket CS-006) ---
+	const USovereignSkillDefinition* SkillDef = SelectedSkillInstance.SkillDefinition.Get();
+	USovereignATBComponent* ATBComp = EnemyCombatant->GetATBComponent();
+
+	if (SkillDef && SkillDef->bIsTelegraphed && ATBComp)
+	{
+		if (!ATBComp->IsChargingAttack())
+		{
+			// STAGE 1: Begin charging stance, announce warning text, reset ATB, end turn without damage
+			FText Warning = SkillDef->TelegraphWarningText;
+			if (Warning.IsEmpty())
+			{
+				Warning = FText::Format(
+					NSLOCTEXT("Sovereign", "TelegraphWarningFmt", "{0} is charging a lethal attack: {1}!"),
+					FText::FromString(EnemyCombatant->GetName()),
+					SkillDef->SkillDisplayName
+				);
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("[BattleManager] %s"), *Warning.ToString());
+			ATBComp->BeginTelegraphedCharge(SelectedSkillInstance, Warning);
+
+			// Conclude turn without executing damage yet
+			ConcludeActiveTurn();
+			return;
+		}
+		else
+		{
+			// STAGE 2: Unleash attack!
+			ATBComp->OnTelegraphedAttackUnleashed.Broadcast(EnemyCombatant, SkillDef->SkillTag);
+			ATBComp->ChargingSkillInstance = FSovereignSkillInstance();
+		}
 	}
 
 	// 2. Execute Action
