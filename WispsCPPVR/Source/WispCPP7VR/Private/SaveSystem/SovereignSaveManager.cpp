@@ -752,3 +752,52 @@ FString USaveManager::ConvertSuitcaseToJson(USovereignSaveGame* Suitcase)
 
     return Output;
 }
+
+bool USaveManager::UpdateEntityInSavedSlot(const FString& SlotName, const FGuid& EntityGuid, const TSharedPtr<FJsonObject>& NewEntityState)
+{
+    if (!EntityGuid.IsValid() || !NewEntityState.IsValid())
+    {
+        return false;
+    }
+
+    FString JsonContent;
+    if (!USovereignJsonUtils::LoadStringFromFile(SlotName, JsonContent))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SaveManager] UpdateEntityInSavedSlot: Failed to load file for slot [%s]."), *SlotName);
+        return false;
+    }
+
+    USovereignSaveGame* Suitcase = ConvertJsonToSuitcase(JsonContent);
+    if (!Suitcase)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[SaveManager] UpdateEntityInSavedSlot: Failed to parse suitcase for slot [%s]."), *SlotName);
+        return false;
+    }
+
+    bool bUpdated = false;
+    for (FEntitySaveData& Entity : Suitcase->SavedActors)
+    {
+        if (Entity.MyGUID == EntityGuid)
+        {
+            Entity.UnknownMetaTags = NewEntityState;
+            bUpdated = true;
+            break;
+        }
+    }
+
+    if (!bUpdated)
+    {
+        UE_LOG(LogTemp, Log, TEXT("[SaveManager] UpdateEntityInSavedSlot: Entity [%s] not found in slot [%s] to update."),
+            *EntityGuid.ToString(), *SlotName);
+        return false;
+    }
+
+    FString UpdatedJson = ConvertSuitcaseToJson(Suitcase);
+    const bool bSaved = USovereignJsonUtils::ValidateAndSave(SlotName, UpdatedJson);
+    if (bSaved)
+    {
+        UE_LOG(LogTemp, Log, TEXT("[SaveManager] Synchronized entity [%s] into slot [%s] successfully."),
+            *EntityGuid.ToString(), *SlotName);
+    }
+    return bSaved;
+}

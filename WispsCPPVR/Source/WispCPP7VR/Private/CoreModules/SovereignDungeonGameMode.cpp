@@ -168,6 +168,73 @@ void ASovereignDungeonGameMode::SetupPartyLeaderAtEntrance(APlayerController* PC
 						}
 					}
 				}
+
+				// Ticket B-122: Reconstitute Non-Leader Party Members on the dedicated Battle Arena
+				USovereignPartyComponent* PartyComp = DungeonPartyLeader->GetPartyComponent();
+				UWorld* World = GetWorld();
+
+				if (PartyComp && World && DungeonSub->ActivePartyMembersData.Num() > 0)
+				{
+					for (const FSovereignPartyMemberData& MemberData : DungeonSub->ActivePartyMembersData)
+					{
+						// Leader is already spawned and possessed
+						if (MemberData.bIsLeader)
+						{
+							if (PartyComp->GridSlots.IsValidIndex(MemberData.SlotIndex))
+							{
+								PartyComp->AssignPartyMember(MemberData.SlotIndex, DungeonPartyLeader, true);
+							}
+							continue;
+						}
+
+						if (MemberData.ClassPath.IsEmpty())
+						{
+							continue;
+						}
+
+						FString MemberClassPath = MemberData.ClassPath;
+						if (!MemberClassPath.EndsWith(TEXT("_C")))
+						{
+							MemberClassPath += TEXT("_C");
+						}
+
+						UClass* MemberClass = LoadClass<ASovereignBaseCharacter>(nullptr, *MemberClassPath);
+						if (!MemberClass)
+						{
+							MemberClass = ASovereignBaseCharacter::StaticClass();
+						}
+
+						FActorSpawnParameters SpawnParams;
+						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+						ASovereignBaseCharacter* SpawnedMember = World->SpawnActor<ASovereignBaseCharacter>(MemberClass, FVector(0, 0, -50000.0f), FRotator::ZeroRotator, SpawnParams);
+
+						if (SpawnedMember)
+						{
+							if (!MemberData.StateJson.IsEmpty())
+							{
+								TSharedPtr<FJsonObject> MemberJsonObj;
+								TSharedRef<TJsonReader<>> MemberReader = TJsonReaderFactory<>::Create(MemberData.StateJson);
+								if (FJsonSerializer::Deserialize(MemberReader, MemberJsonObj) && MemberJsonObj.IsValid())
+								{
+									if (USovereignSaveableEntityComponent* MemberSaveComp = SpawnedMember->FindComponentByClass<USovereignSaveableEntityComponent>())
+									{
+										MemberSaveComp->ApplyStateFromJsonObject(MemberJsonObj);
+									}
+								}
+							}
+
+							SpawnedMember->SetActorHiddenInGame(true);
+							SpawnedMember->SetActorEnableCollision(false);
+
+							if (PartyComp->GridSlots.IsValidIndex(MemberData.SlotIndex))
+							{
+								PartyComp->AssignPartyMember(MemberData.SlotIndex, SpawnedMember, false);
+								UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Reconstituted party member [%s] in slot %d."),
+									*SpawnedMember->GetName(), MemberData.SlotIndex);
+							}
+						}
+					}
+				}
 			}
 		}
 

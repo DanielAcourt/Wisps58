@@ -10,8 +10,11 @@
 class ASovereignBaseCharacter;
 class ASovereignDungeonGenerator;
 
+class ASovereignPlayerWisp;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGatewayUnlocked, bool, bUnlocked);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGatewayEmpowered, float, EnemyBuffMultiplier, float, RewardMultiplier);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUnpossessedWispInteraction, ASovereignPlayerWisp*, Wisp);
 
 /**
  * ASovereignDungeonGateway
@@ -54,6 +57,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Gateway|Events")
 	FOnGatewayEmpowered OnGatewayEmpowered;
+
+	/** Broadcast when an unpossessed spirit wisp interacts with the gateway (Ticket B-121) */
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Gateway|Events")
+	FOnUnpossessedWispInteraction OnUnpossessedWispInteraction;
 
 	// --- Gateway Operations ---
 

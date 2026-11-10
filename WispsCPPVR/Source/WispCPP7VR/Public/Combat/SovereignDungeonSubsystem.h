@@ -9,6 +9,36 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnExpeditionLaunched, int32, Seed, float, EnemyBuff, float, RewardMult, FName, TargetDungeonLevel);
 
 /**
+ * FSovereignPartyMemberData
+ * Serialized representation of an active 3x3 party member crossing over into procedural dungeons (Ticket B-122).
+ */
+USTRUCT(BlueprintType)
+struct WISPCPP7VR_API FSovereignPartyMemberData
+{
+	GENERATED_BODY()
+
+	/** Slot index in the 3x3 tactical battle matrix (0..8) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")
+	int32 SlotIndex = INDEX_NONE;
+
+	/** Unique Entity GUID of the party member */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")
+	FGuid MemberGUID;
+
+	/** Asset class path of the member vessel */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")
+	FString ClassPath;
+
+	/** Full serialized runtime entity state JSON (Attributes, Bio, Level, Class, Skills, Inventory, etc.) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")
+	FString StateJson;
+
+	/** Whether this member is the active roamer / party leader */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Party")
+	bool bIsLeader = false;
+};
+
+/**
  * USovereignDungeonSubsystem
  * GameInstance Subsystem managing persistent dungeon expedition state across level transitions.
  * Survives OpenLevel transitions between the Meditation Garden and procedural Dungeon levels.
@@ -100,6 +130,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
 	FString PartyLeaderStateJson;
 
+	/** Serialized state data for all active members in the 3x3 party matrix (Ticket B-122) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Expedition")
+	TArray<FSovereignPartyMemberData> ActivePartyMembersData;
+
 	/** Difficulty scaling rate per depth floor */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Expedition")
 	float DepthEnemyBuffRate = 0.25f;
@@ -150,6 +184,18 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
 	void RecordPartyLeaderState(const FString& InClassPath, const FGuid& InGuid, const FString& InStateJson);
+
+	/**
+	 * Records an individual party member into the active party expedition roster (Ticket B-122).
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
+	void RecordPartyMemberState(int32 SlotIndex, const FString& InClassPath, const FGuid& InGuid, const FString& InStateJson, bool bIsLeader);
+
+	/**
+	 * Clears recorded party members data.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Expedition")
+	void ClearPartyMembersState();
 
 	/**
 	 * Checks if a recorded party leader vessel state is available for spawning.

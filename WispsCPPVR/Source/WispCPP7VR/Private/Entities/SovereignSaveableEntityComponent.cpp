@@ -7,6 +7,7 @@
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignAttributeComponent.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Subsystems/SovereignBridgeSubsystem.h"
 #include "SaveSystem/SovereignActorRegistry.h"
 #include "Interaction/SovereignSaveInterface.h"
@@ -300,6 +301,11 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 	{
 		IdentityObj->SetStringField(TEXT("ActorName"), Owner->GetName());
 		IdentityObj->SetStringField(TEXT("Class"), Owner->GetClass()->GetName());
+
+		if (ASovereignBaseCharacter* BaseChar = Cast<ASovereignBaseCharacter>(Owner))
+		{
+			IdentityObj->SetNumberField(TEXT("GrowthStage"), BaseChar->GetCurrentGrowthStage());
+		}
 	}
 	RootObj->SetObjectField(TEXT("Identity"), IdentityObj);
 
@@ -400,6 +406,15 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 
 		double ParadoxVal;
 		if ((*IdentityObj)->TryGetNumberField(TEXT("ParadoxDensity"), ParadoxVal)) ParadoxDensity = (float)ParadoxVal;
+
+		double StageVal;
+		if ((*IdentityObj)->TryGetNumberField(TEXT("GrowthStage"), StageVal))
+		{
+			if (ASovereignBaseCharacter* BaseChar = Cast<ASovereignBaseCharacter>(GetOwner()))
+			{
+				BaseChar->SetCurrentGrowthStage((int32)StageVal);
+			}
+		}
 	}
 
 	// 2. RESTORE UNKNOWN TAGS
