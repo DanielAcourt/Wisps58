@@ -586,15 +586,19 @@ void ASovereignBaseCharacter::OnSovereignHeartbeat()
 // Leveling up or evolving both in stats and visuals
 void ASovereignBaseCharacter::Evolve()
 {
-	CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
+	SetCurrentGrowthStage(CurrentGrowthStage + 1);
+	UE_LOG(LogTemp, Log, TEXT("[%s] Base Character Evolved to Stage %d"), *GetName(), CurrentGrowthStage);
+}
+
+void ASovereignBaseCharacter::SetCurrentGrowthStage(int32 NewStage)
+{
+	CurrentGrowthStage = FMath::Clamp(NewStage, 0, 7);
 	RefreshVisuals();
 
 	if (AttributeComponent)
 	{
 		AttributeComponent->SyncStatsFromEntity();
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[%s] Base Character Evolved to Stage %d"), *GetName(), CurrentGrowthStage);
 }
 
 void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData* InData)
