@@ -208,7 +208,15 @@ USceneComponent* ASovereignBaseCharacter::GetPossessionAttachmentComponent_Imple
 			return SkelMesh;
 		}
 	}
-	return GetRootComponent();
+	if (USceneComponent* RootComp = GetRootComponent())
+	{
+		return RootComp;
+	}
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		return CapsuleComp;
+	}
+	return GetMesh();
 }
 void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
