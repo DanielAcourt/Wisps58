@@ -343,6 +343,22 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 	}
 
 	// 3. MODULAR BROKER CATEGORIES
+	// Auto-discover and register any attached actor components implementing ISovereignBrokerInterface
+	// that haven't been registered yet (e.g., in unit tests or before BeginPlay)
+	if (AActor* Owner = GetOwner())
+	{
+		TArray<UActorComponent*> AttachedComponents;
+		Owner->GetComponents(AttachedComponents);
+		for (UActorComponent* Comp : AttachedComponents)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignBrokerInterface::StaticClass()))
+			{
+				TScriptInterface<ISovereignBrokerInterface> BrokerInterface(Comp);
+				RegisterBroker(BrokerInterface);
+			}
+		}
+	}
+
 	for (auto& Broker : RegisteredBrokers)
 	{
 		if (Broker.GetInterface())
@@ -444,6 +460,21 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 	}
 
 	// 3. RESTORE MODULES
+	// Auto-discover any attached actor components implementing ISovereignBrokerInterface
+	if (AActor* Owner = GetOwner())
+	{
+		TArray<UActorComponent*> AttachedComponents;
+		Owner->GetComponents(AttachedComponents);
+		for (UActorComponent* Comp : AttachedComponents)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignBrokerInterface::StaticClass()))
+			{
+				TScriptInterface<ISovereignBrokerInterface> BrokerInterface(Comp);
+				RegisterBroker(BrokerInterface);
+			}
+		}
+	}
+
 	for (auto& Broker : RegisteredBrokers)
 	{
 		if (Broker.GetInterface())
