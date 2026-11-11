@@ -709,6 +709,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
 	bool ValidateTopologicalReachability(int32 EntranceIdx, int32 BossIdx) const;
 
+	/** Binds perimeter sockets and passage bitmasks between two connected nodes incrementally */
+	void BindEdgeSockets(const FSovereignDungeonEdge& Edge);
+
 	/** Rebuilds fast-lookup ConnectedPassageMask on nodes strictly derived from DungeonEdges (Ticket B-090) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
 	void RebuildNodeAdjacencyCaches();

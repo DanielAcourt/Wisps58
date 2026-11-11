@@ -288,6 +288,8 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 		return;
 	}
 
+	ActiveCombatant = EnemyCombatant;
+
 	const TArray<ASovereignBaseCharacter*> LivingPlayers = GetLivingPlayerUnits();
 	if (LivingPlayers.Num() == 0)
 	{
@@ -555,6 +557,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 		else
 		{
 			// STAGE 2: Unleash attack!
+			ATBComp->SetATBState(EATBState::Charging);
 			ATBComp->OnTelegraphedAttackUnleashed.Broadcast(EnemyCombatant, SkillDef->SkillTag);
 			ATBComp->ChargingSkillInstance = FSovereignSkillInstance();
 		}
@@ -1013,7 +1016,9 @@ bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster
 
 	// 3. Determine if Healing vs Damaging
 	const bool bIsHealing = (SkillDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
-		(SkillDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly || SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies));
+		(SkillDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly ||
+		 SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies ||
+		 SkillDef->TargetPattern == ESovereignSkillTargetPattern::SingleTarget));
 
 	float TotalActionResult = 0.0f;
 

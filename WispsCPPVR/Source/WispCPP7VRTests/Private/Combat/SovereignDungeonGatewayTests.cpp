@@ -894,7 +894,10 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		// Verify Polymorph component serialization & broker integration
 		USovereignPolymorphComponent* PolyComp = NewObject<USovereignPolymorphComponent>(LeaderVessel, TEXT("PolymorphComp"));
 		LeaderVessel->AddInstanceComponent(PolyComp);
-		PolyComp->RegisterComponent();
+		if (LeaderVessel->GetWorld())
+		{
+			PolyComp->RegisterComponent();
+		}
 		LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->RegisterBroker(PolyComp);
 
 		TSharedPtr<FJsonObject> SavedRoot = LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->CaptureFullEntityState();

@@ -342,6 +342,24 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 		RootObj->SetObjectField(TEXT("UnknownTags"), TagsObj);
 	}
 
+	// Auto-discover attached components implementing ISovereignBrokerInterface prior to saving
+	if (AActor* Owner = GetOwner())
+	{
+		TArray<UActorComponent*> AttachedComponents;
+		Owner->GetComponents(AttachedComponents);
+		for (UActorComponent* Comp : AttachedComponents)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignBrokerInterface::StaticClass()))
+			{
+				TScriptInterface<ISovereignBrokerInterface> BrokerInterface(Comp);
+				if (!RegisteredBrokers.Contains(BrokerInterface))
+				{
+					RegisterBroker(BrokerInterface);
+				}
+			}
+		}
+	}
+
 	// 3. MODULAR BROKER CATEGORIES
 	for (auto& Broker : RegisteredBrokers)
 	{
@@ -441,6 +459,24 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 	if (JsonData->HasField(TEXT("Sovereign.Attributes")))
 	{
 		InfuseAttributes();
+	}
+
+	// Auto-discover attached components implementing ISovereignBrokerInterface prior to restoring modules
+	if (AActor* Owner = GetOwner())
+	{
+		TArray<UActorComponent*> AttachedComponents;
+		Owner->GetComponents(AttachedComponents);
+		for (UActorComponent* Comp : AttachedComponents)
+		{
+			if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignBrokerInterface::StaticClass()))
+			{
+				TScriptInterface<ISovereignBrokerInterface> BrokerInterface(Comp);
+				if (!RegisteredBrokers.Contains(BrokerInterface))
+				{
+					RegisterBroker(BrokerInterface);
+				}
+			}
+		}
 	}
 
 	// 3. RESTORE MODULES
