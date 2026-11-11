@@ -342,6 +342,7 @@ int32 ASovereignDungeonGenerator::GenerateControlledLoops(FRandomStream& Stream)
 		LoopEdge.DoorState = EDoorState::Open;
 
 		DungeonEdges.Add(LoopEdge);
+		BindEdgeSockets(LoopEdge);
 		LoopsAdded++;
 
 		UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Created Shortcut Loop Edge %d between Node %d and Node %d (Topological Dist: %d)."),
@@ -501,6 +502,94 @@ bool ASovereignDungeonGenerator::ValidateTopologicalReachability(int32 EntranceI
 	return true;
 }
 
+void ASovereignDungeonGenerator::BindEdgeSockets(const FSovereignDungeonEdge& Edge)
+{
+	if (!DungeonNodes.IsValidIndex(Edge.NodeIndexA) || !DungeonNodes.IsValidIndex(Edge.NodeIndexB))
+	{
+		return;
+	}
+
+	const EDungeonDirection DirA = Edge.DirectionAtoB;
+	if (DirA == EDungeonDirection::None)
+	{
+		return;
+	}
+
+	// Ensure perimeter sockets are initialized
+	if (DungeonNodes[Edge.NodeIndexA].PerimeterSockets.Num() == 0)
+	{
+		DungeonNodes[Edge.NodeIndexA].GeneratePerimeterSockets();
+	}
+	if (DungeonNodes[Edge.NodeIndexB].PerimeterSockets.Num() == 0)
+	{
+		DungeonNodes[Edge.NodeIndexB].GeneratePerimeterSockets();
+	}
+
+	// 1. Bitmask update on Node A
+	const uint8 DirBitA = (1 << (uint8)DirA);
+	DungeonNodes[Edge.NodeIndexA].ConnectedPassageMask |= DirBitA;
+
+	// 2. Bitmask update on Node B (Opposite direction)
+	uint8 OppDir = 0;
+	switch (DirA)
+	{
+	case EDungeonDirection::North: OppDir = (uint8)EDungeonDirection::South; break;
+	case EDungeonDirection::East:  OppDir = (uint8)EDungeonDirection::West; break;
+	case EDungeonDirection::South: OppDir = (uint8)EDungeonDirection::North; break;
+	case EDungeonDirection::West:  OppDir = (uint8)EDungeonDirection::East; break;
+	default: break;
+	}
+	const uint8 DirBitB = (1 << OppDir);
+	DungeonNodes[Edge.NodeIndexB].ConnectedPassageMask |= DirBitB;
+
+	// Cardinal offset matching DirA
+	FIntPoint OffsetAtoB(0, 0);
+	switch (DirA)
+	{
+	case EDungeonDirection::North: OffsetAtoB = FIntPoint(1, 0); break;
+	case EDungeonDirection::East:  OffsetAtoB = FIntPoint(0, 1); break;
+	case EDungeonDirection::South: OffsetAtoB = FIntPoint(-1, 0); break;
+	case EDungeonDirection::West:  OffsetAtoB = FIntPoint(0, -1); break;
+	default: break;
+	}
+
+	const TArray<FIntPoint> OccupiedCellsA = DungeonNodes[Edge.NodeIndexA].GetOccupiedCells();
+	const TArray<FIntPoint> OccupiedCellsB = DungeonNodes[Edge.NodeIndexB].GetOccupiedCells();
+
+	// 3. Update Socket state on Node A (Ticket B-095 coordinate-exact binding)
+	for (FSovereignDoorwaySocket& SockA : DungeonNodes[Edge.NodeIndexA].PerimeterSockets)
+	{
+		if (!SockA.bIsConnected && SockA.FacingDirection == DirA)
+		{
+			const FIntPoint TargetNeighborCoord = SockA.CellCoord + OffsetAtoB;
+			if (OccupiedCellsB.Contains(TargetNeighborCoord))
+			{
+				SockA.bIsConnected = true;
+				SockA.ConnectedEdgeId = Edge.EdgeId;
+				SockA.ConnectedNodeIndex = Edge.NodeIndexB;
+				break;
+			}
+		}
+	}
+
+	// 4. Update Socket state on Node B (Ticket B-095 coordinate-exact binding)
+	const FIntPoint OffsetBtoA(-OffsetAtoB.X, -OffsetAtoB.Y);
+	for (FSovereignDoorwaySocket& SockB : DungeonNodes[Edge.NodeIndexB].PerimeterSockets)
+	{
+		if (!SockB.bIsConnected && SockB.FacingDirection == (EDungeonDirection)OppDir)
+		{
+			const FIntPoint TargetNeighborCoord = SockB.CellCoord + OffsetBtoA;
+			if (OccupiedCellsA.Contains(TargetNeighborCoord))
+			{
+				SockB.bIsConnected = true;
+				SockB.ConnectedEdgeId = Edge.EdgeId;
+				SockB.ConnectedNodeIndex = Edge.NodeIndexA;
+				break;
+			}
+		}
+	}
+}
+
 void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 {
 	for (int32 i = 0; i < DungeonNodes.Num(); ++i)
@@ -525,76 +614,7 @@ void ASovereignDungeonGenerator::RebuildNodeAdjacencyCaches()
 
 	for (const FSovereignDungeonEdge& Edge : DungeonEdges)
 	{
-		if (DungeonNodes.IsValidIndex(Edge.NodeIndexA) && DungeonNodes.IsValidIndex(Edge.NodeIndexB))
-		{
-			const EDungeonDirection DirA = Edge.DirectionAtoB;
-			if (DirA != EDungeonDirection::None)
-			{
-				// 1. Bitmask update on Node A
-				const uint8 DirBitA = (1 << (uint8)DirA);
-				DungeonNodes[Edge.NodeIndexA].ConnectedPassageMask |= DirBitA;
-
-				// 2. Bitmask update on Node B (Opposite direction)
-				uint8 OppDir = 0;
-				switch (DirA)
-				{
-				case EDungeonDirection::North: OppDir = (uint8)EDungeonDirection::South; break;
-				case EDungeonDirection::East:  OppDir = (uint8)EDungeonDirection::West; break;
-				case EDungeonDirection::South: OppDir = (uint8)EDungeonDirection::North; break;
-				case EDungeonDirection::West:  OppDir = (uint8)EDungeonDirection::East; break;
-				default: break;
-				}
-				const uint8 DirBitB = (1 << OppDir);
-				DungeonNodes[Edge.NodeIndexB].ConnectedPassageMask |= DirBitB;
-
-				// Cardinal offset matching DirA
-				FIntPoint OffsetAtoB(0, 0);
-				switch (DirA)
-				{
-				case EDungeonDirection::North: OffsetAtoB = FIntPoint(1, 0); break;
-				case EDungeonDirection::East:  OffsetAtoB = FIntPoint(0, 1); break;
-				case EDungeonDirection::South: OffsetAtoB = FIntPoint(-1, 0); break;
-				case EDungeonDirection::West:  OffsetAtoB = FIntPoint(0, -1); break;
-				default: break;
-				}
-
-				const TArray<FIntPoint> OccupiedCellsA = DungeonNodes[Edge.NodeIndexA].GetOccupiedCells();
-				const TArray<FIntPoint> OccupiedCellsB = DungeonNodes[Edge.NodeIndexB].GetOccupiedCells();
-
-				// 3. Update Socket state on Node A (Ticket B-095 coordinate-exact binding)
-				for (FSovereignDoorwaySocket& SockA : DungeonNodes[Edge.NodeIndexA].PerimeterSockets)
-				{
-					if (!SockA.bIsConnected && SockA.FacingDirection == DirA)
-					{
-						const FIntPoint TargetNeighborCoord = SockA.CellCoord + OffsetAtoB;
-						if (OccupiedCellsB.Contains(TargetNeighborCoord))
-						{
-							SockA.bIsConnected = true;
-							SockA.ConnectedEdgeId = Edge.EdgeId;
-							SockA.ConnectedNodeIndex = Edge.NodeIndexB;
-							break;
-						}
-					}
-				}
-
-				// 4. Update Socket state on Node B (Ticket B-095 coordinate-exact binding)
-				const FIntPoint OffsetBtoA(-OffsetAtoB.X, -OffsetAtoB.Y);
-				for (FSovereignDoorwaySocket& SockB : DungeonNodes[Edge.NodeIndexB].PerimeterSockets)
-				{
-					if (!SockB.bIsConnected && SockB.FacingDirection == (EDungeonDirection)OppDir)
-					{
-						const FIntPoint TargetNeighborCoord = SockB.CellCoord + OffsetBtoA;
-						if (OccupiedCellsA.Contains(TargetNeighborCoord))
-						{
-							SockB.bIsConnected = true;
-							SockB.ConnectedEdgeId = Edge.EdgeId;
-							SockB.ConnectedNodeIndex = Edge.NodeIndexA;
-							break;
-						}
-					}
-				}
-			}
-		}
+		BindEdgeSockets(Edge);
 	}
 }
 
@@ -778,6 +798,7 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			Edge.PassageType = EPassageType::OpenArchway;
 			Edge.DoorState = EDoorState::Open;
 			DungeonEdges.Add(Edge);
+			BindEdgeSockets(Edge);
 
 			CurrentIndex = NextIndex;
 		}
@@ -864,6 +885,7 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 		{
 			// Ensure parent node is converted to EliteChamber
 			DungeonNodes[ChosenEliteParentIdx].TileType = EDungeonTileType::EliteChamber;
+			DungeonNodes[ChosenEliteParentIdx].MaxConnections = GetDefaultMaxConnectionsForTileType(EDungeonTileType::EliteChamber);
 			DungeonNodes[ChosenEliteParentIdx].bHasFixedEliteMob = true;
 
 			const int32 BossIndex = DungeonNodes.Num();
@@ -893,6 +915,7 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			BossEdge.PassageType = EPassageType::StandardDoorway;
 			BossEdge.DoorState = EDoorState::SealedEliteGate;
 			DungeonEdges.Add(BossEdge);
+			BindEdgeSockets(BossEdge);
 
 			UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Guaranteed 4x4 Boss Chamber Placed at Anchor (%d, %d) connected to Elite Chamber %d facing %d."),
 				ChosenBossCoord.X, ChosenBossCoord.Y, ChosenEliteParentIdx, (int32)ChosenBossDir);
@@ -1025,6 +1048,7 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			BranchEdge.PassageType = EPassageType::OpenArchway;
 			BranchEdge.DoorState = EDoorState::Open;
 			DungeonEdges.Add(BranchEdge);
+			BindEdgeSockets(BranchEdge);
 
 			// Decrement budget counters
 			if (BranchType == EDungeonTileType::Colosseum) ColosseumCount--;
@@ -1118,6 +1142,7 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 						StairEdge.PassageType = EPassageType::OpenArchway;
 						StairEdge.DoorState = EDoorState::Open;
 						DungeonEdges.Add(StairEdge);
+						BindEdgeSockets(StairEdge);
 
 						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Successfully placed dedicated 4x4 Stair Room %d off Parent %d!"),
 							StairIdx, CandidateParent);
@@ -1847,6 +1872,10 @@ void ASovereignDungeonGenerator::SpawnDefaultLightingRig()
 void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 {
 	UWorld* World = GetWorld();
+	if (!World && GEngine && GEngine->GetWorldContexts().Num() > 0)
+	{
+		World = GEngine->GetWorldContexts()[0].World();
+	}
 	if (!World)
 	{
 		return;
