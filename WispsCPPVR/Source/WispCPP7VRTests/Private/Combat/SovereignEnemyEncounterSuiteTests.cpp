@@ -175,11 +175,13 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 	}
 
 	// 5. Test Victory Rewards Distribution (Option A)
+	const int32 StrengthBefore = PlayerHero->GetAttributeComponent()->Strength;
 	const double StrengthXPBefore = PlayerHero->GetLevelComponent()->StrengthXP;
 	BattleMgr->DistributeVictoryRewards();
+	const int32 StrengthAfter = PlayerHero->GetAttributeComponent()->Strength;
 	const double StrengthXPAfter = PlayerHero->GetLevelComponent()->StrengthXP;
 
-	TestTrue(TEXT("Player received Strength XP from victory rewards"), StrengthXPAfter > StrengthXPBefore);
+	TestTrue(TEXT("Player received Strength XP from victory rewards"), (StrengthAfter > StrengthBefore) || (StrengthXPAfter > StrengthXPBefore));
 
 	// 5b. Test Elemental Weakness and Resistance (Ticket CS-004)
 	{

@@ -207,27 +207,56 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Node has non-zero connected passage mask"), Node.ConnectedPassageMask > 0);
 	}
 
-	// 6. Test Ticket B-095 Multi-Cell Perimeter Boundary & Edge-Aware Snapping Invariants
-	// Invariant: Total wall instances strictly equals the sum of unconnected perimeter sockets across all nodes
+	// 6. Test Ticket B-095 Multi-Cell Perimeter Boundary & Edge-Aware Snapping Invariants with Wall Deduplication
+	// Invariant: Total wall instances strictly equals the sum of unique boundary edges (zero duplicate overlapping walls)
 	// Invariant: Zero internal walls inside multi-cell rooms (only perimeter sockets spawn walls)
-	int32 TotalUnconnectedSockets = 0;
-	int32 TotalConnectedSockets = 0;
+	TSet<FIntPoint> UniquePassageEdges;
+	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
+	{
+		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
+		{
+			if (Socket.bIsConnected)
+			{
+				FIntPoint StepDir = FIntPoint::ZeroValue;
+				switch (Socket.FacingDirection)
+				{
+				case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+				default: break;
+				}
+				UniquePassageEdges.Add(Socket.CellCoord * 2 + StepDir);
+			}
+		}
+	}
+
+	TSet<FIntPoint> UniqueWallEdges;
 	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
 	{
 		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
 		{
 			if (!Socket.bIsConnected)
 			{
-				TotalUnconnectedSockets++;
-			}
-			else
-			{
-				TotalConnectedSockets++;
+				FIntPoint StepDir = FIntPoint::ZeroValue;
+				switch (Socket.FacingDirection)
+				{
+				case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+				default: break;
+				}
+				const FIntPoint EdgeKey = Socket.CellCoord * 2 + StepDir;
+				if (!UniquePassageEdges.Contains(EdgeKey))
+				{
+					UniqueWallEdges.Add(EdgeKey);
+				}
 			}
 		}
 	}
-	TestEqual(TEXT("Wall instances strictly equal unconnected perimeter socket count (zero interior walls)"),
-		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, TotalUnconnectedSockets);
+	TestEqual(TEXT("Wall instances strictly equal unique boundary edge count (zero duplicate overlapping walls)"),
+		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, UniqueWallEdges.Num());
 
 	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances when bUseMetricModularMeshScale is false
 	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
@@ -243,10 +272,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Test Procedural Archway Fallback
 	Generator->bProceduralArchwayFallback = true;
 	Generator->SpawnDungeonGeometry();
-	const int32 ExpectedArchwayWallCount = TotalUnconnectedSockets + (TotalConnectedSockets * 3);
+	const int32 ExpectedArchwayWallCount = UniqueWallEdges.Num() + (UniquePassageEdges.Num() * 3);
 	TestEqual(TEXT("Wall instances include 3-part archway posts and lintel when bProceduralArchwayFallback is true"),
 		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, ExpectedArchwayWallCount);
-
 	// Restore Option A
 	Generator->bProceduralArchwayFallback = false;
 	Generator->SpawnDungeonGeometry();
@@ -894,7 +922,10 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		// Verify Polymorph component serialization & broker integration
 		USovereignPolymorphComponent* PolyComp = NewObject<USovereignPolymorphComponent>(LeaderVessel, TEXT("PolymorphComp"));
 		LeaderVessel->AddInstanceComponent(PolyComp);
-		PolyComp->RegisterComponent();
+		if (LeaderVessel->GetWorld())
+		{
+			PolyComp->RegisterComponent();
+		}
 		LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->RegisterBroker(PolyComp);
 
 		TSharedPtr<FJsonObject> SavedRoot = LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->CaptureFullEntityState();

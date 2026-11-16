@@ -9,6 +9,7 @@
 
 class ASovereignBaseCharacter;
 class UStaticMesh;
+class UMaterialInterface;
 
 // --- Direction, Passage, and Door Enums (Ticket B-090) ---
 
@@ -456,6 +457,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> WallMesh;
 
+	/** Optional material override for standard floor tiles (if unset, uses the material assigned to FloorMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UMaterialInterface> FloorMaterial;
+
+	/** Optional material override for perimeter walls (if unset, uses the material assigned to WallMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UMaterialInterface> WallMaterial;
+
 	/** Optional custom Blueprint actor class for interactive swinging doors (Ticket B-105, inherits ASovereignDungeonDoor) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignDungeonDoor> DoorBlueprintClass;
@@ -708,6 +717,9 @@ public:
 	/** Validates structural reachability and gameplay pacing via pure-data BFS (Ticket B-090) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
 	bool ValidateTopologicalReachability(int32 EntranceIdx, int32 BossIdx) const;
+
+	/** Binds perimeter sockets and passage bitmasks between two connected nodes incrementally */
+	void BindEdgeSockets(const FSovereignDungeonEdge& Edge);
 
 	/** Rebuilds fast-lookup ConnectedPassageMask on nodes strictly derived from DungeonEdges (Ticket B-090) */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Dungeon|Validation")
