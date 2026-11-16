@@ -25,6 +25,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/StaticMeshActor.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -1316,10 +1317,26 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 	if (FloorMesh)
 	{
 		FloorInstancedComponent->SetStaticMesh(FloorMesh);
+		if (FloorMaterial)
+		{
+			FloorInstancedComponent->SetMaterial(0, FloorMaterial);
+		}
+		else
+		{
+			FloorInstancedComponent->EmptyOverrideMaterials();
+		}
 	}
 	if (WallMesh)
 	{
 		WallInstancedComponent->SetStaticMesh(WallMesh);
+		if (WallMaterial)
+		{
+			WallInstancedComponent->SetMaterial(0, WallMaterial);
+		}
+		else
+		{
+			WallInstancedComponent->EmptyOverrideMaterials();
+		}
 	}
 
 	const FVector Origin = GetActorLocation();
@@ -1344,9 +1361,32 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 		}
 	}
 
-	// 3. Multi-Cell Perimeter Boundary & Edge-Aware Doorway Snapping (Ticket B-095)
+	// 3. Multi-Cell Perimeter Boundary & Edge-Aware Doorway Snapping (Ticket B-095) with Wall-on-Wall Deduplication
 	// Iterate strictly over Node.PerimeterSockets - internal cells have zero sockets, guaranteeing zero interior walls!
 	TSet<int32> ProcessedSealedGates;
+	TSet<FIntPoint> OccupiedWallEdges;
+	TSet<FIntPoint> OccupiedPassageEdges;
+
+	// Pre-pass: Index all connected passage/doorway edges so solid walls never spawn over openings
+	for (const FSovereignDungeonNode& Node : DungeonNodes)
+	{
+		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
+		{
+			if (Socket.bIsConnected)
+			{
+				FIntPoint StepDir = FIntPoint::ZeroValue;
+				switch (Socket.FacingDirection)
+				{
+				case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+				default: break;
+				}
+				OccupiedPassageEdges.Add(Socket.CellCoord * 2 + StepDir);
+			}
+		}
+	}
 
 	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
 	{
@@ -1355,6 +1395,17 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
 		{
+			FIntPoint StepDir = FIntPoint::ZeroValue;
+			switch (Socket.FacingDirection)
+			{
+			case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+			case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+			case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+			case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+			default: break;
+			}
+			const FIntPoint EdgeKey = Socket.CellCoord * 2 + StepDir;
+
 			// World coordinate of this specific perimeter cell
 			const FVector CellPos = Origin + FVector(Socket.CellCoord.X * TILE_SIZE, Socket.CellCoord.Y * TILE_SIZE, 0.0f);
 
@@ -1399,8 +1450,12 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 			if (!Socket.bIsConnected)
 			{
-				// Unconnected perimeter socket: Spawn solid outer boundary wall
-				WallInstancedComponent->AddInstance(FaceTransform);
+				// Unconnected perimeter socket: Spawn solid outer boundary wall unless already spawned by an adjacent room or occupied by a passage
+				if (!OccupiedWallEdges.Contains(EdgeKey) && !OccupiedPassageEdges.Contains(EdgeKey))
+				{
+					WallInstancedComponent->AddInstance(FaceTransform);
+					OccupiedWallEdges.Add(EdgeKey);
+				}
 			}
 			else
 			{
@@ -1451,9 +1506,11 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 					}
 				}
 
-				// If no DoorBlueprintClass was assigned and bProceduralArchwayFallback is enabled, construct primitive archway opening
-				if (!DoorBlueprintClass && bProceduralArchwayFallback && WallInstancedComponent)
+				// If no DoorBlueprintClass was assigned and bProceduralArchwayFallback is enabled, construct primitive archway opening (deduplicated per edge)
+				if (!DoorBlueprintClass && bProceduralArchwayFallback && WallInstancedComponent && !OccupiedWallEdges.Contains(EdgeKey))
 				{
+					OccupiedWallEdges.Add(EdgeKey);
+
 					// Construct a 400w x 500h opening using left post, right post, and top lintel
 					const FVector LeftPostLocal(-350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform LeftTransform = FaceTransform;
@@ -1931,6 +1988,14 @@ void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 							if (FloorActor->GetStaticMeshComponent() && PlatformMeshToUse)
 							{
 								FloorActor->GetStaticMeshComponent()->SetStaticMesh(PlatformMeshToUse);
+								if (FloorMaterial)
+								{
+									FloorActor->GetStaticMeshComponent()->SetMaterial(0, FloorMaterial);
+								}
+								else
+								{
+									FloorActor->GetStaticMeshComponent()->EmptyOverrideMaterials();
+								}
 								FloorActor->SetActorScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
 							}
 #if WITH_EDITOR
@@ -1954,6 +2019,14 @@ void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 						if (WallActor->GetStaticMeshComponent() && WallMeshToUse)
 						{
 							WallActor->GetStaticMeshComponent()->SetStaticMesh(WallMeshToUse);
+							if (WallMaterial)
+							{
+								WallActor->GetStaticMeshComponent()->SetMaterial(0, WallMaterial);
+							}
+							else
+							{
+								WallActor->GetStaticMeshComponent()->EmptyOverrideMaterials();
+							}
 							WallActor->SetActorScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
 						}
 #if WITH_EDITOR
