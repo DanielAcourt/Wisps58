@@ -3,29 +3,106 @@
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignPlayerWisp.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignBattleManager.h"
+#include "Combat/SovereignDungeonSubsystem.h"
 #include "Components/SovereignPartyComponent.h"
+#include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include "Engine/GameInstance.h"
 #include "GameFramework/PlayerController.h"
 
 ASovereignDungeonGameMode::ASovereignDungeonGameMode()
 {
-	bLockPossessionToLeader = true;
+	bLockPossessionToLeader = false;
 	DefaultPawnClass = ASovereignBaseCharacter::StaticClass();
+	DungeonGeneratorClass = ASovereignDungeonGenerator::StaticClass();
+}
+
+UClass* ASovereignDungeonGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->HasPartyLeaderState())
+				{
+					FString ClassPath = DungeonSub->PartyLeaderClassPath;
+					// Resolve Blueprint generated class if standard path
+					if (!ClassPath.EndsWith(TEXT("_C")))
+					{
+						ClassPath += TEXT("_C");
+					}
+
+					if (UClass* LoadedClass = LoadClass<APawn>(nullptr, *ClassPath))
+					{
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Dynamic vessel pawn class resolved for expedition: %s"), *LoadedClass->GetName());
+						return LoadedClass;
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[DungeonGameMode] Failed to load party leader vessel class [%s], using default."), *ClassPath);
+					}
+				}
+			}
+		}
+	}
+
+	return Super::GetDefaultPawnClassForController_Implementation(InController);
 }
 
 void ASovereignDungeonGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 1. Locate the dungeon generator in the world
+	// 1. Locate the dungeon generator in the world (or auto-spawn if none exists)
 	TArray<AActor*> FoundGenerators;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASovereignDungeonGenerator::StaticClass(), FoundGenerators);
 	if (FoundGenerators.Num() > 0)
 	{
 		ActiveDungeonGenerator = Cast<ASovereignDungeonGenerator>(FoundGenerators[0]);
+	}
+	else if (GetWorld())
+	{
+		UClass* GenClassToSpawn = DungeonGeneratorClass ? DungeonGeneratorClass.Get() : ASovereignDungeonGenerator::StaticClass();
+
+		// Check if DungeonSubsystem specifies a custom Blueprint generator class from the gateway
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->DungeonGeneratorClassOverride)
+				{
+					GenClassToSpawn = DungeonSub->DungeonGeneratorClassOverride;
+				}
+				else if (!DungeonSub->DungeonGeneratorClassPath.IsEmpty())
+				{
+					FString GenPath = DungeonSub->DungeonGeneratorClassPath;
+					if (!GenPath.EndsWith(TEXT("_C")))
+					{
+						GenPath += TEXT("_C");
+					}
+					if (UClass* LoadedGenClass = LoadClass<ASovereignDungeonGenerator>(nullptr, *GenPath))
+					{
+						GenClassToSpawn = LoadedGenClass;
+					}
+				}
+			}
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		ActiveDungeonGenerator = GetWorld()->SpawnActor<ASovereignDungeonGenerator>(GenClassToSpawn, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] No generator found in scene. Auto-spawned %s (Class: %s) at runtime."),
+			ActiveDungeonGenerator ? *ActiveDungeonGenerator->GetName() : TEXT("None"),
+			GenClassToSpawn ? *GenClassToSpawn->GetName() : TEXT("None"));
 	}
 
 	// 2. Align local player controller if already logged in
@@ -60,12 +137,6 @@ void ASovereignDungeonGameMode::SetupPartyLeaderAtEntrance(APlayerController* PC
 	// If player spawned as a Wisp, ensure it is possessing or transitioning into the party leader vessel
 	if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(ControlledPawn))
 	{
-		if (bLockPossessionToLeader)
-		{
-			// Prevent unpossession keybind from releasing the wisp in the dungeon
-			Wisp->SetIsPossessing(true);
-		}
-
 		if (AActor* Host = Wisp->GetCurrentHost())
 		{
 			DungeonPartyLeader = Cast<ASovereignBaseCharacter>(Host);
@@ -74,6 +145,113 @@ void ASovereignDungeonGameMode::SetupPartyLeaderAtEntrance(APlayerController* PC
 	else if (ASovereignBaseCharacter* Character = Cast<ASovereignBaseCharacter>(ControlledPawn))
 	{
 		DungeonPartyLeader = Character;
+	}
+
+	// Restore cached vessel stats, attributes, Qi, inventory, and bio vitals from DungeonSubsystem
+	if (DungeonPartyLeader)
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (!DungeonSub->PartyLeaderStateJson.IsEmpty())
+				{
+					TSharedPtr<FJsonObject> StateJsonObj;
+					TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(DungeonSub->PartyLeaderStateJson);
+					if (FJsonSerializer::Deserialize(Reader, StateJsonObj) && StateJsonObj.IsValid())
+					{
+						if (USovereignSaveableEntityComponent* SaveComp = DungeonPartyLeader->FindComponentByClass<USovereignSaveableEntityComponent>())
+						{
+							SaveComp->ApplyStateFromJsonObject(StateJsonObj);
+							UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Restored runtime stats and inventory to party leader vessel [%s] from subsystem state."),
+								*DungeonPartyLeader->GetName());
+						}
+					}
+				}
+
+				// Ticket B-122: Reconstitute Non-Leader Party Members on the dedicated Battle Arena
+				USovereignPartyComponent* PartyComp = DungeonPartyLeader->GetPartyComponent();
+				UWorld* World = GetWorld();
+
+				if (PartyComp && World && DungeonSub->ActivePartyMembersData.Num() > 0)
+				{
+					for (const FSovereignPartyMemberData& MemberData : DungeonSub->ActivePartyMembersData)
+					{
+						// Leader is already spawned and possessed
+						if (MemberData.bIsLeader)
+						{
+							if (PartyComp->GridSlots.IsValidIndex(MemberData.SlotIndex))
+							{
+								PartyComp->AssignPartyMember(MemberData.SlotIndex, DungeonPartyLeader, true);
+							}
+							continue;
+						}
+
+						if (MemberData.ClassPath.IsEmpty())
+						{
+							continue;
+						}
+
+						FString MemberClassPath = MemberData.ClassPath;
+						if (!MemberClassPath.EndsWith(TEXT("_C")))
+						{
+							MemberClassPath += TEXT("_C");
+						}
+
+						UClass* MemberClass = LoadClass<ASovereignBaseCharacter>(nullptr, *MemberClassPath);
+						if (!MemberClass)
+						{
+							MemberClass = ASovereignBaseCharacter::StaticClass();
+						}
+
+						FActorSpawnParameters SpawnParams;
+						SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+						ASovereignBaseCharacter* SpawnedMember = World->SpawnActor<ASovereignBaseCharacter>(MemberClass, FVector(0, 0, -50000.0f), FRotator::ZeroRotator, SpawnParams);
+
+						if (SpawnedMember)
+						{
+							if (!MemberData.StateJson.IsEmpty())
+							{
+								TSharedPtr<FJsonObject> MemberJsonObj;
+								TSharedRef<TJsonReader<>> MemberReader = TJsonReaderFactory<>::Create(MemberData.StateJson);
+								if (FJsonSerializer::Deserialize(MemberReader, MemberJsonObj) && MemberJsonObj.IsValid())
+								{
+									if (USovereignSaveableEntityComponent* MemberSaveComp = SpawnedMember->FindComponentByClass<USovereignSaveableEntityComponent>())
+									{
+										MemberSaveComp->ApplyStateFromJsonObject(MemberJsonObj);
+									}
+								}
+							}
+
+							SpawnedMember->SetActorHiddenInGame(true);
+							SpawnedMember->SetActorEnableCollision(false);
+
+							if (PartyComp->GridSlots.IsValidIndex(MemberData.SlotIndex))
+							{
+								PartyComp->AssignPartyMember(MemberData.SlotIndex, SpawnedMember, false);
+								UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Reconstituted party member [%s] in slot %d."),
+									*SpawnedMember->GetName(), MemberData.SlotIndex);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Ensure the dragon vessel's Input Mapping Context is active on the local player controller
+		if (ULocalPlayer* LocalPlayer = PC->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LocalPlayer))
+			{
+				if (UInputMappingContext* VesselIMC = DungeonPartyLeader->GetDefaultMappingContext())
+				{
+					Subsystem->RemoveMappingContext(VesselIMC);
+					Subsystem->AddMappingContext(VesselIMC, 0);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Activated vessel DefaultMappingContext [%s] for %s"),
+						*VesselIMC->GetName(), *DungeonPartyLeader->GetName());
+				}
+			}
+		}
 	}
 
 	// Teleport the party leader to the Entrance Room WorldTransform

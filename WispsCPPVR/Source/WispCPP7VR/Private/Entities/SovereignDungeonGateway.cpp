@@ -2,12 +2,17 @@
 
 #include "Entities/SovereignDungeonGateway.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "Entities/SovereignPlayerWisp.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignQiComponent.h"
+#include "Components/SovereignPartyComponent.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "SaveSystem/SovereignSaveManager.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
 #include "Components/StaticMeshComponent.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Engine/GameInstance.h"
@@ -145,6 +150,33 @@ bool ASovereignDungeonGateway::EnterDungeon(ASovereignBaseCharacter* PartyLeader
 		return false;
 	}
 
+	// Ticket B-121: Verify physical vessel. An unpossessed Spirit Wisp cannot enter a dungeon directly.
+	ASovereignBaseCharacter* EffectiveLeaderVessel = PartyLeader;
+	if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(PartyLeader))
+	{
+		if (AActor* Host = Wisp->GetCurrentHost())
+		{
+			EffectiveLeaderVessel = Cast<ASovereignBaseCharacter>(Host);
+		}
+		else
+		{
+			EffectiveLeaderVessel = nullptr;
+		}
+
+		if (!EffectiveLeaderVessel)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[DungeonGateway] Cannot enter dungeon: Interactor is an unpossessed Spirit Wisp. Physical vessel required!"));
+			OnUnpossessedWispInteraction.Broadcast(Wisp);
+			return false;
+		}
+	}
+
+	if (!EffectiveLeaderVessel)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGateway] Cannot enter dungeon: No valid physical vessel provided."));
+		return false;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World && PartyLeader)
 	{
@@ -167,7 +199,7 @@ bool ASovereignDungeonGateway::EnterDungeon(ASovereignBaseCharacter* PartyLeader
 		CurrentMapName = FName(*RawMapName);
 	}
 
-	// 3. Save Garden World State
+	// 4. Save Garden World State
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	if (GI)
 	{
@@ -177,10 +209,94 @@ bool ASovereignDungeonGateway::EnterDungeon(ASovereignBaseCharacter* PartyLeader
 			SaveManager->SaveWorldState(GardenSaveSlot, true);
 		}
 
-		// 4. Record Expedition parameters in GameInstance Subsystem
+		// 5. Record Expedition parameters and Party Leader Vessel in GameInstance Subsystem
 		if (USovereignDungeonSubsystem* DungeonSubsystem = GI->GetSubsystem<USovereignDungeonSubsystem>())
 		{
+			DungeonSubsystem->TargetRoomCount = TargetRoomCount;
+			DungeonSubsystem->SpecialRoomPercentage = SpecialRoomPercentage;
+			DungeonSubsystem->TreasureRoomRatio = TreasureRoomRatio;
+			DungeonSubsystem->RestSanctuaryRatio = RestSanctuaryRatio;
+			DungeonSubsystem->GrandChamberRatio = GrandChamberRatio;
+			DungeonSubsystem->ColosseumRatio = ColosseumRatio;
+
+			if (DungeonGeneratorBlueprintClass)
+			{
+				DungeonSubsystem->DungeonGeneratorClassOverride = DungeonGeneratorBlueprintClass;
+				DungeonSubsystem->DungeonGeneratorClassPath = DungeonGeneratorBlueprintClass->GetPathName();
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] Configured custom Dungeon Generator class [%s] for expedition."),
+					*DungeonSubsystem->DungeonGeneratorClassPath);
+			}
+
 			DungeonSubsystem->RecordExpedition(SeedToUse, EnemyBuff, RewardMult, CurrentMapName, GardenSaveSlot);
+
+			if (EffectiveLeaderVessel)
+			{
+				const FString VesselClassPath = EffectiveLeaderVessel->GetClass()->GetPathName();
+				FGuid VesselGuid;
+				FString SerializedStateJson;
+
+				if (USovereignSaveableEntityComponent* SaveComp = EffectiveLeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>())
+				{
+					VesselGuid = SaveComp->EntityID;
+					TSharedPtr<FJsonObject> StateObj = SaveComp->CaptureFullEntityState();
+					if (StateObj.IsValid())
+					{
+						TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&SerializedStateJson);
+						FJsonSerializer::Serialize(StateObj.ToSharedRef(), Writer);
+					}
+				}
+
+				DungeonSubsystem->RecordPartyLeaderState(VesselClassPath, VesselGuid, SerializedStateJson);
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] Cached party leader vessel [%s] (Class: %s) for dungeon expedition."),
+					*EffectiveLeaderVessel->GetName(), *VesselClassPath);
+
+				// Ticket B-122: Serialize full 3x3 Party Roster into USovereignDungeonSubsystem
+				DungeonSubsystem->ClearPartyMembersState();
+
+				USovereignPartyComponent* PartyComp = EffectiveLeaderVessel->GetPartyComponent();
+				if (!PartyComp && PartyLeader)
+				{
+					PartyComp = PartyLeader->GetPartyComponent();
+				}
+
+				if (PartyComp)
+				{
+					for (int32 SlotIdx = 0; SlotIdx < PartyComp->GridSlots.Num(); ++SlotIdx)
+					{
+						const FSovereignPartySlot& Slot = PartyComp->GridSlots[SlotIdx];
+						if (!Slot.IsOccupied())
+						{
+							continue;
+						}
+
+						ASovereignBaseCharacter* MemberChar = Slot.MemberCharacter.Get();
+						if (!MemberChar)
+						{
+							continue;
+						}
+
+						const FString MemberClassPath = MemberChar->GetClass()->GetPathName();
+						FGuid MemberGuid = Slot.MemberId;
+						FString MemberStateJson;
+
+						if (USovereignSaveableEntityComponent* MemberSaveComp = MemberChar->FindComponentByClass<USovereignSaveableEntityComponent>())
+						{
+							MemberGuid = MemberSaveComp->EntityID;
+							TSharedPtr<FJsonObject> MemberStateObj = MemberSaveComp->CaptureFullEntityState();
+							if (MemberStateObj.IsValid())
+							{
+								TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&MemberStateJson);
+								FJsonSerializer::Serialize(MemberStateObj.ToSharedRef(), Writer);
+							}
+						}
+
+						const bool bIsLeaderSlot = (MemberChar == EffectiveLeaderVessel) || Slot.bIsLeader;
+						DungeonSubsystem->RecordPartyMemberState(SlotIdx, MemberClassPath, MemberGuid, MemberStateJson, bIsLeaderSlot);
+					}
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] Cached %d party member(s) into DungeonSubsystem for expedition."),
+						DungeonSubsystem->ActivePartyMembersData.Num());
+				}
+			}
 		}
 	}
 
@@ -210,11 +326,26 @@ void ASovereignDungeonGateway::OnInteract_Implementation(AActor* Interactor)
 	else
 	{
 		ASovereignBaseCharacter* InteractingCharacter = Cast<ASovereignBaseCharacter>(Interactor);
+		if (ASovereignPlayerWisp* Wisp = Cast<ASovereignPlayerWisp>(InteractingCharacter))
+		{
+			if (!Wisp->IsPossessing() || !Wisp->GetCurrentHost())
+			{
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGateway] Unpossessed Wisp interacted with Gateway. Displaying inspection UI."));
+				OnUnpossessedWispInteraction.Broadcast(Wisp);
+				return;
+			}
+		}
+
 		EnterDungeon(InteractingCharacter);
 	}
 }
 
 FString ASovereignDungeonGateway::GetInteractionHint_Implementation()
 {
-	return bIsUnlocked ? TEXT("Enter Procedural Dungeon") : TEXT("Unseal Dungeon Gateway");
+	if (!bIsUnlocked)
+	{
+		return TEXT("Unseal Dungeon Gateway");
+	}
+
+	return TEXT("Enter Procedural Dungeon (Vessel Required)");
 }

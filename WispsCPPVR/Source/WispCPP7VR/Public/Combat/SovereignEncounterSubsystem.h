@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Combat/SovereignBattleManager.h"
+#include "Combat/SovereignEncounterDefinition.h"
 #include "SovereignEncounterSubsystem.generated.h"
 
 class ASovereignBaseCharacter;
@@ -67,6 +68,18 @@ public:
 		AActor* OverlappedMob,
 		const TArray<ASovereignBaseCharacter*>& EnemyUnits,
 		bool bCanFlee = true,
+		ASovereignBattleManager* CustomBattleManager = nullptr);
+
+	/**
+	 * Initiates a battle encounter from an authored USovereignEncounterDefinition.
+	 * Dynamically spawns enemy vessels in formation, teleports party, activates battle camera,
+	 * and disables player field exploration input.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Encounter")
+	bool TriggerEncounterWithDefinition(
+		ASovereignBaseCharacter* PlayerLeader,
+		AActor* OverlappedMob,
+		USovereignEncounterDefinition* EncounterDef,
 		ASovereignBattleManager* CustomBattleManager = nullptr);
 
 	/**

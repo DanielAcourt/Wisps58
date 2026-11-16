@@ -6,16 +6,31 @@
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignKeyPickup.h"
+#include "Entities/SovereignDungeonEntrance.h"
+#include "Entities/SovereignBossTeleporter.h"
 #include "Combat/SovereignDungeonGenerator.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "CoreModules/SovereignDungeonGameMode.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "Components/SovereignQiComponent.h"
 #include "Components/SovereignAttributeComponent.h"
+#include "Components/SovereignPartyComponent.h"
+#include "Components/SovereignClassComponent.h"
+#include "Components/SovereignPolymorphComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Inventory/SovereignInventoryComponent.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
 #include "Inventory/SovereignItemDefinition.h"
 #include "Inventory/SovereignItemDomainFragments.h"
+#include "InputMappingContext.h"
+#include "Serialization/JsonWriter.h"
+#include "Serialization/JsonSerializer.h"
+#include "Kismet/GameplayStatics.h"
+#include "SaveSystem/SovereignSaveGame.h"
+#include "SaveSystem/SovereignSaveManager.h"
+#include "SaveSystem/SovereignJsonUtils.h"
 #include "Tests/AutomationCommon.h"
 
 /**
@@ -192,27 +207,56 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Node has non-zero connected passage mask"), Node.ConnectedPassageMask > 0);
 	}
 
-	// 6. Test Ticket B-095 Multi-Cell Perimeter Boundary & Edge-Aware Snapping Invariants
-	// Invariant: Total wall instances strictly equals the sum of unconnected perimeter sockets across all nodes
+	// 6. Test Ticket B-095 Multi-Cell Perimeter Boundary & Edge-Aware Snapping Invariants with Wall Deduplication
+	// Invariant: Total wall instances strictly equals the sum of unique boundary edges (zero duplicate overlapping walls)
 	// Invariant: Zero internal walls inside multi-cell rooms (only perimeter sockets spawn walls)
-	int32 TotalUnconnectedSockets = 0;
-	int32 TotalConnectedSockets = 0;
+	TSet<FIntPoint> UniquePassageEdges;
+	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
+	{
+		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
+		{
+			if (Socket.bIsConnected)
+			{
+				FIntPoint StepDir = FIntPoint::ZeroValue;
+				switch (Socket.FacingDirection)
+				{
+				case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+				default: break;
+				}
+				UniquePassageEdges.Add(Socket.CellCoord * 2 + StepDir);
+			}
+		}
+	}
+
+	TSet<FIntPoint> UniqueWallEdges;
 	for (const FSovereignDungeonNode& Node : Generator->DungeonNodes)
 	{
 		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
 		{
 			if (!Socket.bIsConnected)
 			{
-				TotalUnconnectedSockets++;
-			}
-			else
-			{
-				TotalConnectedSockets++;
+				FIntPoint StepDir = FIntPoint::ZeroValue;
+				switch (Socket.FacingDirection)
+				{
+				case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+				default: break;
+				}
+				const FIntPoint EdgeKey = Socket.CellCoord * 2 + StepDir;
+				if (!UniquePassageEdges.Contains(EdgeKey))
+				{
+					UniqueWallEdges.Add(EdgeKey);
+				}
 			}
 		}
 	}
-	TestEqual(TEXT("Wall instances strictly equal unconnected perimeter socket count (zero interior walls)"),
-		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, TotalUnconnectedSockets);
+	TestEqual(TEXT("Wall instances strictly equal unique boundary edge count (zero duplicate overlapping walls)"),
+		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, UniqueWallEdges.Num());
 
 	// Verify uniform wall instance scale (Thickness = 0.3, Width = 10.0, Height = 6.0) across all instances when bUseMetricModularMeshScale is false
 	if (Generator->WallInstancedComponent && Generator->WallInstancedComponent->GetInstanceCount() > 0)
@@ -228,10 +272,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	// Test Procedural Archway Fallback
 	Generator->bProceduralArchwayFallback = true;
 	Generator->SpawnDungeonGeometry();
-	const int32 ExpectedArchwayWallCount = TotalUnconnectedSockets + (TotalConnectedSockets * 3);
+	const int32 ExpectedArchwayWallCount = UniqueWallEdges.Num() + (UniquePassageEdges.Num() * 3);
 	TestEqual(TEXT("Wall instances include 3-part archway posts and lintel when bProceduralArchwayFallback is true"),
 		Generator->WallInstancedComponent ? Generator->WallInstancedComponent->GetInstanceCount() : 0, ExpectedArchwayWallCount);
-
 	// Restore Option A
 	Generator->bProceduralArchwayFallback = false;
 	Generator->SpawnDungeonGeometry();
@@ -334,8 +377,9 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 	ASovereignDungeonGameMode* DungeonGM = NewObject<ASovereignDungeonGameMode>();
 	if (TestNotNull(TEXT("DungeonGM created"), DungeonGM))
 	{
-		TestTrue(TEXT("bLockPossessionToLeader defaults to true"), DungeonGM->bLockPossessionToLeader);
+		TestFalse(TEXT("bLockPossessionToLeader defaults to false to allow unpossession"), DungeonGM->bLockPossessionToLeader);
 		TestTrue(TEXT("DefaultPawnClass is ASovereignBaseCharacter"), DungeonGM->DefaultPawnClass == ASovereignBaseCharacter::StaticClass());
+		TestTrue(TEXT("DungeonGeneratorClass defaults to ASovereignDungeonGenerator"), DungeonGM->DungeonGeneratorClass == ASovereignDungeonGenerator::StaticClass());
 
 		DungeonGM->ActiveDungeonGenerator = Generator;
 		DungeonGM->DungeonPartyLeader = Cultivator;
@@ -612,6 +656,334 @@ bool FSovereignDungeonGatewayTest::RunTest(const FString& Parameters)
 
 	// 17. Test Subsystem Regression Compatibility
 	TestEqual(TEXT("GetEntranceTransform returns Node 0 transform"), DetGenA->GetEntranceTransform().GetLocation(), DetGenA->DungeonNodes[0].WorldTransform.GetLocation());
+
+	// 18. Test Ticket B-111 Interactive Entrance & Return to Garden
+	ASovereignDungeonEntrance* TestEntrance = NewObject<ASovereignDungeonEntrance>();
+	TestNotNull(TEXT("Dungeon Entrance created"), TestEntrance);
+	TestEqual(TEXT("Entrance hint indicates return to garden"), TestEntrance->GetInteractionHint_Implementation(), TEXT("Return to Meditation Garden"));
+	TestTrue(TEXT("Entrance interactable by default"), TestEntrance->CanInteract_Implementation(Cultivator));
+
+	// Test generator entrance class assignment
+	DetGenA->EntranceActorClass = ASovereignDungeonEntrance::StaticClass();
+	TestEqual(TEXT("Generator EntranceActorClass matches assigned class"), DetGenA->EntranceActorClass.Get(), ASovereignDungeonEntrance::StaticClass());
+
+	// 19. Test Ticket B-112 Interactive Post-Boss Extraction Teleporter & Activation Pipeline
+	ASovereignBossTeleporter* TestTeleporter = NewObject<ASovereignBossTeleporter>();
+	TestNotNull(TEXT("Boss Teleporter created"), TestTeleporter);
+	TestFalse(TEXT("Boss teleporter is initially dormant"), TestTeleporter->bIsActive);
+	TestFalse(TEXT("Boss teleporter cannot be interacted with while dormant"), TestTeleporter->CanInteract_Implementation(Cultivator));
+	TestEqual(TEXT("Dormant hint displays defeat boss requirement"),
+		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->DormantHint);
+
+	// Test activation upon boss victory notification
+	TestTeleporter->NotifyBossDefeated();
+	TestTrue(TEXT("Boss teleporter is active after boss defeated"), TestTeleporter->bIsActive);
+	TestTrue(TEXT("Boss teleporter can be interacted with once active"), TestTeleporter->CanInteract_Implementation(Cultivator));
+	TestEqual(TEXT("Active hint displays teleport option"),
+		TestTeleporter->GetInteractionHint_Implementation(), TestTeleporter->ActiveHint);
+
+	// Test generator boss teleporter class assignment
+	DetGenA->BossTeleporterClass = ASovereignBossTeleporter::StaticClass();
+	TestEqual(TEXT("Generator BossTeleporterClass matches assigned class"), DetGenA->BossTeleporterClass.Get(), ASovereignBossTeleporter::StaticClass());
+
+	// 20. Test Ticket B-113 Comprehensive Entrance & Boss Teleporter Automation Suite
+	// Test getter queries on generator when spawned actors array is empty
+	TestNull(TEXT("GetEntranceGatewayActor returns null when none spawned"), DetGenA->GetEntranceGatewayActor());
+	TestNull(TEXT("GetBossTeleporterActor returns null when none spawned"), DetGenA->GetBossTeleporterActor());
+
+	// Add dummy entrance and boss teleporter to GeneratorSpawnedActors to test accessor retrieval & idempotent cleanup
+	DetGenA->GeneratorSpawnedActors.Add(TestEntrance);
+	DetGenA->GeneratorSpawnedActors.Add(TestTeleporter);
+	TestTrue(TEXT("GetEntranceGatewayActor retrieves entrance actor"), DetGenA->GetEntranceGatewayActor() == TestEntrance);
+	TestTrue(TEXT("GetBossTeleporterActor retrieves boss teleporter actor"), DetGenA->GetBossTeleporterActor() == TestTeleporter);
+
+	// Verify portal light component properties on teleporter
+	TestNotNull(TEXT("PortalLightComponent is instantiated on Boss Teleporter"), TestTeleporter->PortalLightComponent.Get());
+	TestTrue(TEXT("Portal light becomes visible when teleporter activates"), TestTeleporter->PortalLightComponent->IsVisible());
+
+	// Verify Idempotent Cleanup clears spawned entrance and teleporter references
+	DetGenA->CleanupDungeon();
+	TestEqual(TEXT("GeneratorSpawnedActors empty after CleanupDungeon"), DetGenA->GeneratorSpawnedActors.Num(), 0);
+	TestNull(TEXT("GetEntranceGatewayActor returns null after CleanupDungeon"), DetGenA->GetEntranceGatewayActor());
+	TestNull(TEXT("GetBossTeleporterActor returns null after CleanupDungeon"), DetGenA->GetBossTeleporterActor());
+
+	// 21. Test Ticket B-120: Special Rooms Registry, Guaranteed Treasure Placement & Logging
+	ASovereignDungeonGenerator* RegistryGen = NewObject<ASovereignDungeonGenerator>();
+	RegistryGen->GenerationSeed = 42;
+	RegistryGen->TargetRoomCount = 12;
+	RegistryGen->SpecialRoomPercentage = 25.0f;
+	RegistryGen->bSpawnPhysicalGeometry = false;
+	const bool bRegistryGenSuccess = RegistryGen->GenerateDungeon();
+	TestTrue(TEXT("RegistryGen generates successfully"), bRegistryGenSuccess);
+
+	// Verify SpecialRooms array is populated and accessible
+	const TArray<FSovereignSpecialRoomInfo>& SpecialRoomList = RegistryGen->GetSpecialRooms();
+	TestTrue(TEXT("SpecialRooms list is populated"), SpecialRoomList.Num() > 0);
+
+	// Verify Node 0 (Entrance Room) is registered in SpecialRooms
+	bool bHasEntrance = false;
+	bool bHasTreasure = false;
+	bool bHasBoss = false;
+
+	for (const FSovereignSpecialRoomInfo& RoomInfo : SpecialRoomList)
+	{
+		if (RoomInfo.NodeIndex == 0 && RoomInfo.TileType == EDungeonTileType::EntranceRoom)
+		{
+			bHasEntrance = true;
+		}
+		if (RoomInfo.TileType == EDungeonTileType::TreasureRoom)
+		{
+			bHasTreasure = true;
+			TestTrue(TEXT("Treasure Room has 1x1 footprint"), RoomInfo.FootprintDimensions == FIntPoint(1, 1));
+		}
+		if (RoomInfo.TileType == EDungeonTileType::BossChamber)
+		{
+			bHasBoss = true;
+			TestTrue(TEXT("Boss Chamber has 4x4 footprint"), RoomInfo.FootprintDimensions == FIntPoint(4, 4));
+		}
+	}
+
+	TestTrue(TEXT("Node 0 Entrance Room is registered in SpecialRooms"), bHasEntrance);
+	TestTrue(TEXT("Guaranteed Treasure Room is registered in SpecialRooms"), bHasTreasure);
+	TestTrue(TEXT("Boss Chamber is registered in SpecialRooms"), bHasBoss);
+
+	// Verify CleanupDungeon empties SpecialRooms
+	RegistryGen->CleanupDungeon();
+	TestEqual(TEXT("CleanupDungeon clears SpecialRooms array"), RegistryGen->GetSpecialRooms().Num(), 0);
+
+	// 22. Test Dynamic Dungeon Vessel Spawning & Subsystem State Persistence
+	{
+		DungeonSubsystem->ClearExpedition();
+		TestFalse(TEXT("Subsystem initially has no party leader state"), DungeonSubsystem->HasPartyLeaderState());
+
+		// Author a mock party leader vessel with stats and items
+		ASovereignBaseCharacter* DragonVessel = NewObject<ASovereignBaseCharacter>();
+		if (USovereignAttributeComponent* Attr = DragonVessel->GetAttributeComponent())
+		{
+			Attr->Strength = 45;
+			Attr->Dexterity = 30;
+			Attr->Constitution = 50;
+		}
+		if (USovereignQiComponent* QiComp = DragonVessel->GetQiComponent())
+		{
+			QiComp->MaxQiCapacity = 300.0f;
+			QiComp->CurrentQi = 250.0f;
+		}
+
+		// Put an item in vessel inventory
+		USovereignItemDefinition* PotionDef = NewObject<USovereignItemDefinition>();
+		DragonVessel->GetInventoryComponent()->AddItem(PotionDef, 3);
+		TestEqual(TEXT("Dragon inventory has 3 potions"), DragonVessel->GetInventoryComponent()->InventorySlots[0].Quantity, 3);
+
+		// Assign an InputMappingContext to the dragon vessel
+		UInputMappingContext* MockIMC = NewObject<UInputMappingContext>();
+		DragonVessel->SetDefaultMappingContext(MockIMC);
+		TestEqual(TEXT("Dragon has DefaultMappingContext assigned"), DragonVessel->GetDefaultMappingContext(), MockIMC);
+
+		// Capture full entity state to JSON
+		USovereignSaveableEntityComponent* VesselSaveComp = DragonVessel->FindComponentByClass<USovereignSaveableEntityComponent>();
+		TestNotNull(TEXT("Dragon has SaveableEntityComponent"), VesselSaveComp);
+
+		TSharedPtr<FJsonObject> DragonStateJsonObj = VesselSaveComp->CaptureFullEntityState();
+		TestTrue(TEXT("Dragon state captured to JSON"), DragonStateJsonObj.IsValid());
+
+		FString SerializedStateString;
+		TSharedRef<TJsonWriter<>> StateWriter = TJsonWriterFactory<>::Create(&SerializedStateString);
+		FJsonSerializer::Serialize(DragonStateJsonObj.ToSharedRef(), StateWriter);
+
+		const FString DragonClassPath = DragonVessel->GetClass()->GetPathName();
+		DungeonSubsystem->RecordPartyLeaderState(DragonClassPath, VesselSaveComp->EntityID, SerializedStateString);
+
+		TestTrue(TEXT("Subsystem now has party leader state"), DungeonSubsystem->HasPartyLeaderState());
+		TestEqual(TEXT("Subsystem recorded class path"), DungeonSubsystem->PartyLeaderClassPath, DragonClassPath);
+		TestEqual(TEXT("Subsystem recorded GUID"), DungeonSubsystem->PartyLeaderGUID, VesselSaveComp->EntityID);
+		TestFalse(TEXT("Subsystem state JSON is non-empty"), DungeonSubsystem->PartyLeaderStateJson.IsEmpty());
+
+		// Verify ASovereignDungeonGameMode dynamic pawn class selection
+		ASovereignDungeonGameMode* TestDungeonGM = NewObject<ASovereignDungeonGameMode>();
+		UClass* SelectedPawnClass = TestDungeonGM->GetDefaultPawnClassForController(nullptr);
+		TestNotNull(TEXT("GetDefaultPawnClassForController returns valid class"), SelectedPawnClass);
+
+		// Instantiate new vessel simulating dungeon spawning and restore state
+		ASovereignBaseCharacter* SpawnedDungeonDragon = NewObject<ASovereignBaseCharacter>();
+		SpawnedDungeonDragon->SetDefaultMappingContext(MockIMC);
+
+		USovereignSaveableEntityComponent* SpawnedSaveComp = SpawnedDungeonDragon->FindComponentByClass<USovereignSaveableEntityComponent>();
+		SpawnedSaveComp->ApplyStateFromJsonObject(DragonStateJsonObj);
+
+		// Verify restored attributes and Qi
+		TestEqual(TEXT("Spawned dragon restored Strength"), SpawnedDungeonDragon->GetAttributeComponent()->Strength, 45);
+		TestEqual(TEXT("Spawned dragon restored Dexterity"), SpawnedDungeonDragon->GetAttributeComponent()->Dexterity, 30);
+		TestEqual(TEXT("Spawned dragon restored Constitution"), SpawnedDungeonDragon->GetAttributeComponent()->Constitution, 50);
+		TestEqual(TEXT("Spawned dragon restored CurrentQi"), SpawnedDungeonDragon->GetQiComponent()->CurrentQi, 250.0f);
+
+		// Verify vessel DefaultMappingContext is preserved and ready for controller
+		TestEqual(TEXT("Spawned dragon has DefaultMappingContext intact"), SpawnedDungeonDragon->GetDefaultMappingContext(), MockIMC);
+
+		// Verify ClearExpedition clears party leader state
+		DungeonSubsystem->ClearExpedition();
+		TestFalse(TEXT("ClearExpedition clears party leader state"), DungeonSubsystem->HasPartyLeaderState());
+		TestTrue(TEXT("PartyLeaderClassPath cleared"), DungeonSubsystem->PartyLeaderClassPath.IsEmpty());
+		TestTrue(TEXT("PartyLeaderStateJson cleared"), DungeonSubsystem->PartyLeaderStateJson.IsEmpty());
+	}
+
+	// 23. Test Dungeon Generator Auto-Spawn & Deterministic Replicability
+	{
+		UGameInstance* TestGI = NewObject<UGameInstance>();
+		USovereignDungeonSubsystem* Subsystem = NewObject<USovereignDungeonSubsystem>(TestGI);
+		Subsystem->TargetRoomCount = 10;
+		Subsystem->SpecialRoomPercentage = 30.0f;
+		Subsystem->TreasureRoomRatio = 0.50f;
+		Subsystem->RestSanctuaryRatio = 0.25f;
+		Subsystem->RecordExpedition(5555, 1.5f, 2.0f, FName(TEXT("TestMap")));
+
+		ASovereignDungeonGenerator* AutoGen = NewObject<ASovereignDungeonGenerator>();
+		AutoGen->TargetRoomCount = Subsystem->TargetRoomCount;
+		AutoGen->SpecialRoomPercentage = Subsystem->SpecialRoomPercentage;
+		AutoGen->TreasureRoomRatio = Subsystem->TreasureRoomRatio;
+		AutoGen->RestSanctuaryRatio = Subsystem->RestSanctuaryRatio;
+		AutoGen->GenerationSeed = Subsystem->ActiveExpeditionSeed;
+		AutoGen->EnemyBuffMultiplier = Subsystem->ActiveEnemyBuffMultiplier;
+		AutoGen->RewardMultiplier = Subsystem->ActiveRewardMultiplier;
+
+		TestEqual(TEXT("AutoGen TargetRoomCount replicated"), AutoGen->TargetRoomCount, 10);
+		TestEqual(TEXT("AutoGen SpecialRoomPercentage replicated"), AutoGen->SpecialRoomPercentage, 30.0f);
+		TestEqual(TEXT("AutoGen GenerationSeed replicated"), AutoGen->GenerationSeed, 5555);
+
+		// Verify Boss Key tag is valid
+		TestTrue(TEXT("BossKeyItemTag is valid"), AutoGen->BossKeyItemTag.IsValid());
+		TestEqual(TEXT("BossKeyItemTag is Item.Key.BossGate"), AutoGen->BossKeyItemTag.ToString(), FString(TEXT("Item.Key.BossGate")));
+
+		// Verify ASovereignBaseCharacter attachment component fallback via interface
+		ASovereignBaseCharacter* DummyChar = NewObject<ASovereignBaseCharacter>();
+		USceneComponent* AttachComp = IInteractionInterface::Execute_GetPossessionAttachmentComponent(DummyChar);
+		TestNotNull(TEXT("GetPossessionAttachmentComponent returns a valid component"), AttachComp);
+
+		// Verify DungeonGeneratorBlueprintClass propagation on Gateway
+		ASovereignDungeonGateway* TestGateway = NewObject<ASovereignDungeonGateway>();
+		TestGateway->DungeonGeneratorBlueprintClass = ASovereignDungeonGenerator::StaticClass();
+		TestEqual(TEXT("Gateway has custom generator class"), TestGateway->DungeonGeneratorBlueprintClass.Get(), ASovereignDungeonGenerator::StaticClass());
+
+		Subsystem->DungeonGeneratorClassOverride = TestGateway->DungeonGeneratorBlueprintClass;
+		TestEqual(TEXT("Subsystem stored generator class override"), Subsystem->DungeonGeneratorClassOverride.Get(), ASovereignDungeonGenerator::StaticClass());
+	}
+
+	// 24. Test Ticket B-121: Unpossessed Wisp Gateway Block & UI Delegate Trigger
+	{
+		ASovereignDungeonGateway* WispGateway = NewObject<ASovereignDungeonGateway>();
+		WispGateway->SetGatewayUnlocked(true);
+
+		ASovereignPlayerWisp* UnpossessedWisp = NewObject<ASovereignPlayerWisp>();
+		UnpossessedWisp->SetIsPossessing(false);
+
+		// Attempt to enter dungeon as an unpossessed wisp
+		const bool bEntered = WispGateway->EnterDungeon(UnpossessedWisp);
+		TestFalse(TEXT("Unpossessed wisp is blocked from entering dungeon"), bEntered);
+		TestEqual(TEXT("Interaction hint shows vessel required"), WispGateway->GetInteractionHint_Implementation(), FString(TEXT("Enter Procedural Dungeon (Vessel Required)")));
+	}
+
+	// 25. Test Ticket B-122: Full 3x3 Party Roster Serialization & Dungeon Reconstitution
+	{
+		UGameInstance* PartyGI = NewObject<UGameInstance>();
+		USovereignDungeonSubsystem* Subsystem = NewObject<USovereignDungeonSubsystem>(PartyGI);
+
+		// Create Leader dragon vessel
+		ASovereignBaseCharacter* LeaderVessel = NewObject<ASovereignBaseCharacter>();
+		LeaderVessel->GetAttributeComponent()->Strength = 60;
+		LeaderVessel->GetAttributeComponent()->Dexterity = 40;
+		LeaderVessel->SetCurrentGrowthStage(5);
+
+		// Create Ally vessel
+		ASovereignBaseCharacter* AllyVessel = NewObject<ASovereignBaseCharacter>();
+		AllyVessel->GetAttributeComponent()->Strength = 35;
+		AllyVessel->GetAttributeComponent()->Intelligence = 55;
+		AllyVessel->SetCurrentGrowthStage(3);
+
+		// Setup Party Component on Wisp possessing leader
+		ASovereignPlayerWisp* PossessingWisp = NewObject<ASovereignPlayerWisp>();
+		USovereignPartyComponent* PartyComp = PossessingWisp->GetPartyComponent();
+		PartyComp->AssignPartyMember(0, LeaderVessel, true);
+		PartyComp->AssignPartyMember(1, AllyVessel, false);
+
+		// Capture Ally State JSON
+		TSharedPtr<FJsonObject> AllyStateObj = AllyVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->CaptureFullEntityState();
+		FString AllyStateString;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&AllyStateString);
+		FJsonSerializer::Serialize(AllyStateObj.ToSharedRef(), Writer);
+
+		// Record both members into Subsystem
+		Subsystem->RecordPartyMemberState(0, LeaderVessel->GetClass()->GetPathName(), FGuid::NewGuid(), TEXT("{}"), true);
+		Subsystem->RecordPartyMemberState(1, AllyVessel->GetClass()->GetPathName(), FGuid::NewGuid(), AllyStateString, false);
+
+		TestEqual(TEXT("ActivePartyMembersData has 2 entries"), Subsystem->ActivePartyMembersData.Num(), 2);
+		TestEqual(TEXT("Slot 0 is recorded as Leader"), Subsystem->ActivePartyMembersData[0].bIsLeader, true);
+		TestEqual(TEXT("Slot 1 is recorded as Ally"), Subsystem->ActivePartyMembersData[1].bIsLeader, false);
+
+		// Verify Polymorph component serialization & broker integration
+		USovereignPolymorphComponent* PolyComp = NewObject<USovereignPolymorphComponent>(LeaderVessel, TEXT("PolymorphComp"));
+		LeaderVessel->AddInstanceComponent(PolyComp);
+		PolyComp->RegisterComponent();
+		LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->RegisterBroker(PolyComp);
+
+		TSharedPtr<FJsonObject> SavedRoot = LeaderVessel->FindComponentByClass<USovereignSaveableEntityComponent>()->CaptureFullEntityState();
+		TestTrue(TEXT("Polymorph data is saved under Sovereign.Polymorph"), SavedRoot->HasField(TEXT("Sovereign.Polymorph")));
+	}
+
+	// 26. Test Ticket B-123: Bidirectional Progression Synchronization (Dungeon to Garden)
+	{
+		const FString TestGardenSlot = TEXT("Test_Garden_SyncSlot");
+		USovereignSaveGame* GardenSuitcase = Cast<USovereignSaveGame>(UGameplayStatics::CreateSaveGameObject(USovereignSaveGame::StaticClass()));
+
+		const FGuid VesselGuid = FGuid::NewGuid();
+		FEntitySaveData EntityData;
+		EntityData.MyGUID = VesselGuid;
+		EntityData.ObjectName = TEXT("DragonVessel");
+		EntityData.ClassPath = ASovereignBaseCharacter::StaticClass()->GetPathName();
+
+		// Initial garden state: STR = 20
+		TSharedPtr<FJsonObject> InitialMeta = MakeShared<FJsonObject>();
+		TSharedPtr<FJsonObject> InitialAttrs = MakeShared<FJsonObject>();
+		InitialAttrs->SetNumberField(TEXT("Strength"), 20);
+		InitialMeta->SetObjectField(TEXT("Sovereign.Attributes"), InitialAttrs);
+		EntityData.UnknownMetaTags = InitialMeta;
+
+		GardenSuitcase->SavedActors.Add(EntityData);
+		const FString InitialSuitcaseJson = USaveManager::ConvertSuitcaseToJson(GardenSuitcase);
+		USovereignJsonUtils::ValidateAndSave(TestGardenSlot, InitialSuitcaseJson);
+
+		// In the dungeon, vessel gained STR = 50
+		TSharedPtr<FJsonObject> DungeonUpdatedMeta = MakeShared<FJsonObject>();
+		TSharedPtr<FJsonObject> UpdatedAttrs = MakeShared<FJsonObject>();
+		UpdatedAttrs->SetNumberField(TEXT("Strength"), 50);
+		DungeonUpdatedMeta->SetObjectField(TEXT("Sovereign.Attributes"), UpdatedAttrs);
+
+		const bool bSyncSuccess = USaveManager::UpdateEntityInSavedSlot(TestGardenSlot, VesselGuid, DungeonUpdatedMeta);
+		TestTrue(TEXT("UpdateEntityInSavedSlot succeeded"), bSyncSuccess);
+
+		// Reload and verify updated progression persisted in the garden save file
+		FString ReloadedJson;
+		USovereignJsonUtils::LoadStringFromFile(TestGardenSlot, ReloadedJson);
+		USovereignSaveGame* ReloadedSuitcase = USaveManager::ConvertJsonToSuitcase(ReloadedJson);
+
+		TestNotNull(TEXT("ReloadedSuitcase is valid"), ReloadedSuitcase);
+		if (ReloadedSuitcase)
+		{
+			TestEqual(TEXT("SavedActors count retained"), ReloadedSuitcase->SavedActors.Num(), 1);
+
+			if (ReloadedSuitcase->SavedActors.Num() > 0 && ReloadedSuitcase->SavedActors[0].UnknownMetaTags.IsValid())
+			{
+				const TSharedPtr<FJsonObject>* ReloadedAttrs = nullptr;
+				const bool bHasAttrs = ReloadedSuitcase->SavedActors[0].UnknownMetaTags->TryGetObjectField(TEXT("Sovereign.Attributes"), ReloadedAttrs);
+				TestTrue(TEXT("Attributes field present in reloaded save"), bHasAttrs);
+				if (ReloadedAttrs && ReloadedAttrs->IsValid())
+				{
+					double ReloadedStr = 0;
+					(*ReloadedAttrs)->TryGetNumberField(TEXT("Strength"), ReloadedStr);
+					TestEqual(TEXT("Vessel Strength updated in Garden save file to 50"), (int32)ReloadedStr, 50);
+				}
+			}
+		}
+	}
 
 	return true;
 }

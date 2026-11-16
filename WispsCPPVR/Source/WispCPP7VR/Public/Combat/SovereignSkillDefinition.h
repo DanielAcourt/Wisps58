@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
+#include "SaveSystem/SovereignGameData.h"
+#include "Components/SovereignStatusComponent.h"
 #include "SovereignSkillDefinition.generated.h"
 
 class UTexture2D;
@@ -74,6 +76,30 @@ public:
 	/** Which D&D attribute scales this ability */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Scaling")
 	ESovereignSkillScalingAttribute ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
+
+	/** Elemental affinity of this skill (Fire, Water, Earth, etc.) - Ticket CS-004 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Elemental")
+	ESovereignElement ElementType = ESovereignElement::None;
+
+	/** Optional status effect inflicted on targets upon execution (Ticket CS-005) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Status")
+	ESovereignStatusType InflictedStatus = ESovereignStatusType::None;
+
+	/** Duration in combat turns for the inflicted status effect */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Status")
+	int32 StatusDurationTurns = 3;
+
+	/** Potency value for the inflicted status (e.g. poison damage amount) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Status")
+	float StatusPotency = 10.0f;
+
+	/** Whether this skill requires a telegraphed 1-turn charging stance before unleashing (Ticket CS-006) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Telegraph")
+	bool bIsTelegraphed = false;
+
+	/** Warning text broadcast when starting to charge this attack */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Telegraph")
+	FText TelegraphWarningText;
 
 	/** Base ability power before stat scaling */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Skill|Scaling")

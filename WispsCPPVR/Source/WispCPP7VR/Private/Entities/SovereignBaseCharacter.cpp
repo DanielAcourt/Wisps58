@@ -14,6 +14,7 @@
 #include "Inventory/SovereignInventoryBroker.h"
 #include "Components/SovereignClassComponent.h"
 #include "Components/SovereignSkillComponent.h"
+#include "Components/SovereignStatusComponent.h"
 #include "Components/SovereignPartyComponent.h"
 #include "Components/SovereignATBComponent.h"
 #include "TimerManager.h"
@@ -54,6 +55,7 @@ ASovereignBaseCharacter::ASovereignBaseCharacter()
 	InventoryComponent = CreateDefaultSubobject<USovereignInventoryComponent>(TEXT("InventoryComponent"));
 	ClassComponent = CreateDefaultSubobject<USovereignClassComponent>(TEXT("ClassComponent"));
 	SkillComponent = CreateDefaultSubobject<USovereignSkillComponent>(TEXT("SkillComponent"));
+	StatusComponent = CreateDefaultSubobject<USovereignStatusComponent>(TEXT("StatusComponent"));
 	ATBComponent = CreateDefaultSubobject<USovereignATBComponent>(TEXT("ATBComponent"));
 
 	// 2. CONFIGURE CHARACTER DEFAULTS
@@ -201,7 +203,14 @@ void ASovereignBaseCharacter::UnPossessed()
 //Setting Up the Possession Attacthment Component
 USceneComponent* ASovereignBaseCharacter::GetPossessionAttachmentComponent_Implementation()
 {
-	return GetMesh();
+	if (USkeletalMeshComponent* SkelMesh = GetMesh())
+	{
+		if (SkelMesh->GetSkeletalMeshAsset())
+		{
+			return SkelMesh;
+		}
+	}
+	return GetRootComponent();
 }
 void ASovereignBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -579,15 +588,19 @@ void ASovereignBaseCharacter::OnSovereignHeartbeat()
 // Leveling up or evolving both in stats and visuals
 void ASovereignBaseCharacter::Evolve()
 {
-	CurrentGrowthStage = FMath::Clamp(CurrentGrowthStage + 1, 0, 7);
+	SetCurrentGrowthStage(CurrentGrowthStage + 1);
+	UE_LOG(LogTemp, Log, TEXT("[%s] Base Character Evolved to Stage %d"), *GetName(), CurrentGrowthStage);
+}
+
+void ASovereignBaseCharacter::SetCurrentGrowthStage(int32 NewStage)
+{
+	CurrentGrowthStage = FMath::Clamp(NewStage, 0, 7);
 	RefreshVisuals();
 
 	if (AttributeComponent)
 	{
 		AttributeComponent->SyncStatsFromEntity();
 	}
-
-	UE_LOG(LogTemp, Log, TEXT("[%s] Base Character Evolved to Stage %d"), *GetName(), CurrentGrowthStage);
 }
 
 void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData* InData)

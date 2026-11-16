@@ -10,8 +10,11 @@
 class ASovereignBaseCharacter;
 class ASovereignDungeonGenerator;
 
+class ASovereignPlayerWisp;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnGatewayUnlocked, bool, bUnlocked);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnGatewayEmpowered, float, EnemyBuffMultiplier, float, RewardMultiplier);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnUnpossessedWispInteraction, ASovereignPlayerWisp*, Wisp);
 
 /**
  * ASovereignDungeonGateway
@@ -54,6 +57,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Gateway|Events")
 	FOnGatewayEmpowered OnGatewayEmpowered;
+
+	/** Broadcast when an unpossessed spirit wisp interacts with the gateway (Ticket B-121) */
+	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Gateway|Events")
+	FOnUnpossessedWispInteraction OnUnpossessedWispInteraction;
 
 	// --- Gateway Operations ---
 
@@ -107,6 +114,34 @@ public:
 	/** Generation seed for procedural dungeon generation (0 = random) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
 	int32 ExpeditionSeed = 0;
+
+	/** Configurable Blueprint class of the procedural dungeon generator with all custom settings and art assets defined */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	TSubclassOf<ASovereignDungeonGenerator> DungeonGeneratorBlueprintClass;
+
+	/** Target room count for procedural generation in the dungeon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	int32 TargetRoomCount = 8;
+
+	/** Special room percentage (e.g. 20.0%) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	float SpecialRoomPercentage = 20.0f;
+
+	/** Ratio of special rooms dedicated to Treasure Rooms */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	float TreasureRoomRatio = 0.40f;
+
+	/** Ratio of special rooms dedicated to Rest Sanctuaries */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	float RestSanctuaryRatio = 0.30f;
+
+	/** Ratio of special rooms dedicated to Grand Chambers */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	float GrandChamberRatio = 0.20f;
+
+	/** Ratio of special rooms dedicated to Trial Colosseums */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Gateway|Expedition")
+	float ColosseumRatio = 0.10f;
 
 	/**
 	 * Enters the procedural dungeon:

@@ -13,10 +13,19 @@
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignKeyPickup.h"
+#include "Entities/SovereignDungeonEntrance.h"
+#include "Entities/SovereignBossTeleporter.h"
+#include "Entities/SovereignDungeonStairs.h"
+#include "Entities/SovereignUpwardStairs.h"
+#include "Entities/SovereignPlayerWisp.h"
 #include "Inventory/SovereignItemDefinition.h"
+#include "Combat/SovereignEncounterDefinition.h"
+#include "GameplayTagsManager.h"
+#include "EngineUtils.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/StaticMeshActor.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -36,6 +45,7 @@ ASovereignDungeonGenerator::ASovereignDungeonGenerator()
 	GenerationSeed = 1337;
 	bRequireBossKey = true;
 	bSpawnKeyAsWorldPickup = true;
+	UGameplayTagsManager::Get().AddNativeGameplayTag(FName("Item.Key.BossGate"));
 	BossKeyItemTag = FGameplayTag::RequestGameplayTag(FName("Item.Key.BossGate"), false);
 	MinSpineLength = 4;
 	MaxLoopCount = 0;
@@ -96,11 +106,17 @@ void ASovereignDungeonGenerator::BeginPlay()
 				if (DungeonSubsystem->bHasActiveExpedition)
 				{
 					GenerationSeed = DungeonSubsystem->ActiveExpeditionSeed;
+					TargetRoomCount = DungeonSubsystem->TargetRoomCount;
+					SpecialRoomPercentage = DungeonSubsystem->SpecialRoomPercentage;
+					TreasureRoomRatio = DungeonSubsystem->TreasureRoomRatio;
+					RestSanctuaryRatio = DungeonSubsystem->RestSanctuaryRatio;
+					GrandChamberRatio = DungeonSubsystem->GrandChamberRatio;
+					ColosseumRatio = DungeonSubsystem->ColosseumRatio;
 					EnemyBuffMultiplier = DungeonSubsystem->ActiveEnemyBuffMultiplier;
 					RewardMultiplier = DungeonSubsystem->ActiveRewardMultiplier;
 
-					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Expedition parameters ingested: Seed=%d, EnemyBuff=x%f, RewardMult=x%f"),
-						GenerationSeed, EnemyBuffMultiplier, RewardMultiplier);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Expedition parameters ingested: Seed=%d, TargetRooms=%d, SpecialRoomPct=%f, EnemyBuff=x%f, RewardMult=x%f"),
+						GenerationSeed, TargetRoomCount, SpecialRoomPercentage, EnemyBuffMultiplier, RewardMultiplier);
 				}
 			}
 		}
@@ -630,6 +646,7 @@ void ASovereignDungeonGenerator::CleanupDungeon()
 	// 5. Reset graph data
 	DungeonNodes.Empty();
 	DungeonEdges.Empty();
+	SpecialRooms.Empty();
 	MasterGridOccupancy.Empty();
 	MainSpineNodeIndices.Empty();
 	BossNodeIndex = INDEX_NONE;
@@ -921,9 +938,14 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				continue;
 			}
 
-			// Select special room type based on budget quotas
+			// Select special room type based on budget quotas.
+			// Prioritize guaranteed TreasureRoom (1x1 dead-end vault) so it isn't starved by large rooms.
 			EDungeonTileType BranchType = EDungeonTileType::Chamber;
-			if (ColosseumCount > 0 && TargetRoomCount >= 30)
+			if (TreasureCount > 0)
+			{
+				BranchType = EDungeonTileType::TreasureRoom;
+			}
+			else if (ColosseumCount > 0 && TargetRoomCount >= 30)
 			{
 				BranchType = EDungeonTileType::Colosseum;
 			}
@@ -934,10 +956,6 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			else if (RestSanctuaryCount > 0)
 			{
 				BranchType = EDungeonTileType::RestSanctuary;
-			}
-			else if (TreasureCount > 0)
-			{
-				BranchType = EDungeonTileType::TreasureRoom;
 			}
 			else
 			{
@@ -1024,6 +1042,95 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 			RoomsRemaining--;
 		}
 
+		// 4.2. Dedicated 4x4 Stair Room Placement (Ticket B-116: DU-Add stairs)
+		// If bToggleBossOnlyStairs is false, and this floor has previously been cleared, roll StairRoomSpawnChance
+		int32 ActiveExpeditionDepth = 0;
+		int32 PlayerDeepestCompleted = 0;
+		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				ActiveExpeditionDepth = DungeonSub->GetCurrentDepth();
+			}
+		}
+
+		if (UWorld* CurrentWorld = GetWorld())
+		{
+			for (TActorIterator<ASovereignPlayerWisp> WispIt(CurrentWorld); WispIt; ++WispIt)
+			{
+				if (ASovereignPlayerWisp* Wisp = *WispIt)
+				{
+					PlayerDeepestCompleted = FMath::Max(PlayerDeepestCompleted, Wisp->DeepestDungeonCompleted);
+				}
+			}
+		}
+
+		const bool bEligibleForStairRoom = !bToggleBossOnlyStairs && (ActiveExpeditionDepth < PlayerDeepestCompleted);
+		if (bEligibleForStairRoom && (Stream.FRand() <= StairRoomSpawnChance) && EligibleBranchParents.Num() > 0)
+		{
+			const FIntPoint StairDims = GetDefaultFootprintForTileType(EDungeonTileType::StairRoom);
+			for (int32 AttemptIdx = 0; AttemptIdx < EligibleBranchParents.Num(); ++AttemptIdx)
+			{
+				const int32 CandidateParent = EligibleBranchParents[AttemptIdx];
+				FSovereignDungeonNode& PNode = DungeonNodes[CandidateParent];
+				if (!PNode.CanAcceptConnection()) continue;
+
+				bool bPlacedStairRoom = false;
+				for (const FSovereignDoorwaySocket& ParentSocket : PNode.PerimeterSockets)
+				{
+					if (ParentSocket.bIsConnected) continue;
+
+					FIntPoint StepDir = FIntPoint(1, 0);
+					switch (ParentSocket.FacingDirection)
+					{
+					case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+					case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+					case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+					case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+					default: break;
+					}
+					const FIntPoint CandidateAnchor = ParentSocket.CellCoord + StepDir;
+
+					if (CanFitRoomFootprint(CandidateAnchor, StairDims))
+					{
+						FSovereignDungeonNode StairNode;
+						StairNode.NodeIndex = DungeonNodes.Num();
+						StairNode.TileType = EDungeonTileType::StairRoom;
+						StairNode.GridCoord = CandidateAnchor;
+						StairNode.FootprintDimensions = StairDims;
+						StairNode.MaxConnections = GetDefaultMaxConnectionsForTileType(EDungeonTileType::StairRoom);
+						StairNode.GeneratePerimeterSockets();
+
+						const FVector StairWorldLoc = GetActorLocation() + FVector(CandidateAnchor.X * TILE_SIZE, CandidateAnchor.Y * TILE_SIZE, 0.0f);
+						StairNode.WorldTransform = FTransform(FRotator::ZeroRotator, StairWorldLoc, FVector::OneVector);
+
+						for (const FIntPoint& Cell : StairNode.GetOccupiedCells())
+						{
+							MasterGridOccupancy.Add(Cell, StairNode.NodeIndex);
+						}
+
+						const int32 StairIdx = DungeonNodes.Add(StairNode);
+
+						FSovereignDungeonEdge StairEdge;
+						StairEdge.EdgeId = DungeonEdges.Num();
+						StairEdge.NodeIndexA = CandidateParent;
+						StairEdge.NodeIndexB = StairIdx;
+						StairEdge.DirectionAtoB = ParentSocket.FacingDirection;
+						StairEdge.PassageType = EPassageType::OpenArchway;
+						StairEdge.DoorState = EDoorState::Open;
+						DungeonEdges.Add(StairEdge);
+
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Successfully placed dedicated 4x4 Stair Room %d off Parent %d!"),
+							StairIdx, CandidateParent);
+
+						bPlacedStairRoom = true;
+						break;
+					}
+				}
+				if (bPlacedStairRoom) break;
+			}
+		}
+
 		// 4.5. Generate Controlled Shortcut Loops (Ticket B-096)
 		if (MaxLoopCount > 0)
 		{
@@ -1049,8 +1156,106 @@ bool ASovereignDungeonGenerator::GenerateDungeon()
 				SpawnDefaultLightingRig();
 			}
 
-			UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Successfully generated dungeon with %d nodes, %d edges on attempt %d."),
-				DungeonNodes.Num(), DungeonEdges.Num(), Attempt + 1);
+			// Build and update SpecialRooms registry from generated nodes (Ticket B-120)
+			SpecialRooms.Empty();
+			const FVector GenOrigin = GetActorLocation();
+
+			for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
+			{
+				const FSovereignDungeonNode& Node = DungeonNodes[NodeIdx];
+				// Register all non-standard rooms (Entrance, Treasure, Rest, Stair, Grand, Colosseum, Elite, Boss)
+				if (Node.TileType != EDungeonTileType::Corridor && Node.TileType != EDungeonTileType::Chamber)
+				{
+					FSovereignSpecialRoomInfo Info;
+					Info.NodeIndex = NodeIdx;
+					Info.TileType = Node.TileType;
+					Info.GridCoord = Node.GridCoord;
+					Info.FootprintDimensions = Node.FootprintDimensions;
+					Info.WorldCenterLocation = GenOrigin + FVector(
+						(Node.GridCoord.X + (Node.FootprintDimensions.X - 1) * 0.5f) * TILE_SIZE,
+						(Node.GridCoord.Y + (Node.FootprintDimensions.Y - 1) * 0.5f) * TILE_SIZE,
+						0.0f
+					);
+
+					// Associate spawned actor if one exists for this node
+					for (AActor* SpawnedAct : GeneratorSpawnedActors)
+					{
+						if (IsValid(SpawnedAct))
+						{
+							const float Dist2D = FVector::Dist2D(SpawnedAct->GetActorLocation(), Info.WorldCenterLocation);
+							if (Dist2D <= (FMath::Max(Node.FootprintDimensions.X, Node.FootprintDimensions.Y) * TILE_SIZE * 0.75f))
+							{
+								Info.SpawnedActor = SpawnedAct;
+								break;
+							}
+						}
+					}
+
+					FString TypeName;
+					switch (Node.TileType)
+					{
+					case EDungeonTileType::EntranceRoom:  TypeName = TEXT("Entrance Room"); break;
+					case EDungeonTileType::TreasureRoom:  TypeName = TEXT("Treasure Room"); break;
+					case EDungeonTileType::RestSanctuary: TypeName = TEXT("Rest Sanctuary"); break;
+					case EDungeonTileType::GrandChamber:  TypeName = TEXT("Grand Chamber"); break;
+					case EDungeonTileType::Colosseum:     TypeName = TEXT("Trial Colosseum"); break;
+					case EDungeonTileType::EliteChamber:  TypeName = TEXT("Elite Chamber"); break;
+					case EDungeonTileType::BossChamber:   TypeName = TEXT("Boss Chamber"); break;
+					case EDungeonTileType::StairRoom:     TypeName = TEXT("Stair Room"); break;
+					default:                              TypeName = TEXT("Special Room"); break;
+					}
+					Info.DisplayName = FString::Printf(TEXT("%s (Node %d)"), *TypeName, NodeIdx);
+					SpecialRooms.Add(Info);
+				}
+			}
+
+			// Prominent ASCII Summary Diagnostic Logging (Ticket B-120)
+			int32 ChamberCount = 0;
+			int32 CorridorCount = 0;
+			int32 TreasureCountTotal = 0;
+			int32 RestCountTotal = 0;
+			int32 GrandCountTotal = 0;
+			int32 ColosseumCountTotal = 0;
+			int32 EliteCountTotal = 0;
+			int32 BossCountTotal = 0;
+			int32 StairCountTotal = 0;
+
+			for (const FSovereignDungeonNode& Node : DungeonNodes)
+			{
+				switch (Node.TileType)
+				{
+				case EDungeonTileType::EntranceRoom:  break;
+				case EDungeonTileType::Corridor:      CorridorCount++; break;
+				case EDungeonTileType::Chamber:       ChamberCount++; break;
+				case EDungeonTileType::TreasureRoom:  TreasureCountTotal++; break;
+				case EDungeonTileType::RestSanctuary: RestCountTotal++; break;
+				case EDungeonTileType::GrandChamber:  GrandCountTotal++; break;
+				case EDungeonTileType::Colosseum:     ColosseumCountTotal++; break;
+				case EDungeonTileType::EliteChamber:  EliteCountTotal++; break;
+				case EDungeonTileType::BossChamber:   BossCountTotal++; break;
+				case EDungeonTileType::StairRoom:     StairCountTotal++; break;
+				}
+			}
+
+			UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+			UE_LOG(LogTemp, Display, TEXT("🏛️ [SOVEREIGN DUNGEON GENERATOR] LAYOUT GENERATION COMPLETE (Attempt %d, Seed %d)"), Attempt + 1, GenerationSeed);
+			UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+			UE_LOG(LogTemp, Display, TEXT(" Total Rooms: %d | Edges: %d | Spine Length: %d"), DungeonNodes.Num(), DungeonEdges.Num(), MainSpineNodeIndices.Num());
+			UE_LOG(LogTemp, Display, TEXT(" Standard Rooms -> Corridors: %d | Chambers: %d"), CorridorCount, ChamberCount);
+			UE_LOG(LogTemp, Display, TEXT(" Special Rooms  -> Entrance: 1 | Treasure: %d | Rest: %d | Boss: %d | Stairs: %d | Grand: %d | Colosseum: %d | Elite: %d"),
+				TreasureCountTotal, RestCountTotal, BossCountTotal, StairCountTotal, GrandCountTotal, ColosseumCountTotal, EliteCountTotal);
+			UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+			UE_LOG(LogTemp, Display, TEXT(" 📦 SPECIAL ROOMS & CHEST LOCATIONS REGISTRY (%d Total):"), SpecialRooms.Num());
+			for (const FSovereignSpecialRoomInfo& RoomInfo : SpecialRooms)
+			{
+				const FString ActorStr = RoomInfo.SpawnedActor ? RoomInfo.SpawnedActor->GetClass()->GetName() : TEXT("None");
+				UE_LOG(LogTemp, Display, TEXT("   • [%s] Coord: (%d, %d) | Footprint: %dx%d | Center: X=%.0f Y=%.0f Z=%.0f | Actor: %s"),
+					*RoomInfo.DisplayName, RoomInfo.GridCoord.X, RoomInfo.GridCoord.Y,
+					RoomInfo.FootprintDimensions.X, RoomInfo.FootprintDimensions.Y,
+					RoomInfo.WorldCenterLocation.X, RoomInfo.WorldCenterLocation.Y, RoomInfo.WorldCenterLocation.Z,
+					*ActorStr);
+			}
+			UE_LOG(LogTemp, Display, TEXT("================================================================================"));
 
 			OnDungeonGenerated.Broadcast(DungeonNodes.Num());
 			return true;
@@ -1087,10 +1292,26 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 	if (FloorMesh)
 	{
 		FloorInstancedComponent->SetStaticMesh(FloorMesh);
+		if (FloorMaterial)
+		{
+			FloorInstancedComponent->SetMaterial(0, FloorMaterial);
+		}
+		else
+		{
+			FloorInstancedComponent->EmptyOverrideMaterials();
+		}
 	}
 	if (WallMesh)
 	{
 		WallInstancedComponent->SetStaticMesh(WallMesh);
+		if (WallMaterial)
+		{
+			WallInstancedComponent->SetMaterial(0, WallMaterial);
+		}
+		else
+		{
+			WallInstancedComponent->EmptyOverrideMaterials();
+		}
 	}
 
 	const FVector Origin = GetActorLocation();
@@ -1115,9 +1336,32 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 		}
 	}
 
-	// 3. Multi-Cell Perimeter Boundary & Edge-Aware Doorway Snapping (Ticket B-095)
+	// 3. Multi-Cell Perimeter Boundary & Edge-Aware Doorway Snapping (Ticket B-095) with Wall-on-Wall Deduplication
 	// Iterate strictly over Node.PerimeterSockets - internal cells have zero sockets, guaranteeing zero interior walls!
 	TSet<int32> ProcessedSealedGates;
+	TSet<FIntPoint> OccupiedWallEdges;
+	TSet<FIntPoint> OccupiedPassageEdges;
+
+	// Pre-pass: Index all connected passage/doorway edges so solid walls never spawn over openings
+	for (const FSovereignDungeonNode& Node : DungeonNodes)
+	{
+		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
+		{
+			if (Socket.bIsConnected)
+			{
+				FIntPoint StepDir = FIntPoint::ZeroValue;
+				switch (Socket.FacingDirection)
+				{
+				case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+				case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+				case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+				case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+				default: break;
+				}
+				OccupiedPassageEdges.Add(Socket.CellCoord * 2 + StepDir);
+			}
+		}
+	}
 
 	for (int32 NodeIdx = 0; NodeIdx < DungeonNodes.Num(); ++NodeIdx)
 	{
@@ -1126,6 +1370,17 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 		for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
 		{
+			FIntPoint StepDir = FIntPoint::ZeroValue;
+			switch (Socket.FacingDirection)
+			{
+			case EDungeonDirection::North: StepDir = FIntPoint(1, 0); break;
+			case EDungeonDirection::East:  StepDir = FIntPoint(0, 1); break;
+			case EDungeonDirection::South: StepDir = FIntPoint(-1, 0); break;
+			case EDungeonDirection::West:  StepDir = FIntPoint(0, -1); break;
+			default: break;
+			}
+			const FIntPoint EdgeKey = Socket.CellCoord * 2 + StepDir;
+
 			// World coordinate of this specific perimeter cell
 			const FVector CellPos = Origin + FVector(Socket.CellCoord.X * TILE_SIZE, Socket.CellCoord.Y * TILE_SIZE, 0.0f);
 
@@ -1170,8 +1425,12 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 			if (!Socket.bIsConnected)
 			{
-				// Unconnected perimeter socket: Spawn solid outer boundary wall
-				WallInstancedComponent->AddInstance(FaceTransform);
+				// Unconnected perimeter socket: Spawn solid outer boundary wall unless already spawned by an adjacent room or occupied by a passage
+				if (!OccupiedWallEdges.Contains(EdgeKey) && !OccupiedPassageEdges.Contains(EdgeKey))
+				{
+					WallInstancedComponent->AddInstance(FaceTransform);
+					OccupiedWallEdges.Add(EdgeKey);
+				}
 			}
 			else
 			{
@@ -1222,9 +1481,11 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 					}
 				}
 
-				// If no DoorBlueprintClass was assigned and bProceduralArchwayFallback is enabled, construct primitive archway opening
-				if (!DoorBlueprintClass && bProceduralArchwayFallback && WallInstancedComponent)
+				// If no DoorBlueprintClass was assigned and bProceduralArchwayFallback is enabled, construct primitive archway opening (deduplicated per edge)
+				if (!DoorBlueprintClass && bProceduralArchwayFallback && WallInstancedComponent && !OccupiedWallEdges.Contains(EdgeKey))
 				{
+					OccupiedWallEdges.Add(EdgeKey);
+
 					// Construct a 400w x 500h opening using left post, right post, and top lintel
 					const FVector LeftPostLocal(-350.0f * FaceRotation.RotateVector(FVector::RightVector));
 					FTransform LeftTransform = FaceTransform;
@@ -1247,20 +1508,82 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 			}
 		}
 
-		// 4. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop
+		// 3.5 For Entrance Room: Spawn Interactive Entrance Gateway Actor (Ticket B-111)
+		if (Node.TileType == EDungeonTileType::EntranceRoom && GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			// Find an unconnected boundary perimeter socket (closed wall) opposite outgoing passages
+			FVector EntrancePortalPos = Node.WorldTransform.GetLocation();
+			FRotator EntrancePortalRot = Node.WorldTransform.GetRotation().Rotator();
+			bool bFoundClosedWall = false;
+
+			for (const FSovereignDoorwaySocket& Socket : Node.PerimeterSockets)
+			{
+				const uint8 DirMask = 1 << static_cast<uint8>(Socket.FacingDirection);
+				const bool bHasEdge = (Node.ConnectedPassageMask & DirMask) != 0;
+				if (!bHasEdge)
+				{
+					// Found an unconnected perimeter boundary
+					FVector DirVector = FVector::ZeroVector;
+					switch (Socket.FacingDirection)
+					{
+					case EDungeonDirection::North: DirVector = FVector(1.0f, 0.0f, 0.0f); break;
+					case EDungeonDirection::South: DirVector = FVector(-1.0f, 0.0f, 0.0f); break;
+					case EDungeonDirection::East:  DirVector = FVector(0.0f, 1.0f, 0.0f); break;
+					case EDungeonDirection::West:  DirVector = FVector(0.0f, -1.0f, 0.0f); break;
+					default: break;
+					}
+
+					EntrancePortalPos = Node.WorldTransform.GetLocation() + (DirVector * (TILE_SIZE * 0.45f));
+					EntrancePortalRot = DirVector.Rotation();
+					bFoundClosedWall = true;
+					break;
+				}
+			}
+
+			int32 ActiveDepth = 0;
+			if (UGameInstance* GI = GetWorld()->GetGameInstance())
+			{
+				if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+				{
+					ActiveDepth = DungeonSub->GetCurrentDepth();
+				}
+			}
+
+			UClass* ActorClassToSpawn = nullptr;
+			if (ActiveDepth > 0)
+			{
+				ActorClassToSpawn = UpwardStairsClass ? UpwardStairsClass.Get() : ASovereignUpwardStairs::StaticClass();
+			}
+			else
+			{
+				ActorClassToSpawn = EntranceActorClass ? EntranceActorClass.Get() : ASovereignDungeonEntrance::StaticClass();
+			}
+
+			if (ASovereignBaseInteractable* EntranceActor = GetWorld()->SpawnActor<ASovereignBaseInteractable>(
+				ActorClassToSpawn, EntrancePortalPos, EntrancePortalRot, SpawnParams))
+			{
+				GeneratorSpawnedActors.Add(EntranceActor);
+				UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned %s in Node %d at %s (Depth: %d)."),
+					*ActorClassToSpawn->GetName(), NodeIdx, *EntrancePortalPos.ToString(), ActiveDepth);
+			}
+		}
+
+		// 4. For Terminal Boss Chamber: Spawn Boss Altar / Egg Prop & Extraction Teleporter (Ticket B-112)
 		if (Node.TileType == EDungeonTileType::BossChamber)
 		{
+			const FVector BossCenterPos = AnchorPos + FVector(
+				(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+				(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+				50.0f
+			);
+
 			if (BossAltarMesh && GetWorld())
 			{
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-				// Place altar in the center of the multi-cell Boss Chamber
-				const FVector BossCenterPos = AnchorPos + FVector(
-					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
-					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
-					50.0f
-				);
 
 				if (AStaticMeshActor* AltarActor = GetWorld()->SpawnActor<AStaticMeshActor>(
 					AStaticMeshActor::StaticClass(), BossCenterPos, FRotator::ZeroRotator, SpawnParams))
@@ -1270,6 +1593,85 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 						AltarActor->GetStaticMeshComponent()->SetStaticMesh(BossAltarMesh);
 					}
 					GeneratorSpawnedActors.Add(AltarActor);
+				}
+			}
+
+			// Spawn ASovereignBossTeleporter placed behind the boss opposite the entry door
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				// Find direction of the boss entrance edge
+				EDungeonDirection EntryDirection = EDungeonDirection::South;
+				for (const FSovereignDungeonEdge& Edge : DungeonEdges)
+				{
+					if (Edge.Connects(NodeIdx))
+					{
+						// If NodeIdx is NodeB, the edge entered from NodeA via DirectionAtoB
+						if (Edge.NodeIndexB == NodeIdx)
+						{
+							EntryDirection = Edge.DirectionAtoB;
+						}
+						else
+						{
+							switch (Edge.DirectionAtoB)
+							{
+							case EDungeonDirection::North: EntryDirection = EDungeonDirection::South; break;
+							case EDungeonDirection::South: EntryDirection = EDungeonDirection::North; break;
+							case EDungeonDirection::East:  EntryDirection = EDungeonDirection::West; break;
+							case EDungeonDirection::West:  EntryDirection = EDungeonDirection::East; break;
+							default: break;
+							}
+						}
+						break;
+					}
+				}
+
+				// The back wall is in the forward direction of EntryDirection
+				FVector BackWallOffset = FVector::ZeroVector;
+				switch (EntryDirection)
+				{
+				case EDungeonDirection::North: BackWallOffset = FVector(1.0f, 0.0f, 0.0f); break;
+				case EDungeonDirection::South: BackWallOffset = FVector(-1.0f, 0.0f, 0.0f); break;
+				case EDungeonDirection::East:  BackWallOffset = FVector(0.0f, 1.0f, 0.0f); break;
+				case EDungeonDirection::West:  BackWallOffset = FVector(0.0f, -1.0f, 0.0f); break;
+				default: BackWallOffset = FVector(1.0f, 0.0f, 0.0f); break;
+				}
+
+				// Offset teleporter behind boss relative to boss entrance
+				const float HalfChamberExtent = (Node.FootprintDimensions.X * TILE_SIZE) * 0.40f;
+				const FVector TeleporterPos = BossCenterPos + (BackWallOffset * HalfChamberExtent);
+				const FRotator TeleporterRot = (-BackWallOffset).Rotation(); // Face inwards toward center
+
+				UClass* TeleporterClassToSpawn = BossTeleporterClass ? BossTeleporterClass.Get() : ASovereignBossTeleporter::StaticClass();
+				if (ASovereignBossTeleporter* Teleporter = GetWorld()->SpawnActor<ASovereignBossTeleporter>(
+					TeleporterClassToSpawn, TeleporterPos, TeleporterRot, SpawnParams))
+				{
+					GeneratorSpawnedActors.Add(Teleporter);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignBossTeleporter in BossChamber Node %d at %s."),
+						NodeIdx, *TeleporterPos.ToString());
+				}
+
+				// Spawn descent stairs in Boss Chamber (Ticket B-116)
+				if (bSpawnDescentStairs)
+				{
+					FVector OrthoOffset = FVector::CrossProduct(BackWallOffset, FVector::UpVector).GetSafeNormal();
+					const FVector StairsPos = TeleporterPos + (OrthoOffset * (TILE_SIZE * 0.35f));
+
+					UClass* StairsClassToSpawn = DescentStairsClass ? DescentStairsClass.Get() : ASovereignDungeonStairs::StaticClass();
+					if (ASovereignDungeonStairs* Stairs = GetWorld()->SpawnActor<ASovereignDungeonStairs>(
+						StairsClassToSpawn, StairsPos, TeleporterRot, SpawnParams))
+					{
+						if (DescentStairsMesh && Stairs->GatewayDoorMesh)
+						{
+							Stairs->GatewayDoorMesh->SetStaticMesh(DescentStairsMesh);
+						}
+
+						GeneratorSpawnedActors.Add(Stairs);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignDungeonStairs in BossChamber Node %d at %s."),
+							NodeIdx, *StairsPos.ToString());
+					}
 				}
 			}
 		}
@@ -1330,6 +1732,54 @@ void ASovereignDungeonGenerator::SpawnDungeonGeometry()
 
 					GeneratorSpawnedActors.Add(Chest);
 					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned ASovereignTreasureChest in TreasureRoom Node %d."), NodeIdx);
+				}
+			}
+		}
+		// 7. For Dedicated 4x4 Stair Room: Spawn Descent Stairs & Optional Rest Sanctuary (Ticket B-116)
+		else if (Node.TileType == EDungeonTileType::StairRoom)
+		{
+			if (GetWorld())
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				const FVector StairCenterPos = AnchorPos + FVector(
+					(Node.FootprintDimensions.X - 1) * TILE_SIZE * 0.5f,
+					(Node.FootprintDimensions.Y - 1) * TILE_SIZE * 0.5f,
+					30.0f
+				);
+
+				UClass* StairsClassToSpawn = DescentStairsClass ? DescentStairsClass.Get() : ASovereignDungeonStairs::StaticClass();
+				if (ASovereignDungeonStairs* Stairs = GetWorld()->SpawnActor<ASovereignDungeonStairs>(
+					StairsClassToSpawn, StairCenterPos, FRotator::ZeroRotator, SpawnParams))
+				{
+					// Dedicated Stair Room bypasses the boss; stairs start unlocked without requiring boss kill
+					Stairs->bRequireBossDefeat = false;
+					Stairs->SetGatewayUnlocked(true);
+
+					if (DescentStairsMesh && Stairs->GatewayDoorMesh)
+					{
+						Stairs->GatewayDoorMesh->SetStaticMesh(DescentStairsMesh);
+					}
+
+					GeneratorSpawnedActors.Add(Stairs);
+					UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned Unlocked ASovereignDungeonStairs in StairRoom Node %d."), NodeIdx);
+				}
+
+				// Optional Rest Terminal spawn chance inside Stair Room (Ticket B-116)
+				if (FMath::FRand() <= StairRoomRestTerminalChance)
+				{
+					const FVector RestPos = StairCenterPos + FVector(TILE_SIZE * 0.35f, TILE_SIZE * 0.35f, 0.0f);
+					UClass* TerminalClassToSpawn = RestTerminalClass ? RestTerminalClass.Get() : ASovereignRestTerminal::StaticClass();
+					if (ASovereignRestTerminal* Terminal = GetWorld()->SpawnActor<ASovereignRestTerminal>(
+						TerminalClassToSpawn, RestPos, FRotator::ZeroRotator, SpawnParams))
+					{
+						Terminal->MaxRestCharges = DefaultRestCharges;
+						Terminal->RemainingRestCharges = DefaultRestCharges;
+						Terminal->bRandomizeCharges = bRandomizeRestCharges;
+						GeneratorSpawnedActors.Add(Terminal);
+						UE_LOG(LogTemp, Log, TEXT("[DungeonGenerator] Spawned bonus ASovereignRestTerminal in StairRoom Node %d."), NodeIdx);
+					}
 				}
 			}
 		}
@@ -1509,6 +1959,14 @@ void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 							if (FloorActor->GetStaticMeshComponent() && PlatformMeshToUse)
 							{
 								FloorActor->GetStaticMeshComponent()->SetStaticMesh(PlatformMeshToUse);
+								if (FloorMaterial)
+								{
+									FloorActor->GetStaticMeshComponent()->SetMaterial(0, FloorMaterial);
+								}
+								else
+								{
+									FloorActor->GetStaticMeshComponent()->EmptyOverrideMaterials();
+								}
 								FloorActor->SetActorScale3D(FVector(TILE_SIZE / 100.0f, TILE_SIZE / 100.0f, 0.2f));
 							}
 #if WITH_EDITOR
@@ -1532,6 +1990,14 @@ void ASovereignDungeonGenerator::SpawnFarOffBattleArenas()
 						if (WallActor->GetStaticMeshComponent() && WallMeshToUse)
 						{
 							WallActor->GetStaticMeshComponent()->SetStaticMesh(WallMeshToUse);
+							if (WallMaterial)
+							{
+								WallActor->GetStaticMeshComponent()->SetMaterial(0, WallMaterial);
+							}
+							else
+							{
+								WallActor->GetStaticMeshComponent()->EmptyOverrideMaterials();
+							}
 							WallActor->SetActorScale3D(FVector(0.3f, TILE_SIZE / 100.0f, 6.0f));
 						}
 #if WITH_EDITOR
@@ -1685,9 +2151,18 @@ void ASovereignDungeonGenerator::ProcessPlayerMovement(ASovereignBaseCharacter* 
 					// Pick an active biome arena
 					ASovereignBattleManager* ActiveArena = GetBattleArenaForBiome(0);
 
-					// Spawn temporary random enemies or trigger battle manager
-					TArray<ASovereignBaseCharacter*> EnemyUnits;
-					Subsystem->TriggerEncounter(PlayerLeader, nullptr, EnemyUnits, true, ActiveArena);
+					if (RandomEncounterPool.Num() > 0)
+					{
+						const int32 RandomIdx = FMath::RandRange(0, RandomEncounterPool.Num() - 1);
+						USovereignEncounterDefinition* SelectedEncounter = RandomEncounterPool[RandomIdx];
+						Subsystem->TriggerEncounterWithDefinition(PlayerLeader, nullptr, SelectedEncounter, ActiveArena);
+					}
+					else
+					{
+						// Spawn temporary random enemies or trigger battle manager
+						TArray<ASovereignBaseCharacter*> EnemyUnits;
+						Subsystem->TriggerEncounter(PlayerLeader, nullptr, EnemyUnits, true, ActiveArena);
+					}
 				}
 			}
 		}
@@ -1701,6 +2176,30 @@ FTransform ASovereignDungeonGenerator::GetEntranceTransform() const
 		return DungeonNodes[0].WorldTransform;
 	}
 	return GetActorTransform();
+}
+
+ASovereignBossTeleporter* ASovereignDungeonGenerator::GetBossTeleporterActor() const
+{
+	for (AActor* SpawnedActor : GeneratorSpawnedActors)
+	{
+		if (SpawnedActor && (SpawnedActor->IsA<ASovereignBossTeleporter>() || (BossTeleporterClass && SpawnedActor->IsA(BossTeleporterClass))))
+		{
+			return Cast<ASovereignBossTeleporter>(SpawnedActor);
+		}
+	}
+	return nullptr;
+}
+
+ASovereignBaseInteractable* ASovereignDungeonGenerator::GetEntranceGatewayActor() const
+{
+	for (AActor* SpawnedActor : GeneratorSpawnedActors)
+	{
+		if (SpawnedActor && (SpawnedActor->IsA<ASovereignDungeonEntrance>() || (EntranceActorClass && SpawnedActor->IsA(EntranceActorClass))))
+		{
+			return Cast<ASovereignBaseInteractable>(SpawnedActor);
+		}
+	}
+	return nullptr;
 }
 
 FTransform ASovereignDungeonGenerator::GetBossChamberTransform() const

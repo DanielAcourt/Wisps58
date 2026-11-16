@@ -1,3 +1,4 @@
+// Copyright (c) 2013-2026 Daniel Acourt. Version 36.4.1. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-05
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -50,6 +51,50 @@ public:
 	/** Derived from Dexterity and Equipment */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sovereign|Core Attributes")
 	int32 ArmourClass;
+
+	// --- CORE ATTRIBUTE GETTERS & SETTERS ---
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetStrength() const { return Strength; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetStrength(int32 Value) { Strength = Value; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetDexterity() const { return Dexterity; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetDexterity(int32 Value) { Dexterity = Value; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetConstitution() const { return Constitution; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetConstitution(int32 Value) { Constitution = Value; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetIntelligence() const { return Intelligence; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetIntelligence(int32 Value) { Intelligence = Value; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetWisdom() const { return Wisdom; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetWisdom(int32 Value) { Wisdom = Value; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetCharisma() const { return Charisma; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetCharisma(int32 Value) { Charisma = Value; }
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Core Attributes")
+	int32 GetLuck() const { return Luck; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Core Attributes")
+	void SetLuck(int32 Value) { Luck = Value; }
 
 	// --- 2. USABLE RESOURCES (Real-time Bars) ---
 

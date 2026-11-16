@@ -9,6 +9,7 @@
 
 class ASovereignBaseCharacter;
 class UStaticMesh;
+class UMaterialInterface;
 
 // --- Direction, Passage, and Door Enums (Ticket B-090) ---
 
@@ -53,7 +54,8 @@ enum class EDungeonTileType : uint8
 	RestSanctuary   UMETA(DisplayName = "Rest Sanctuary"),
 	GrandChamber    UMETA(DisplayName = "Grand Chamber"),
 	Colosseum       UMETA(DisplayName = "Trial Colosseum"),
-	BossChamber     UMETA(DisplayName = "Boss Chamber")
+	BossChamber     UMETA(DisplayName = "Boss Chamber"),
+	StairRoom       UMETA(DisplayName = "Stair Room")
 };
 
 /**
@@ -256,6 +258,45 @@ struct WISPCPP7VR_API FSovereignDungeonNode
 	}
 };
 
+/**
+ * FSovereignSpecialRoomInfo
+ * Diagnostic & gameplay registry entry for special rooms spawned within the procedural dungeon (Ticket B-120).
+ * Tracks Entrance, Treasure, Rest, Stair, Grand, Colosseum, Elite, and Boss rooms.
+ */
+USTRUCT(BlueprintType)
+struct WISPCPP7VR_API FSovereignSpecialRoomInfo
+{
+	GENERATED_BODY()
+
+	/** Logical node index in DungeonNodes */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	int32 NodeIndex = INDEX_NONE;
+
+	/** Semantic room type (EntranceRoom, TreasureRoom, RestSanctuary, BossChamber, StairRoom, etc.) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	EDungeonTileType TileType = EDungeonTileType::Chamber;
+
+	/** Top-left anchor coordinate in 1000cm grid units */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FIntPoint GridCoord = FIntPoint::ZeroValue;
+
+	/** World location representing the spatial center of this room footprint */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FVector WorldCenterLocation = FVector::ZeroVector;
+
+	/** Width and height of this room in 1000cm grid cells */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FIntPoint FootprintDimensions = FIntPoint(1, 1);
+
+	/** Spawned interactive actor associated with this room (ASovereignTreasureChest, RestTerminal, Stairs, etc.) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	TObjectPtr<AActor> SpawnedActor = nullptr;
+
+	/** Human-readable display label (e.g., "Treasure Room (Node 4)") */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon")
+	FString DisplayName;
+};
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDungeonGenerated, int32, TotalTilesGenerated);
 
 /**
@@ -416,6 +457,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
 	TObjectPtr<UStaticMesh> WallMesh;
 
+	/** Optional material override for standard floor tiles (if unset, uses the material assigned to FloorMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UMaterialInterface> FloorMaterial;
+
+	/** Optional material override for perimeter walls (if unset, uses the material assigned to WallMesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UMaterialInterface> WallMaterial;
+
 	/** Optional custom Blueprint actor class for interactive swinging doors (Ticket B-105, inherits ASovereignDungeonDoor) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignDungeonDoor> DoorBlueprintClass;
@@ -427,6 +476,42 @@ public:
 	/** Optional custom Blueprint actor class for treasure chests (Ticket B-107, inherits ASovereignTreasureChest) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
 	TSubclassOf<class ASovereignTreasureChest> TreasureChestBlueprintClass;
+
+	/** Optional custom Blueprint actor class for dungeon entrance gateway (Ticket B-111, inherits ASovereignBaseInteractable) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignBaseInteractable> EntranceActorClass;
+
+	/** Optional custom Blueprint actor class for upward return stairs on Depth >= 1 (Ticket B-117, inherits ASovereignUpwardStairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignUpwardStairs> UpwardStairsClass;
+
+	/** Optional custom Blueprint actor class for post-boss exit teleporter (Ticket B-112, inherits ASovereignBossTeleporter) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignBossTeleporter> BossTeleporterClass;
+
+	/** Optional custom Blueprint actor class for procedural descent stairs (Ticket B-116, inherits ASovereignDungeonStairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Blueprints")
+	TSubclassOf<class ASovereignDungeonStairs> DescentStairsClass;
+
+	/** Mode toggle: If true, stairs only spawn in Boss Chamber; if false, can also spawn in dedicated Stair Rooms (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	bool bToggleBossOnlyStairs = true;
+
+	/** If true, spawns descent stairs in the Boss Chamber alongside/behind the boss */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	bool bSpawnDescentStairs = true;
+
+	/** Randomized probability of spawning a 4x4 Stair Room when floor is already conquered (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	float StairRoomSpawnChance = 0.5f;
+
+	/** Chance to spawn an ASovereignRestTerminal inside the 4x4 Stair Room (Ticket B-116) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Stairs")
+	float StairRoomRestTerminalChance = 0.5f;
+
+	/** Optional mesh for descent stairs (wedge / ramp / modeled stairs) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
+	TObjectPtr<UStaticMesh> DescentStairsMesh;
 
 	/** Optional specialized mesh for sealed Boss Gate barrier actor (used when BossGateBlueprintClass is null) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Geometry")
@@ -447,6 +532,10 @@ public:
 	/** Active layout nodes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
 	TArray<FSovereignDungeonNode> DungeonNodes;
+
+	/** Registry of all special rooms generated (Entrance, Treasure, Rest, Stair, Colosseum, Grand, Boss) (Ticket B-120) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
+	TArray<FSovereignSpecialRoomInfo> SpecialRooms;
 
 	/** Master spatial cell reservation map mapping each occupied 1000cm grid cell to its owning room index (Ticket B-094) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Layout")
@@ -514,6 +603,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Encounters")
 	float RandomEncounterChance = 25.0f;
 
+	/** Optional encounter definitions for random step encounters in this dungeon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Encounters")
+	TArray<TObjectPtr<class USovereignEncounterDefinition>> RandomEncounterPool;
+
 	/** Accumulated movement distance since last encounter check */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Encounters")
 	float AccumulatedStepDistance = 0.0f;
@@ -549,6 +642,10 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Sovereign|Dungeon|Editor Actions")
 	void InspectEntrance();
 
+	/** Returns the list of all special rooms generated in this dungeon (Ticket B-120) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon|Layout")
+	const TArray<FSovereignSpecialRoomInfo>& GetSpecialRooms() const { return SpecialRooms; }
+
 	/**
 	 * Spawns the dedicated battle arena platform array with physical 3D theater stages.
 	 */
@@ -580,6 +677,7 @@ public:
 		case EDungeonTileType::Colosseum:     return FIntPoint(8, 8);
 		case EDungeonTileType::EliteChamber:  return FIntPoint(2, 2);
 		case EDungeonTileType::BossChamber:   return FIntPoint(4, 4);
+		case EDungeonTileType::StairRoom:     return FIntPoint(4, 4);
 		default:                              return FIntPoint(1, 1);
 		}
 	}
@@ -599,6 +697,7 @@ public:
 		case EDungeonTileType::Colosseum:     return 4; // Major trial hub
 		case EDungeonTileType::EliteChamber:  return 2; // Linear gatekeeper
 		case EDungeonTileType::BossChamber:   return 1; // Single entrance strictly
+		case EDungeonTileType::StairRoom:     return 2; // Descent hub
 		default:                              return 2;
 		}
 	}
@@ -644,9 +743,17 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
 	FTransform GetEntranceTransform() const;
 
+	/** Returns spawned entrance gateway actor if present (Ticket B-111) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
+	class ASovereignBaseInteractable* GetEntranceGatewayActor() const;
+
 	/** Returns world transform of the terminal Boss Chamber */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
 	FTransform GetBossChamberTransform() const;
+
+	/** Returns spawned boss teleporter actor if present (Ticket B-112) */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")
+	class ASovereignBossTeleporter* GetBossTeleporterActor() const;
 
 	/** Selects an active battle manager from the biome arenas array */
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Dungeon")

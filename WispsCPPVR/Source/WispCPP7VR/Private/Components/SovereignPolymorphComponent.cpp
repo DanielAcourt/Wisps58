@@ -2,9 +2,11 @@
 
 #include "Components/SovereignPolymorphComponent.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Dom/JsonObject.h"
 
 USovereignPolymorphComponent::USovereignPolymorphComponent()
 {
@@ -19,6 +21,15 @@ USovereignPolymorphComponent::USovereignPolymorphComponent()
 void USovereignPolymorphComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (AActor* Owner = GetOwner())
+	{
+		if (USovereignSaveableEntityComponent* SoulHub = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
+		{
+			SoulHub->RegisterBroker(this);
+		}
+	}
+
 	CacheTrueFormDefaults();
 }
 
@@ -204,4 +215,34 @@ bool USovereignPolymorphComponent::SetVesselForm(ESovereignVesselForm NewForm)
 
 	OnVesselFormChanged.Broadcast(CurrentForm);
 	return true;
+}
+
+void USovereignPolymorphComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
+{
+	if (!OutJson.IsValid()) return;
+
+	TSharedPtr<FJsonObject> PolymorphObj = MakeShared<FJsonObject>();
+	PolymorphObj->SetNumberField(TEXT("CurrentForm"), static_cast<int32>(CurrentForm));
+	PolymorphObj->SetNumberField(TEXT("RequiredGrowthStage"), RequiredGrowthStage);
+
+	OutJson->SetObjectField(TEXT("Sovereign.Polymorph"), PolymorphObj);
+}
+
+void USovereignPolymorphComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
+{
+	if (!InJson.IsValid() || !InJson->HasField(TEXT("Sovereign.Polymorph"))) return;
+
+	TSharedPtr<FJsonObject> PolymorphObj = InJson->GetObjectField(TEXT("Sovereign.Polymorph"));
+	if (!PolymorphObj.IsValid()) return;
+
+	double FormVal;
+	if (PolymorphObj->TryGetNumberField(TEXT("CurrentForm"), FormVal))
+	{
+		ESovereignVesselForm LoadedForm = static_cast<ESovereignVesselForm>((uint8)FormVal);
+		SetVesselForm(LoadedForm);
+	}
+}
+
+void USovereignPolymorphComponent::OnProcessData(const TMap<FString, FString>& Data)
+{
 }

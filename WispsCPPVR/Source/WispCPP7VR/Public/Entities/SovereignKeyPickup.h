@@ -64,6 +64,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Key|Animation")
 	float BobFrequency = 2.0f;
 
+	/** Whether this key pickup has been collected */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Dungeon|Key")
+	bool bIsPickedUp = false;
+
 	// --- Events ---
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Dungeon|Key")
 	FOnKeyPickedUp OnKeyPickedUp;

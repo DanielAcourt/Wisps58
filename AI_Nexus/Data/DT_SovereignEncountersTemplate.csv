@@ -1,0 +1,4 @@
+Name,EncounterTag,DisplayName,EnemySlots,CanFlee,MinDepth,SpawnWeight
+Encounter_GoblinPatrol,Encounter.Dungeon.GoblinPatrol,Goblin Patrol,"0:Enemy_GoblinWarrior;1:Enemy_GoblinScout",true,0,100.0
+Encounter_GoblinAmbush,Encounter.Dungeon.GoblinAmbush,Goblin Ambush,"0:Enemy_GoblinWarrior;2:Enemy_GoblinScout;6:Enemy_GoblinShaman",true,0,75.0
+Encounter_HobgoblinWarband,Encounter.Dungeon.HobgoblinWarband,Hobgoblin Warband,"0:Enemy_HobgoblinChief;1:Enemy_GoblinWarrior;2:Enemy_GoblinWarrior;7:Enemy_GoblinShaman",false,1,50.0

@@ -92,3 +92,68 @@ bool FSovereignInventoryPersistenceTest::RunTest(const FString& Parameters)
 
 	return true;
 }
+
+/**
+ * Unit Test: B-119 Transient Fallback Item Definition Persistence (e.g. Boss Keys)
+ */
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSovereignInventoryFallbackItemPersistenceTest,
+	"Sovereign.Inventory.FallbackItemPersistence",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool FSovereignInventoryFallbackItemPersistenceTest::RunTest(const FString& Parameters)
+{
+	USovereignInventoryComponent* Inv = NewObject<USovereignInventoryComponent>();
+	USovereignInventoryBroker* Broker = NewObject<USovereignInventoryBroker>();
+	if (!Inv || !Broker)
+	{
+		AddError(TEXT("Failed to instantiate inventory or broker"));
+		return false;
+	}
+
+	Broker->Initialize(Inv);
+
+	// Register Boss Key Tag
+	UGameplayTagsManager::Get().AddNativeGameplayTag(TEXT("Item.Key.BossGate"));
+	FGameplayTag KeyTag = FGameplayTag::RequestGameplayTag(TEXT("Item.Key.BossGate"), false);
+
+	// Create transient fallback item definition without static DataAsset asset file
+	USovereignItemDefinition* TransientKeyDef = NewObject<USovereignItemDefinition>(Inv);
+	TransientKeyDef->ItemTag = KeyTag;
+	TransientKeyDef->DisplayName = FText::FromString(TEXT("Vault Guardian Key"));
+
+	// Add transient key to inventory
+	Inv->AddItem(TransientKeyDef, 1);
+	TestEqual(TEXT("Inventory should have 1 item"), Inv->InventorySlots.Num(), 1);
+	TestEqual(TEXT("Key count should be 1"), Inv->GetItemCountByTag(KeyTag), 1);
+
+	// Serialize
+	TSharedPtr<FJsonObject> RootJson = MakeShared<FJsonObject>();
+	Broker->OnSave(RootJson);
+
+	TestTrue(TEXT("RootJson should have Sovereign.Inventory"), RootJson->HasField(TEXT("Sovereign.Inventory")));
+	TSharedPtr<FJsonObject> InvJson = RootJson->GetObjectField(TEXT("Sovereign.Inventory"));
+	const TArray<TSharedPtr<FJsonValue>>* Slots = nullptr;
+	TestTrue(TEXT("Slots array found"), InvJson->TryGetArrayField(TEXT("Slots"), Slots) && Slots && Slots->Num() == 1);
+
+	TSharedPtr<FJsonObject> FirstSlotObj = (*Slots)[0]->AsObject();
+	TestTrue(TEXT("FallbackItemTag is present"), FirstSlotObj->HasField(TEXT("FallbackItemTag")));
+	TestEqual(TEXT("FallbackItemTag matches"), FirstSlotObj->GetStringField(TEXT("FallbackItemTag")), FString(TEXT("Item.Key.BossGate")));
+	TestEqual(TEXT("FallbackDisplayName matches"), FirstSlotObj->GetStringField(TEXT("FallbackDisplayName")), FString(TEXT("Vault Guardian Key")));
+
+	// Empty inventory and restore
+	Inv->InventorySlots.Empty();
+	TestEqual(TEXT("Inventory emptied"), Inv->InventorySlots.Num(), 0);
+
+	Broker->OnLoad(RootJson);
+
+	// Verify restored transient key
+	TestEqual(TEXT("Inventory restored with 1 slot"), Inv->InventorySlots.Num(), 1);
+	TestEqual(TEXT("Key count restored by tag"), Inv->GetItemCountByTag(KeyTag), 1);
+	TestNotNull(TEXT("ItemDefinition is valid"), Inv->InventorySlots[0].ItemDefinition.Get());
+	TestEqual(TEXT("Restored ItemTag matches"), Inv->InventorySlots[0].ItemDefinition.Get()->ItemTag.ToString(), FString(TEXT("Item.Key.BossGate")));
+	TestEqual(TEXT("Restored DisplayName matches"), Inv->InventorySlots[0].ItemDefinition.Get()->DisplayName.ToString(), FString(TEXT("Vault Guardian Key")));
+
+	return true;
+}

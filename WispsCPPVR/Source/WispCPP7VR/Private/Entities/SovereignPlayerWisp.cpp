@@ -255,9 +255,10 @@ void ASovereignPlayerWisp::AttemptPossession()
 				// --- STEP 4: PHYSICAL ATTACHMENT ---
 				if (USceneComponent* AttachmentComponent = IInteractionInterface::Execute_GetPossessionAttachmentComponent(HitActor))
 				{
+					const FName TargetSocket = AttachmentComponent->DoesSocketExist(FName("Soul_Socket")) ? FName("Soul_Socket") : NAME_None;
 					this->AttachToComponent(AttachmentComponent,
 						FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-						FName("Soul_Socket"));
+						TargetSocket);
 				}
 
 				// --- STEP 5: SOUL HANDOVER & INTERFACE HANDSHAKE ---

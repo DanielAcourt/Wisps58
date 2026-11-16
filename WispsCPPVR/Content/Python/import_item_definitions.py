@@ -24,13 +24,60 @@ def sanitize_asset_name(name_str):
     return f"DA_{clean_name}"
 
 
+def resolve_csv_path(csv_path="AI_Nexus/Data/DT_SovereignSpeciesTemplate.csv"):
+    """
+    Robustly resolves the path to the CSV file across different working directories
+    and Unreal Engine execution environments.
+    """
+    if not csv_path:
+        csv_path = "AI_Nexus/Data/DT_SovereignSpeciesTemplate.csv"
+
+    csv_path = csv_path.replace("\\", "/").strip("\"'")
+
+    # 1. Direct path exists
+    if os.path.exists(csv_path):
+        return os.path.abspath(csv_path)
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 2. Candidate: relative to repo root derived from script location
+    # Script is in <RepoRoot>/WispsCPPVR/Content/Python/
+    repo_root = os.path.abspath(os.path.join(script_dir, "..", "..", ".."))
+    candidate_repo = os.path.join(repo_root, csv_path)
+    if os.path.exists(candidate_repo):
+        return candidate_repo
+
+    # 3. Candidate: relative to unreal project dir
+    if IN_ENGINE:
+        try:
+            proj_dir = unreal.Paths.project_dir()
+            candidate_ue_proj = os.path.abspath(os.path.join(proj_dir, "..", csv_path))
+            if os.path.exists(candidate_ue_proj):
+                return candidate_ue_proj
+            candidate_ue_direct = os.path.abspath(os.path.join(proj_dir, csv_path))
+            if os.path.exists(candidate_ue_direct):
+                return candidate_ue_direct
+        except Exception:
+            pass
+
+    # 4. Fallback search by filename
+    base_name = os.path.basename(csv_path)
+    for search_root in [repo_root, script_dir]:
+        for root, _, files in os.walk(search_root):
+            if base_name in files:
+                return os.path.join(root, base_name)
+
+    return csv_path
+
+
 def parse_csv_item_rows(csv_path):
     """Parses CSV file and extracts item configuration records."""
-    if not os.path.exists(csv_path):
-        raise FileNotFoundError(f"CSV file not found: {csv_path}")
+    resolved_path = resolve_csv_path(csv_path)
+    if not os.path.exists(resolved_path):
+        raise FileNotFoundError(f"CSV file not found: {csv_path} (Resolved: {resolved_path})")
 
     records = []
-    with open(csv_path, mode='r', encoding='utf-8') as f:
+    with open(resolved_path, mode='r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             raw_name = row.get("Name", "").strip()
@@ -174,7 +221,13 @@ def import_item_definitions_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSpecie
             item_asset = editor_asset_lib.load_asset(package_path)
         else:
             factory = unreal.DataAssetFactory()
-            factory.data_asset_class = item_def_class
+            try:
+                factory.set_editor_property("data_asset_class", item_def_class)
+            except Exception:
+                try:
+                    factory.data_asset_class = item_def_class
+                except Exception:
+                    pass
             item_asset = asset_tools.create_asset(asset_name, output_dir, item_def_class, factory)
 
         if not item_asset:
@@ -185,9 +238,20 @@ def import_item_definitions_to_assets(csv_path="AI_Nexus/Data/DT_SovereignSpecie
         # Set Core Properties
         item_asset.set_editor_property("display_name", unreal.Text(rec["DisplayName"]))
         if rec["ItemTag"]:
-            tag_struct = unreal.GameplayTag()
-            tag_struct.tag_name = unreal.Name(rec["ItemTag"])
-            item_asset.set_editor_property("item_tag", tag_struct)
+            tag_struct = None
+            try:
+                tag_struct = unreal.GameplayStatics.request_gameplay_tag(unreal.Name(rec["ItemTag"]))
+            except Exception:
+                try:
+                    tag_struct = unreal.GameplayTag(tag_name=unreal.Name(rec["ItemTag"]))
+                except Exception:
+                    try:
+                        tag_struct = unreal.GameplayTag()
+                        tag_struct.set_editor_property("tag_name", unreal.Name(rec["ItemTag"]))
+                    except Exception:
+                        pass
+            if tag_struct:
+                item_asset.set_editor_property("item_tag", tag_struct)
 
         # Build Fragments Array
         req_frags = determine_required_fragments(rec)

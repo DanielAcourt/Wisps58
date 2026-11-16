@@ -25,6 +25,7 @@ class USovereignInventoryComponent;
 class USovereignInventoryBroker;
 class USovereignClassComponent;
 class USovereignSkillComponent;
+class USovereignStatusComponent;
 class USovereignATBComponent;
 class USovereignPartyComponent;
 class ASovereignPlayerWisp;
@@ -90,6 +91,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
 
+	UFUNCTION(BlueprintPure, Category = "Sovereign|Status")
+	USovereignStatusComponent* GetStatusComponent() const { return StatusComponent; }
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignATBComponent* GetATBComponent() const { return ATBComponent; }
 
@@ -123,6 +127,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	int32 GetCurrentGrowthStage() const { return CurrentGrowthStage; }
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
+	void SetCurrentGrowthStage(int32 NewStage);
+
 	/** Master template initialization from species data asset */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Species")
 	virtual void InitializeFromSovereignData(USovereignSpeciesData* InData);
@@ -150,6 +157,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
+	void SetDefaultMappingContext(class UInputMappingContext* NewContext) { DefaultMappingContext = NewContext; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputAction* GetMoveAction() const { return MoveAction; }
@@ -237,6 +247,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignSkillComponent* SkillComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
+	USovereignStatusComponent* StatusComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Components")
 	USovereignATBComponent* ATBComponent;
