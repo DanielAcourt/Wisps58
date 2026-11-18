@@ -403,9 +403,35 @@ TSharedPtr<FJsonObject> USovereignSaveableEntityComponent::CaptureFullEntityStat
 	return RootObj;
 }
 
+void USovereignSaveableEntityComponent::SetIsLoadedEntity(bool bLoaded)
+{
+	bIsLoadedEntity = bLoaded;
+
+	for (auto& Broker : RegisteredBrokers)
+	{
+		if (UObject* BrokerObj = Broker.GetObject())
+		{
+			if (USovereignBaseComponent* BaseComp = Cast<USovereignBaseComponent>(BrokerObj))
+			{
+				BaseComp->SetLoadedFromSave(bLoaded);
+			}
+		}
+	}
+
+	if (AActor* Owner = GetOwner())
+	{
+		if (ASovereignBaseCharacter* BaseChar = Cast<ASovereignBaseCharacter>(Owner))
+		{
+			BaseChar->bIsLoadedCharacter = bLoaded;
+		}
+	}
+}
+
 void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPtr<FJsonObject>& JsonData)
 {
 	if (!JsonData.IsValid()) return;
+
+	SetIsLoadedEntity(true);
 
 	// 1. RESTORE IDENTITY
 	const TSharedPtr<FJsonObject>* IdentityObj;
@@ -488,6 +514,16 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 		}
 	}
 
+	// 3b. POST-LOAD RECONCILIATION
+		// Notify all brokers that loading is complete so they can recalculate bounds or defaults (e.g. Health, Training Focus)
+	for (auto& Broker : RegisteredBrokers)
+	{
+		if (Broker.GetInterface())
+		{
+			Broker->OnPostLoad();
+		}
+	}
+
 	// 4. RESTORE OWNER & COMPONENT FLAT SAVE DATA (ISovereignSaveInterface)
 	if (AActor* Owner = GetOwner())
 	{
@@ -518,6 +554,7 @@ void USovereignSaveableEntityComponent::ApplyStateFromJsonObject(const TSharedPt
 			Owner->GetComponents(Comps);
 			for (UActorComponent* Comp : Comps)
 			{
+				// FIX: Use USovereignSaveInterface instead of ISovereignSaveInterface for StaticClass() reflection
 				if (Comp && Comp != this && Comp->GetClass()->ImplementsInterface(USovereignSaveInterface::StaticClass()))
 				{
 					if (ISovereignSaveInterface* SaveInterface = Cast<ISovereignSaveInterface>(Comp))

@@ -57,6 +57,16 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Mobility")
     bool bIsMobile = true;
 
+    /** Flag indicating if this entity was reconstituted from save data */
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveSystem")
+    bool bIsLoadedEntity = false;
+
+    UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
+    bool IsLoadedEntity() const { return bIsLoadedEntity; }
+
+    UFUNCTION(BlueprintCallable, Category = "Sovereign|SaveSystem")
+    void SetIsLoadedEntity(bool bLoaded);
+
 
     /** --- 2. MODULAR ARCHITECTURE (The Mediator) --- */
 

@@ -3,6 +3,7 @@
 #include "Components/SovereignLevelComponent.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+#include "Entities/SovereignBaseCharacter.h"
 #include "Dom/JsonObject.h"
 
 USovereignLevelComponent::USovereignLevelComponent()
@@ -25,15 +26,33 @@ void USovereignLevelComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	bool bIsLoaded = false;
 	if (AActor* Owner = GetOwner())
 	{
 		if (USovereignSaveableEntityComponent* SoulHub = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
 		{
 			SoulHub->RegisterBroker(this);
+			if (SoulHub->IsLoadedEntity())
+			{
+				bIsLoaded = true;
+			}
+		}
+
+		if (ASovereignBaseCharacter* BaseChar = Cast<ASovereignBaseCharacter>(Owner))
+		{
+			if (BaseChar->IsLoadedCharacter())
+			{
+				bIsLoaded = true;
+			}
 		}
 	}
 
-	DetermineDefaultTrainingFocus();
+	// Only compute default training focus from base stats for fresh spawns.
+	// Loaded characters defer this until OnLoad() after saved attributes are restored.
+	if (!bIsLoaded)
+	{
+		DetermineDefaultTrainingFocus();
+	}
 }
 
 void USovereignLevelComponent::SetTrainingFocus(ESovereignTrainingFocus NewFocus)
@@ -231,6 +250,14 @@ void USovereignLevelComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 		(*LevelObj)->TryGetNumberField(TEXT("CharismaXP"), CharismaXP);
 		(*LevelObj)->TryGetNumberField(TEXT("LuckXP"), LuckXP);
 	}
+
+	// If save data didn't specify a focus (ActiveTrainingFocus == None), safely determine it now using restored attributes
+	DetermineDefaultTrainingFocus();
+}
+void USovereignLevelComponent::OnPostLoad()
+{
+	// Re-evaluate default training focus now that real attributes are loaded from save data
+	DetermineDefaultTrainingFocus();
 }
 
 void USovereignLevelComponent::OnProcessData(const TMap<FString, FString>& Data)

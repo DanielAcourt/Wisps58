@@ -44,6 +44,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Entity")
 	FGuid GetSovereignID() const;
 
+	/** Flag indicating if this entity was restored from save data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveSystem")
+	bool bIsLoadedEntity = false;
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
+	bool IsLoadedEntity() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|SaveSystem")
+	void SetIsLoadedEntity(bool bLoaded);
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Input")
 	class UInputMappingContext* GetDefaultMappingContext() const { return DefaultMappingContext; }
 

@@ -11,6 +11,7 @@
 #include "JsonObjectConverter.h" // Requires "JsonUtilities" in Build.cs
 #include "Components/SovereignBioComponent.h"
 #include "Combat/SovereignDungeonSubsystem.h"
+#include "Combat/SovereignDungeonGenerator.h"
 #include "Entities/SovereignDungeonDoor.h"
 #include "Entities/SovereignTreasureChest.h"
 #include "Entities/SovereignRestTerminal.h"
@@ -334,6 +335,8 @@ void USaveManager::SaveWorldState(FString SlotName, bool bAsJson)
 
 void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
 {
+    TGuardValue<bool> LoadGuard(bIsLoadingWorldState, true);
+
     USovereignSaveGame* LoadedSuitcase = nullptr;
 
     if (bAsJson)
@@ -411,6 +414,7 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
                     if (auto* SaveComp = TargetActor->FindComponentByClass<USovereignSaveableEntityComponent>())
                     {
                         // Restore Identity immediately upon birth
+                        SaveComp->SetIsLoadedEntity(true);
                         SaveComp->EntityID = Data.MyGUID;
                         if (!Data.ObjectName.IsEmpty())
                         {
@@ -436,6 +440,7 @@ void USaveManager::LoadWorldState(FString SlotName, bool bAsJson)
             TargetActor->SetActorTransform(Data.WorldTransform);
             if (auto* SaveComp = TargetActor->FindComponentByClass<USovereignSaveableEntityComponent>())
             {
+                SaveComp->SetIsLoadedEntity(true);
                 if (!Data.ObjectName.IsEmpty())
                 {
                     SaveComp->ObjectName = Data.ObjectName;

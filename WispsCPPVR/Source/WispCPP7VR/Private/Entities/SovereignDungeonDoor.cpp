@@ -187,6 +187,7 @@ void ASovereignDungeonDoor::OpenDoor()
 	}
 
 	bIsOpen = true;
+	//This needs to trigger the door opening animation and sound effects, 
 	TargetRotation = ClosedRotation + FRotator(0.0f, OpenAngle, 0.0f);
 	OnDoorStateChanged.Broadcast(true);
 	UE_LOG(LogTemp, Log, TEXT("[DungeonDoor] %s opened."), *GetName());

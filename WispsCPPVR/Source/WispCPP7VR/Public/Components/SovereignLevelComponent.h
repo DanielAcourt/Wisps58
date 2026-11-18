@@ -71,6 +71,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Leveling")
 	void ProcessTrainingProgress(float DeltaTime);
 
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Loading")
+	void OnPostLoad();
+
 	/** ISovereignBrokerInterface Implementation */
 	virtual void OnSave(TSharedPtr<FJsonObject>& OutJson) override;
 	virtual void OnLoad(const TSharedPtr<FJsonObject>& InJson) override;

@@ -262,6 +262,32 @@ FGuid ASovereignBaseEntity::GetSovereignID() const
     return SaveDataComponent ? SaveDataComponent->EntityID : FGuid();
 }
 
+bool ASovereignBaseEntity::IsLoadedEntity() const
+{
+    if (bIsLoadedEntity)
+    {
+        return true;
+    }
+    if (SaveDataComponent && SaveDataComponent->IsLoadedEntity())
+    {
+        return true;
+    }
+    return false;
+}
+
+void ASovereignBaseEntity::SetIsLoadedEntity(bool bLoaded)
+{
+    bIsLoadedEntity = bLoaded;
+    if (SaveDataComponent)
+    {
+        SaveDataComponent->bIsLoadedEntity = bLoaded;
+    }
+    if (USovereignAttributeComponent* AttrComp = FindComponentByClass<USovereignAttributeComponent>())
+    {
+        AttrComp->SetLoadedFromSave(bLoaded);
+    }
+}
+
 // Implementation of the IGameplayTagAssetInterface
 void ASovereignBaseEntity::GetOwnedGameplayTags(FGameplayTagContainer& TagContainer) const
 {

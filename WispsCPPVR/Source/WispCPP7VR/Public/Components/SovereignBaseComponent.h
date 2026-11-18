@@ -20,6 +20,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|UI Inspection")
 	TSubclassOf<UUserWidget> InspectorWidgetClass;
 
+	/** Flag indicating if this component's state was reconstituted from save data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveSystem")
+	bool bIsLoadedFromSave = false;
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
+	bool IsLoadedFromSave() const { return bIsLoadedFromSave; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|SaveSystem")
+	virtual void SetLoadedFromSave(bool bLoaded) { bIsLoadedFromSave = bLoaded; }
+
 protected:
 	virtual void BeginPlay() override;
 

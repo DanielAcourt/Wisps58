@@ -383,6 +383,14 @@ bool FSovereignAttributeRegistrationTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Restored Luck level matches"), RestoredComp->Luck, 20);
     TestEqual(TEXT("Restored MaxHealth matches"), RestoredComp->MaxHealth, 160.0f);
     TestEqual(TEXT("Restored PhysicalResistance matches"), RestoredComp->PhysicalResistance, 0.2f);
+    TestTrue(TEXT("RestoredComp is marked as loaded from save"), RestoredComp->IsLoadedFromSave());
+    TestTrue(TEXT("RestoredComp identifies as loaded character"), RestoredComp->IsLoadedCharacter());
+
+    // 6. Verify SyncStatsFromEntity does NOT overwrite loaded character stats
+    RestoredComp->SyncStatsFromEntity(false);
+    TestEqual(TEXT("Restored Strength preserved after SyncStatsFromEntity on loaded component"), RestoredComp->Strength, 18);
+    TestEqual(TEXT("Restored Dexterity preserved after SyncStatsFromEntity on loaded component"), RestoredComp->Dexterity, 14);
+    TestEqual(TEXT("Restored MaxHealth preserved after SyncStatsFromEntity on loaded component"), RestoredComp->MaxHealth, 160.0f);
 
     return true;
 }

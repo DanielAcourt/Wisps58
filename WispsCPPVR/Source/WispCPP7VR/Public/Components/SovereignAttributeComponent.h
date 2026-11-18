@@ -131,12 +131,20 @@ public:
 
 	// --- 4. LOGIC & DATA SYNC ---
 
-	/** * Pulls base stats from the Owner's SaveDataComponent.
-	 * Essential for ensuring Humans, Plants, and Dragons have different starting potential.
-	 */
+	/** Returns true if this component, its owner, or the SaveManager indicates this is a loaded character */
+	UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
+	bool IsLoadedCharacter() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|SaveSystem")
+	void OnPostLoad();
+
+	/** * Pulls base stats from the Owner's SpeciesData asset.
+	 * Essential for ensuring Humans, Plants, and Dragons have different starting potential.
+	 * Only executes for fresh/new characters to prevent overwriting loaded save data.
+	 * @param bForce If true, forces sync even if this character is loaded.
+	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Attributes")
-	void SyncStatsFromEntity();
+	void SyncStatsFromEntity(bool bForce = false);
 
 	/** Incremental training function for scientific growth */
 	void TrainAttribute(double& TargetXP, int32& TargetLevel, double Amount, float Difficulty);

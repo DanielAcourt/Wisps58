@@ -25,6 +25,8 @@
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Entities/SovereignPlayerWisp.h" //hard coded reference for now
 #include "DataTables/SovereignSpeciesData.h"
+#include "SaveSystem/SovereignSaveManager.h"
+#include "Combat/SovereignDungeonSubsystem.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
 #include "Engine/SkeletalMesh.h"
@@ -72,6 +74,20 @@ void ASovereignBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// Check if we are entering via an active dungeon expedition and force load status early
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->bHasActiveExpedition && (!DungeonSub->PartyLeaderStateJson.IsEmpty() || DungeonSub->ActivePartyMembersData.Num() > 0))
+				{
+					SetIsLoadedCharacter(true);
+				}
+			}
+		}
+	}
 	// Start heartbeat timer for low-frequency biological growth & metabolism processing
 	float Interval = GetHeartbeatInterval();
 	if (Interval > 0.0f)
@@ -276,15 +292,6 @@ void ASovereignBaseCharacter::Move(const FInputActionValue& Value)
 
 	// 1. Get the Raw Input (-1.0 to 1.0 for each axis)
 	const FVector Input = Value.Get<FVector>();
-
-	// 2. DEBUG FEEDBACK (The Truth Teller for movement input)
-	/*	if (GEngine)
-	{
-		// This prints the raw numbers from your IMC to the screen
-		//FString DebugMsg = FString::Printf(TEXT("Input -> Forward/Back(Y): %.2f | Right/Left(X): %.2f | Up/Down(Z): %.2f"),Input.Y, Input.X, Input.Z);
-		//GEngine->AddOnScreenDebugMessage(1, 0.1f, FColor::Yellow, DebugMsg);
-	}
-	*/
 
 	// 3. Get Camera Directions
 	const FRotator Rotation = Controller->GetControlRotation();
@@ -605,9 +612,13 @@ void ASovereignBaseCharacter::SetCurrentGrowthStage(int32 NewStage)
 	CurrentGrowthStage = FMath::Clamp(NewStage, 0, 7);
 	RefreshVisuals();
 
-	if (AttributeComponent)
+	// GUARD: Prevent resetting stats to base growth stage defaults if loaded
+	if (!IsLoadedCharacter())
 	{
-		AttributeComponent->SyncStatsFromEntity();
+		if (AttributeComponent)
+		{
+			AttributeComponent->SyncStatsFromEntity();
+		}
 	}
 }
 
@@ -622,9 +633,17 @@ void ASovereignBaseCharacter::InitializeFromSovereignData(USovereignSpeciesData*
 	SpeciesData = InData;
 	RefreshVisuals();
 
-	if (AttributeComponent)
+	// GUARD: Do not overwrite attributes with default species data if this character is loaded from save!
+	if (!IsLoadedCharacter())
 	{
-		AttributeComponent->SyncStatsFromEntity();
+		if (AttributeComponent)
+		{
+			AttributeComponent->SyncStatsFromEntity();
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("[%s] InitializeFromSovereignData skipped SyncStatsFromEntity because character is loaded."), *GetName());
 	}
 
 	if (BioComponent && SpeciesData->GrowthStages.IsValidIndex(CurrentGrowthStage))
@@ -738,5 +757,56 @@ void ASovereignBaseCharacter::PostSpawnInitialize(const USovereignSpeciesData* I
 				Registry->RegisterActor(SaveDataComponent->EntityID, this);
 			}
 		}
+	}
+}
+
+bool ASovereignBaseCharacter::IsLoadedCharacter() const
+{
+	if (bIsLoadedCharacter)
+	{
+		return true;
+	}
+	if (SaveDataComponent && SaveDataComponent->IsLoadedEntity())
+	{
+		return true;
+	}
+	if (AttributeComponent && AttributeComponent->IsLoadedFromSave())
+	{
+		return true;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USaveManager* SaveManager = GI->GetSubsystem<USaveManager>())
+			{
+				if (SaveManager->IsLoadingWorldState())
+				{
+					return true;
+				}
+			}
+
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->bHasActiveExpedition && (!DungeonSub->PartyLeaderStateJson.IsEmpty() || DungeonSub->ActivePartyMembersData.Num() > 0))
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+void ASovereignBaseCharacter::SetIsLoadedCharacter(bool bLoaded)
+{
+	bIsLoadedCharacter = bLoaded;
+	if (SaveDataComponent)
+	{
+		SaveDataComponent->bIsLoadedEntity = bLoaded;
+	}
+	if (AttributeComponent)
+	{
+		AttributeComponent->SetLoadedFromSave(bLoaded);
 	}
 }

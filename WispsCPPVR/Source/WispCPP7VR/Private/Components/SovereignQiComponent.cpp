@@ -40,7 +40,20 @@ void USovereignQiComponent::BeginPlay()
 			SoulHub->RegisterBroker(this);
 		}
 
-		SyncQiAuraDefaultsFromEntity();
+		bool bIsLoaded = bIsLoadedFromSave;
+		if (ASovereignBaseCharacter* BaseChar = Cast<ASovereignBaseCharacter>(Owner))
+		{
+			bIsLoaded = bIsLoaded || BaseChar->IsLoadedCharacter();
+		}
+		else if (ASovereignBaseEntity* BaseEntity = Cast<ASovereignBaseEntity>(Owner))
+		{
+			bIsLoaded = bIsLoaded || BaseEntity->IsLoadedEntity();
+		}
+
+		if (!bIsLoaded)
+		{
+			SyncQiAuraDefaultsFromEntity();
+		}
 	}
 }
 
@@ -290,6 +303,8 @@ void USovereignQiComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 				ElementalResonance.Add(FName(*KeyStr), (float)Elem.Value->AsNumber());
 			}
 		}
+
+		bIsLoadedFromSave = true;
 	}
 }
 

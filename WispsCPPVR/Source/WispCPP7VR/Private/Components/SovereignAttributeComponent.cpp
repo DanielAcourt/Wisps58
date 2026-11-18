@@ -7,6 +7,11 @@
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
 #include "Components/SovereignControllerComponent.h"
+#include "DataTables/SovereignSpeciesData.h"
+#include "SaveSystem/SovereignSaveManager.h"
+#include "Combat/SovereignDungeonSubsystem.h"
+#include "Engine/World.h"
+#include "Engine/GameInstance.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Blueprint/UserWidget.h"
 #include "Dom/JsonObject.h"
@@ -47,10 +52,19 @@ void USovereignAttributeComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// Automatically sync species stats when the game starts
+	// If we are in the middle of a dungeon expedition load or world state load,
+	// do NOT initialize fresh stats on BeginPlay. Let OnLoad() handle it.
+	if (IsLoadedCharacter())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s BeginPlay deferred stats init because load context is active."),
+			GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
+		return;
+	}
+
+	// Only sync species stats if this is truly a fresh spawn with no save pending
 	SyncStatsFromEntity();
 
-	// Start the vessel at full health/stamina based on its new stats
+	// Start the fresh vessel at full health based on its new stats
 	CurrentHealth = GetMaxHealth();
 	MaxHealth = GetMaxHealth();
 }
@@ -60,8 +74,94 @@ void USovereignAttributeComponent::EndPlay(const EEndPlayReason::Type EndPlayRea
 	Super::EndPlay(EndPlayReason);
 }
 
-void USovereignAttributeComponent::SyncStatsFromEntity()
+bool USovereignAttributeComponent::IsLoadedCharacter() const
 {
+	// 1. Direct component flag
+	if (bIsLoadedFromSave)
+	{
+		return true;
+	}
+
+	if (AActor* Owner = GetOwner())
+	{
+		// 2. Owning Soul / SaveDataComponent
+		if (USovereignSaveableEntityComponent* Soul = Owner->FindComponentByClass<USovereignSaveableEntityComponent>())
+		{
+			if (Soul->IsLoadedEntity())
+			{
+				return true;
+			}
+		}
+
+		// 3. Owning Character / Entity
+		if (ASovereignBaseCharacter* BaseChar = Cast<ASovereignBaseCharacter>(Owner))
+		{
+			if (BaseChar->IsLoadedCharacter())
+			{
+				return true;
+			}
+		}
+		else if (ASovereignBaseEntity* BaseEntity = Cast<ASovereignBaseEntity>(Owner))
+		{
+			if (BaseEntity->IsLoadedEntity())
+			{
+				return true;
+			}
+		}
+
+		// 4. SaveManager actively loading world state or DungeonSubsystem active expedition
+		if (UWorld* World = Owner->GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				if (USaveManager* SaveManager = GI->GetSubsystem<USaveManager>())
+				{
+					if (SaveManager->IsLoadingWorldState())
+					{
+						return true;
+					}
+				}
+
+				if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+				{
+					if (DungeonSub->bHasActiveExpedition && (!DungeonSub->PartyLeaderStateJson.IsEmpty() || DungeonSub->ActivePartyMembersData.Num() > 0))
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+void USovereignAttributeComponent::SyncStatsFromEntity(bool bForce)
+{
+	// Absolute Guard: If an active dungeon expedition has saved state waiting to apply, block fresh syncs completely
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->bHasActiveExpedition && !DungeonSub->PartyLeaderStateJson.IsEmpty())
+				{
+					UE_LOG(LogTemp, Log, TEXT("Sovereign: %s blocked SyncStatsFromEntity because a pending dungeon expedition state is waiting to load."),
+						GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
+					return;
+				}
+			}
+		}
+	}
+	// Guard: Do not overwrite attributes if this is a loaded character, unless explicitly forced
+	if (!bForce && IsLoadedCharacter())
+	{
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s skipped SyncStatsFromEntity because it is a loaded character (preserved saved attributes)."),
+			GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"));
+		return;
+	}
+
 	USovereignSpeciesData* SpeciesData = nullptr;
 	int32 StageIdx = 0;
 
@@ -110,32 +210,22 @@ void USovereignAttributeComponent::SyncStatsFromEntity()
 	}
 }
 
+void USovereignAttributeComponent::OnPostLoad()
+{
+	if (MaxHealth <= 0.0f)
+	{
+		MaxHealth = GetMaxHealth();
+	}
+	CurrentHealth = FMath::Clamp(CurrentHealth, 1.0f, MaxHealth);
+}
 float USovereignAttributeComponent::GetMaxHealth() const
 {
 	// D&D Formula: Constitution acts as the multiplier.
 	// We use 10.0f as a base, so 10 Con = 100 HP.
 	return static_cast<float>(Constitution) * 10.0f;
 
-
-	// Implementation of your "Version 3.0" Idea:
-		// We use the floor of Constitution (the Level) plus the fractional Experience.
-	//float BaseValue = 100.0f; // Every Sovereign entity starts with a 100 HP vessel
-	//float GrowthScaling = 15.0f; // HP gained per point of Constitution
-
-	//return BaseValue + (static_cast<float>(Constitution) * GrowthScaling);
 }
 
-/*
-float USovereignAttributeComponent::GetMaxStamina() const
-{
-	// Stamina uses both Agility (Dex) and Toughness (Con)
-	//float BaseValue = 50.0f;
-	//return BaseValue;
-	//+ (static_cast<float>(Constitution + Dexterity) * 5.0f);
-
-	return 1;
-}
-*/
 void USovereignAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -154,58 +244,6 @@ void USovereignAttributeComponent::TickComponent(float DeltaTime, ELevelTick Tic
 		}
 	}
 }
-
-
-//Moving to biocomponent
-/*
-	// 2. DECAY VITALS (Modified by Possession and Constitution)
-	// High Constitution makes you hardy; Possession focus makes you "forget" hunger briefly
-	float DecayMult = 1.0f / (PossessionBonus * (1.0f + (Constitution * 0.01f)));
-
-	Hunger = FMath::Max(0.0f, Hunger - (0.5f * DecayMult * DeltaTime));
-	Hydration = FMath::Max(0.0f, Hydration - (0.8f * DecayMult * DeltaTime));
-
-	// Fatigue builds up faster if you are low on hydration
-	float FatigueRate = (Hydration < 20.0f) ? 2.0f : 1.0f;
-	Tiredness = FMath::Min(100.0f, Tiredness + (0.2f * FatigueRate * DeltaTime));
-
-	// 3. PASSIVE REGENERATION LOGIC
-	// We only regenerate if we aren't starving or dehydrated!
-	bool bCanRegen = (Hunger > 10.0f && Hydration > 10.0f);
-
-	// Wisdom is the base, Possession is the spark
-	float RegenModifier = (static_cast<float>(Wisdom) * 0.05f) * PossessionBonus;
-
-	if (bCanRegen)
-	{
-		// Health Regen
-		if (CurrentHealth < GetMaxHealth())
-		{
-			CurrentHealth = FMath::Min(CurrentHealth + (RegenModifier * DeltaTime), GetMaxHealth());
-		}
-
-		// Stamina Regen (Faster than health)
-		if (CurrentStamina < GetMaxStamina())
-		{
-			float StaminaMult = (Tiredness > 80.0f) ? 0.2f : 1.0f; // Exhaustion penalty
-			CurrentStamina = FMath::Min(CurrentStamina + (RegenModifier * 2.5f * StaminaMult * DeltaTime), GetMaxStamina());
-		}
-	}
-
-	// 4. APPLY CRITICAL CONSEQUENCES
-	if (Hunger <= 0.0f || Hydration <= 0.0f)
-	{
-		// Starvation damage ignores Possession armor—it's a physical reality
-		CurrentHealth -= (1.0f * DeltaTime);
-
-		if (CurrentHealth <= 0.0f)
-		{
-			// Handle Death logic here or via delegate
-		}
-	}
-}
-*/
-
 
 void USovereignAttributeComponent::OnSave(TSharedPtr<FJsonObject>& OutJson)
 {
@@ -261,6 +299,18 @@ void USovereignAttributeComponent::OnLoad(const TSharedPtr<FJsonObject>& InJson)
 		if ((*AttrObj)->TryGetNumberField(TEXT("MentalResistance"), Val)) MentalResistance = (float)Val;
 		if ((*AttrObj)->TryGetNumberField(TEXT("PoisonResistance"), Val)) PoisonResistance = (float)Val;
 		if ((*AttrObj)->TryGetNumberField(TEXT("SlowResistance"), Val)) SlowResistance = (float)Val;
+
+		bIsLoadedFromSave = true;
+
+		// Ensure MaxHealth is recalculated based on loaded Constitution
+		MaxHealth = GetMaxHealth();
+
+		// Ensure CurrentHealth doesn't exceed the newly loaded MaxHealth
+		CurrentHealth = FMath::Clamp(CurrentHealth, 1.0f, MaxHealth);
+
+		UE_LOG(LogTemp, Log, TEXT("Sovereign: %s successfully loaded attributes from save data -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
+			GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"),
+			Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
 	}
 }
 

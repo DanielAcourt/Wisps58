@@ -175,6 +175,16 @@ public:
 	//Ideally we want a bool stored on the wisp to know if it is possessing anything
 	bool IsPossessing();
 
+	/** Flag indicating if this character was restored from save data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Sovereign|SaveSystem")
+	bool bIsLoadedCharacter = false;
+
+	UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
+	bool IsLoadedCharacter() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|SaveSystem")
+	void SetIsLoadedCharacter(bool bLoaded);
+
 	// --- IInteractionInterface Implementation ---
 	// This is the "Universal Handshake" your Wisp uses.
 	virtual class USovereignSaveableEntityComponent* GetSovereignSoul_Implementation() const override { return SaveDataComponent; }

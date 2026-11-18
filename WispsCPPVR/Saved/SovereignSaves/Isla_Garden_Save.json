@@ -1,7 +1,7 @@
 ﻿{
 	"Entities": [
 		{
-			"GUID": "1C11C6F246949C77996670B86965A091",
+			"GUID": "60D8534C4E0724310B6503A5193449FA",
 			"ObjectName": "BPSovereignDungeonGateway_C_1",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BPSovereignDungeonGateway.BPSovereignDungeonGateway_C",
@@ -11,7 +11,7 @@
 				"Identity":
 				{
 					"ObjectName": "BPSovereignDungeonGateway_C_1",
-					"BirthTimestamp": "2026.11.16-13.55.01",
+					"BirthTimestamp": "2026.11.16-16.15.16",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -45,7 +45,7 @@
 			}
 		},
 		{
-			"GUID": "BA99CE08488C02FE51AB27993A8CD7E6",
+			"GUID": "611728E146A4BF2740EFCC92609920C5",
 			"ObjectName": "MySovereignSaveTerminalTest_C_2",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/MySovereignSaveTerminalTest.MySovereignSaveTerminalTest_C",
@@ -55,7 +55,7 @@
 				"Identity":
 				{
 					"ObjectName": "MySovereignSaveTerminalTest_C_2",
-					"BirthTimestamp": "2026.11.16-13.55.01",
+					"BirthTimestamp": "2026.11.16-16.15.16",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -92,7 +92,7 @@
 			}
 		},
 		{
-			"GUID": "01BEC6694EEAC60C0CA4A5AFBC7783C4",
+			"GUID": "1DE8F7DE4BD4FA7D9BA677AFD5246627",
 			"ObjectName": "BP_Dragon_C_2",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprints/Entities/BP_Dragon.BP_Dragon_C",
@@ -102,7 +102,7 @@
 				"Identity":
 				{
 					"ObjectName": "BP_Dragon_C_2",
-					"BirthTimestamp": "2026.11.16-13.55.01",
+					"BirthTimestamp": "2026.11.16-16.15.16",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -145,18 +145,18 @@
 				},
 				"Sovereign.Attributes":
 				{
-					"Strength": 29,
-					"Dexterity": 16,
+					"Strength": 22,
+					"Dexterity": 12,
 					"Constitution": 20,
-					"Intelligence": 23,
-					"Wisdom": 19,
-					"Charisma": 24,
+					"Intelligence": 16,
+					"Wisdom": 14,
+					"Charisma": 18,
 					"Luck": 14,
-					"ArmourClass": 252,
+					"ArmourClass": 25,
 					"CurrentHealth": 200,
 					"MaxHealth": 200,
-					"CurrentStamina": 0,
-					"MaxStamina": 0,
+					"CurrentStamina": 100,
+					"MaxStamina": 200,
 					"PhysicalResistance": 0,
 					"MagicalResistance": 0,
 					"MentalResistance": 0,
@@ -246,7 +246,7 @@
 			}
 		},
 		{
-			"GUID": "B4FC89C949A7C22DC2E023B51A97CA17",
+			"GUID": "7DD31276448EF650307CCAB247E315EB",
 			"ObjectName": "BP_PlayerWisp_C_0",
 			"ParentID": "00000000000000000000000000000000",
 			"Class": "/Game/Blueprint/BP_PlayerWisp.BP_PlayerWisp_C",
@@ -256,7 +256,7 @@
 				"Identity":
 				{
 					"ObjectName": "BP_PlayerWisp_C_0",
-					"BirthTimestamp": "2026.11.16-13.55.01",
+					"BirthTimestamp": "2026.11.16-16.15.16",
 					"bIsBeingPossessed": true,
 					"bIsMobile": true,
 					"ParadoxDensity": 0,
@@ -325,7 +325,7 @@
 					"MagicInfluence": 0,
 					"CurrentQi": 500,
 					"MaxQiCapacity": 500,
-					"QiPurity": 0.80021029710769653,
+					"QiPurity": 0.80011016130447388,
 					"TotalQiAccumulated": 0,
 					"bIsDomainOwner": false,
 					"DomainRuneTier": "None",
@@ -341,27 +341,27 @@
 				},
 				"Sovereign.Level":
 				{
-					"ActiveTrainingFocus": 7,
+					"ActiveTrainingFocus": 8,
 					"TrainingRateMultiplier": 1,
 					"StrengthXP": 0,
 					"DexterityXP": 0,
 					"ConstitutionXP": 0,
 					"IntelligenceXP": 0,
 					"WisdomXP": 0,
-					"CharismaXP": 0.099999999999999867,
-					"LuckXP": 0
+					"CharismaXP": 0,
+					"LuckXP": 0.099999999999999867
 				},
 				"Sovereign.Bio":
 				{
-					"Hunger": 47.900032043457031,
-					"Hydration": 47.480022430419922,
+					"Hunger": 48.900016784667969,
+					"Hydration": 48.680011749267578,
 					"Fatigue": 0,
 					"Tiredness": 0,
 					"Toxicity": 0,
-					"WasteLevel": 1.0500000715255737,
+					"WasteLevel": 0.55000007152557373,
 					"Mass": 1,
 					"MassExperience": 1,
-					"MaturityProgress": 0.21000002324581146,
+					"MaturityProgress": 0.10999998450279236,
 					"Entropy": 0,
 					"bIsFemale": false,
 					"ParentID": "00000000000000000000000000000000",

@@ -47,6 +47,10 @@ public:
     UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
     int32 GetSavedEntityCount(FString SlotName, bool bIsJson = true);
 
+    /** Returns true if a world state load is actively in progress */
+    UFUNCTION(BlueprintPure, Category = "Sovereign|SaveSystem")
+    bool IsLoadingWorldState() const { return bIsLoadingWorldState; }
+
     /** Logic: If I didn't save you, you don't exist. */
     void PurgeUnearnedEntities(class USovereignSaveGame* LoadedSuitcase);
 
@@ -84,5 +88,7 @@ private:
     // Acts as switch between saving to a json file or saving to unreal default uSavegameobject Binary system
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Settings", meta = (AllowPrivateAccess = "true"))
     bool bUseJsonByDefault = true;
+
+    bool bIsLoadingWorldState = false;
 
 };

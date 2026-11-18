@@ -32,4 +32,7 @@ public:
 
 	/** Called during the Soul's logic tick or when specific external data is injected (e.g. Lidar Manifest) */
 	virtual void OnProcessData(const TMap<FString, FString>& Data) = 0;
+
+	// Add this so all brokers can handle post-load reconciliation
+	virtual void OnPostLoad() {}
 };
