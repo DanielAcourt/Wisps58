@@ -1,0 +1,58 @@
+{
+  "SchemaVersion": "1.0.0",
+  "PluginName": "UniversalDataImporter",
+  "TargetDataAssetClass": "/Script/WispCPP7VR.SovereignEncounterDefinition",
+  "TargetPackageDirectory": "/Game/Data/GeneratedCombat/Encounters",
+  "AutoBindArtAssets": false,
+  "ArtSearchDirectories": [
+    "/Game/Art",
+    "/Game/Assets"
+  ],
+  "ColumnToPropertyMap": [
+    {
+      "CSVColumn": "EncounterTag",
+      "TargetProperty": "EncounterTag",
+      "PropertyType": "GameplayTag",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "DisplayName",
+      "TargetProperty": "EncounterDisplayName",
+      "PropertyType": "Text",
+      "FallbackValue": "Enemy Encounter"
+    },
+    {
+      "CSVColumn": "EnemySlots",
+      "TargetProperty": "EnemySlots",
+      "PropertyType": "EncounterSlots",
+      "Delimiter": ";",
+      "EnemyAssetDirectory": "/Game/Data/GeneratedCombat/Enemies"
+    },
+    {
+      "CSVColumn": "CanFlee",
+      "TargetProperty": "bCanFlee",
+      "PropertyType": "Bool",
+      "FallbackValue": "true"
+    },
+    {
+      "CSVColumn": "MinDepth",
+      "TargetProperty": "MinDungeonDepth",
+      "PropertyType": "Int32",
+      "FallbackValue": "0"
+    },
+    {
+      "CSVColumn": "SpawnWeight",
+      "TargetProperty": "SpawnWeight",
+      "PropertyType": "Float",
+      "FallbackValue": "100.0"
+    }
+  ],
+  "NestedComponentPropertyMap": [],
+  "BlueprintSynthesisRules": {
+    "bCreateMissingBlueprints": false,
+    "DefaultParentClass": "/Script/WispCPP7VR.SovereignBaseCharacter",
+    "ParentClassColumn": "ParentClass",
+    "CDOBindingProperty": "DataAssetRef",
+    "DefaultInputMappingContext": ""
+  }
+}

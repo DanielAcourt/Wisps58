@@ -1,0 +1,11 @@
+Name,DisplayName,EnemyRole,PrimaryElement,WeaknessElement,ResistanceElement,MaxHealth,AttackPower,Armor,MoveSpeed,EquippedSkills,ActorClass,Notes
+Goblin_Sword,Sword Goblin,AGGRESSIVE_BRUTE,NONE,FIRE,NONE,90,18,6,420.0,"Slash;QuickLunge","/Game/Blueprints/Enemies/BP_Goblin_Sword","Agile frontline skirmisher with shortsword and buckler"
+Goblin_Knight,Knight Goblin,AGGRESSIVE_BRUTE,NONE,ELECTRIC,NONE,220,24,22,290.0,"ShieldBash;HeavyCleave","/Game/Blueprints/Enemies/BP_Goblin_Knight","Heavily armored goblin vanguard holding the line"
+Goblin_Spear,Spear Goblin,SKIRMISHER_SNIPER,NONE,FIRE,NONE,110,22,8,400.0,"Thrust;BracePolearm","/Game/Blueprints/Enemies/BP_Goblin_Spear","Mid-range reach striker effective against advancing targets"
+Goblin_Archer,Archer Goblin,SKIRMISHER_SNIPER,NONE,AIR,NONE,80,20,4,430.0,"PowerShot;Volley","/Game/Blueprints/Enemies/BP_Goblin_Archer","Backline ranged harass unit keeping distance"
+Goblin_Mage,Mage Goblin,AGGRESSIVE_BRUTE,FIRE,WATER,FIRE,85,26,3,360.0,"Firebolt;EmberNova","/Game/Blueprints/Enemies/BP_Goblin_Mage","Elemental spellcaster lobbing fire projectiles from rear"
+Kobolt_Scavenger,Kobolt Scavenger,SKIRMISHER_SNIPER,NONE,FIRE,NONE,75,16,3,450.0,"Slash;QuickLunge","/Game/Blueprints/Enemies/BP_Kobolt_Scavenger","Fast pack scout darting between cover and harrying flanks"
+Kobolt_Trapper,Kobolt Trapper,SKIRMISHER_SNIPER,EARTH,AIR,EARTH,95,19,7,390.0,"BracePolearm;Volley","/Game/Blueprints/Enemies/BP_Kobolt_Trapper","Cunning tunnel ambush unit controlling choke points and lanes"
+Kobolt_TunnelGuard,Kobolt TunnelGuard,AGGRESSIVE_BRUTE,EARTH,FIRE,EARTH,175,21,16,315.0,"ShieldBash;Thrust","/Game/Blueprints/Enemies/BP_Kobolt_TunnelGuard","Sturdy warren sentinel anchoring narrow subterranean passages"
+Kobolt_SparkCaster,Kobolt SparkCaster,SKIRMISHER_SNIPER,ELECTRIC,EARTH,ELECTRIC,80,24,4,380.0,"Firebolt;EmberNova","/Game/Blueprints/Enemies/BP_Kobolt_SparkCaster","Volatile tunnel arc-caster hurling rapid elemental bursts"
+Kobolt_PackAlpha,Kobolt PackAlpha,TACTICAL_LEADER,FIRE,WATER,FIRE,160,25,12,375.0,"HeavyCleave;EmberNova","/Game/Blueprints/Enemies/BP_Kobolt_PackAlpha","Cunning pack overseer rallying warren squads and leading charges"

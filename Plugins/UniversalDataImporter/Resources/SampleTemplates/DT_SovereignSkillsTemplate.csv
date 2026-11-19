@@ -1,0 +1,11 @@
+Name,DisplayName,Element,Cooldown,ManaCost,BaseDamage,Range,Description
+Slash,Slash,Physical,1.2,0,18,220.0,Fast close-quarters shortsword strike
+QuickLunge,Quick Lunge,Physical,3.5,10,24,420.0,Forward dash thrust closing distance rapidly
+ShieldBash,Shield Bash,Physical,5.0,15,16,200.0,Heavy shield slam that staggers nearby foes
+HeavyCleave,Heavy Cleave,Physical,6.5,20,36,260.0,Wide sweeping strike hitting targets in front
+Thrust,Thrust,Physical,1.8,0,22,340.0,Long-reach spear jab keeping distance
+BracePolearm,Brace Polearm,Physical,7.0,15,20,320.0,Sets spear to punish incoming charges
+PowerShot,Power Shot,Physical,4.0,12,28,1600.0,Focused high-velocity bow shot
+Volley,Volley,Physical,7.5,20,16,1400.0,Fires a spread of arrows into a target area
+Firebolt,Firebolt,Fire,2.0,12,26,1200.0,Launches a bolt of fire at a single target
+EmberNova,Ember Nova,Fire,8.0,25,30,550.0,Releases a radial burst of embers around the caster

@@ -1,0 +1,58 @@
+{
+  "SchemaVersion": "1.0.0",
+  "PluginName": "UniversalDataImporter",
+  "TargetDataAssetClass": "/Script/WispCPP7VR.SovereignSkillDefinition",
+  "TargetPackageDirectory": "/Game/Data/GeneratedCombat/Skills",
+  "AutoBindArtAssets": false,
+  "ArtSearchDirectories": [
+    "/Game/Art",
+    "/Game/Assets"
+  ],
+  "ColumnToPropertyMap": [
+    {
+      "CSVColumn": "DisplayName",
+      "TargetProperty": "skill_display_name",
+      "PropertyType": "Text",
+      "FallbackValue": "Skill"
+    },
+    {
+      "CSVColumn": "Element",
+      "TargetProperty": "element_type",
+      "PropertyType": "Enum",
+      "EnumClass": "/Script/WispCPP7VR.ESovereignElement",
+      "FallbackValue": "NONE"
+    },
+    {
+      "CSVColumn": "Cooldown",
+      "TargetProperty": "cooldown_turns",
+      "PropertyType": "Int32",
+      "FallbackValue": "1"
+    },
+    {
+      "CSVColumn": "ManaCost",
+      "TargetProperty": "qi_cost",
+      "PropertyType": "Float",
+      "FallbackValue": "0.0"
+    },
+    {
+      "CSVColumn": "BaseDamage",
+      "TargetProperty": "base_power",
+      "PropertyType": "Float",
+      "FallbackValue": "10.0"
+    },
+    {
+      "CSVColumn": "Description",
+      "TargetProperty": "skill_description",
+      "PropertyType": "Text",
+      "FallbackValue": ""
+    }
+  ],
+  "NestedComponentPropertyMap": [],
+  "BlueprintSynthesisRules": {
+    "bCreateMissingBlueprints": false,
+    "DefaultParentClass": "/Script/Engine.Actor",
+    "ParentClassColumn": "ParentClass",
+    "CDOBindingProperty": "DataAssetRef",
+    "DefaultInputMappingContext": ""
+  }
+}

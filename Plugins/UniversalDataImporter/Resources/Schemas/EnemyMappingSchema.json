@@ -1,0 +1,156 @@
+{
+  "SchemaVersion": "1.0.0",
+  "PluginName": "UniversalDataImporter",
+  "TargetDataAssetClass": "/Script/WispCPP7VR.SovereignEnemyDefinition",
+  "TargetPackageDirectory": "/Game/Data/GeneratedCombat/Enemies",
+  "AutoBindArtAssets": false,
+  "ArtSearchDirectories": [
+    "/Game/Art",
+    "/Game/Assets"
+  ],
+  "ColumnToPropertyMap": [
+    {
+      "CSVColumn": "ActorClass",
+      "TargetProperty": "ActorClass",
+      "PropertyType": "String",
+      "FallbackValue": ""
+    },
+    {
+      "CSVColumn": "EnemyTag",
+      "TargetProperty": "EnemyTag",
+      "PropertyType": "GameplayTag",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "DisplayName",
+      "TargetProperty": "EnemyDisplayName",
+      "PropertyType": "Text",
+      "FallbackValue": "Enemy"
+    },
+    {
+      "CSVColumn": "EnemyRole",
+      "TargetProperty": "EnemyRole",
+      "PropertyType": "Enum",
+      "EnumClass": "/Script/WispCPP7VR.ESovereignEnemyRole",
+      "FallbackValue": "Default"
+    },
+    {
+      "CSVColumn": "PrimaryElement",
+      "TargetProperty": "PrimaryElement",
+      "PropertyType": "Enum",
+      "EnumClass": "/Script/WispCPP7VR.ESovereignElement",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "WeaknessElement",
+      "TargetProperty": "WeaknessElement",
+      "PropertyType": "Enum",
+      "EnumClass": "/Script/WispCPP7VR.ESovereignElement",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "ResistanceElement",
+      "TargetProperty": "ResistanceElement",
+      "PropertyType": "Enum",
+      "EnumClass": "/Script/WispCPP7VR.ESovereignElement",
+      "FallbackValue": "None"
+    },
+    {
+      "CSVColumn": "CharacterClass",
+      "TargetProperty": "CharacterClass",
+      "PropertyType": "SoftClassPath",
+      "FallbackValue": "/Script/WispCPP7VR.SovereignBaseCharacter"
+    },
+    {
+      "CSVColumn": "MaxHealth",
+      "TargetProperty": "MaxHealth",
+      "PropertyType": "Float",
+      "FallbackValue": "100.0"
+    },
+    {
+      "CSVColumn": "MaxQi",
+      "TargetProperty": "MaxQi",
+      "PropertyType": "Float",
+      "FallbackValue": "50.0"
+    },
+    {
+      "CSVColumn": "Strength",
+      "TargetProperty": "Strength",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "Dexterity",
+      "TargetProperty": "Dexterity",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "Constitution",
+      "TargetProperty": "Constitution",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "Intelligence",
+      "TargetProperty": "Intelligence",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "Wisdom",
+      "TargetProperty": "Wisdom",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "Charisma",
+      "TargetProperty": "Charisma",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "Luck",
+      "TargetProperty": "Luck",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "EquippedSkills",
+      "TargetProperty": "EquippedSkills",
+      "PropertyType": "SkillArrayByTag",
+      "Delimiter": ",",
+      "SkillSearchPaths": [
+        "/Game/Data/GeneratedCombat/Skills",
+        "/Game/Data",
+        "/Game"
+      ]
+    },
+    {
+      "CSVColumn": "ExpReward",
+      "TargetProperty": "ExperienceReward",
+      "PropertyType": "Float",
+      "FallbackValue": "50.0"
+    },
+    {
+      "CSVColumn": "ClassExpReward",
+      "TargetProperty": "ClassExperienceReward",
+      "PropertyType": "Int32",
+      "FallbackValue": "10"
+    },
+    {
+      "CSVColumn": "QiReward",
+      "TargetProperty": "QiReward",
+      "PropertyType": "Float",
+      "FallbackValue": "15.0"
+    }
+  ],
+  "NestedComponentPropertyMap": [],
+  "BlueprintSynthesisRules": {
+    "bCreateMissingBlueprints": true,
+    "DefaultParentClass": "/Script/WispCPP7VR.SovereignBaseCharacter",
+    "ParentClassColumn": "ParentClass",
+    "CDOBindingProperty": "DataAssetRef",
+    "DefaultInputMappingContext": ""
+  }
+}
