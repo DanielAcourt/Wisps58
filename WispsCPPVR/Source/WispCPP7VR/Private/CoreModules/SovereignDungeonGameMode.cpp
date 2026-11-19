@@ -8,6 +8,8 @@
 #include "Combat/SovereignBattleManager.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "Components/SovereignPartyComponent.h"
+#include "Combat/SovereignEncounterSubsystem.h"
+#include "Combat/SovereignEncounterDefinition.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "Serialization/JsonReader.h"
@@ -219,6 +221,8 @@ void ASovereignDungeonGameMode::BeginPlay()
 
 	Super::BeginPlay();
 
+	InitializeDungeonSystems();
+
 	// 2. Align local player controller if already logged in and not yet configured by PostLogin
 	if (World && !DungeonPartyLeader)
 	{
@@ -227,6 +231,116 @@ void ASovereignDungeonGameMode::BeginPlay()
 			SetupPartyLeaderAtEntrance(PC);
 		}
 	}
+}
+
+ASovereignBattleManager* ASovereignDungeonGameMode::GetBattleManager(int32 BiomeIndex) const
+{
+	// 1. Prefer the dedicated Battle Arena spawned by the Dungeon Generator for this biome
+	if (ActiveDungeonGenerator)
+	{
+		if (ASovereignBattleManager* BiomeArena = ActiveDungeonGenerator->GetBattleArenaForBiome(BiomeIndex))
+		{
+			return BiomeArena;
+		}
+	}
+
+	// 2. Fallback to cached or world-iterated BattleManager
+	if (CachedFallbackBattleManager)
+	{
+		return CachedFallbackBattleManager;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (AActor* Found = UGameplayStatics::GetActorOfClass(World, ASovereignBattleManager::StaticClass()))
+		{
+			return Cast<ASovereignBattleManager>(Found);
+		}
+	}
+
+	return nullptr;
+}
+
+USovereignEncounterSubsystem* ASovereignDungeonGameMode::GetEncounterSubsystem() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		return World->GetSubsystem<USovereignEncounterSubsystem>();
+	}
+	return nullptr;
+}
+
+void ASovereignDungeonGameMode::InitializeDungeonSystems()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// 1. Verify EncounterSubsystem is online
+	USovereignEncounterSubsystem* EncounterSub = GetEncounterSubsystem();
+	if (!EncounterSub)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DungeonGameMode] USovereignEncounterSubsystem failed to initialize!"));
+	}
+
+	// 2. Ensure at least one BattleManager arena exists (uses Generator's arena first, spawns fallback only if missing)
+	ASovereignBattleManager* Arena = GetBattleManager(0);
+	if (!Arena)
+	{
+		UClass* ManagerClass = FallbackBattleManagerClass ? FallbackBattleManagerClass.Get() : ASovereignBattleManager::StaticClass();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		// Spawn far off-map so it never collides with dungeon corridors
+		CachedFallbackBattleManager = World->SpawnActor<ASovereignBattleManager>(
+			ManagerClass,
+			FVector(20000.0f, 20000.0f, 3000.0f),
+			FRotator::ZeroRotator,
+			SpawnParams
+		);
+		Arena = CachedFallbackBattleManager;
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGameMode] No biome arena found on generator; spawned fallback BattleManager [%s]."),
+			Arena ? *Arena->GetName() : TEXT("None"));
+	}
+
+	if (Arena && EncounterSub)
+	{
+		EncounterSub->ActiveBattleManager = Arena;
+		UE_LOG(LogTemp, Log, TEXT("[DungeonGameMode] Combat systems online -> BattleManager: [%s], EncounterSubsystem: Ready."), *Arena->GetName());
+	}
+}
+
+bool ASovereignDungeonGameMode::TriggerCombatEncounter(USovereignEncounterDefinition* EncounterDefinition, AActor* SourceActor, int32 BiomeIndex)
+{
+	if (!EncounterDefinition)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGameMode] TriggerCombatEncounter aborted: EncounterDefinition is null."));
+		return false;
+	}
+
+	if (!DungeonPartyLeader)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[DungeonGameMode] TriggerCombatEncounter aborted: No active DungeonPartyLeader."));
+		return false;
+	}
+
+	USovereignEncounterSubsystem* EncounterSub = GetEncounterSubsystem();
+	if (!EncounterSub)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DungeonGameMode] TriggerCombatEncounter aborted: USovereignEncounterSubsystem unavailable."));
+		return false;
+	}
+
+	if (EncounterSub->bIsEncounterActive)
+	{
+		return false;
+	}
+
+	ASovereignBattleManager* TargetArena = GetBattleManager(BiomeIndex);
+	return EncounterSub->TriggerEncounterWithDefinition(DungeonPartyLeader, SourceActor, EncounterDefinition, TargetArena);
 }
 
 void ASovereignDungeonGameMode::PostLogin(APlayerController* NewPlayer)
