@@ -62,6 +62,11 @@ void ASovereignDungeonDoor::BeginPlay()
 		ClosedRotation = DoorLeafMeshComponent->GetRelativeRotation();
 		TargetRotation = bIsOpen ? (ClosedRotation + FRotator(0.0f, OpenAngle, 0.0f)) : ClosedRotation;
 	}
+
+	if (SpawnTransforms.Num() < 3)
+	{
+		SpawnTransforms = GetEncounterSpawnTransforms(6, 200.0f);
+	}
 }
 
 void ASovereignDungeonDoor::Tick(float DeltaTime)
@@ -238,4 +243,36 @@ bool ASovereignDungeonDoor::ChannelQiToUnlock(ASovereignBaseCharacter* Cultivato
 	}
 
 	return true;
+}
+
+TArray<FTransform> ASovereignDungeonDoor::GetEncounterSpawnTransforms(int32 Count, float Spacing) const
+{
+	TArray<FTransform> OutTransforms;
+	const int32 ClampedCount = FMath::Clamp(Count, 1, 9);
+	const float ClampedSpacing = FMath::Max(50.0f, Spacing);
+
+	const FVector DoorLoc = GetActorLocation();
+	const FRotator DoorRot = GetActorRotation();
+	const FVector Fwd = GetActorForwardVector();
+	const FVector Right = GetActorRightVector();
+
+	// Spawn in front of the door (offset by 300 units forward so enemies don't collide with the door frame)
+	const FVector FrontCenter = DoorLoc + (Fwd * 300.0f);
+
+	// Arrange in a grid: 3 columns per rank
+	const int32 Columns = 3;
+	for (int32 i = 0; i < ClampedCount; ++i)
+	{
+		const int32 Row = i / Columns;
+		const int32 Col = (i % Columns) - 1; // -1, 0, +1
+
+		const FVector Pos = FrontCenter + (Fwd * (Row * ClampedSpacing)) + (Right * (Col * ClampedSpacing));
+		// Face towards the door
+		FRotator FaceDoorRot = DoorRot;
+		FaceDoorRot.Yaw += 180.0f;
+
+		OutTransforms.Add(FTransform(FaceDoorRot, Pos));
+	}
+
+	return OutTransforms;
 }

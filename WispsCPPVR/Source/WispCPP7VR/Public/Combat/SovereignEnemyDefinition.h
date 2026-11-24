@@ -101,7 +101,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Attributes")
 	int32 Luck = 10;
 
-	// --- Combat Skills ---
+
 
 	/** Skills available to the enemy AI during turn-based combat */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sovereign|Enemy|Skills")
@@ -130,4 +130,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Enemy")
 	void InitializeEnemyVessel(ASovereignBaseCharacter* Vessel) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Enemy")
+	void InitializeEnemyVesselScaled(ASovereignBaseCharacter* Vessel, float StatMultiplier = 1.0f) const;
+	// --- Combat Skills ---
 };
+

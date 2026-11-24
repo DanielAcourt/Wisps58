@@ -157,10 +157,13 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 			HealSkill->StatMultiplier = 1.0f;
 			HealSkill->QiCost = 10.0f;
 
-			if (USovereignSkillComponent* ShamanSkillComp = BattleMgr->EnemyGrid[6]->GetSkillComponent())
+			if (BattleMgr->EnemyGrid.IsValidIndex(6) && BattleMgr->EnemyGrid[6].IsValid())
 			{
-				FGuid OutId;
-				ShamanSkillComp->EquipSkill(HealSkill, OutId);
+				if (USovereignSkillComponent* ShamanSkillComp = BattleMgr->EnemyGrid[6]->FindComponentByClass<USovereignSkillComponent>())
+				{
+					FGuid OutId;
+					ShamanSkillComp->EquipSkill(HealSkill, OutId);
+				}
 			}
 
 			// Wound the Wolf ally to below 50% HP (e.g. 40 / 120 HP)

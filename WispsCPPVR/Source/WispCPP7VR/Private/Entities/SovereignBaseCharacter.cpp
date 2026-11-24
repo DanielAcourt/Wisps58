@@ -27,6 +27,7 @@
 #include "DataTables/SovereignSpeciesData.h"
 #include "SaveSystem/SovereignSaveManager.h"
 #include "Combat/SovereignDungeonSubsystem.h"
+#include "Combat/SovereignEnemyDefinition.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
 #include "Engine/SkeletalMesh.h"
@@ -808,5 +809,21 @@ void ASovereignBaseCharacter::SetIsLoadedCharacter(bool bLoaded)
 	if (AttributeComponent)
 	{
 		AttributeComponent->SetLoadedFromSave(bLoaded);
+	}
+}
+
+void ASovereignBaseCharacter::ApplyEnemyDefinition(const USovereignEnemyDefinition* InEnemyDef, float StatMultiplier)
+{
+	if (InEnemyDef)
+	{
+		InEnemyDef->InitializeEnemyVesselScaled(this, StatMultiplier);
+	}
+}
+
+void ASovereignBaseCharacter::InitializeFromEnemyDefinition(const USovereignEnemyDefinition* InEnemyDef, float StatMultiplier)
+{
+	if (InEnemyDef)
+	{
+		InEnemyDef->InitializeEnemyVesselScaled(this, StatMultiplier);
 	}
 }

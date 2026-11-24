@@ -98,7 +98,7 @@ void USovereignDungeonSubsystem::RecordPartyMemberState(int32 SlotIndex, const F
 {
 	ActivePartyMembersData.RemoveAll([SlotIndex](const FSovereignPartyMemberData& Existing) {
 		return Existing.SlotIndex == SlotIndex;
-	});
+		});
 
 	FSovereignPartyMemberData MemberData;
 	MemberData.SlotIndex = SlotIndex;

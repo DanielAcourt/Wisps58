@@ -153,6 +153,14 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Calculations")
 	float GetMaxHealth() const;
 
+	/** Recalculates MaxHealth from Constitution and optional base modifier, ensuring a positive bound, and scales/clamps CurrentHealth */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Calculations")
+	float RecalculateMaxHealth(bool bResetToFull = false);
+
+	/** Initializes or overwrites core attributes and MaxHealth/CurrentHealth directly (e.g. from EnemyDefinition) */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Attributes")
+	void InitializeAttributes(int32 InStr, int32 InDex, int32 InCon, int32 InInt, int32 InWis, int32 InCha, int32 InLck, float InBaseMaxHealth = -1.0f, float Multiplier = 1.0f);
+
 	/** ISovereignBrokerInterface Implementation */
 	virtual void OnSave(TSharedPtr<FJsonObject>& OutJson) override;
 	virtual void OnLoad(const TSharedPtr<FJsonObject>& InJson) override;

@@ -222,8 +222,56 @@ float USovereignAttributeComponent::GetMaxHealth() const
 {
 	// D&D Formula: Constitution acts as the multiplier.
 	// We use 10.0f as a base, so 10 Con = 100 HP.
-	return static_cast<float>(Constitution) * 10.0f;
+	return static_cast<float>(FMath::Max(1, Constitution)) * 10.0f;
+}
 
+float USovereignAttributeComponent::RecalculateMaxHealth(bool bResetToFull)
+{
+	const float BaseFromCon = GetMaxHealth();
+	const float NewMaxHealth = FMath::Max(10.0f, BaseFromCon);
+
+	if (bResetToFull || CurrentHealth <= 0.0f || MaxHealth <= 0.0f)
+	{
+		MaxHealth = NewMaxHealth;
+		CurrentHealth = NewMaxHealth;
+	}
+	else
+	{
+		const float HealthRatio = (MaxHealth > 0.0f) ? (CurrentHealth / MaxHealth) : 1.0f;
+		MaxHealth = NewMaxHealth;
+		CurrentHealth = FMath::Clamp(HealthRatio * MaxHealth, 1.0f, MaxHealth);
+	}
+	return MaxHealth;
+}
+
+void USovereignAttributeComponent::InitializeAttributes(int32 InStr, int32 InDex, int32 InCon, int32 InInt, int32 InWis, int32 InCha, int32 InLck, float InBaseMaxHealth, float Multiplier)
+{
+	const float ClampedMult = FMath::Max(0.1f, Multiplier);
+
+	Strength = FMath::Max(1, FMath::RoundToInt(InStr * ClampedMult));
+	Dexterity = FMath::Max(1, FMath::RoundToInt(InDex * ClampedMult));
+	Constitution = FMath::Max(1, FMath::RoundToInt(InCon * ClampedMult));
+	Intelligence = FMath::Max(1, FMath::RoundToInt(InInt * ClampedMult));
+	Wisdom = FMath::Max(1, FMath::RoundToInt(InWis * ClampedMult));
+	Charisma = FMath::Max(1, FMath::RoundToInt(InCha * ClampedMult));
+	Luck = FMath::Max(1, FMath::RoundToInt(InLck * ClampedMult));
+
+	if (InBaseMaxHealth > 0.0f)
+	{
+		MaxHealth = FMath::Max(10.0f, InBaseMaxHealth * ClampedMult);
+	}
+	else
+	{
+		MaxHealth = FMath::Max(10.0f, GetMaxHealth());
+	}
+	CurrentHealth = MaxHealth;
+
+	// Mark as loaded so default species sync in BeginPlay won't stomp these stats
+	bIsLoadedFromSave = true;
+
+	UE_LOG(LogTemp, Log, TEXT("Sovereign: %s initialized attributes from EnemyDefinition -> STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d LCK:%d | HP: %.1f/%.1f"),
+		GetOwner() ? *GetOwner()->GetName() : TEXT("Unknown"),
+		Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma, Luck, CurrentHealth, MaxHealth);
 }
 
 void USovereignAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

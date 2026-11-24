@@ -32,6 +32,7 @@ class ASovereignPlayerWisp;
 class USovereignQiComponent; // Added this
 class USovereignSpeciesData;
 class USkeletalMesh;
+class USovereignEnemyDefinition;
 class AController ; // <--- MUST ADD THIS FOR POSSESSION
 
 // This creates a custom event node for your Blueprints
@@ -80,6 +81,12 @@ public:
 	USovereignQiComponent* GetQiComponent() const { return QiComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignElementComponent* GetElementComponent() const { return ElementComponent; }
+
+	//UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	//USovereignControllerComponent* GetSkillComponent() const { return SkillComponent; }
+
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
 
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
@@ -88,8 +95,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignClassComponent* GetClassComponent() const { return ClassComponent; }
 
-	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
-	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
+	//UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	//USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Status")
 	USovereignStatusComponent* GetStatusComponent() const { return StatusComponent; }
@@ -199,7 +206,16 @@ public:
 	/** Handles the 'F' key logic: Possession if a Wisp, Ejection if a Vessel */
 	virtual void HandlePossessionLifecycle();
 
-
+	// In public section of ASovereignBaseCharacter:
+	/** Hydrates combat stats, elements, and equipped skills from an enemy definition asset */
+	/** Hydrates combat stats, elements, and equipped skills from an enemy definition asset */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Enemy")
+	virtual void ApplyEnemyDefinition(const USovereignEnemyDefinition* InEnemyDef, float StatMultiplier = 1.0f);
+	
+	/** Initializes this character vessel from an enemy definition asset with optional stat scaling */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Enemy")
+	virtual void InitializeFromEnemyDefinition(const USovereignEnemyDefinition* InEnemyDef, float StatMultiplier = 1.0f);
+	
 	/** Primary logic for growth/evolution.
 	 * Making it virtual allows children like the Wisp to override it.
 	 */

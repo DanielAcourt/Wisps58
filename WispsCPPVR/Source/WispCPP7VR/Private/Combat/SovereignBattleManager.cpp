@@ -9,6 +9,7 @@
 #include "Components/SovereignSkillComponent.h"
 #include "Components/SovereignLevelComponent.h"
 #include "Components/SovereignStatusComponent.h"
+#include "Components/SovereignElementComponent.h"
 #include "Combat/SovereignSkillDefinition.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
@@ -18,6 +19,208 @@
 #include "Camera/CameraActor.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
+
+namespace
+{
+	static void LogEncounterDefinitionSummary(
+		const USovereignEncounterDefinition* Def,
+		const TArray<ASovereignBaseCharacter*>& SpawnedEnemies,
+		const TArray<FString>& SpawnedLines)
+	{
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("⚔️  [SOVEREIGN BATTLE MANAGER] ENCOUNTER DEFINITION LOADED: %s"),
+			Def ? *Def->GetName() : TEXT("None"));
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("  Encounter: %s | Can Flee: %s | Configured Slots: %d | Spawned: %d"),
+			Def ? *Def->EncounterDisplayName.ToString() : TEXT("None"),
+			(Def && Def->bCanFlee) ? TEXT("YES") : TEXT("NO"),
+			Def ? Def->EnemySlots.Num() : 0,
+			SpawnedEnemies.Num());
+		UE_LOG(LogTemp, Display, TEXT("  Projected Rewards -> EXP: %.1f | Class EXP: %d | Qi: %.1f"),
+			Def ? Def->CalculateTotalExperience() : 0.0f,
+			Def ? Def->CalculateTotalClassExperience() : 0,
+			Def ? Def->CalculateTotalQi() : 0.0f);
+		UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+		UE_LOG(LogTemp, Display, TEXT("  👾 ENEMY FORMATION ROSTER (%d Total):"), SpawnedEnemies.Num());
+
+		if (SpawnedLines.Num() == 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("    • [NONE SPAWNED] Check EncounterDefinition EnemySlots!"));
+		}
+		else
+		{
+			for (const FString& Line : SpawnedLines)
+			{
+				UE_LOG(LogTemp, Display, TEXT("    • %s"), *Line);
+			}
+		}
+
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	}
+
+	static void LogBattleFormationSummary(
+		const TArray<TObjectPtr<ASovereignBaseCharacter>>& PlayerGrid,
+		const TArray<TObjectPtr<ASovereignBaseCharacter>>& EnemyGrid,
+		bool bCanFlee)
+	{
+		auto GetRowName = [](int32 SlotIdx) -> const TCHAR*
+		{
+			int32 Row = SlotIdx / 3;
+			switch (Row)
+			{
+			case 0: return TEXT("Front");
+			case 1: return TEXT("Mid");
+			case 2: return TEXT("Rear");
+			default: return TEXT("Unknown");
+			}
+		};
+
+		int32 PlayerCount = 0;
+		TArray<FString> PlayerLines;
+		for (int32 i = 0; i < PlayerGrid.Num(); ++i)
+		{
+			if (ASovereignBaseCharacter* Char = PlayerGrid[i])
+			{
+				PlayerCount++;
+				float HP = 0.0f, MaxHP = 0.0f;
+				int32 Dex = 10;
+				if (USovereignAttributeComponent* Attr = Char->GetAttributeComponent())
+				{
+					HP = Attr->CurrentHealth;
+					MaxHP = Attr->MaxHealth;
+					Dex = Attr->Dexterity;
+				}
+				PlayerLines.Add(FString::Printf(TEXT("[Slot %d | %s] %s | HP: %.1f/%.1f | DEX: %d"),
+					i, GetRowName(i), *Char->GetName(), HP, MaxHP, Dex));
+			}
+		}
+
+		int32 EnemyCount = 0;
+		TArray<FString> EnemyLines;
+		for (int32 i = 0; i < EnemyGrid.Num(); ++i)
+		{
+			if (ASovereignBaseCharacter* Char = EnemyGrid[i])
+			{
+				EnemyCount++;
+				float HP = 0.0f, MaxHP = 0.0f;
+				int32 Dex = 10;
+				if (USovereignAttributeComponent* Attr = Char->GetAttributeComponent())
+				{
+					HP = Attr->CurrentHealth;
+					MaxHP = Attr->MaxHealth;
+					Dex = Attr->Dexterity;
+				}
+				EnemyLines.Add(FString::Printf(TEXT("[Slot %d | %s] %s | HP: %.1f/%.1f | DEX: %d"),
+					i, GetRowName(i), *Char->GetName(), HP, MaxHP, Dex));
+			}
+		}
+
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("⚔️  [SOVEREIGN BATTLE MANAGER] BATTLE ENGAGED (Players: %d vs Enemies: %d | Escapable: %s)"),
+			PlayerCount, EnemyCount, bCanFlee ? TEXT("YES") : TEXT("NO"));
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("  🛡️  PLAYER PARTY FORMATION (%d Members):"), PlayerCount);
+		if (PlayerLines.Num() == 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("    • [EMPTY PLAYER PARTY]"));
+		}
+		else
+		{
+			for (const FString& Line : PlayerLines)
+			{
+				UE_LOG(LogTemp, Display, TEXT("    • %s"), *Line);
+			}
+		}
+		UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+		UE_LOG(LogTemp, Display, TEXT("  👾 ENEMY FORMATION (%d Combatants):"), EnemyCount);
+		if (EnemyLines.Num() == 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("    • [EMPTY ENEMY ROSTER]"));
+		}
+		else
+		{
+			for (const FString& Line : EnemyLines)
+			{
+				UE_LOG(LogTemp, Display, TEXT("    • %s"), *Line);
+			}
+		}
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	}
+
+	static void LogBattleResolutionSummary(
+		EBattleState Outcome,
+		const TArray<TObjectPtr<ASovereignBaseCharacter>>& PlayerGrid,
+		const TArray<TObjectPtr<ASovereignBaseCharacter>>& EnemyGrid)
+	{
+		const TCHAR* OutcomeIcon = TEXT("🏁");
+		const TCHAR* OutcomeName = TEXT("UNKNOWN");
+		switch (Outcome)
+		{
+		case EBattleState::Victory:
+			OutcomeIcon = TEXT("🏆");
+			OutcomeName = TEXT("VICTORY");
+			break;
+		case EBattleState::Defeat:
+			OutcomeIcon = TEXT("💀");
+			OutcomeName = TEXT("DEFEAT");
+			break;
+		case EBattleState::Fled:
+			OutcomeIcon = TEXT("🏃");
+			OutcomeName = TEXT("FLED");
+			break;
+		default:
+			break;
+		}
+
+		int32 SurvivingPlayers = 0;
+		TArray<FString> PlayerStatusLines;
+		for (int32 i = 0; i < PlayerGrid.Num(); ++i)
+		{
+			if (ASovereignBaseCharacter* Char = PlayerGrid[i])
+			{
+				float HP = 0.0f, MaxHP = 0.0f;
+				if (USovereignAttributeComponent* Attr = Char->GetAttributeComponent())
+				{
+					HP = Attr->CurrentHealth;
+					MaxHP = Attr->MaxHealth;
+				}
+				bool bAlive = HP > 0.0f;
+				if (bAlive) SurvivingPlayers++;
+				PlayerStatusLines.Add(FString::Printf(TEXT("[Slot %d] %s -> %s (HP: %.1f/%.1f)"),
+					i, *Char->GetName(), bAlive ? TEXT("ALIVE") : TEXT("FALLEN"), HP, MaxHP));
+			}
+		}
+
+		int32 DefeatedEnemies = 0;
+		int32 TotalEnemies = 0;
+		for (int32 i = 0; i < EnemyGrid.Num(); ++i)
+		{
+			if (ASovereignBaseCharacter* Char = EnemyGrid[i])
+			{
+				TotalEnemies++;
+				float HP = 0.0f;
+				if (USovereignAttributeComponent* Attr = Char->GetAttributeComponent())
+				{
+					HP = Attr->CurrentHealth;
+				}
+				if (HP <= 0.0f) DefeatedEnemies++;
+			}
+		}
+
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("%s [SOVEREIGN BATTLE MANAGER] BATTLE RESOLVED: %s"), OutcomeIcon, OutcomeName);
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("  Surviving Players: %d | Defeated Enemies: %d / %d"),
+			SurvivingPlayers, DefeatedEnemies, TotalEnemies);
+		UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+		UE_LOG(LogTemp, Display, TEXT("  🛡️  PLAYER PARTY FINAL STATUS:"));
+		for (const FString& Line : PlayerStatusLines)
+		{
+			UE_LOG(LogTemp, Display, TEXT("    • %s"), *Line);
+		}
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	}
+}
 
 ASovereignBattleManager::ASovereignBattleManager()
 {
@@ -41,6 +244,7 @@ void ASovereignBattleManager::BeginPlay()
 		GenerateDefaultGridTransforms();
 	}
 }
+
 
 void ASovereignBattleManager::GenerateDefaultGridTransforms()
 {
@@ -185,6 +389,7 @@ void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASo
 			GenerateDefaultGridTransforms();
 		}
 
+		TArray<FString> SpawnedLines;
 		for (const FSovereignEncounterSlot& SlotConfig : EncounterDef->EnemySlots)
 		{
 			if (SlotConfig.EnemyDefinition && SlotConfig.SlotIndex >= 0 && SlotConfig.SlotIndex < GRID_SIZE)
@@ -211,9 +416,30 @@ void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASo
 					EnemyDefinitionsMap.Add(NewEnemy, SlotConfig.EnemyDefinition);
 					SpawnedEnemyActors.Add(NewEnemy);
 					SpawnedEnemies[SlotConfig.SlotIndex] = NewEnemy;
+
+					const FString EnemyName = SlotConfig.EnemyDefinition->EnemyDisplayName.IsEmpty()
+						? SlotConfig.EnemyDefinition->GetName()
+						: SlotConfig.EnemyDefinition->EnemyDisplayName.ToString();
+					const FString RoleStr = StaticEnum<ESovereignEnemyRole>()->GetNameStringByValue(
+						static_cast<int64>(SlotConfig.EnemyDefinition->EnemyRole));
+					const FVector SpawnLoc = SpawnTransform.GetLocation();
+					float HP = SlotConfig.EnemyDefinition->MaxHealth;
+					float MaxHP = HP;
+					if (USovereignAttributeComponent* Attr = NewEnemy->GetAttributeComponent())
+					{
+						HP = Attr->CurrentHealth;
+						MaxHP = Attr->MaxHealth;
+					}
+
+					SpawnedLines.Add(FString::Printf(
+						TEXT("[Slot %d] %s (Def: %s, Role: %s) | HP: %.1f/%.1f | Loc: (X=%.0f, Y=%.0f, Z=%.0f)"),
+						SlotConfig.SlotIndex, *EnemyName, *SlotConfig.EnemyDefinition->GetName(), *RoleStr, HP, MaxHP,
+						SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z));
 				}
 			}
 		}
+
+		LogEncounterDefinitionSummary(EncounterDef, SpawnedEnemyActors, SpawnedLines);
 	}
 
 	InitializeEncounter(InPlayerUnits, SpawnedEnemies, EncounterDef->bCanFlee);
@@ -307,7 +533,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 		}
 	}
 
-	USovereignSkillComponent* SkillComp = EnemyCombatant->GetSkillComponent();
+	USovereignSkillComponent* SkillComp = EnemyCombatant->FindComponentByClass<USovereignSkillComponent>();
 
 	// 1. Role-specific decision trees
 	FSovereignSkillInstance SelectedSkillInstance;
@@ -601,6 +827,11 @@ void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCha
 		EnemyGrid[i] = (i < InEnemyUnits.Num() && InEnemyUnits[i]) ? InEnemyUnits[i] : nullptr;
 		if (EnemyGrid[i])
 		{
+			if (!SpawnedEnemyActors.Contains(EnemyGrid[i].Get()))
+			{
+				SpawnedEnemyActors.Add(EnemyGrid[i].Get());
+			}
+
 			if (USovereignATBComponent* ATB = EnemyGrid[i]->GetATBComponent())
 			{
 				ATB->ResetATB();
@@ -612,6 +843,7 @@ void ASovereignBattleManager::InitializeEncounter(const TArray<ASovereignBaseCha
 	}
 
 	PositionCombatantsOnGrid();
+	LogBattleFormationSummary(PlayerGrid, EnemyGrid, bIsEscapable);
 	SetBattleState(EBattleState::ActiveCombat);
 }
 
@@ -635,6 +867,8 @@ void ASovereignBattleManager::SetBattleState(EBattleState NewState)
 		}
 		else if (NewState == EBattleState::Victory || NewState == EBattleState::Defeat || NewState == EBattleState::Fled)
 		{
+			LogBattleResolutionSummary(NewState, PlayerGrid, EnemyGrid);
+
 			if (NewState == EBattleState::Victory)
 			{
 				DistributeVictoryRewards();

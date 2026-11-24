@@ -68,7 +68,7 @@ bool FSovereignBossTelegraphSuiteTest::RunTest(const FString& Parameters)
 	EarthBreaker->ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
 	EarthBreaker->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
 
-	USovereignSkillComponent* SkillComp = BossActor->GetSkillComponent();
+	//USovereignSkillComponent* SkillComp = /* CharacterPtr */->FindComponentByClass<USovereignSkillComponent>();
 	FGuid OutId;
 	SkillComp->EquipSkill(EarthBreaker, OutId);
 

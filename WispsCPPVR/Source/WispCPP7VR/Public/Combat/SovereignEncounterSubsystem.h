@@ -9,9 +9,25 @@
 #include "SovereignEncounterSubsystem.generated.h"
 
 class ASovereignBaseCharacter;
+class USovereignEnemyDefinition;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEncounterTransitionStarted, ASovereignBattleManager*, BattleManager);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEncounterTransitionEnded, EBattleState, Outcome);
+
+USTRUCT(BlueprintType)
+struct FSovereignEncounterEntry
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Encounter")
+	TSoftObjectPtr<USovereignEnemyDefinition> EnemyDefinition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Encounter")
+	int32 PointCost = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Encounter")
+	int32 MaxPerEncounter = 4;
+};
 
 /**
  * USovereignEncounterSubsystem
@@ -55,13 +71,29 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Encounter|Events")
 	FOnEncounterTransitionEnded OnEncounterTransitionEnded;
 
-	// --- Lifecycle API ---
+	// --- Spawning & Lifecycle API ---
 
-	/**
-	 * Initiates a battle encounter from roaming dungeon exploration.
-	 * Caches player transform, teleports party to the arena, initializes the battle manager,
-	 * and hides the roaming mob.
-	 */
+	/** Rolls a deterministic random enemy party within EncounterBudget and initializes each vessel from its Data Asset */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Encounter")
+	TArray<ASovereignBaseCharacter*> SpawnRandomEncounterParty(
+		const TArray<FSovereignEncounterEntry>& CandidatePool,
+		const TArray<FTransform>& SpawnTransforms,
+		int32 EncounterBudget,
+		int32 RandomSeed = 1337,
+		float EnemyStatMultiplier = 1.0f);
+
+	/** Convenience entry point: rolls a random enemy party and immediately transitions into battle */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Encounter")
+	bool TriggerRandomEncounter(
+		ASovereignBaseCharacter* PlayerLeader,
+		AActor* OverlappedMob,
+		const TArray<FSovereignEncounterEntry>& CandidatePool,
+		const TArray<FTransform>& SpawnTransforms,
+		int32 EncounterBudget,
+		int32 RandomSeed = 1337,
+		bool bCanFlee = true,
+		ASovereignBattleManager* CustomBattleManager = nullptr);
+
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Encounter")
 	bool TriggerEncounter(
 		ASovereignBaseCharacter* PlayerLeader,
@@ -70,11 +102,6 @@ public:
 		bool bCanFlee = true,
 		ASovereignBattleManager* CustomBattleManager = nullptr);
 
-	/**
-	 * Initiates a battle encounter from an authored USovereignEncounterDefinition.
-	 * Dynamically spawns enemy vessels in formation, teleports party, activates battle camera,
-	 * and disables player field exploration input.
-	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Encounter")
 	bool TriggerEncounterWithDefinition(
 		ASovereignBaseCharacter* PlayerLeader,
@@ -82,14 +109,10 @@ public:
 		USovereignEncounterDefinition* EncounterDef,
 		ASovereignBattleManager* CustomBattleManager = nullptr);
 
-	/**
-	 * Concludes the encounter, returning party members to the dungeon floor.
-	 * Destroys the defeated dungeon mob on Victory; preserves mob on Fled.
-	 */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Encounter")
 	void ReturnPartyToDungeon(EBattleState Outcome);
 
-	/** Delegate hook bound to ASovereignBattleManager::OnBattleEnded */
 	UFUNCTION()
 	void HandleBattleEnded(EBattleState Outcome);
+
 };

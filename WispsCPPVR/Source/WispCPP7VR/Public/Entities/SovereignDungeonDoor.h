@@ -90,6 +90,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Door")
 	bool bStayOpenOnceOpened = true;
 
+	/** Pre-generated or custom configured encounter spawn transforms for this door */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Dungeon|Door|Encounter")
+	TArray<FTransform> SpawnTransforms;
+
+	/**
+	 * Generates an array of distinct world transforms (default 6, spaced 200 units apart)
+	 * arranged in front of the door for encounter enemy spawns.
+	 */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Sovereign|Dungeon|Door")
+	TArray<FTransform> GetEncounterSpawnTransforms(int32 Count = 6, float Spacing = 200.0f) const;
+
 	// --- Events ---
 	UPROPERTY(BlueprintAssignable, Category = "Sovereign|Dungeon|Door")
 	FOnDungeonDoorStateChanged OnDoorStateChanged;

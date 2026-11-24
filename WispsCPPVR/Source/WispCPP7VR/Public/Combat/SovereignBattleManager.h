@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/SovereignATBComponent.h"
 #include "Components/SovereignPartyComponent.h"
+#include "Components/SovereignElementComponent.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
 #include "Combat/SovereignEnemyDefinition.h"
@@ -317,4 +318,5 @@ public:
 	/** Freezes or unfreezes all combatants' ATBs during animations / wait mode */
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle")
 	void SetAllCombatantsWaitMode(bool bWait);
+
 };

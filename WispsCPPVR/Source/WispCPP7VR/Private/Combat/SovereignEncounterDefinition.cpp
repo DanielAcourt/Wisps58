@@ -53,3 +53,39 @@ float USovereignEncounterDefinition::CalculateTotalQi() const
 	}
 	return TotalQi;
 }
+
+static void LogRandomEncounterSummary(
+	int32 Seed,
+	int32 InitialBudget,
+	int32 RemainingBudget,
+	int32 PoolCount,
+	int32 TransformCount,
+	float StatMultiplier,
+	const TArray<ASovereignBaseCharacter*>& SpawnedEnemies,
+	const TArray<FString>& SpawnedLines)
+{
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("⚔️  [SOVEREIGN ENCOUNTER SPAWNER] PARTY GENERATION COMPLETE (Seed %d, Buff x%.2f)"),
+		Seed, StatMultiplier);
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("  Spawned Count: %d | Transforms Provided: %d | Candidate Pool Entries: %d"),
+		SpawnedEnemies.Num(), TransformCount, PoolCount);
+	UE_LOG(LogTemp, Display, TEXT("  Budget: %d -> Remaining: %d (Spent: %d)"),
+		InitialBudget, RemainingBudget, FMath::Max(0, InitialBudget - RemainingBudget));
+	UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+	UE_LOG(LogTemp, Display, TEXT("  👾 SPAWNED ENEMY ROSTER (%d Total):"), SpawnedEnemies.Num());
+
+	if (SpawnedLines.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("    • [NONE SPAWNED] Check CandidatePool entries, EncounterBudget, or SpawnTransforms.Num()!"));
+	}
+	else
+	{
+		for (const FString& Line : SpawnedLines)
+		{
+			UE_LOG(LogTemp, Display, TEXT("    • %s"), *Line);
+		}
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+}

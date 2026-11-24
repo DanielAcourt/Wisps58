@@ -1,14 +1,224 @@
-// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-10-18
+// Copyright (c) 2013-2026 Daniel Acourt. Version 37.0.0. Licensed under GPLv3 (See LICENSE). Last Updated: 2026-11-19
 
 #include "Combat/SovereignEncounterSubsystem.h"
+#include "Combat/SovereignDungeonSubsystem.h"
+#include "Combat/SovereignEnemyDefinition.h"
 #include "Entities/SovereignBaseCharacter.h"
+#include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignPartyComponent.h"
 #include "EngineUtils.h"
+#include "Engine/GameInstance.h"
 #include "Kismet/GameplayStatics.h"
+
+namespace
+{
+	static void LogRandomEncounterSummary(
+		int32 Seed,
+		int32 InitialBudget,
+		int32 RemainingBudget,
+		int32 PoolCount,
+		int32 TransformCount,
+		float StatMultiplier,
+		const TArray<ASovereignBaseCharacter*>& SpawnedEnemies,
+		const TArray<FString>& SpawnedLines)
+	{
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("⚔️  [SOVEREIGN ENCOUNTER SPAWNER] PARTY GENERATION COMPLETE (Seed %d, Buff x%.2f)"),
+			Seed, StatMultiplier);
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+		UE_LOG(LogTemp, Display, TEXT("  Spawned Count: %d | Transforms Provided: %d | Candidate Pool Entries: %d"),
+			SpawnedEnemies.Num(), TransformCount, PoolCount);
+		UE_LOG(LogTemp, Display, TEXT("  Budget: %d -> Remaining: %d (Spent: %d)"),
+			InitialBudget, RemainingBudget, FMath::Max(0, InitialBudget - RemainingBudget));
+		UE_LOG(LogTemp, Display, TEXT("--------------------------------------------------------------------------------"));
+		UE_LOG(LogTemp, Display, TEXT("  👾 SPAWNED ENEMY ROSTER (%d Total):"), SpawnedEnemies.Num());
+
+		if (SpawnedLines.Num() == 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("    • [NONE SPAWNED] Check CandidatePool entries, EncounterBudget, or SpawnTransforms.Num()!"));
+		}
+		else
+		{
+			for (const FString& Line : SpawnedLines)
+			{
+				UE_LOG(LogTemp, Display, TEXT("    • %s"), *Line);
+			}
+		}
+
+		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	}
+}
 
 USovereignEncounterSubsystem::USovereignEncounterSubsystem()
 {
 	bIsEncounterActive = false;
+}
+
+TArray<ASovereignBaseCharacter*> USovereignEncounterSubsystem::SpawnRandomEncounterParty(
+	const TArray<FSovereignEncounterEntry>& CandidatePool,
+	const TArray<FTransform>& SpawnTransforms,
+	int32 EncounterBudget,
+	int32 RandomSeed,
+	float EnemyStatMultiplier)
+{
+	TArray<ASovereignBaseCharacter*> SpawnedEnemies;
+	TArray<FString> SpawnedLines;
+
+	UWorld* World = GetWorld();
+	if (!World || CandidatePool.IsEmpty() || SpawnTransforms.IsEmpty() || EncounterBudget <= 0)
+	{
+		LogRandomEncounterSummary(RandomSeed, EncounterBudget, EncounterBudget, CandidatePool.Num(), SpawnTransforms.Num(), EnemyStatMultiplier, SpawnedEnemies, SpawnedLines);
+		return SpawnedEnemies;
+	}
+
+	// Expand single transform into 6 distinct transforms spaced 200 units apart
+	// so single-anchor callers (e.g. door blueprints) generate a full squad up to budget
+	TArray<FTransform> EffectiveTransforms = SpawnTransforms;
+	if (EffectiveTransforms.Num() == 1)
+	{
+		const FTransform BaseXform = EffectiveTransforms[0];
+		const FVector BaseLoc = BaseXform.GetLocation();
+		const FRotator BaseRot = BaseXform.GetRotation().Rotator();
+		const FVector RightDir = BaseXform.GetRotation().GetRightVector();
+		const FVector FwdDir = BaseXform.GetRotation().GetForwardVector();
+
+		EffectiveTransforms.Empty();
+		for (int32 Row = 0; Row < 2; ++Row)
+		{
+			for (int32 Col = -1; Col <= 1; ++Col)
+			{
+				const FVector Offset = (FwdDir * (Row * 200.0f)) + (RightDir * (Col * 200.0f));
+				EffectiveTransforms.Add(FTransform(BaseRot, BaseLoc + Offset));
+			}
+		}
+	}
+
+	FRandomStream Stream(RandomSeed);
+	int32 RemainingBudget = EncounterBudget;
+	int32 SpawnIndex = 0;
+	TMap<FSoftObjectPath, int32> SpawnedCountsByDef;
+
+	while (RemainingBudget > 0 && SpawnIndex < EffectiveTransforms.Num())
+	{
+		TArray<FSovereignEncounterEntry> Affordable;
+		for (const FSovereignEncounterEntry& Entry : CandidatePool)
+		{
+			if (Entry.EnemyDefinition.IsNull() || Entry.PointCost > RemainingBudget)
+			{
+				continue;
+			}
+
+			const int32 ExistingCount = SpawnedCountsByDef.FindRef(Entry.EnemyDefinition.ToSoftObjectPath());
+			if (Entry.MaxPerEncounter <= 0 || ExistingCount < Entry.MaxPerEncounter)
+			{
+				Affordable.Add(Entry);
+			}
+		}
+
+		if (Affordable.IsEmpty())
+		{
+			break;
+		}
+
+		const FSovereignEncounterEntry& Picked = Affordable[Stream.RandRange(0, Affordable.Num() - 1)];
+		USovereignEnemyDefinition* Def = Picked.EnemyDefinition.LoadSynchronous();
+		if (!Def)
+		{
+			break;
+		}
+
+		UClass* SpawnClass = Def->CharacterClass ? Def->CharacterClass.Get() : ASovereignBaseCharacter::StaticClass();
+
+		const FTransform& SpawnXform = EffectiveTransforms[SpawnIndex];
+		ASovereignBaseCharacter* EnemyChar = World->SpawnActorDeferred<ASovereignBaseCharacter>(
+			SpawnClass,
+			SpawnXform,
+			nullptr,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+
+		if (EnemyChar)
+		{
+			EnemyChar->InitializeFromEnemyDefinition(Def, EnemyStatMultiplier);
+			EnemyChar->FinishSpawning(SpawnXform);
+
+			SpawnedEnemies.Add(EnemyChar);
+			SpawnedCountsByDef.FindOrAdd(Picked.EnemyDefinition.ToSoftObjectPath())++;
+
+			const FString EnemyName = Def->EnemyDisplayName.IsEmpty() ? Def->GetName() : Def->EnemyDisplayName.ToString();
+			const FString RoleStr = StaticEnum<ESovereignEnemyRole>()->GetNameStringByValue(static_cast<int64>(Def->EnemyRole));
+			const FVector SpawnLoc = SpawnXform.GetLocation();
+			float HP = Def->MaxHealth * EnemyStatMultiplier;
+			float MaxHP = HP;
+			if (USovereignAttributeComponent* Attr = EnemyChar->GetAttributeComponent())
+			{
+				HP = Attr->CurrentHealth;
+				MaxHP = Attr->MaxHealth;
+			}
+
+			SpawnedLines.Add(FString::Printf(
+				TEXT("[Slot %d] %s (Def: %s, Cost: %d, Role: %s) | HP: %.1f/%.1f | Loc: (X=%.0f, Y=%.0f, Z=%.0f)"),
+				SpawnIndex, *EnemyName, *Def->GetName(), Picked.PointCost, *RoleStr, HP, MaxHP,
+				SpawnLoc.X, SpawnLoc.Y, SpawnLoc.Z));
+
+			RemainingBudget -= FMath::Max(1, Picked.PointCost);
+			++SpawnIndex;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	LogRandomEncounterSummary(RandomSeed, EncounterBudget, RemainingBudget, CandidatePool.Num(), EffectiveTransforms.Num(), EnemyStatMultiplier, SpawnedEnemies, SpawnedLines);
+
+	return SpawnedEnemies;
+}
+
+bool USovereignEncounterSubsystem::TriggerRandomEncounter(
+	ASovereignBaseCharacter* PlayerLeader,
+	AActor* OverlappedMob,
+	const TArray<FSovereignEncounterEntry>& CandidatePool,
+	const TArray<FTransform>& SpawnTransforms,
+	int32 EncounterBudget,
+	int32 RandomSeed,
+	bool bCanFlee,
+	ASovereignBattleManager* CustomBattleManager)
+{
+	if (bIsEncounterActive)
+	{
+		return false;
+	}
+
+	float StatMultiplier = 1.0f;
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (USovereignDungeonSubsystem* DungeonSub = GI->GetSubsystem<USovereignDungeonSubsystem>())
+			{
+				if (DungeonSub->bHasActiveExpedition)
+				{
+					StatMultiplier = DungeonSub->ActiveEnemyBuffMultiplier;
+				}
+			}
+		}
+	}
+
+	TArray<ASovereignBaseCharacter*> EnemyUnits = SpawnRandomEncounterParty(
+		CandidatePool,
+		SpawnTransforms,
+		EncounterBudget,
+		RandomSeed,
+		StatMultiplier);
+
+	if (EnemyUnits.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SovereignEncounterSubsystem] TriggerRandomEncounter failed to spawn any enemies."));
+		return false;
+	}
+
+	return TriggerEncounter(PlayerLeader, OverlappedMob, EnemyUnits, bCanFlee, CustomBattleManager);
 }
 
 bool USovereignEncounterSubsystem::TriggerEncounter(
@@ -95,6 +305,20 @@ bool USovereignEncounterSubsystem::TriggerEncounter(
 
 	// 6. Initialize Encounter on Battle Manager
 	bIsEncounterActive = true;
+
+	const FVector ReturnLoc = DungeonReturnTransform.GetLocation();
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("⚔️  [SOVEREIGN ENCOUNTER] DUNGEON -> BATTLE ARENA TRANSITION"));
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("  Player Leader: %s | Party Members: %d | Enemies: %d | Escapable: %s"),
+		*PlayerLeader->GetName(), DeployedParty.Num(), EnemyUnits.Num(), bCanFlee ? TEXT("YES") : TEXT("NO"));
+	UE_LOG(LogTemp, Display, TEXT("  Cached Dungeon Return: X=%.0f Y=%.0f Z=%.0f"),
+		ReturnLoc.X, ReturnLoc.Y, ReturnLoc.Z);
+	UE_LOG(LogTemp, Display, TEXT("  Interacted Mob: %s | Battle Manager: %s"),
+		OverlappedMob ? *OverlappedMob->GetName() : TEXT("None"),
+		*BattleMgr->GetName());
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+
 	BattleMgr->InitializeEncounter(DeployedParty, EnemyUnits, bCanFlee);
 
 	// 7. Activate Battle Camera & disable exploration input
@@ -194,6 +418,23 @@ bool USovereignEncounterSubsystem::TriggerEncounterWithDefinition(
 
 	// 6. Initialize Encounter on Battle Manager from definition
 	bIsEncounterActive = true;
+
+	const FVector ReturnLoc = DungeonReturnTransform.GetLocation();
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("⚔️  [SOVEREIGN ENCOUNTER] AUTHORED DEFINITION -> BATTLE ARENA TRANSITION"));
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("  Encounter Def: %s (%s) | Escapable: %s"),
+		*EncounterDef->GetName(), *EncounterDef->EncounterDisplayName.ToString(),
+		EncounterDef->bCanFlee ? TEXT("YES") : TEXT("NO"));
+	UE_LOG(LogTemp, Display, TEXT("  Player Leader: %s | Party Members: %d | Configured Slots: %d"),
+		*PlayerLeader->GetName(), DeployedParty.Num(), EncounterDef->EnemySlots.Num());
+	UE_LOG(LogTemp, Display, TEXT("  Cached Dungeon Return: X=%.0f Y=%.0f Z=%.0f"),
+		ReturnLoc.X, ReturnLoc.Y, ReturnLoc.Z);
+	UE_LOG(LogTemp, Display, TEXT("  Interacted Mob: %s | Battle Manager: %s"),
+		OverlappedMob ? *OverlappedMob->GetName() : TEXT("None"),
+		*BattleMgr->GetName());
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+
 	BattleMgr->InitializeEncounterFromDefinition(DeployedParty, EncounterDef);
 
 	// 7. Activate Battle Camera & disable exploration input
@@ -267,5 +508,29 @@ void USovereignEncounterSubsystem::ReturnPartyToDungeon(EBattleState Outcome)
 	}
 
 	bIsEncounterActive = false;
+
+	const TCHAR* OutcomeStr = TEXT("UNKNOWN");
+	switch (Outcome)
+	{
+	case EBattleState::Victory: OutcomeStr = TEXT("VICTORY"); break;
+	case EBattleState::Defeat:  OutcomeStr = TEXT("DEFEAT");  break;
+	case EBattleState::Fled:    OutcomeStr = TEXT("FLED");    break;
+	default: break;
+	}
+
+	const FVector ReturnPos = DungeonReturnTransform.GetLocation();
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("🏛️  [SOVEREIGN ENCOUNTER] BATTLE ARENA -> DUNGEON RETURN (%s)"), OutcomeStr);
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	UE_LOG(LogTemp, Display, TEXT("  Restored %d party member(s) to Dungeon Position: X=%.0f Y=%.0f Z=%.0f"),
+		ActivePlayerParty.Num(), ReturnPos.X, ReturnPos.Y, ReturnPos.Z);
+	if (InteractedDungeonMob.IsValid())
+	{
+		UE_LOG(LogTemp, Display, TEXT("  Interacted Mob [%s]: %s"),
+			*InteractedDungeonMob->GetName(),
+			(Outcome == EBattleState::Victory) ? TEXT("DESTROYED (Encounter Won)") : TEXT("RESTORED VISIBILITY (Encounter Evaded)"));
+	}
+	UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+
 	OnEncounterTransitionEnded.Broadcast(Outcome);
 }
