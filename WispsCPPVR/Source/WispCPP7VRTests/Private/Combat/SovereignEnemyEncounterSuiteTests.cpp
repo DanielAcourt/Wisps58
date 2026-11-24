@@ -157,7 +157,7 @@ bool FSovereignEnemyEncounterSuiteTest::RunTest(const FString& Parameters)
 			HealSkill->StatMultiplier = 1.0f;
 			HealSkill->QiCost = 10.0f;
 
-			if (BattleMgr->EnemyGrid.IsValidIndex(6) && BattleMgr->EnemyGrid[6].IsValid())
+			if (BattleMgr->EnemyGrid.IsValidIndex(6) && BattleMgr->EnemyGrid[6] != nullptr)
 			{
 				if (USovereignSkillComponent* ShamanSkillComp = BattleMgr->EnemyGrid[6]->FindComponentByClass<USovereignSkillComponent>())
 				{

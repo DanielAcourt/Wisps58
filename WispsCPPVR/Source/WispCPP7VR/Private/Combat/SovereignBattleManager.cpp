@@ -64,16 +64,16 @@ namespace
 		bool bCanFlee)
 	{
 		auto GetRowName = [](int32 SlotIdx) -> const TCHAR*
-		{
-			int32 Row = SlotIdx / 3;
-			switch (Row)
 			{
-			case 0: return TEXT("Front");
-			case 1: return TEXT("Mid");
-			case 2: return TEXT("Rear");
-			default: return TEXT("Unknown");
-			}
-		};
+				int32 Row = SlotIdx / 3;
+				switch (Row)
+				{
+				case 0: return TEXT("Front");
+				case 1: return TEXT("Mid");
+				case 2: return TEXT("Rear");
+				default: return TEXT("Unknown");
+				}
+			};
 
 		int32 PlayerCount = 0;
 		TArray<FString> PlayerLines;
@@ -533,7 +533,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 		}
 	}
 
-	USovereignSkillComponent* SkillComp = EnemyCombatant->FindComponentByClass<USovereignSkillComponent>();
+	USovereignSkillComponent* SkillComp = EnemyCombatant->GetSkillComponent();
 
 	// 1. Role-specific decision trees
 	FSovereignSkillInstance SelectedSkillInstance;
@@ -542,17 +542,17 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 
 	// Helper lambda: creates transient basic strike
 	auto MakeFallbackStrike = [this]() -> FSovereignSkillInstance
-	{
-		USovereignSkillDefinition* FallbackStrike = NewObject<USovereignSkillDefinition>(this);
-		FallbackStrike->SkillTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.Combat.BasicStrike"), false);
-		FallbackStrike->SkillDisplayName = FText::FromString(TEXT("Strike"));
-		FallbackStrike->BasePower = 15.0f;
-		FallbackStrike->StatMultiplier = 1.0f;
-		FallbackStrike->QiCost = 0.0f;
-		FallbackStrike->ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
-		FallbackStrike->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
-		return FSovereignSkillInstance(FallbackStrike);
-	};
+		{
+			USovereignSkillDefinition* FallbackStrike = NewObject<USovereignSkillDefinition>(this);
+			FallbackStrike->SkillTag = FGameplayTag::RequestGameplayTag(TEXT("Skill.Combat.BasicStrike"), false);
+			FallbackStrike->SkillDisplayName = FText::FromString(TEXT("Strike"));
+			FallbackStrike->BasePower = 15.0f;
+			FallbackStrike->StatMultiplier = 1.0f;
+			FallbackStrike->QiCost = 0.0f;
+			FallbackStrike->ScalingAttribute = ESovereignSkillScalingAttribute::Strength;
+			FallbackStrike->TargetPattern = ESovereignSkillTargetPattern::SingleTarget;
+			return FSovereignSkillInstance(FallbackStrike);
+		};
 
 	// --- A. Support Healer Decision Tree ---
 	if (EnemyRole == ESovereignEnemyRole::SupportHealer)
@@ -590,8 +590,8 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 
 				if (CandidateDef && CandidateDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
 					(CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SingleTarget ||
-					 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly ||
-					 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies))
+						CandidateDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly ||
+						CandidateDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies))
 				{
 					if (CanCastSkill(EnemyCombatant, CandidateDef))
 					{
@@ -624,7 +624,7 @@ void ASovereignBattleManager::ExecuteEnemyTurn(ASovereignBaseCharacter* EnemyCom
 				if (!CandidateDef) CandidateDef = Candidate.SkillDefinition.LoadSynchronous();
 
 				if (CandidateDef && (CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FullMatrixAOE ||
-									 CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FrontRowSweep))
+					CandidateDef->TargetPattern == ESovereignSkillTargetPattern::FrontRowSweep))
 				{
 					if (CanCastSkill(EnemyCombatant, CandidateDef))
 					{
@@ -933,13 +933,13 @@ void ASovereignBattleManager::EnqueueReadyCombatant(ASovereignBaseCharacter* Com
 
 	// Sort queue using Strict Weak Ordering (deterministic on Dexterity, with arrival TieBreakerNonce for ties)
 	ReadyQueue.Sort([](const FSovereignReadyEntry& A, const FSovereignReadyEntry& B)
-	{
-		if (A.Dexterity != B.Dexterity)
 		{
-			return A.Dexterity > B.Dexterity; // Higher DEX acts first
-		}
-		return A.TieBreakerNonce > B.TieBreakerNonce;
-	});
+			if (A.Dexterity != B.Dexterity)
+			{
+				return A.Dexterity > B.Dexterity; // Higher DEX acts first
+			}
+			return A.TieBreakerNonce > B.TieBreakerNonce;
+		});
 }
 
 ASovereignBaseCharacter* ASovereignBattleManager::DequeueNextCombatant()
@@ -1251,8 +1251,8 @@ bool ASovereignBattleManager::ExecuteSkillAction(ASovereignBaseCharacter* Caster
 	// 3. Determine if Healing vs Damaging
 	const bool bIsHealing = (SkillDef->ScalingAttribute == ESovereignSkillScalingAttribute::Wisdom &&
 		(SkillDef->TargetPattern == ESovereignSkillTargetPattern::SelfOnly ||
-		 SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies ||
-		 SkillDef->TargetPattern == ESovereignSkillTargetPattern::SingleTarget));
+			SkillDef->TargetPattern == ESovereignSkillTargetPattern::AllAllies ||
+			SkillDef->TargetPattern == ESovereignSkillTargetPattern::SingleTarget));
 
 	float TotalActionResult = 0.0f;
 

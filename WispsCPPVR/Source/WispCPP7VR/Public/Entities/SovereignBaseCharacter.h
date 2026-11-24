@@ -83,9 +83,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignElementComponent* GetElementComponent() const { return ElementComponent; }
 
-	//UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
-	//USovereignControllerComponent* GetSkillComponent() const { return SkillComponent; }
-
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignBioComponent* GetBioComponent() const { return BioComponent; }
 
@@ -95,8 +92,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
 	USovereignClassComponent* GetClassComponent() const { return ClassComponent; }
 
-	//UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
-	//USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Character")
+	USovereignSkillComponent* GetSkillComponent() const { return SkillComponent; }
 
 	UFUNCTION(BlueprintPure, Category = "Sovereign|Status")
 	USovereignStatusComponent* GetStatusComponent() const { return StatusComponent; }

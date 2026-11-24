@@ -4,6 +4,8 @@
 #include "Combat/SovereignSkillDefinition.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Entities/SovereignSaveableEntityComponent.h"
+
+
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignBioComponent.h"
 #include "Components/SovereignElementComponent.h"
@@ -74,7 +76,7 @@ void USovereignEnemyDefinition::InitializeEnemyVesselScaled(ASovereignBaseCharac
 	{
 		if (PrimaryElement != ESovereignElement::None)
 		{
-			ElemComp->PrimaryElement = PrimaryElement;
+			ElemComp->BodySocket = PrimaryElement;
 		}
 	}
 
@@ -87,7 +89,8 @@ void USovereignEnemyDefinition::InitializeEnemyVesselScaled(ASovereignBaseCharac
 			{
 				if (USovereignSkillDefinition* SkillDef = SkillRef.LoadSynchronous())
 				{
-					//SkillComp->LearnSkill(SkillDef);
+					FGuid OutInstanceId;
+					SkillComp->EquipSkill(SkillDef, OutInstanceId);
 				}
 			}
 		}
