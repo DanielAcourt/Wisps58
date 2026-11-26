@@ -9,6 +9,7 @@
 #include "Components/SovereignElementComponent.h"
 #include "Combat/SovereignSkillAugment.h"
 #include "Combat/SovereignCombatCalculationLibrary.h"
+#include "Combat/ASovereignBattleArena.h"
 #include "Combat/SovereignEnemyDefinition.h"
 #include "Combat/SovereignEncounterDefinition.h"
 #include "SovereignBattleManager.generated.h"
@@ -78,6 +79,17 @@ public:
 
 	// --- Dual 3x3 Grid Formations ---
 	static constexpr int32 GRID_SIZE = 9;
+
+	/** Synchronizes grid slot and camera transforms from ActiveArena when assigned */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Spatial")
+	void SyncSlotsFromActiveArena();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle|Arena")
+	TObjectPtr<AASovereignBattleArena> ActiveArena;
+
+	/** Assigns the active battle arena and synchronizes 3x3 slot and camera transforms */
+	UFUNCTION(BlueprintCallable, Category = "Sovereign|Battle|Spatial")
+	void SetActiveArena(AASovereignBattleArena* NewArena, bool bSyncImmediately = true);
 
 	/** Player party combatants mapped across the 9 slots (0-2: Front, 3-5: Mid, 6-8: Rear) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Battle|Formations")

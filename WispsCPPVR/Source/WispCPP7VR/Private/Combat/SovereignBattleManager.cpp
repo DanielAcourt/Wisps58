@@ -235,15 +235,60 @@ ASovereignBattleManager::ASovereignBattleManager()
 	EscapeProgressIncrementPerFail = 25.0f;
 }
 
+void ASovereignBattleManager::SyncSlotsFromActiveArena()
+{
+	if (!ActiveArena)
+	{
+		return;
+	}
+
+	const TArray<FTransform> ArenaPlayers = ActiveArena->GetPlayerSlotTransforms();
+	const TArray<FTransform> ArenaEnemies = ActiveArena->GetEnemySpawnTransforms();
+	
+
+	if (ArenaPlayers.Num() > 0)
+	{
+		PlayerSlotTransforms.SetNum(GRID_SIZE);
+		for (int32 i = 0; i < GRID_SIZE; ++i)
+		{
+			PlayerSlotTransforms[i] = ArenaPlayers.IsValidIndex(i)
+				? ArenaPlayers[i]
+				: ArenaPlayers[i % ArenaPlayers.Num()];
+		}
+	}
+
+	if (ArenaEnemies.Num() > 0)
+	{
+		EnemySlotTransforms.SetNum(GRID_SIZE);
+		for (int32 i = 0; i < GRID_SIZE; ++i)
+		{
+			EnemySlotTransforms[i] = ArenaEnemies.IsValidIndex(i)
+				? ArenaEnemies[i]
+				: ArenaEnemies[i % ArenaEnemies.Num()];
+		}
+	}
+
+	ArenaCameraTransform = ActiveArena->GetBattleCameraWorldTransform();
+	if (BattleCameraActor)
+	{
+		BattleCameraActor->SetActorTransform(ArenaCameraTransform);
+	}
+}
+
 void ASovereignBattleManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+	if (ActiveArena)
+	{
+		SyncSlotsFromActiveArena();
+	}
+	else if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
 	{
 		GenerateDefaultGridTransforms();
 	}
-}
+	}
+
 
 
 void ASovereignBattleManager::GenerateDefaultGridTransforms()
@@ -289,18 +334,22 @@ void ASovereignBattleManager::GenerateDefaultGridTransforms()
 
 void ASovereignBattleManager::PositionCombatantsOnGrid()
 {
-	if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+	if (ActiveArena)
+	{
+		SyncSlotsFromActiveArena();
+	}
+	else if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
 	{
 		GenerateDefaultGridTransforms();
 	}
 
 	for (int32 i = 0; i < GRID_SIZE; ++i)
 	{
-		if (PlayerGrid[i])
+		if (PlayerGrid[i] && PlayerSlotTransforms.IsValidIndex(i))
 		{
 			PlayerGrid[i]->SetActorTransform(PlayerSlotTransforms[i], false, nullptr, ETeleportType::TeleportPhysics);
 		}
-		if (EnemyGrid[i])
+		if (EnemyGrid[i] && EnemySlotTransforms.IsValidIndex(i))
 		{
 			EnemyGrid[i]->SetActorTransform(EnemySlotTransforms[i], false, nullptr, ETeleportType::TeleportPhysics);
 		}
@@ -366,7 +415,6 @@ void ASovereignBattleManager::Tick(float DeltaTime)
 		}
 	}
 }
-
 void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASovereignBaseCharacter*>& InPlayerUnits, USovereignEncounterDefinition* EncounterDef)
 {
 	if (!EncounterDef)
@@ -384,7 +432,11 @@ void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASo
 
 	if (World)
 	{
-		if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
+		if (ActiveArena)
+		{
+			SyncSlotsFromActiveArena();
+		}
+		else if (PlayerSlotTransforms.Num() < GRID_SIZE || EnemySlotTransforms.Num() < GRID_SIZE)
 		{
 			GenerateDefaultGridTransforms();
 		}
@@ -444,7 +496,6 @@ void ASovereignBattleManager::InitializeEncounterFromDefinition(const TArray<ASo
 
 	InitializeEncounter(InPlayerUnits, SpawnedEnemies, EncounterDef->bCanFlee);
 }
-
 void ASovereignBattleManager::CleanupSpawnedEnemies()
 {
 	for (TObjectPtr<ASovereignBaseCharacter> EnemyActor : SpawnedEnemyActors)
@@ -458,11 +509,34 @@ void ASovereignBattleManager::CleanupSpawnedEnemies()
 	EnemyDefinitionsMap.Empty();
 }
 
+void ASovereignBattleManager::SetActiveArena(AASovereignBattleArena* NewArena, bool bSyncImmediately)
+{
+	ActiveArena = NewArena;
+
+	if (ActiveArena && bSyncImmediately)
+	{
+		SyncSlotsFromActiveArena();
+	}
+}
+
 void ASovereignBattleManager::ActivateBattleCamera(APlayerController* PC, float BlendTime)
 {
 	if (!PC)
 	{
 		return;
+	}
+
+	if (ActiveArena)
+	{
+		SyncSlotsFromActiveArena();
+
+		if (ActiveArena->ArenaCamera)
+		{
+			PC->SetViewTargetWithBlend(ActiveArena, BlendTime, VTBlend_EaseInOut, 2.0f);
+			UE_LOG(LogTemp, Log, TEXT("[BattleManager] Switched ViewTarget to ActiveArena [%s] camera with blend time %f"),
+				*ActiveArena->GetName(), BlendTime);
+			return;
+		}
 	}
 
 	UWorld* World = GetWorld();

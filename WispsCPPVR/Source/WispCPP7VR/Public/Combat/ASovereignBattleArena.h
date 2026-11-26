@@ -32,7 +32,7 @@ public:
 	float DefaultZDepth = -20000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arena|Slots")
-	int32 SlotCountPerSide = 6;
+	int32 SlotCountPerSide = 9;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arena|Slots")
 	FVector2D SlotSpacing = FVector2D(260.0f, 220.0f);
@@ -54,6 +54,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Arena|Camera")
 	FTransform GetBattleCameraWorldTransform() const;
+
+	/** Draw editor-only 3x3 slot capsules, facing arrows, and labels in the Blueprint viewport & level editor */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Battle|Arena|Preview")
+	bool bShowEditorSlotPreview = true;
+
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 protected:
 	// Called when the game starts or when spawned

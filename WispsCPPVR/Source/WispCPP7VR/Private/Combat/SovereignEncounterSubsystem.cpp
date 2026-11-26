@@ -3,6 +3,8 @@
 #include "Combat/SovereignEncounterSubsystem.h"
 #include "Combat/SovereignDungeonSubsystem.h"
 #include "Combat/SovereignEnemyDefinition.h"
+#include "Combat/ASovereignBattleArena.h"
+#include "Combat/SovereignBattleManager.h"
 #include "Entities/SovereignBaseCharacter.h"
 #include "Components/SovereignAttributeComponent.h"
 #include "Components/SovereignPartyComponent.h"
@@ -46,6 +48,29 @@ namespace
 		}
 
 		UE_LOG(LogTemp, Display, TEXT("================================================================================"));
+	}
+
+	static AASovereignBattleArena* ResolveBattleArena(UWorld* World, AASovereignBattleArena* PreferredArena)
+	{
+		if (IsValid(PreferredArena))
+		{
+			return PreferredArena;
+		}
+
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		for (TActorIterator<AASovereignBattleArena> It(World); It; ++It)
+		{
+			if (IsValid(*It))
+			{
+				return *It;
+			}
+		}
+
+		return nullptr;
 	}
 }
 
@@ -190,8 +215,9 @@ bool USovereignEncounterSubsystem::TriggerRandomEncounter(
 		return false;
 	}
 
+	UWorld* World = GetWorld();
 	float StatMultiplier = 1.0f;
-	if (UWorld* World = GetWorld())
+	if (World)
 	{
 		if (UGameInstance* GI = World->GetGameInstance())
 		{
@@ -205,9 +231,19 @@ bool USovereignEncounterSubsystem::TriggerRandomEncounter(
 		}
 	}
 
+	TArray<FTransform> EffectiveSpawnTransforms = SpawnTransforms;
+	if (AASovereignBattleArena* Arena = ResolveBattleArena(World, PreferredBattleArena))
+	{
+		const TArray<FTransform> ArenaEnemySlots = Arena->GetEnemySpawnTransforms();
+		if (ArenaEnemySlots.Num() > 0)
+		{
+			EffectiveSpawnTransforms = ArenaEnemySlots;
+		}
+	}
+
 	TArray<ASovereignBaseCharacter*> EnemyUnits = SpawnRandomEncounterParty(
 		CandidatePool,
-		SpawnTransforms,
+		EffectiveSpawnTransforms,
 		EncounterBudget,
 		RandomSeed,
 		StatMultiplier);
@@ -269,6 +305,11 @@ bool USovereignEncounterSubsystem::TriggerEncounter(
 	}
 
 	ActiveBattleManager = BattleMgr;
+	if (AASovereignBattleArena* Arena = ResolveBattleArena(World, PreferredBattleArena))
+	{
+		BattleMgr->SetActiveArena(Arena, true);
+	}
+
 	InteractedDungeonMob = OverlappedMob;
 
 	// 2. Cache Dungeon Return Transform
@@ -382,6 +423,10 @@ bool USovereignEncounterSubsystem::TriggerEncounterWithDefinition(
 	}
 
 	ActiveBattleManager = BattleMgr;
+	if (AASovereignBattleArena* Arena = ResolveBattleArena(World, PreferredBattleArena))
+	{
+		BattleMgr->SetActiveArena(Arena, true);
+	}
 	InteractedDungeonMob = OverlappedMob;
 
 	// 2. Cache Dungeon Return Transform

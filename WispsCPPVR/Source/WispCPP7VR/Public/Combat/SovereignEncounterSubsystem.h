@@ -10,6 +10,7 @@
 
 class ASovereignBaseCharacter;
 class USovereignEnemyDefinition;
+class AASovereignBattleArena;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEncounterTransitionStarted, ASovereignBattleManager*, BattleManager);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEncounterTransitionEnded, EBattleState, Outcome);
@@ -51,6 +52,10 @@ public:
 	/** Reference to the dungeon mob actor that triggered the encounter */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Encounter")
 	TWeakObjectPtr<AActor> InteractedDungeonMob;
+
+	/** Optional explicit battle arena override; if null, subsystem searches the world for an AASovereignBattleArena */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sovereign|Encounter")
+	TObjectPtr<AASovereignBattleArena> PreferredBattleArena;
 
 	/** Active player party members in the current encounter */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sovereign|Encounter")
