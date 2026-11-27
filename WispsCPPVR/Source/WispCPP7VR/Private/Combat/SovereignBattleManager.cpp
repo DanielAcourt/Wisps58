@@ -1559,6 +1559,10 @@ float ASovereignBattleManager::CalculateEscapeChance(const ASovereignBaseCharact
 
 bool ASovereignBattleManager::AttemptFlee(ASovereignBaseCharacter* Fleer, float ForcedRoll)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[BattleManager] AttemptFlee called! Fleer=%s | bIsEscapable=%s"),
+		Fleer ? *Fleer->GetName() : TEXT("NULL"),
+		bIsEscapable ? TEXT("TRUE") : TEXT("FALSE"));
+
 	if (!Fleer)
 	{
 		return false;
